@@ -1,13 +1,18 @@
 import { Container, Sprite, Text, Texture, type AssetsBundle } from 'pixi.js';
 
 import type { SceneLifecycle } from '../types';
+import { PlayButton } from './PlayButton';
 
-export class HomeScene extends Container implements SceneLifecycle {
+export type HomeSceneData = {
+  onPlay?: () => void;
+};
+
+export class HomeScene extends Container implements SceneLifecycle<HomeSceneData> {
   public static readonly sceneId = 'home';
   public static readonly assetBundles: AssetsBundle[] = [
     {
       name: 'home',
-      assets: [{ alias: 'home-bg', src: '/home-bg.png' }],
+      assets: [{ alias: 'home-bg', src: '/assets/home-bg.png' }],
     },
   ] as const;
 
@@ -33,19 +38,21 @@ export class HomeScene extends Container implements SceneLifecycle {
   });
 
   private readonly background = new Sprite();
+  private playButton?: PlayButton;
 
   constructor() {
     super();
     this.addChild(this.background, this.title, this.subtitle);
   }
 
-  public prepare() {
+  public prepare(data?: HomeSceneData) {
     this.layout = {
       width: '100%',
       height: '100%',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
+      gap: 24,
     };
     this.background.layout = {
       position: 'absolute',
@@ -56,14 +63,25 @@ export class HomeScene extends Container implements SceneLifecycle {
     this.title.layout = true;
     this.subtitle.layout = true;
     this.background.texture = Texture.from('home-bg');
+
+    if (data?.onPlay) {
+      this.playButton = new PlayButton(data.onPlay);
+      this.addChild(this.playButton);
+      this.playButton.layout = true;
+    }
+
     this.alpha = 0;
   }
 
   public reset() {
-    this.layout = null;
     this.background.layout = null;
     this.title.layout = null;
     this.subtitle.layout = null;
+    if (this.playButton) {
+      this.playButton.layout = null;
+    }
+    this.playButton = undefined;
+    this.layout = null;
   }
 
   public show() {

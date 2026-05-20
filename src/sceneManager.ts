@@ -1,5 +1,6 @@
 import '@pixi/layout';
 import { initDevtools } from '@pixi/devtools';
+import '@pixi/layout/devtools';
 import { Application, Assets, Container } from 'pixi.js';
 import type { Ticker } from 'pixi.js';
 

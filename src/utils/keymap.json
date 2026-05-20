@@ -1,0 +1,537 @@
+{
+  "tablet": {
+    "layer": [
+      {
+        "id": "default",
+        "row": [
+          {
+            "id": 1,
+            "key": [
+              {
+                "id": "Digit1",
+                "text": "1"
+              },
+              {
+                "id": "Digit2",
+                "text": "2"
+              },
+              {
+                "id": "Digit3",
+                "text": "3"
+              },
+              {
+                "id": "Digit4",
+                "text": "4"
+              },
+              {
+                "id": "Digit5",
+                "text": "5"
+              },
+              {
+                "id": "Digit6",
+                "text": "6"
+              },
+              {
+                "id": "Digit7",
+                "text": "7"
+              },
+              {
+                "id": "Digit8",
+                "text": "8"
+              },
+              {
+                "id": "Digit9",
+                "text": "9"
+              },
+              {
+                "id": "Digit0",
+                "text": "0"
+              },
+              {
+                "id": "Minus",
+                "text": "-"
+              },
+              {
+                "id": "Equal",
+                "text": "="
+              },
+              {
+                "id": "Backspace",
+                "text": "⌫",
+                "width": "100",
+                "sp": "1"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "key": [
+              {
+                "id": "KeyQ",
+                "text": "چ",
+                "pad": "75"
+              },
+              {
+                "id": "KeyW",
+                "text": "ۋ"
+              },
+              {
+                "id": "KeyE",
+                "text": "ې"
+              },
+              {
+                "id": "KeyR",
+                "text": "ر"
+              },
+              {
+                "id": "KeyT",
+                "text": "ت"
+              },
+              {
+                "id": "KeyY",
+                "text": "ي"
+              },
+              {
+                "id": "KeyU",
+                "text": "ۇ"
+              },
+              {
+                "id": "KeyI",
+                "text": "ڭ"
+              },
+              {
+                "id": "KeyO",
+                "text": "و"
+              },
+              {
+                "id": "KeyP",
+                "text": "پ"
+              },
+              {
+                "id": "BracketLeft",
+                "text": "]"
+              },
+              {
+                "id": "BracketRight",
+                "text": "["
+              },
+              {
+                "id": "",
+                "text": "",
+                "width": "10",
+                "sp": "10"
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "key": [
+              {
+                "id": "Backquote",
+                "text": "`"
+              },
+              {
+                "id": "KeyA",
+                "text": "ھ"
+              },
+              {
+                "id": "KeyS",
+                "text": "س"
+              },
+              {
+                "id": "KeyD",
+                "text": "د"
+              },
+              {
+                "id": "KeyF",
+                "text": "ا"
+              },
+              {
+                "id": "KeyG",
+                "text": "ە"
+              },
+              {
+                "id": "KeyH",
+                "text": "ى"
+              },
+              {
+                "id": "KeyJ",
+                "text": "ق"
+              },
+              {
+                "id": "KeyK",
+                "text": "ك"
+              },
+              {
+                "id": "KeyL",
+                "text": "ل"
+              },
+              {
+                "id": "Semicolon",
+                "text": "؛"
+              },
+              {
+                "id": "Quote",
+                "text": "'"
+              },
+              {
+                "id": "Backslash",
+                "text": "\\"
+              }
+            ]
+          },
+          {
+            "id": 4,
+            "key": [
+              {
+                "id": "ShiftLeft",
+                "text": "*Shift*",
+                "width": "160",
+                "sp": "1",
+                "nextlayer": "shift"
+              },
+              {
+                "id": "IntlBackslash",
+                "text": ""
+              },
+              {
+                "id": "KeyZ",
+                "text": "ز"
+              },
+              {
+                "id": "KeyX",
+                "text": "ش"
+              },
+              {
+                "id": "KeyC",
+                "text": "غ"
+              },
+              {
+                "id": "KeyV",
+                "text": "ۈ"
+              },
+              {
+                "id": "KeyB",
+                "text": "ب"
+              },
+              {
+                "id": "KeyN",
+                "text": "ن"
+              },
+              {
+                "id": "KeyM",
+                "text": "م"
+              },
+              {
+                "id": "Comma",
+                "text": "،"
+              },
+              {
+                "id": "Period",
+                "text": "."
+              },
+              {
+                "id": "Slash",
+                "text": "ئ"
+              },
+              {
+                "id": "",
+                "text": "",
+                "width": "10",
+                "sp": "10"
+              }
+            ]
+          },
+          {
+            "id": 5,
+            "key": [
+              {
+                "id": "AltLeft",
+                "text": "*Menu*",
+                "width": "140",
+                "sp": "1"
+              },
+              {
+                "id": "Space",
+                "text": "",
+                "width": "930"
+              },
+              {
+                "id": "Enter",
+                "text": "*Enter*",
+                "width": "145",
+                "sp": "1"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "shift",
+        "row": [
+          {
+            "id": 1,
+            "key": [
+              {
+                "id": "Digit1",
+                "text": "!"
+              },
+              {
+                "id": "Digit2",
+                "text": "@"
+              },
+              {
+                "id": "Digit3",
+                "text": "#"
+              },
+              {
+                "id": "Digit4",
+                "text": "$"
+              },
+              {
+                "id": "Digit5",
+                "text": "%"
+              },
+              {
+                "id": "Digit6",
+                "text": "^"
+              },
+              {
+                "id": "Digit7",
+                "text": "&"
+              },
+              {
+                "id": "Digit8",
+                "text": "*"
+              },
+              {
+                "id": "Digit9",
+                "text": ")"
+              },
+              {
+                "id": "Digit0",
+                "text": "("
+              },
+              {
+                "id": "Minus",
+                "text": "_"
+              },
+              {
+                "id": "Equal",
+                "text": "+"
+              },
+              {
+                "id": "Backspace",
+                "text": "⌫",
+                "width": "100",
+                "sp": "1"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "key": [
+              {
+                "id": "KeyQ",
+                "text": "",
+                "pad": "75"
+              },
+              {
+                "id": "KeyW",
+                "text": ""
+              },
+              {
+                "id": "KeyE",
+                "text": ""
+              },
+              {
+                "id": "KeyR",
+                "text": ""
+              },
+              {
+                "id": "KeyT",
+                "text": ""
+              },
+              {
+                "id": "KeyY",
+                "text": ""
+              },
+              {
+                "id": "KeyU",
+                "text": ""
+              },
+              {
+                "id": "KeyI",
+                "text": ""
+              },
+              {
+                "id": "KeyO",
+                "text": ""
+              },
+              {
+                "id": "KeyP",
+                "text": ""
+              },
+              {
+                "id": "BracketLeft",
+                "text": "»"
+              },
+              {
+                "id": "BracketRight",
+                "text": "«"
+              },
+              {
+                "id": "",
+                "text": "",
+                "width": "10",
+                "sp": "10"
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "key": [
+              {
+                "id": "Backquote",
+                "text": "~"
+              },
+              {
+                "id": "KeyA",
+                "text": ""
+              },
+              {
+                "id": "KeyS",
+                "text": ""
+              },
+              {
+                "id": "KeyD",
+                "text": "ژ"
+              },
+              {
+                "id": "KeyF",
+                "text": "ف"
+              },
+              {
+                "id": "KeyG",
+                "text": "گ"
+              },
+              {
+                "id": "KeyH",
+                "text": "خ"
+              },
+              {
+                "id": "KeyJ",
+                "text": "ج"
+              },
+              {
+                "id": "KeyK",
+                "text": "ۆ"
+              },
+              {
+                "id": "KeyL",
+                "text": "لا"
+              },
+              {
+                "id": "Semicolon",
+                "text": ":"
+              },
+              {
+                "id": "Quote",
+                "text": "\""
+              },
+              {
+                "id": "Backslash",
+                "text": "|"
+              }
+            ]
+          },
+          {
+            "id": 4,
+            "key": [
+              {
+                "id": "ShiftLeft",
+                "text": "*Shift*",
+                "width": "160",
+                "sp": "2",
+                "nextlayer": "default"
+              },
+              {
+                "id": "IntlBackslash",
+                "text": ""
+              },
+              {
+                "id": "KeyZ",
+                "text": ""
+              },
+              {
+                "id": "KeyX",
+                "text": ""
+              },
+              {
+                "id": "KeyC",
+                "text": ""
+              },
+              {
+                "id": "KeyV",
+                "text": ""
+              },
+              {
+                "id": "KeyB",
+                "text": ""
+              },
+              {
+                "id": "KeyN",
+                "text": ""
+              },
+              {
+                "id": "KeyM",
+                "text": ""
+              },
+              {
+                "id": "Comma",
+                "text": ">"
+              },
+              {
+                "id": "Period",
+                "text": "<"
+              },
+              {
+                "id": "Slash",
+                "text": "؟"
+              },
+              {
+                "id": "",
+                "text": "",
+                "width": "10",
+                "sp": "10"
+              }
+            ]
+          },
+          {
+            "id": 5,
+            "key": [
+              {
+                "id": "AltLeft",
+                "text": "*Menu*",
+                "width": "140",
+                "sp": "1"
+              },
+              {
+                "id": "Space",
+                "text": "",
+                "width": "930"
+              },
+              {
+                "id": "Enter",
+                "text": "*Enter*",
+                "width": "145",
+                "sp": "1"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "displayUnderlying": false
+  }
+}
