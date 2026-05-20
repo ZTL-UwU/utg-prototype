@@ -9,11 +9,19 @@ type LetterOptions = {
   cornerRadius?: number;
 };
 
-const CARD_COLOR = 0x8d6241;
-const ACTIVE_COLOR = 0xc98144;
-const SHADOW_COLOR = 0x66432c;
-const SUCCESS_COLOR = 0x8ec24d;
-const ERROR_COLOR = 0xef5a42;
+const cardColors = {
+  default: 0x8d6241,
+  active: 0xc98144,
+  success: 0x8ec24d,
+  error: 0xef5a42,
+};
+
+const shadowColors = {
+  default: 0x66432c,
+  active: 0xab6a33,
+  success: 0x74a637,
+  error: 0xd4452f,
+};
 
 export class Letter extends Container {
   private readonly contentContainer: Container;
@@ -79,6 +87,7 @@ export class Letter extends Container {
     if (this.isActive === isActive) return;
 
     this.isActive = isActive;
+    this.drawShadow();
     this.drawCard();
     gsap.to(this.focusContainer.scale, {
       x: isActive ? 1.06 : 1,
@@ -92,6 +101,7 @@ export class Letter extends Container {
     if (this.feedback === feedback && !animate) return;
 
     this.feedback = feedback;
+    this.drawShadow();
     this.drawCard();
 
     if (!animate) return;
@@ -105,27 +115,25 @@ export class Letter extends Container {
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {
     gsap.killTweensOf(this.focusContainer.scale);
-    gsap.killTweensOf(this.feedbackContainer);
-    gsap.killTweensOf(this.contentContainer.scale);
+    gsap.killTweensOf(this.contentContainer);
     super.destroy(options);
   }
 
   private drawShadow() {
+    const shadowColor =
+      shadowColors[
+        this.feedback === 'none' ? (this.isActive ? 'active' : 'default') : this.feedback
+      ];
+
     this.shadow
       .clear()
       .roundRect(0, 10, this.cardSize, this.cardSize, this.cornerRadius)
-      .fill({ color: SHADOW_COLOR });
+      .fill({ color: shadowColor });
   }
 
   private drawCard() {
     const fillColor =
-      this.feedback === 'success'
-        ? SUCCESS_COLOR
-        : this.feedback === 'error'
-          ? ERROR_COLOR
-          : this.isActive
-            ? ACTIVE_COLOR
-            : CARD_COLOR;
+      cardColors[this.feedback === 'none' ? (this.isActive ? 'active' : 'default') : this.feedback];
 
     this.card
       .clear()
@@ -134,7 +142,8 @@ export class Letter extends Container {
   }
 
   private pulse() {
-    gsap.killTweensOf(this.contentContainer.scale);
+    gsap.killTweensOf(this.contentContainer);
+    this.contentContainer.rotation = 0;
     gsap
       .timeline()
       .to(this.contentContainer.scale, {
@@ -152,14 +161,16 @@ export class Letter extends Container {
   }
 
   private shake() {
-    gsap.killTweensOf(this.feedbackContainer);
-    this.feedbackContainer.x = 0;
+    gsap.killTweensOf(this.contentContainer);
+    this.contentContainer.rotation = 0;
+
+    const deg = Math.PI / 180;
     gsap
       .timeline()
-      .to(this.feedbackContainer, { x: -12, duration: 0.04, ease: 'none' })
-      .to(this.feedbackContainer, { x: 12, duration: 0.08, ease: 'none' })
-      .to(this.feedbackContainer, { x: -8, duration: 0.08, ease: 'none' })
-      .to(this.feedbackContainer, { x: 5, duration: 0.08, ease: 'none' })
-      .to(this.feedbackContainer, { x: 0, duration: 0.06, ease: 'power2.out' });
+      .to(this.contentContainer, { rotation: -16 * deg, duration: 0.04, ease: 'none' })
+      .to(this.contentContainer, { rotation: 16 * deg, duration: 0.08, ease: 'none' })
+      .to(this.contentContainer, { rotation: -10 * deg, duration: 0.08, ease: 'none' })
+      .to(this.contentContainer, { rotation: 6 * deg, duration: 0.08, ease: 'none' })
+      .to(this.contentContainer, { rotation: 0, duration: 0.06, ease: 'power2.out' });
   }
 }

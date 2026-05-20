@@ -115,7 +115,7 @@ export class LetterRow extends Container {
 
       this.removing = true;
       current.setFeedback('success', true);
-      this.removeCurrentLetter();
+      window.setTimeout(() => this.removeCurrentLetter(), 600);
       return;
     }
 
