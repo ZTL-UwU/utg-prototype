@@ -2,20 +2,20 @@ import { Container } from 'pixi.js';
 
 import { CircleButton } from './CircleButton';
 
-export class HomeButton extends Container {
-  constructor(onHome: () => void) {
+export class HelpButton extends Container {
+  constructor() {
     super({
       layout: {
         position: 'absolute',
-        left: 60,
+        right: 60,
         top: 60,
       },
     });
 
     const button = new CircleButton({
-      label: '←',
+      label: '?',
       fontSize: 30,
-      onPress: onHome,
+      onPress: () => {},
     });
     this.addChild(button);
   }

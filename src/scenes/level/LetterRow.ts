@@ -1,81 +1,75 @@
 import gsap from 'gsap';
 import { Container } from 'pixi.js';
 
-import { getAlphabet, getKeyFromChar, getMappedFromKeyboardEvent } from '../../utils/keymap';
-import { Letter, type LetterFeedback } from './Letter';
-
-type LetterItem = {
-  id: number;
-  char: string;
-  layerId: string;
-};
+import { getAlphabet, getMappedFromKeyboardEvent } from '../../utils/keymap';
+import { Letter } from './Letter';
 
 type LetterRowOptions = {
   onCorrect?: () => void;
+  onComplete?: () => void;
 };
 
-const GAP = 400;
-const ROW_LENGTH = 200;
-const LOOKAHEAD = 5;
-const ADVANCE_DELAY_MS = 330;
+const CARD_SIZE = 140;
+const CARD_GAP = 40;
+const STEP = CARD_SIZE + CARD_GAP;
+const ROW_SIZE = 6;
+const ROW_WIDTH = ROW_SIZE * CARD_SIZE + (ROW_SIZE - 1) * CARD_GAP;
 
-function makeRow(): LetterItem[] {
+function makeRow(): string[] {
   const entries = getAlphabet();
 
-  return Array.from({ length: ROW_LENGTH }, (_, i) => {
+  return Array.from({ length: ROW_SIZE }, () => {
     const pick = entries[Math.floor(Math.random() * entries.length)];
-
-    return {
-      id: i,
-      char: pick?.text ?? '',
-      layerId: pick?.layerId ?? 'default',
-    };
+    return pick?.text ?? '';
   });
 }
 
 export class LetterRow extends Container {
+  private readonly row = new Container({
+    layout: {
+      width: ROW_WIDTH,
+      height: CARD_SIZE,
+    },
+  });
   private readonly onCorrect?: () => void;
+  private readonly onComplete?: () => void;
   private letters = makeRow();
   private cards: Letter[] = [];
-  private progress = 0;
-  private currentFeedback: LetterFeedback = 'none';
-  private advanceTimer?: number;
+  private removing = false;
   private screenWidth = window.innerWidth;
   private screenHeight = window.innerHeight;
   private listening = false;
 
-  constructor({ onCorrect }: LetterRowOptions = {}) {
+  constructor({ onCorrect, onComplete }: LetterRowOptions = {}) {
     super();
 
     this.onCorrect = onCorrect;
-    this.ensureCards();
-    this.updateCards(false);
+    this.onComplete = onComplete;
+    this.addChild(this.row);
+    this.buildCards();
+    this.resize(this.screenWidth, this.screenHeight);
     this.startListening();
   }
 
   reset() {
-    window.clearTimeout(this.advanceTimer);
-    this.advanceTimer = undefined;
-    this.progress = 0;
-    this.currentFeedback = 'none';
+    this.removing = false;
     this.letters = makeRow();
-    this.removeChildren().forEach((child) => child.destroy({ children: true }));
-    this.cards = [];
-    this.ensureCards();
-    this.updateCards(false);
+    this.clearCards();
+    this.buildCards();
     this.resize(this.screenWidth, this.screenHeight);
   }
 
   resize(screenWidth: number, screenHeight: number) {
     this.screenWidth = screenWidth;
     this.screenHeight = screenHeight;
-    this.y = screenHeight / 2 - 40;
 
-    gsap.to(this, {
-      x: screenWidth / 2 - this.progress * GAP,
-      duration: 0.4,
-      ease: 'power3.out',
-    });
+    this.layout = {
+      width: screenWidth,
+      height: screenHeight,
+      flexDirection: 'column',
+      alignItems: 'center',
+      paddingTop: Math.max(0, screenHeight * 0.34 - CARD_SIZE / 2),
+    };
   }
 
   pause() {
@@ -88,8 +82,7 @@ export class LetterRow extends Container {
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {
     this.stopListening();
-    window.clearTimeout(this.advanceTimer);
-    gsap.killTweensOf(this);
+    gsap.killTweensOf(this.cards);
     super.destroy(options);
   }
 
@@ -108,57 +101,62 @@ export class LetterRow extends Container {
   }
 
   private readonly handleKeyDown = (event: KeyboardEvent) => {
-    if (event.key === 'Shift' || this.progress >= this.letters.length || this.advanceTimer) {
+    if (event.key === 'Shift' || this.letters.length === 0 || this.removing) {
       return;
     }
 
-    const currentLetter = this.letters[this.progress];
-    const nextFeedback =
-      getMappedFromKeyboardEvent(event) === currentLetter.char ? 'success' : 'error';
+    const current = this.cards[0];
+    if (!current) return;
 
-    this.currentFeedback = nextFeedback;
-    this.updateCards(!event.repeat);
+    const isCorrect = getMappedFromKeyboardEvent(event) === this.letters[0];
 
-    if (nextFeedback === 'success' && !event.repeat) {
-      this.advanceTimer = window.setTimeout(() => this.advance(), ADVANCE_DELAY_MS);
+    if (isCorrect) {
+      if (event.repeat) return;
+
+      this.removing = true;
+      current.setFeedback('success', true);
+      this.removeCurrentLetter();
+      return;
     }
+
+    current.setFeedback('error', !event.repeat);
   };
 
-  private advance() {
-    this.advanceTimer = undefined;
-    this.progress += 1;
-    this.currentFeedback = 'none';
-    this.ensureCards();
-    this.updateCards(false);
-    this.onCorrect?.();
-    this.resize(this.screenWidth, this.screenHeight);
-  }
+  private removeCurrentLetter() {
+    const card = this.cards.shift();
+    this.letters.shift();
 
-  private ensureCards() {
-    const nextLength = Math.min(this.letters.length, this.progress + LOOKAHEAD);
-
-    for (let i = this.cards.length; i < nextLength; i += 1) {
-      const item = this.letters[i];
-      const card = new Letter({
-        letter: item.char,
-        hint: `${item.layerId === 'shift' ? '⇧ ' : ''}${getKeyFromChar(item.char).replaceAll('Key', '')}`,
-        cardColor: i % 2 === 0 ? 0xecc89c : 0xd0823c,
-        borderColor: i % 2 === 0 ? 0xe0ceb9 : 0xe5a272,
-      });
-
-      card.x = i * GAP;
-      this.cards.push(card);
-      this.addChild(card);
+    if (card) {
+      this.row.removeChild(card);
+      card.destroy({ children: true });
     }
+
+    this.removing = false;
+    this.onCorrect?.();
+
+    if (this.letters.length === 0) {
+      this.onComplete?.();
+      return;
+    }
+
+    this.cards[0]?.setActive(true);
   }
 
-  private updateCards(animateCurrent: boolean) {
-    this.cards.forEach((card, index) => {
-      const feedback =
-        index < this.progress ? 'success' : index === this.progress ? this.currentFeedback : 'none';
-
-      card.setActive(index === this.progress);
-      card.setFeedback(feedback, index === this.progress && animateCurrent);
+  private buildCards() {
+    this.cards = this.letters.map((letter, index) => {
+      const card = new Letter({ letter, cardSize: CARD_SIZE });
+      card.layout = {
+        position: 'absolute',
+        left: index * STEP,
+      };
+      card.setActive(index === 0);
+      this.row.addChild(card);
+      return card;
     });
+  }
+
+  private clearCards() {
+    this.row.removeChildren().forEach((child) => child.destroy({ children: true }));
+    this.cards = [];
   }
 }

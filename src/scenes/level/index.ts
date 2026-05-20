@@ -2,13 +2,10 @@ import { Container, type AssetsBundle } from 'pixi.js';
 
 import type { SceneLifecycle } from '../types';
 import { Background } from './Background';
-import { Camel } from './Camel';
+import { HelpButton } from './HelpButton';
 import { HomeButton } from './HomeButton';
 import { LetterRow } from './LetterRow';
-import { Score } from './Score';
 import { Title } from './Title';
-
-const CAMEL_FRAME_COUNT = 25;
 
 export type LevelSceneData = {
   onHome?: () => void;
@@ -19,57 +16,47 @@ export class LevelScene extends Container implements SceneLifecycle<LevelSceneDa
   public static readonly assetBundles: AssetsBundle[] = [
     {
       name: 'level',
-      assets: [
-        { alias: 'background', src: '/assets/level/background.png' },
-        ...Array.from({ length: CAMEL_FRAME_COUNT }, (_, i) => ({
-          alias: `camel_frame_${i}`,
-          src: `/assets/level/camel-frames/frame_${String(i).padStart(3, '0')}.png`,
-        })),
-      ],
+      assets: [{ alias: 'background', src: '/assets/level/background.png' }],
     },
   ] as const;
 
   private background?: Background;
-  private camel?: Camel;
   private letterRow?: LetterRow;
   private homeButton?: HomeButton;
-  private score?: Score;
+  private helpButton?: HelpButton;
   private title?: Title;
 
-  private currentScore = 0;
-
   public prepare(data?: LevelSceneData) {
-    this.currentScore = 0;
+    this.layout = {
+      width: '100%',
+      height: '100%',
+    };
 
     this.background = new Background();
-    this.camel = new Camel();
-    this.score = new Score();
     this.letterRow = new LetterRow({
-      onCorrect: () => {
-        this.currentScore += 1;
-        this.score?.setScore(this.currentScore);
-      },
+      onComplete: data?.onHome,
     });
-
     this.title = new Title('Taklamakan Desert');
+    this.helpButton = new HelpButton();
 
     if (data?.onHome) {
       this.homeButton = new HomeButton(data.onHome);
     }
 
-    const hud = [this.score, this.homeButton, this.title].filter((child) => child !== undefined);
-    this.addChild(this.background, this.camel, this.letterRow, ...hud);
+    const hud = [this.homeButton, this.helpButton, this.title].filter(
+      (child) => child !== undefined,
+    );
+    this.addChild(this.background, this.letterRow, ...hud);
     this.alpha = 0;
   }
 
   public reset() {
-    this.currentScore = 0;
     this.background = undefined;
-    this.camel = undefined;
     this.letterRow = undefined;
     this.homeButton = undefined;
-    this.score = undefined;
+    this.helpButton = undefined;
     this.title = undefined;
+    this.layout = null;
   }
 
   public show() {
@@ -81,11 +68,12 @@ export class LevelScene extends Container implements SceneLifecycle<LevelSceneDa
   }
 
   public resize(width: number, height: number) {
+    this.layout = {
+      width,
+      height,
+    };
     this.background?.resize(width, height);
-    this.camel?.resize(width, height);
     this.letterRow?.resize(width, height);
-    this.score?.resize(width);
-    this.homeButton?.resize();
     this.title?.resize(width);
   }
 

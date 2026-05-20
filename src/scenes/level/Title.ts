@@ -20,6 +20,6 @@ export class Title extends Container {
   }
 
   resize(screenWidth: number) {
-    this.position.set(screenWidth / 2, 30);
+    this.position.set(screenWidth / 2, 52);
   }
 }
