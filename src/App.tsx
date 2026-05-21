@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import './index.css';
 import { KeyboardLayout } from './components/KeyboardLayout';
+import LayerSelect from './components/LayerSelect';
 import { SceneManager } from './sceneManager';
 import { HomeScene } from './scenes/home';
 import { LevelScene } from './scenes/level';
@@ -9,6 +10,7 @@ import { LevelScene } from './scenes/level';
 export default function App() {
   const hostRef = useRef<HTMLDivElement>(null);
   const [showKeyboard, setShowKeyboard] = useState(false);
+  const [showLayerSelect, setShowLayerSelect] = useState(false);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -18,12 +20,14 @@ export default function App() {
     let cancelled = false;
 
     const goToLevel = async () => {
-      setShowKeyboard(true);
-      await manager.goTo(LevelScene, { onHome: () => void goToHome() });
+      //   setShowKeyboard(true);
+      //   await manager.goTo(LevelScene, { onHome: () => void goToHome() });
+      setShowLayerSelect(true);
     };
 
     const goToHome = async () => {
       setShowKeyboard(false);
+      setShowLayerSelect(false);
       await manager.goTo(HomeScene, { onPlay: () => void goToLevel() });
     };
 
@@ -51,6 +55,7 @@ export default function App() {
     <>
       <div ref={hostRef} className="absolute inset-0 h-screen w-screen" />
       {showKeyboard && <KeyboardLayout />}
+      {showLayerSelect && <LayerSelect onClose={() => setShowLayerSelect(false)} />}
     </>
   );
 }
