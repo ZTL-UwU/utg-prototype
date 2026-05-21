@@ -4,6 +4,7 @@ import './index.css';
 import { KeyboardLayout } from './components/KeyboardLayout';
 import { SceneManager } from './sceneManager';
 import { HomeScene } from './scenes/home';
+import { LayerSelectScene } from './scenes/layer_select';
 import { LevelScene } from './scenes/level';
 import { useKeyboardStore } from './zustand_stores/keyboardStore';
 
@@ -18,9 +19,18 @@ export default function App() {
       setShowKeyboard(true);
       await manager.goTo(LevelScene, { onHome: () => void goToHome() });
     };
+    const goToLayerSelect = async () => {
+      await manager.showOverlay(LayerSelectScene, {
+        onClose: () => void manager.hideOverlay(),
+        onLayerButtonClick: async () => {
+          await manager.hideOverlay();
+          await goToLevel();
+        },
+      });
+    };
     const goToHome = async () => {
       setShowKeyboard(false);
-      await manager.goTo(HomeScene, { onPlay: () => void goToLevel() });
+      await manager.goTo(HomeScene, { onPlay: () => void goToLayerSelect() });
     };
     if (!host) return;
 
@@ -32,7 +42,7 @@ export default function App() {
         return;
       }
 
-      manager.register(HomeScene, LevelScene);
+      manager.register(HomeScene, LevelScene, LayerSelectScene);
       await goToHome();
 
       if (cancelled) {

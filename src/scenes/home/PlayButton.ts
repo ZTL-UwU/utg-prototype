@@ -2,12 +2,7 @@ import { Text } from 'pixi.js';
 
 import { AbstractButton } from '../types';
 
-// const WIDTH = 220;
-// const HEIGHT = 70;
-
 export class PlayButton extends AbstractButton {
-  //   private readonly background = new Graphics();
-
   constructor(onPlay: () => void) {
     super(220, 70);
     const label = new Text({
@@ -30,8 +25,6 @@ export class PlayButton extends AbstractButton {
     this.on('pointerdown', () => this.setState(0xb86824, 0.95));
     this.on('pointerup', () => this.setState(0xe09a5c, 1.05));
     this.on('pointerupoutside', () => this.setState(0xd0823c, 1));
-    this.on('pointertap', () => {
-      (console.log('tapped'), onPlay());
-    });
+    this.on('pointertap', onPlay);
   }
 }
