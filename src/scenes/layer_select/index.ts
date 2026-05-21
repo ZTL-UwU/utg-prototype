@@ -6,7 +6,7 @@ import { LayerButton } from './LayerButton';
 
 export type LayerSelectSceneData = {
   onClose?: () => void;
-  onLayerButtonClick?: () => void;
+  onLayerButton?: () => void;
 };
 export class LayerSelectScene extends Container implements SceneLifecycle<LayerSelectSceneData> {
   public static readonly sceneId = 'layer-select';
@@ -62,9 +62,9 @@ export class LayerSelectScene extends Container implements SceneLifecycle<LayerS
       this.closeButton.layout = { position: 'absolute', top: 16, left: 160 };
       this.panel.addChild(this.closeButton);
     }
-    if (data?.onLayerButtonClick) {
-      this.typingButton = new LayerButton(data?.onLayerButtonClick, 'typing-icon');
-      this.educationButton = new LayerButton(data?.onLayerButtonClick, 'education-icon');
+    if (data?.onLayerButton) {
+      this.typingButton = new LayerButton(data?.onLayerButton, 'typing-icon');
+      this.educationButton = new LayerButton(data?.onLayerButton, 'education-icon');
       this.typingButton.layout = { position: 'absolute', top: 80, left: 575 };
       this.educationButton.layout = { position: 'absolute', top: 360, left: 150 };
       this.panel.addChild(this.typingButton, this.educationButton);
