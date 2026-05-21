@@ -1,14 +1,14 @@
 import { Container, type AssetsBundle } from 'pixi.js';
 
+import { HomeButton } from '../components/HomeButton';
 import type { SceneLifecycle } from '../types';
 import { Background } from './Background';
 import { HelpButton } from './HelpButton';
-import { HomeButton } from './HomeButton';
 import { LetterRow } from './LetterRow';
 import { Title } from './Title';
 
 export type LevelSceneData = {
-  onHome?: () => void;
+  onBack: () => void;
 };
 
 export class LevelScene extends Container implements SceneLifecycle<LevelSceneData> {
@@ -16,7 +16,7 @@ export class LevelScene extends Container implements SceneLifecycle<LevelSceneDa
   public static readonly assetBundles: AssetsBundle[] = [
     {
       name: 'level',
-      assets: [{ alias: 'background', src: '/assets/level/background.png' }],
+      assets: [{ alias: 'level-background', src: '/assets/level/background.png' }],
     },
   ] as const;
 
@@ -26,7 +26,7 @@ export class LevelScene extends Container implements SceneLifecycle<LevelSceneDa
   private helpButton?: HelpButton;
   private title?: Title;
 
-  public prepare(data?: LevelSceneData) {
+  public prepare(data: LevelSceneData) {
     this.layout = {
       width: '100%',
       height: '100%',
@@ -34,14 +34,12 @@ export class LevelScene extends Container implements SceneLifecycle<LevelSceneDa
 
     this.background = new Background();
     this.letterRow = new LetterRow({
-      onComplete: data?.onHome,
+      onComplete: data.onBack,
     });
     this.title = new Title('Taklamakan Desert');
     this.helpButton = new HelpButton();
 
-    if (data?.onHome) {
-      this.homeButton = new HomeButton(data.onHome);
-    }
+    this.homeButton = new HomeButton(data.onBack);
 
     const hud = [this.homeButton, this.helpButton, this.title].filter(
       (child) => child !== undefined,

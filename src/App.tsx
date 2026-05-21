@@ -6,6 +6,7 @@ import { SceneManager } from './sceneManager';
 import { HomeScene } from './scenes/home';
 import { LayerSelectScene } from './scenes/layer_select';
 import { LevelScene } from './scenes/level';
+import { LevelMapScene } from './scenes/levelMap';
 import { useKeyboardStore } from './zustand_stores/keyboardStore';
 
 export default function App() {
@@ -16,21 +17,29 @@ export default function App() {
     const host = hostRef.current;
     const manager = new SceneManager();
     const goToLevel = async () => {
+      await manager.goTo(LevelScene, { onBack: () => void goToLevelMap() });
       setShowKeyboard(true);
-      await manager.goTo(LevelScene, { onHome: () => void goToHome() });
+    };
+
+    const goToLevelMap = async () => {
+      await manager.goTo(LevelMapScene, {
+        onHome: () => void goToHome(),
+        onLevel: () => void goToLevel(),
+      });
+      setShowKeyboard(false);
     };
     const goToLayerSelect = async () => {
       await manager.showOverlay(LayerSelectScene, {
         onClose: () => void manager.hideOverlay(),
-        onLayerButtonClick: async () => {
+        onLayerButton: async () => {
           await manager.hideOverlay();
-          await goToLevel();
+          await goToLevelMap();
         },
       });
     };
     const goToHome = async () => {
-      setShowKeyboard(false);
       await manager.goTo(HomeScene, { onPlay: () => void goToLayerSelect() });
+      setShowKeyboard(false);
     };
     if (!host) return;
 
@@ -42,7 +51,7 @@ export default function App() {
         return;
       }
 
-      manager.register(HomeScene, LevelScene, LayerSelectScene);
+      manager.register(HomeScene, LevelScene, LayerSelectScene, LevelMapScene);
       await goToHome();
 
       if (cancelled) {
@@ -60,7 +69,6 @@ export default function App() {
     <>
       <div ref={hostRef} className="absolute inset-0 h-screen w-screen" />
       {showKeyboard && <KeyboardLayout />}
-      {/* {showLayerSelect && <LayerSelect onClose={() => setShowLayerSelect(false)} goToLevel={goToLevel} />} */}
     </>
   );
 }

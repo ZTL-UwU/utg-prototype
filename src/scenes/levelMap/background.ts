@@ -2,7 +2,7 @@ import { Sprite, Texture } from 'pixi.js';
 
 export class Background extends Sprite {
   constructor() {
-    super(Texture.from('level-background'));
+    super(Texture.from('level-map-background'));
     this.anchor.set(0.5);
   }
 
