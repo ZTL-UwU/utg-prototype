@@ -1,6 +1,6 @@
 import { Container } from 'pixi.js';
 
-import { CircleButton } from './CircleButton';
+import { CircleButton } from '../components/CircleButton';
 
 export class HelpButton extends Container {
   constructor() {
