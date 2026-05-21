@@ -12,28 +12,57 @@ export class HomeScene extends Container implements SceneLifecycle<HomeSceneData
   public static readonly assetBundles: AssetsBundle[] = [
     {
       name: 'home',
-      assets: [{ alias: 'home-bg', src: '/assets/home-bg.png' }],
+      assets: [
+        { alias: 'home-bg', src: '/assets/home-bg.png' },
+        {
+          alias: 'league-spartan',
+          src: 'https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;700;800&display=swap',
+        },
+      ],
     },
   ] as const;
 
   private readonly title = new Text({
-    text: 'Home Page',
+    text: 'SOZLAR SAYAHATI',
     style: {
       align: 'center',
-      fill: 0x000000,
-      fontFamily: 'Arial',
-      fontSize: 48,
+      fill: 0x3c6928,
+      fontFamily: 'Concert One',
+      fontSize: 200,
       fontWeight: '700',
+      dropShadow: {
+        color: 0x000000,
+        blur: 4,
+        angle: Math.PI / 6,
+        distance: 6,
+        alpha: 0.75,
+      },
     },
   });
+  //   this.title = new Text({
+  //       text: 'TYPING JOURNEY',
+  //       style: {
+  //         fontFamily: 'Concert One',
+  //         fontSize: 150,
+  //         fontWeight: '800',
+  //         fill: 0x6b3f1f,
+  //       },
+  //     });
 
   private readonly subtitle = new Text({
-    text: 'Placeholder',
+    text: "LET'S LEARN UYGHUR",
     style: {
       align: 'center',
-      fill: 0xa7f3d0,
-      fontFamily: 'Arial',
-      fontSize: 22,
+      fill: 0xffffff,
+      fontFamily: 'Concert One',
+      fontSize: 95,
+      dropShadow: {
+        color: 0x000000,
+        blur: 4,
+        angle: Math.PI / 6,
+        distance: 6,
+        alpha: 0.75,
+      },
     },
   });
 
