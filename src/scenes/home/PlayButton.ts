@@ -6,11 +6,11 @@ export class PlayButton extends AbstractButton {
   constructor(onPlay: () => void) {
     super(220, 70);
     const label = new Text({
-      text: 'Typing',
+      text: 'Start your journey',
       style: {
-        fontFamily: 'Noto Sans',
+        fontFamily: 'Concert One',
         fontSize: 24,
-        fontWeight: '800',
+        fontWeight: '500',
         fill: 0xffffff,
       },
     });
