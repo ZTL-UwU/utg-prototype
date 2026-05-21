@@ -1,4 +1,4 @@
-import { GlowFilter } from 'pixi-filters';
+import { DropShadowFilter } from 'pixi-filters';
 import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
 
 import type { Level } from './levelRow';
@@ -20,10 +20,10 @@ export class LevelButton extends Container {
 
     if (level.unlocked) {
       this.filters = [
-        new GlowFilter({
-          color: 0xffde59,
+        new DropShadowFilter({
+          color: 0x000000,
           alpha: 0.15,
-          distance: 150,
+          blur: 10,
         }),
       ];
       this.hitArea = new Rectangle(0, 0, SIZE, SIZE);
