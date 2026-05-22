@@ -1,8 +1,59 @@
+import type { AssetPackConfig } from '@assetpack/core';
+import { AssetPack } from '@assetpack/core';
+import { pixiPipes } from '@assetpack/core/pixi';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
+import type { Plugin, ResolvedConfig } from 'vite';
 import { defineConfig } from 'vite-plus';
 
-// https://vite.dev/config/
+function assetpackPlugin() {
+  const apConfig = {
+    entry: './common-assets',
+    pipes: [
+      ...pixiPipes({
+        cacheBust: false,
+        manifest: {
+          output: './src/manifest.json',
+        },
+      }),
+    ],
+  } as AssetPackConfig;
+  let mode: ResolvedConfig['command'];
+  let ap: AssetPack | undefined;
+
+  return {
+    name: 'vite-plugin-assetpack',
+    configResolved(resolvedConfig) {
+      mode = resolvedConfig.command;
+      if (!resolvedConfig.publicDir) return;
+      if (apConfig.output) return;
+      // remove the root from the public dir
+      const publicDir = resolvedConfig.publicDir.replace(process.cwd(), '');
+
+      if (process.platform === 'win32') {
+        apConfig.output = `${publicDir}/assets/`;
+      } else {
+        apConfig.output = `.${publicDir}/assets/`;
+      }
+    },
+    buildStart: async () => {
+      if (mode === 'serve') {
+        if (ap) return;
+        ap = new AssetPack(apConfig);
+        await ap.watch();
+      } else {
+        await new AssetPack(apConfig).run();
+      }
+    },
+    buildEnd: async () => {
+      if (ap) {
+        await ap.stop();
+        ap = undefined;
+      }
+    },
+  } as Plugin;
+}
+
 export default defineConfig({
   build: {
     rollupOptions: {
@@ -30,5 +81,5 @@ export default defineConfig({
     singleQuote: true,
     sortImports: true,
   },
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), assetpackPlugin()],
 });

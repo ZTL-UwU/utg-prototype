@@ -19,7 +19,7 @@
   }
 
   body {
-    @apply overflow-hidden bg-[#1c140e];
+    @apply overflow-hidden;
   }
 
   #root {

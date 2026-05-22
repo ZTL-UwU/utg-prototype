@@ -1,85 +1,42 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 import './index.css';
+import { LoadScreen } from './app/screens/LoadScreen';
+import { MainScreen } from './app/screens/main/MainScreen';
+import { userSettings } from './app/utils/userSettings';
 import { KeyboardLayout } from './components/KeyboardLayout';
-import { SceneManager } from './sceneManager';
-import { EducationMapScene } from './scenes/educationMap';
-import { HomeScene } from './scenes/home';
-import { LayerSelectScene } from './scenes/layer_select';
-import { LevelScene } from './scenes/level';
-import { LevelMapScene } from './scenes/levelMap';
+import { CreationEngine } from './engine/engine';
+import { setEngine } from './engine/getEngine';
 import { useKeyboardStore } from './zustand_stores/keyboardStore';
 
 export default function App() {
-  const hostRef = useRef<HTMLDivElement>(null);
-  const { showKeyboard, setShowKeyboard } = useKeyboardStore();
+  const { showKeyboard } = useKeyboardStore();
+
+  const engine = new CreationEngine();
+  setEngine(engine);
 
   useEffect(() => {
-    const host = hostRef.current;
-    const manager = new SceneManager();
-    const goToLevel = async () => {
-      await manager.goTo(LevelScene, { onBack: () => void goToLevelMap() });
-      setShowKeyboard(true);
-    };
-
-    const goToLevelMap = async () => {
-      await manager.goTo(LevelMapScene, {
-        onHome: () => void goToHome(),
-        onLevel: () => void goToLevel(),
+    const init = async () => {
+      await engine.init({
+        background: '#1E1E1E',
+        resizeOptions: { minWidth: 768, minHeight: 1024, letterbox: false },
       });
-      setShowKeyboard(false);
-    };
-    const goToEducationMap = async () => {
-      await manager.goTo(EducationMapScene, {
-        onHome: () => void goToHome(),
-        onLevel: () => void goToLevel(),
-      });
-      setShowKeyboard(false);
-    };
-    const goToLayerSelect = async () => {
-      await manager.showOverlay(LayerSelectScene, {
-        onClose: () => void manager.hideOverlay(),
-        onTypingButton: async () => {
-          await manager.hideOverlay();
-          await goToLevelMap();
-        },
-        onEducationButton: async () => {
-          await manager.hideOverlay();
-          await goToEducationMap();
-        },
-      });
-    };
-    const goToHome = async () => {
-      await manager.goTo(HomeScene, { onPlay: () => void goToLayerSelect() });
-      setShowKeyboard(false);
-    };
-    if (!host) return;
 
-    let cancelled = false;
+      // Initialize the user settings
+      userSettings.init();
 
-    void manager.init(host).then(async () => {
-      if (cancelled) {
-        manager.destroy();
-        return;
-      }
-
-      manager.register(HomeScene, LevelScene, LayerSelectScene, LevelMapScene);
-      await goToHome();
-
-      if (cancelled) {
-        manager.destroy();
-      }
-    });
-
-    return () => {
-      cancelled = true;
-      manager.destroy();
+      // Show the load screen
+      await engine.navigation.showScreen(LoadScreen);
+      // Show the main screen once the load screen is dismissed
+      await engine.navigation.showScreen(MainScreen);
     };
+
+    void init();
   }, []);
 
   return (
     <>
-      <div ref={hostRef} className="absolute inset-0 h-screen w-screen" />
+      <div id="pixi-container" className="absolute inset-0 h-screen w-screen" />
       {showKeyboard && <KeyboardLayout />}
     </>
   );
