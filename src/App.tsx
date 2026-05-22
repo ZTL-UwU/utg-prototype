@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import './index.css';
 import { KeyboardLayout } from './components/KeyboardLayout';
 import { SceneManager } from './sceneManager';
+import { EducationMapScene } from './scenes/educationMap';
 import { HomeScene } from './scenes/home';
 import { LayerSelectScene } from './scenes/layer_select';
 import { LevelScene } from './scenes/level';
@@ -28,12 +29,23 @@ export default function App() {
       });
       setShowKeyboard(false);
     };
+    const goToEducationMap = async () => {
+      await manager.goTo(EducationMapScene, {
+        onHome: () => void goToHome(),
+        onLevel: () => void goToLevel(),
+      });
+      setShowKeyboard(false);
+    };
     const goToLayerSelect = async () => {
       await manager.showOverlay(LayerSelectScene, {
         onClose: () => void manager.hideOverlay(),
-        onLayerButton: async () => {
+        onTypingButton: async () => {
           await manager.hideOverlay();
           await goToLevelMap();
+        },
+        onEducationButton: async () => {
+          await manager.hideOverlay();
+          await goToEducationMap();
         },
       });
     };
