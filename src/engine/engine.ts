@@ -1,7 +1,9 @@
+import { initDevtools } from '@pixi/devtools';
+import '@pixi/layout/devtools';
 import { sound } from '@pixi/sound';
 import type { ApplicationOptions, DestroyOptions, RendererDestroyOptions } from 'pixi.js';
-import { Application, Assets, extensions, ResizePlugin } from 'pixi.js';
 import 'pixi.js/app';
+import { Application, Assets, extensions, ResizePlugin } from 'pixi.js';
 
 import manifest from '../manifest.json';
 import { CreationAudioPlugin } from './audio/AudioPlugin';
@@ -38,6 +40,9 @@ export class CreationEngine extends Application {
     document.getElementById('pixi-container')!.appendChild(this.canvas);
     // Add a visibility listener, so the app can pause sounds and screens
     document.addEventListener('visibilitychange', this.visibilityChange);
+
+    // Init PixiJS devtools
+    await initDevtools({ app: this });
 
     // Init PixiJS assets with this asset manifest
     await Assets.init({ manifest, basePath: 'assets' });

@@ -20,6 +20,7 @@ export default function App() {
       await engine.init({
         background: '#1E1E1E',
         resizeOptions: { minWidth: 768, minHeight: 1024, letterbox: false },
+        antialias: true,
       });
 
       // Initialize the user settings
@@ -36,7 +37,7 @@ export default function App() {
 
   return (
     <>
-      <div id="pixi-container" className="absolute inset-0 h-screen w-screen" />
+      <div id="pixi-container" />
       {showKeyboard && <KeyboardLayout />}
     </>
   );
