@@ -1,0 +1,8 @@
+allowBuilds:
+  '@ffmpeg-installer/linux-x64': false
+  cpu-features: false
+  sharp: true
+
+overrides:
+  'vite': 'npm:@voidzero-dev/vite-plus-core@latest'
+  'vitest': 'npm:@voidzero-dev/vite-plus-test@latest'

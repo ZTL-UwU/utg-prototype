@@ -12,11 +12,14 @@
     "prepare": "vp config"
   },
   "dependencies": {
+    "@assetpack/core": "^1.7.0",
     "@pixi/devtools": "^2.0.1",
     "@pixi/layout": "^3.2.0",
+    "@pixi/sound": "^6.0.1",
     "@pixi/ui": "^2.3.2",
     "@tailwindcss/vite": "^4.3.0",
     "gsap": "^3.15.0",
+    "motion": "^12.40.0",
     "pixi-filters": "^6.1.5",
     "pixi.js": "^8.18.1",
     "react": "^19.2.6",
@@ -25,20 +28,14 @@
     "zustand": "^5.0.13"
   },
   "devDependencies": {
-    "@types/node": "^24.12.3",
-    "@types/react": "^19.2.14",
+    "@types/node": "^25.9.1",
+    "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.1",
+    "@vitejs/plugin-react": "^6.0.2",
     "globals": "^17.6.0",
-    "typescript": "~6.0.2",
+    "typescript": "~6.0.3",
     "vite": "npm:@voidzero-dev/vite-plus-core@latest",
     "vite-plus": "latest"
   },
-  "packageManager": "pnpm@11.1.3",
-  "pnpm": {
-    "overrides": {
-      "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-      "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
-    }
-  }
+  "packageManager": "pnpm@11.2.2"
 }

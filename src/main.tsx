@@ -1,10 +1,6 @@
-import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import App from './App';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+// No Strict Mode because Pixi is not designed for double rendering
+createRoot(document.getElementById('root')!).render(<App />);
