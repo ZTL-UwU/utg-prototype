@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
+import '@pixi/layout';
 
 import './index.css';
-import { LoadScreen } from './app/screens/LoadScreen';
-import { MainScreen } from './app/screens/main/MainScreen';
+import { HomeScreen } from './app/screens/home';
 import { userSettings } from './app/utils/userSettings';
 import { KeyboardLayout } from './components/KeyboardLayout';
 import { CreationEngine } from './engine/engine';
@@ -26,10 +26,8 @@ export default function App() {
       // Initialize the user settings
       userSettings.init();
 
-      // Show the load screen
-      await engine.navigation.showScreen(LoadScreen);
       // Show the main screen once the load screen is dismissed
-      await engine.navigation.showScreen(MainScreen);
+      await engine.navigation.showScreen(HomeScreen);
     };
 
     void init();

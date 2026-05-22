@@ -1,6 +1,7 @@
 import type { AssetPackConfig } from '@assetpack/core';
 import { AssetPack } from '@assetpack/core';
 import { pixiPipes } from '@assetpack/core/pixi';
+import { webfont } from '@assetpack/core/webfont';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import type { Plugin, ResolvedConfig } from 'vite';
@@ -16,6 +17,7 @@ function assetpackPlugin() {
           output: './src/manifest.json',
         },
       }),
+      webfont(),
     ],
   } as AssetPackConfig;
   let mode: ResolvedConfig['command'];
