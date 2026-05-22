@@ -5,51 +5,65 @@
       "assets": []
     },
     {
-      "name": "main",
+      "name": "home",
       "assets": [
         {
-          "alias": ["main/logo-white.svg", "logo-white.svg"],
-          "src": ["main/logo-white.svg"],
-          "data": {
-            "tags": {
-              "m": true
-            }
-          }
-        },
-        {
-          "alias": ["main/sounds/bgm-main.mp3", "bgm-main.mp3"],
-          "src": ["main/sounds/bgm-main.ogg", "main/sounds/bgm-main.mp3"],
-          "data": {
-            "tags": {
-              "m": true
-            }
-          }
-        },
-        {
-          "alias": ["main/sounds/sfx-hover.wav", "sfx-hover.wav"],
-          "src": ["main/sounds/sfx-hover.ogg", "main/sounds/sfx-hover.mp3"],
-          "data": {
-            "tags": {
-              "m": true
-            }
-          }
-        },
-        {
-          "alias": ["main/sounds/sfx-press.wav", "sfx-press.wav"],
-          "src": ["main/sounds/sfx-press.ogg", "main/sounds/sfx-press.mp3"],
-          "data": {
-            "tags": {
-              "m": true
-            }
-          }
-        },
-        {
-          "alias": ["main/ui", "ui"],
+          "alias": ["home/background.png", "background.png"],
           "src": [
-            "main/ui@0.5x.webp.json",
-            "main/ui@0.5x.png.json",
-            "main/ui.webp.json",
-            "main/ui.png.json"
+            "home/background@0.5x.webp",
+            "home/background@0.5x.png",
+            "home/background.webp",
+            "home/background.png"
+          ],
+          "data": {
+            "tags": {
+              "m": true
+            }
+          }
+        },
+        {
+          "alias": ["home/concert-one.ttf", "concert-one.ttf"],
+          "src": ["home/concert-one.ttf"],
+          "data": {
+            "tags": {
+              "m": true
+            }
+          }
+        },
+        {
+          "alias": ["home/sounds/bgm-main.mp3", "bgm-main.mp3"],
+          "src": ["home/sounds/bgm-main.ogg", "home/sounds/bgm-main.mp3"],
+          "data": {
+            "tags": {
+              "m": true
+            }
+          }
+        },
+        {
+          "alias": ["home/sounds/sfx-hover.wav", "sfx-hover.wav"],
+          "src": ["home/sounds/sfx-hover.ogg", "home/sounds/sfx-hover.mp3"],
+          "data": {
+            "tags": {
+              "m": true
+            }
+          }
+        },
+        {
+          "alias": ["home/sounds/sfx-press.wav", "sfx-press.wav"],
+          "src": ["home/sounds/sfx-press.ogg", "home/sounds/sfx-press.mp3"],
+          "data": {
+            "tags": {
+              "m": true
+            }
+          }
+        },
+        {
+          "alias": ["home/ui", "ui"],
+          "src": [
+            "home/ui@0.5x.webp.json",
+            "home/ui@0.5x.png.json",
+            "home/ui.webp.json",
+            "home/ui.png.json"
           ],
           "data": {
             "tags": {

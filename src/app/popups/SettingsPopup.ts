@@ -25,7 +25,7 @@ export class SettingsPopup extends Container {
   /** The build version label */
   private versionLabel: Text;
   /** Layout that organises the UI components */
-  private layout: List;
+  private uiLayout: List;
   /** Slider that changes the master volume */
   private masterSlider: VolumeSlider;
   /** Slider that changes background music volume */
@@ -73,28 +73,28 @@ export class SettingsPopup extends Container {
     this.versionLabel.y = this.panelBase.boxHeight * 0.5 - 15;
     this.panel.addChild(this.versionLabel);
 
-    this.layout = new List({ type: 'vertical', elementsMargin: 4 });
-    this.layout.x = -140;
-    this.layout.y = -80;
-    this.panel.addChild(this.layout);
+    this.uiLayout = new List({ type: 'vertical', elementsMargin: 4 });
+    this.uiLayout.x = -140;
+    this.uiLayout.y = -80;
+    this.panel.addChild(this.uiLayout);
 
     this.masterSlider = new VolumeSlider('Master Volume');
     this.masterSlider.onUpdate.connect((v) => {
       userSettings.setMasterVolume(v / 100);
     });
-    this.layout.addChild(this.masterSlider);
+    this.uiLayout.addChild(this.masterSlider);
 
     this.bgmSlider = new VolumeSlider('BGM Volume');
     this.bgmSlider.onUpdate.connect((v) => {
       userSettings.setBgmVolume(v / 100);
     });
-    this.layout.addChild(this.bgmSlider);
+    this.uiLayout.addChild(this.bgmSlider);
 
     this.sfxSlider = new VolumeSlider('SFX Volume');
     this.sfxSlider.onUpdate.connect((v) => {
       userSettings.setSfxVolume(v / 100);
     });
-    this.layout.addChild(this.sfxSlider);
+    this.uiLayout.addChild(this.sfxSlider);
   }
 
   /** Resize the popup, fired whenever window size changes */
