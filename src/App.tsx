@@ -5,10 +5,10 @@ import { KeyboardLayout } from './components/KeyboardLayout';
 import { SceneManager } from './sceneManager';
 import { EducationMapScene } from './scenes/educationMap';
 import { HomeScene } from './scenes/home';
-import { LayerSelectScene } from './scenes/layer_select';
+import { LayerSelectScene } from './scenes/layerSelect';
 import { LevelScene } from './scenes/level';
 import { LevelMapScene } from './scenes/levelMap';
-import { useKeyboardStore } from './zustand_stores/keyboardStore';
+import { useKeyboardStore } from './zustandStores/keyboardStore';
 
 export default function App() {
   const hostRef = useRef<HTMLDivElement>(null);
