@@ -3,7 +3,6 @@ import '@pixi/layout';
 
 import './index.css';
 import { HomeScreen } from './app/screens/home';
-import { userSettings } from './app/utils/userSettings';
 import { KeyboardLayout } from './components/KeyboardLayout';
 import { CreationEngine } from './engine/engine';
 import { setEngine } from './engine/getEngine';
@@ -22,9 +21,6 @@ export default function App() {
         resizeOptions: { minWidth: 768, minHeight: 1024, letterbox: false },
         antialias: true,
       });
-
-      // Initialize the user settings
-      userSettings.init();
 
       // Show the main screen once the load screen is dismissed
       await engine.navigation.showScreen(HomeScreen);
