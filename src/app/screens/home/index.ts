@@ -2,8 +2,8 @@ import { FancyButton } from '@pixi/ui';
 import { Graphics, Sprite, Text, Texture, type Ticker } from 'pixi.js';
 import { Container } from 'pixi.js';
 
-import { engine } from '../../engine/getEngine';
-import { PausePopup } from '../popups/PausePopup';
+import { engine } from '../../../engine/getEngine';
+import { LevelMapScreen } from '../level-map';
 
 /** The screen that holds the app */
 export class HomeScreen extends Container {
@@ -11,15 +11,22 @@ export class HomeScreen extends Container {
   public static assetBundles = ['home'];
 
   private background: Sprite;
-  private startButton: Container;
+  private startButton: FancyButton;
   private title: Text;
   private subtitle: Text;
 
   constructor() {
     super();
 
-    this.background = new Sprite({ texture: Texture.from('home/background.png'), zIndex: 0 });
-    this.addChild(this.background);
+    this.background = new Sprite({
+      texture: Texture.from('home/background.png'),
+      layout: {
+        width: '100%',
+        height: '100%',
+        position: 'absolute',
+        objectFit: 'cover',
+      },
+    });
 
     this.title = new Text({
       text: 'SOZLAR SAYAHATI',
@@ -37,7 +44,6 @@ export class HomeScreen extends Container {
       },
       layout: true,
     });
-    this.addChild(this.title);
 
     this.subtitle = new Text({
       text: "LET'S LEARN UYGHUR",
@@ -54,43 +60,41 @@ export class HomeScreen extends Container {
       },
       layout: true,
     });
-    this.addChild(this.subtitle);
 
     const buttonHeight = 80;
     const buttonWidth = 200;
-    this.startButton = new Container({
-      layout: {
-        width: buttonWidth,
-        height: buttonHeight,
-        isLeaf: true, // Fixes the position issue of the button
-      },
-    });
-    this.startButton.addChild(
-      new FancyButton({
-        defaultView: new Graphics().roundRect(0, 0, buttonWidth, buttonHeight).fill(0xd0823c),
-        hoverView: new Graphics().roundRect(0, 0, buttonWidth, buttonHeight).fill(0xe09a5c),
-        pressedView: new Graphics().roundRect(0, 0, buttonWidth, buttonHeight).fill(0xb86824),
-        padding: 20,
-        text: 'Start your journey',
-        animations: {
-          hover: {
-            props: {
-              scale: { x: 1.1, y: 1.1 },
-            },
-            duration: 100,
+    this.startButton = new FancyButton({
+      defaultView: new Graphics().roundRect(0, 0, buttonWidth, buttonHeight).fill(0xd0823c),
+      hoverView: new Graphics().roundRect(0, 0, buttonWidth, buttonHeight).fill(0xe09a5c),
+      pressedView: new Graphics().roundRect(0, 0, buttonWidth, buttonHeight).fill(0xb86824),
+      padding: 20,
+      text: 'Start your journey',
+      animations: {
+        hover: {
+          props: {
+            scale: { x: 1.1, y: 1.1 },
           },
-          pressed: {
-            props: {
-              scale: { x: 0.9, y: 0.9 },
-            },
-            duration: 100,
-          },
+          duration: 100,
         },
-        anchor: 0.5,
-      }),
-    );
-    // this.addButton.onPress.connect(() => this.bouncer.add());
-    this.addChild(this.startButton);
+        pressed: {
+          props: {
+            scale: { x: 0.9, y: 0.9 },
+          },
+          duration: 100,
+        },
+      },
+      anchor: 0.5,
+    });
+
+    this.startButton.layout = {
+      width: buttonWidth,
+      height: buttonHeight,
+      isLeaf: true, // Fixes the position issue of the button
+    };
+
+    this.startButton.onPress.connect(() => engine().navigation.showScreen(LevelMapScreen));
+
+    this.addChild(this.background, this.title, this.subtitle, this.startButton);
   }
 
   /** Prepare the screen just before showing */
@@ -127,9 +131,5 @@ export class HomeScreen extends Container {
   public async hide() {}
 
   /** Auto pause the app when window go out of focus */
-  public blur() {
-    if (!engine().navigation.currentPopup) {
-      void engine().navigation.showPopup(PausePopup);
-    }
-  }
+  public blur() {}
 }
