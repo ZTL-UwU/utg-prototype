@@ -9,6 +9,7 @@ import { LayerSelectScene } from './scenes/layerSelect';
 import { LevelScene } from './scenes/level';
 import { LevelMapScene } from './scenes/levelMap';
 import { useKeyboardStore } from './zustandStores/keyboardStore';
+import { EducationLevelScene } from './scenes/educationLevel';
 
 export default function App() {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -21,7 +22,10 @@ export default function App() {
       await manager.goTo(LevelScene, { onBack: () => void goToLevelMap() });
       setShowKeyboard(true);
     };
-
+    const goToEducationLevel = async () => {
+        setShowKeyboard(false);
+        await manager.goTo(EducationLevelScene, {onBack : ()=> void goToEducationMap()});
+    }
     const goToLevelMap = async () => {
       await manager.goTo(LevelMapScene, {
         onHome: () => void goToHome(),
@@ -32,7 +36,7 @@ export default function App() {
     const goToEducationMap = async () => {
       await manager.goTo(EducationMapScene, {
         onHome: () => void goToHome(),
-        onLevel: () => void goToLevel(),
+        onLevel: () => void goToEducationLevel(),
       });
       setShowKeyboard(false);
     };
@@ -63,7 +67,7 @@ export default function App() {
         return;
       }
 
-      manager.register(HomeScene, LevelScene, LayerSelectScene, LevelMapScene);
+      manager.register(HomeScene, LevelScene, LayerSelectScene, LevelMapScene, EducationLevelScene);
       await goToHome();
 
       if (cancelled) {
