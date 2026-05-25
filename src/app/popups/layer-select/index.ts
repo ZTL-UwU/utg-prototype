@@ -3,7 +3,7 @@ import { animate } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { TypingLevelMapScreen } from '../../screens/level-map';
+import { TypingLevelMapScreen } from '../../screens/typing-level-map';
 
 export class LayerSelectPopup extends Container {
   public static assetBundles = ['layer-select'];

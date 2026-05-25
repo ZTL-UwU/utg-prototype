@@ -7,7 +7,7 @@ import { HomeScreen } from '../home';
 import { LevelRow } from './level-row';
 
 export class TypingLevelMapScreen extends Container {
-  public static assetBundles = ['level-map', 'ui'];
+  public static assetBundles = ['typing-level-map', 'ui'];
 
   private background: Sprite;
   private title: Text;
@@ -19,7 +19,7 @@ export class TypingLevelMapScreen extends Container {
     super();
 
     this.background = new Sprite({
-      texture: Texture.from('level-map/background.png'),
+      texture: Texture.from('typing-level-map/background.png'),
       layout: {
         width: '100%',
         height: '100%',

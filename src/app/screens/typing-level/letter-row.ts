@@ -2,7 +2,7 @@ import { Container } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { getAlphabet, getMappedFromKeyboardEvent } from '../../../utils/keymap';
-import { TypingLevelMapScreen } from '../level-map';
+import { TypingLevelMapScreen } from '../typing-level-map';
 import { Letter } from './letter';
 
 const CARD_SIZE = 140;

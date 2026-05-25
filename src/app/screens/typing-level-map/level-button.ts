@@ -21,7 +21,7 @@ export class LevelButton extends Container {
       },
     });
 
-    const textureAlias = level.unlocked ? level.miniMapImage : 'level-map/button-locked.svg';
+    const textureAlias = level.unlocked ? level.miniMapImage : 'typing-level-map/button-locked.svg';
     const sprite = new Sprite(Texture.from(textureAlias));
     this.addChild(sprite);
 

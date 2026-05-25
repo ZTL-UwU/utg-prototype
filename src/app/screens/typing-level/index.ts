@@ -4,7 +4,7 @@ import { engine } from '../../../engine/getEngine';
 import { useKeyboardStore } from '../../../zustand_stores/keyboardStore';
 import { BackButton } from '../../ui/back-button';
 import { HelpButton } from '../../ui/help-button';
-import { TypingLevelMapScreen } from '../level-map';
+import { TypingLevelMapScreen } from '../typing-level-map';
 import { LetterRow } from './letter-row';
 
 export class TypingLevelScreen extends Container {
