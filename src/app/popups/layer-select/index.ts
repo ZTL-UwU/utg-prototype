@@ -16,17 +16,18 @@ export class LayerSelectPopup extends Container {
   constructor() {
     super({
       layout: {
-        height: window.innerHeight,
-        width: window.innerWidth,
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
       },
     });
 
+    const backgroundTexture = Texture.from('layer-select/background.png');
     this.background = new Sprite({
-      texture: Texture.from('layer-select/background.png'),
+      texture: backgroundTexture,
       layout: {
+        width: backgroundTexture.width,
+        height: backgroundTexture.height,
         objectFit: 'cover',
       },
     });
@@ -97,8 +98,8 @@ export class LayerSelectPopup extends Container {
     this.innerContainer.scale.set(0.94);
 
     await Promise.all([
-      animate(this.innerContainer, { alpha: 1 }, { duration: 0.35, ease: 'easeOut' }),
-      animate(this.innerContainer.scale, { x: 1, y: 1 }, { duration: 0.35, ease: 'easeOut' }),
+      animate(this.innerContainer, { alpha: 1 }, { duration: 0.2, ease: 'easeOut' }),
+      animate(this.innerContainer.scale, { x: 1, y: 1 }, { duration: 0.2, ease: 'easeOut' }),
     ]);
   }
 
