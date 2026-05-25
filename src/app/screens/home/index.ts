@@ -8,7 +8,7 @@ import { LayerSelectPopup } from '../../popups/layer-select';
 /** The screen that holds the app */
 export class HomeScreen extends Container {
   /** Assets bundles required by this screen */
-  public static assetBundles = ['home', 'layer-select'];
+  public static assetBundles = ['home'];
 
   private background: Sprite;
   private startButton: FancyButton;
