@@ -5,6 +5,7 @@ import type { ApplicationOptions, DestroyOptions, RendererDestroyOptions } from 
 import 'pixi.js/app';
 import { Application, Assets, extensions, ResizePlugin } from 'pixi.js';
 
+// @ts-ignore - This is a dynamically generated file by AssetPack
 import manifest from '../manifest.json';
 import { CreationAudioPlugin } from './audio/AudioPlugin';
 import { CreationNavigationPlugin } from './navigation/NavigationPlugin';
@@ -49,6 +50,7 @@ export class CreationEngine extends Application {
     await Assets.loadBundle('preload');
 
     // List all existing bundles names
+    // @ts-ignore - This is a dynamically generated file by AssetPack
     const allBundles = manifest.bundles.map((item) => item.name);
     // Start up background loading of all bundles
     void Assets.backgroundLoadBundle(allBundles);
