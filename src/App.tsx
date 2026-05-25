@@ -4,6 +4,7 @@ import '@pixi/layout';
 import './index.css';
 import { HomeScreen } from './app/screens/home';
 import { KeyboardLayout } from './components/KeyboardLayout';
+import { MobileBlockerBanner } from './components/MobileBlockerBanner';
 import { CreationEngine } from './engine/engine';
 import { setEngine } from './engine/getEngine';
 import { useKeyboardStore } from './zustand_stores/keyboardStore';
@@ -36,6 +37,7 @@ export default function App() {
 
   return (
     <>
+      <MobileBlockerBanner />
       <div id="pixi-container" />
       {showKeyboard && <KeyboardLayout />}
     </>
