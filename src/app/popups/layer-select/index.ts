@@ -1,4 +1,5 @@
 import { FancyButton } from '@pixi/ui';
+import { animate } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
@@ -15,6 +16,8 @@ export class LayerSelectPopup extends Container {
   constructor() {
     super({
       layout: {
+        height: window.innerHeight,
+        width: window.innerWidth,
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
@@ -66,6 +69,14 @@ export class LayerSelectPopup extends Container {
       const button = new FancyButton({
         defaultView: data.icon,
         anchor: 0.5,
+        animations: {
+          hover: {
+            props: {
+              scale: { x: 1.05, y: 1.05 },
+            },
+            duration: 100,
+          },
+        },
       });
       button.layout = {
         position: 'absolute',
@@ -79,6 +90,23 @@ export class LayerSelectPopup extends Container {
     this.innerContainer.addChild(this.background, this.closeButton, ...this.layerButtons);
 
     this.addChild(this.innerContainer);
+  }
+
+  public async show() {
+    this.innerContainer.alpha = 0;
+    this.innerContainer.scale.set(0.94);
+
+    await Promise.all([
+      animate(this.innerContainer, { alpha: 1 }, { duration: 0.35, ease: 'easeOut' }),
+      animate(this.innerContainer.scale, { x: 1, y: 1 }, { duration: 0.35, ease: 'easeOut' }),
+    ]);
+  }
+
+  public async hide() {
+    await Promise.all([
+      animate(this.innerContainer, { alpha: 0 }, { duration: 0.2, ease: 'linear' }),
+      animate(this.innerContainer.scale, { x: 0.94, y: 0.94 }, { duration: 0.2, ease: 'linear' }),
+    ]);
   }
 
   public resize(width: number, height: number) {
