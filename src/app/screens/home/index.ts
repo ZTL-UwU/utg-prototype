@@ -3,12 +3,12 @@ import { Graphics, Sprite, Text, Texture, type TextDropShadow, type Ticker } fro
 import { Container } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { LevelMapScreen } from '../level-map';
+import { LayerSelectPopup } from '../../popups/layer-select';
 
 /** The screen that holds the app */
 export class HomeScreen extends Container {
   /** Assets bundles required by this screen */
-  public static assetBundles = ['home'];
+  public static assetBundles = ['home', 'layer-select'];
 
   private background: Sprite;
   private startButton: FancyButton;
@@ -115,7 +115,9 @@ export class HomeScreen extends Container {
       isLeaf: true, // Fixes the position issue of the button
     };
 
-    this.startButton.onPress.connect(() => engine().navigation.showScreen(LevelMapScreen));
+    this.startButton.onPress.connect(() => {
+      void engine().navigation.showPopup(LayerSelectPopup);
+    });
 
     this.addChild(this.background, this.titleContainer, this.startButton);
   }

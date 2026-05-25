@@ -13,6 +13,10 @@ export class HelpPopup extends Container {
       layout: {
         width: '100%',
         height: '100%',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 24,
       },
     });
 
@@ -91,10 +95,6 @@ export class HelpPopup extends Container {
     this.layout = {
       width,
       height,
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 24,
     };
   }
 }
