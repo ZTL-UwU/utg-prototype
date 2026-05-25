@@ -4,7 +4,7 @@ import { engine } from '../../../engine/getEngine';
 import { useKeyboardStore } from '../../../zustand_stores/keyboardStore';
 import { BackButton } from '../../ui/back-button';
 import { HelpButton } from '../../ui/help-button';
-import { LevelMapScreen } from '../level-map';
+import { TypingLevelMapScreen } from '../level-map';
 import { LetterRow } from './letter-row';
 
 export class TypingLevelScreen extends Container {
@@ -52,7 +52,7 @@ export class TypingLevelScreen extends Container {
     });
 
     this.backButton = new BackButton(() => {
-      void engine().navigation.showScreen(LevelMapScreen);
+      void engine().navigation.showScreen(TypingLevelMapScreen);
     });
     this.helpButton = new HelpButton();
 

@@ -2,7 +2,7 @@ import { Container } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { getAlphabet, getMappedFromKeyboardEvent } from '../../../utils/keymap';
-import { LevelMapScreen } from '../level-map';
+import { TypingLevelMapScreen } from '../level-map';
 import { Letter } from './letter';
 
 const CARD_SIZE = 140;
@@ -92,7 +92,7 @@ export class LetterRow extends Container {
     this.isRemoving = false;
 
     if (this.letters.length === 0) {
-      void engine().navigation.showScreen(LevelMapScreen);
+      void engine().navigation.showScreen(TypingLevelMapScreen);
       return;
     }
 

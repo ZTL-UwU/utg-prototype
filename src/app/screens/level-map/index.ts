@@ -6,7 +6,7 @@ import { HelpButton } from '../../ui/help-button';
 import { HomeScreen } from '../home';
 import { LevelRow } from './level-row';
 
-export class LevelMapScreen extends Container {
+export class TypingLevelMapScreen extends Container {
   public static assetBundles = ['level-map', 'ui'];
 
   private background: Sprite;

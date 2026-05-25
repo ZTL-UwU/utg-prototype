@@ -9,7 +9,7 @@ import { defineConfig } from 'vite-plus';
 
 function assetpackPlugin() {
   const apConfig = {
-    entry: './common-assets',
+    entry: './assets',
     pipes: [
       ...pixiPipes({
         cacheBust: false,
