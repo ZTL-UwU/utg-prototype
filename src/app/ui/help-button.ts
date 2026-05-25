@@ -1,5 +1,8 @@
 import { FancyButton } from '@pixi/ui';
 
+import { engine } from '../../engine/getEngine';
+import { HelpPopup } from '../popups/help';
+
 export class HelpButton extends FancyButton {
   constructor() {
     super({
@@ -29,7 +32,7 @@ export class HelpButton extends FancyButton {
     };
 
     this.onPress.connect(() => {
-      // TODO: help popup
+      void engine().navigation.showPopup(HelpPopup);
     });
   }
 }
