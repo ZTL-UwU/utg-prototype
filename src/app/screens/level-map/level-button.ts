@@ -1,6 +1,9 @@
 import { DropShadowFilter } from 'pixi-filters';
 import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
 
+import { engine } from '../../../engine/getEngine';
+import { TypingLevelScreen } from '../typing-level';
+
 export type TLevel = {
   id: number;
   unlocked: boolean;
@@ -34,7 +37,7 @@ export class LevelButton extends Container {
       this.eventMode = 'static';
       this.cursor = 'pointer';
       this.on('pointertap', () => {
-        // TODO
+        void engine().navigation.showScreen(TypingLevelScreen);
       });
     }
   }

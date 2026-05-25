@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import '@pixi/layout';
 
 import './index.css';
@@ -10,11 +10,16 @@ import { useKeyboardStore } from './zustand_stores/keyboardStore';
 
 export default function App() {
   const { showKeyboard } = useKeyboardStore();
+  const engineRef = useRef<CreationEngine | null>(null);
 
-  const engine = new CreationEngine();
-  setEngine(engine);
+  if (engineRef.current === null) {
+    engineRef.current = new CreationEngine();
+    setEngine(engineRef.current);
+  }
 
   useEffect(() => {
+    const engine = engineRef.current!;
+
     const init = async () => {
       await engine.init({
         background: '#1E1E1E',
