@@ -201,7 +201,7 @@ export class Navigation {
   /**
    * Dismiss current popup, if there is one
    */
-  public async dismissPopup() {
+  public async hidePopup() {
     if (!this.currentPopup) return;
     const popup = this.currentPopup;
     this.currentPopup = undefined;
