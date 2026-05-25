@@ -7,22 +7,22 @@ export class LevelRow extends Container {
     {
       id: 1,
       unlocked: true,
-      miniMapImage: 'level-map/button-preview.svg',
+      miniMapImage: 'typing-level-map/button-preview.svg',
     },
     {
       id: 2,
       unlocked: false,
-      miniMapImage: 'level-map/button-preview.svg',
+      miniMapImage: 'typing-level-map/button-preview.svg',
     },
     {
       id: 3,
       unlocked: false,
-      miniMapImage: 'level-map/button-preview.svg',
+      miniMapImage: 'typing-level-map/button-preview.svg',
     },
     {
       id: 4,
       unlocked: false,
-      miniMapImage: 'level-map/button-preview.svg',
+      miniMapImage: 'typing-level-map/button-preview.svg',
     },
   ];
   private levelButtons?: (LevelButton | Graphics)[];
