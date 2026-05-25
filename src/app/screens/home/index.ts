@@ -1,5 +1,5 @@
 import { FancyButton } from '@pixi/ui';
-import { Graphics, Sprite, Text, Texture, type Ticker } from 'pixi.js';
+import { Graphics, Sprite, Text, Texture, type TextDropShadow, type Ticker } from 'pixi.js';
 import { Container } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
@@ -12,11 +12,19 @@ export class HomeScreen extends Container {
 
   private background: Sprite;
   private startButton: FancyButton;
+  private titleContainer: Container;
   private title: Text;
   private subtitle: Text;
 
   constructor() {
-    super();
+    super({
+      layout: {
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 150,
+      },
+    });
 
     this.background = new Sprite({
       texture: Texture.from('home/background.png'),
@@ -28,19 +36,29 @@ export class HomeScreen extends Container {
       },
     });
 
+    this.titleContainer = new Container({
+      layout: {
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 24,
+      },
+    });
+
+    const textDropShadow: Partial<TextDropShadow> = {
+      color: 0x000000,
+      blur: 20,
+      distance: 0,
+      alpha: 0.5,
+    };
+
     this.title = new Text({
       text: 'SOZLAR SAYAHATI',
       style: {
-        fill: 0x3c6928,
+        fill: 0x284937,
         fontFamily: 'Concert One',
         fontSize: 200,
         fontWeight: '700',
-        dropShadow: {
-          color: 0x000000,
-          blur: 4,
-          distance: 6,
-          alpha: 0.75,
-        },
+        dropShadow: textDropShadow,
       },
       layout: true,
     });
@@ -51,24 +69,29 @@ export class HomeScreen extends Container {
         fill: 0xffffff,
         fontFamily: 'Concert One',
         fontSize: 95,
-        dropShadow: {
-          color: 0x000000,
-          blur: 4,
-          distance: 6,
-          alpha: 0.75,
-        },
+        dropShadow: textDropShadow,
       },
       layout: true,
     });
 
-    const buttonHeight = 80;
-    const buttonWidth = 200;
+    this.titleContainer.addChild(this.title, this.subtitle);
+
+    const buttonHeight = 140;
+    const buttonWidth = 350;
     this.startButton = new FancyButton({
-      defaultView: new Graphics().roundRect(0, 0, buttonWidth, buttonHeight).fill(0xd0823c),
+      defaultView: new Graphics().roundRect(0, 0, buttonWidth, buttonHeight).fill(0x2a523c),
       hoverView: new Graphics().roundRect(0, 0, buttonWidth, buttonHeight).fill(0xe09a5c),
       pressedView: new Graphics().roundRect(0, 0, buttonWidth, buttonHeight).fill(0xb86824),
       padding: 20,
-      text: 'Start your journey',
+      text: new Text({
+        text: 'START',
+        style: {
+          fill: 0xfdf7e7,
+          fontSize: 56,
+          fontFamily: 'Concert One',
+          fontWeight: '700',
+        },
+      }),
       animations: {
         hover: {
           props: {
@@ -94,7 +117,7 @@ export class HomeScreen extends Container {
 
     this.startButton.onPress.connect(() => engine().navigation.showScreen(LevelMapScreen));
 
-    this.addChild(this.background, this.title, this.subtitle, this.startButton);
+    this.addChild(this.background, this.titleContainer, this.startButton);
   }
 
   /** Prepare the screen just before showing */
@@ -117,10 +140,6 @@ export class HomeScreen extends Container {
     this.layout = {
       width,
       height,
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 24,
     };
   }
 
