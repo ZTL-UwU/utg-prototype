@@ -6,7 +6,7 @@ import { engine } from '../../../engine/getEngine';
 import { TypingLevelMapScreen } from '../../screens/level-map';
 
 export class LayerSelectPopup extends Container {
-  // TODO: Defining asset bundle in popups should be supported by the engine
+  public static assetBundles = ['layer-select'];
 
   private innerContainer: Container;
   private background: Sprite;

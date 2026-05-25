@@ -190,6 +190,13 @@ export class Navigation {
       await this.currentScreen.pause?.();
     }
 
+    // Load assets for the new screen, if available
+    // This is safe against multiple calls, since Repeated Loads Are Safe (https://pixijs.com/8.x/guides/components/assets#repeated-loads-are-safe)
+    if (ctor.assetBundles) {
+      // Load all assets required by this new screen
+      await Assets.loadBundle(ctor.assetBundles);
+    }
+
     if (this.currentPopup) {
       await this.hideAndRemoveScreen(this.currentPopup);
     }
