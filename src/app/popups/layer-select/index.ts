@@ -1,6 +1,6 @@
 import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
-import { Container, Sprite, Texture } from 'pixi.js';
+import { BlurFilter, Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { EducationLevelMapScreen } from '../../screens/education-level-map';
@@ -101,6 +101,10 @@ export class LayerSelectPopup extends Container {
   }
 
   public async show() {
+    const currentEngine = engine();
+    if (currentEngine.navigation.currentScreen) {
+      currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 9 })];
+    }
     this.background.alpha = 0;
     this.background.scale.set(0.94);
 
@@ -111,6 +115,10 @@ export class LayerSelectPopup extends Container {
   }
 
   public async hide() {
+    const currentEngine = engine();
+    if (currentEngine.navigation.currentScreen) {
+      currentEngine.navigation.currentScreen.filters = [];
+    }
     await Promise.all([
       animate(this.background, { alpha: 0 }, { duration: 0.2, ease: 'linear' }),
       animate(this.background.scale, { x: 0.94, y: 0.94 }, { duration: 0.2, ease: 'linear' }),
