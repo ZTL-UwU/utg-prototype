@@ -5,12 +5,14 @@ import { useKeyboardStore } from '../../../zustandStores/keyboardStore';
 import { BackButton } from '../../ui/back-button';
 import { HelpButton } from '../../ui/help-button';
 import { TypingLevelMapScreen } from '../typing-level-map';
+import { Camel } from './camel';
 import { LetterRow } from './letter-row';
 
 export class TypingLevelScreen extends Container {
   public static assetBundles = ['typing-level', 'ui'];
 
   private background: Sprite;
+  private camel: Camel;
   private letterRow: LetterRow;
   private helpButton: HelpButton;
   private backButton: BackButton;
@@ -35,6 +37,7 @@ export class TypingLevelScreen extends Container {
       },
     });
 
+    this.camel = new Camel();
     this.letterRow = new LetterRow();
 
     this.title = new Text({
@@ -56,7 +59,14 @@ export class TypingLevelScreen extends Container {
     });
     this.helpButton = new HelpButton();
 
-    this.addChild(this.background, this.backButton, this.helpButton, this.title, this.letterRow);
+    this.addChild(
+      this.background,
+      this.camel,
+      this.backButton,
+      this.helpButton,
+      this.title,
+      this.letterRow,
+    );
   }
 
   public resize(width: number, height: number) {
@@ -64,6 +74,7 @@ export class TypingLevelScreen extends Container {
       width,
       height,
     };
+    this.camel.resize(width, height);
   }
 
   public async show() {
