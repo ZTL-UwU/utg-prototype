@@ -1,7 +1,7 @@
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { useKeyboardStore } from '../../../zustand_stores/keyboardStore';
+import { useKeyboardStore } from '../../../zustandStores/keyboardStore';
 import { BackButton } from '../../ui/back-button';
 import { HelpButton } from '../../ui/help-button';
 import { TypingLevelMapScreen } from '../typing-level-map';
