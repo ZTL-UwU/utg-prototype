@@ -129,7 +129,7 @@ export class Letter extends Container {
       [this.contentContainer.scale, { x: 1.12, y: 1.12 }, { duration: 1, ease: 'backOut' }],
       [this.contentContainer.scale, { x: 1, y: 1 }, { type: 'spring', bounce: 1, duration: 1 }],
     ]);
-    this.contentAnimation.finished.then(() => {
+    void this.contentAnimation.finished.then(() => {
       setTimeout(() => this.setFeedback('none', false), 250);
     });
   }
@@ -144,6 +144,6 @@ export class Letter extends Container {
       [this.contentContainer, { rotation: 6 * deg }, { duration: 0.08, ease: 'linear' }],
       [this.contentContainer, { rotation: 0 }, { duration: 0.06, ease: 'easeOut' }],
     ]);
-    this.contentAnimation.finished.then(() => this.setFeedback('none', false));
+    void this.contentAnimation.finished.then(() => this.setFeedback('none', false));
   }
 }

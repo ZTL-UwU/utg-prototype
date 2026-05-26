@@ -87,7 +87,10 @@ export class LayerSelectPopup extends Container {
         position: 'absolute',
         ...data.layout,
       };
-      button.onPress.connect(data.onPress);
+      button.onPress.connect(() => {
+        void engine().navigation.hidePopup();
+        data.onPress();
+      });
       return button;
     });
 
