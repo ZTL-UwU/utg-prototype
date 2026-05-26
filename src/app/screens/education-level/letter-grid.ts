@@ -1,10 +1,16 @@
 import { Container, Graphics } from 'pixi.js';
 
+import { engine } from '../../../engine/getEngine';
 import { getAlphabet, getKeyFromChar, getMappedFromKeyboardEvent } from '../../../utils/keymap';
 import { SoundButton } from '../../ui/sound-button';
+import { HomeScreen } from '../home';
 import { Letter } from './letter';
 
+// Gameplay
 const NUM_CHOICES = 4;
+const MAX_ROUNDS = 5;
+
+// Scene Object
 const CARD_SIZE = 150;
 const HGAP = CARD_SIZE * 1.5;
 const VGAP = CARD_SIZE / 4;
@@ -39,6 +45,9 @@ export class LetterGrid extends Container {
 
   // FOR TESTING IN DEV ONLY
   private readableCorrectLetterString: string;
+
+  // Round Counter - Play 5 rounds, redirect to end page
+  private static rounds = 0;
 
   constructor() {
     super({
@@ -138,8 +147,15 @@ export class LetterGrid extends Container {
     const isCorrect = translatedLetter === this.correctLetterString;
 
     if (!pressedLetter) return;
-    if (isCorrect) pressedLetter.setFeedback('success');
-    else pressedLetter.setFeedback('error');
+    if (isCorrect) {
+      pressedLetter.setFeedback('success');
+      if (++LetterGrid.rounds < MAX_ROUNDS) {
+        engine().navigation.showScreen(LetterGrid);
+      } else {
+        LetterGrid.rounds = 0;
+        engine().navigation.showScreen(HomeScreen);
+      }
+    } else pressedLetter.setFeedback('error');
   };
   override destroy(options?: Parameters<Container['destroy']>[0]) {
     window.removeEventListener('keydown', this.handleKeyDown);
