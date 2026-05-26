@@ -1,6 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 
-import { getAlphabet } from '../../../utils/keymap';
+import { getAlphabet, getKeyFromChar, getMappedFromKeyboardEvent } from '../../../utils/keymap';
 import { SoundButton } from '../../ui/sound-button';
 import { Letter } from './letter';
 
@@ -13,23 +13,32 @@ const VPADDING = VGAP * 2;
 const BUTTON_DIM = 180;
 
 function getLetterStrings() {
-  const entries = getAlphabet();
-  return Array.from({ length: NUM_CHOICES }, () => {
-    const pick = entries[Math.floor(Math.random() * entries.length)];
-    return pick?.text ?? '';
-  });
+  const entries = [...getAlphabet()];
+  const result: string[] = [];
+  while (result.length < NUM_CHOICES) {
+    const i = Math.floor(Math.random() * entries.length);
+    const pick = entries.splice(i, 1)[0]; // remove so it can't be picked again
+    if (pick) result.push(pick.text);
+  }
+  return result;
 }
 
 export class LetterGrid extends Container {
+  // Pixi Scene Objects
   private backgroundTint: Graphics;
   private soundButton: SoundButton;
   private panel: Container;
   private letterStrings: string[] = getLetterStrings();
-  private letters: Letter[] = this.letterStrings.map((letterString, _i) => {
-    return new Letter({ letter: letterString, cardSize: CARD_SIZE });
-  });
   private topPanel: Container;
   private bottomPanel: Container;
+
+  // Letter Attributes
+  private letters: Letter[];
+  private letterMap: Map<string, Letter>;
+  private correctLetterString: string;
+
+  // FOR TESTING IN DEV ONLY
+  private readableCorrectLetterString: string;
 
   constructor() {
     super({
@@ -41,16 +50,38 @@ export class LetterGrid extends Container {
         justifyContent: 'center',
       },
     });
+
+    // init Scene Objects so linter is happy
     this.panel = new Container();
     this.backgroundTint = new Graphics();
     this.topPanel = new Container();
     this.bottomPanel = new Container();
     this.soundButton = new SoundButton({ onClick: this.soundButtonClick, size: BUTTON_DIM });
 
+    // init Letter Attributes so linter is happy
+    this.correctLetterString = '';
+    this.readableCorrectLetterString = '';
+    this.letterMap = new Map();
+    this.letters = [];
+
+    // Constructor logic wrapped in helpers for better readability
+    this.initLetterAttributes();
     this.initLayouts();
     this.populatePanel();
+
     window.addEventListener('keydown', this.handleKeyDown);
     this.addChild(this.panel);
+  }
+
+  // init letters, letterMap, correctLetterString
+  // ACCESSSES letterStrings
+  private initLetterAttributes() {
+    this.letterStrings.forEach((letterString, _i) => {
+      this.letterMap.set(letterString, new Letter({ letter: letterString, cardSize: CARD_SIZE }));
+    });
+    this.letters = [...this.letterMap.values()];
+    this.correctLetterString = this.letterStrings[Math.floor(Math.random() * NUM_CHOICES)];
+    this.readableCorrectLetterString = getKeyFromChar(this.correctLetterString);
   }
 
   private initLayouts() {
@@ -74,18 +105,21 @@ export class LetterGrid extends Container {
       height: BUTTON_DIM,
     };
   }
+
   private populatePanel() {
     // add letters equally to top/bottom panels
     for (let i = 0; i < NUM_CHOICES; i++) {
       if (i < NUM_CHOICES / 2) this.topPanel.addChild(this.letters[i]);
       else this.bottomPanel.addChild(this.letters[i]);
     }
+
     this.panel.addChild(this.backgroundTint, this.soundButton, this.topPanel, this.bottomPanel);
     this.backgroundTint
       .clear()
       .roundRect(0, 0, this.panel.width, this.panel.height, 12)
-      .fill(0xd1dcf0);
+      .fill(0xd1dcf0); // background tint only works dynamically with panel height, width if panel already has children, otherwise both dims=0
   }
+
   resize(width: number, height: number) {
     console.log('called');
     const panelW = CARD_SIZE * 2 + HGAP + HPADDING * 2;
@@ -93,8 +127,20 @@ export class LetterGrid extends Container {
     this.panel.x = (width - panelW) / 2;
     this.panel.y = (height - panelH) / 2;
   }
-  private soundButtonClick() {}
-  private handleKeyDown() {}
+  private readonly soundButtonClick = () => {
+    console.log(`correct letter is ${this.readableCorrectLetterString}`);
+  };
+  private readonly handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key == 'Shift' || this.letters.length === 0) return;
+
+    const translatedLetter: string = getMappedFromKeyboardEvent(event);
+    const pressedLetter: Letter | undefined = this.letterMap.get(translatedLetter);
+    const isCorrect = translatedLetter === this.correctLetterString;
+
+    if (!pressedLetter) return;
+    if (isCorrect) pressedLetter.setFeedback('success');
+    else pressedLetter.setFeedback('error');
+  };
   override destroy(options?: Parameters<Container['destroy']>[0]) {
     window.removeEventListener('keydown', this.handleKeyDown);
     super.destroy(options);

@@ -31,7 +31,6 @@ export class Letter extends Container {
   private readonly cornerRadius: number;
 
   private feedback: LetterFeedback = 'none';
-  //   private isActive = false;
   private focusAnimation?: AnimationPlaybackControls;
   private contentAnimation?: AnimationPlaybackControls;
 
@@ -127,13 +126,12 @@ export class Letter extends Container {
   private pulse() {
     this.contentContainer.rotation = 0;
     this.contentAnimation = animate([
-      [this.contentContainer.scale, { x: 1.12, y: 1.12 }, { duration: 0.14, ease: 'backOut' }],
-      [
-        this.contentContainer.scale,
-        { x: 1, y: 1 },
-        { type: 'spring', bounce: 0.35, duration: 0.48 },
-      ],
+      [this.contentContainer.scale, { x: 1.12, y: 1.12 }, { duration: 1, ease: 'backOut' }],
+      [this.contentContainer.scale, { x: 1, y: 1 }, { type: 'spring', bounce: 1, duration: 1 }],
     ]);
+    this.contentAnimation.finished.then(() => {
+      setTimeout(() => this.setFeedback('none', false), 250);
+    });
   }
 
   private shake() {
@@ -146,5 +144,6 @@ export class Letter extends Container {
       [this.contentContainer, { rotation: 6 * deg }, { duration: 0.08, ease: 'linear' }],
       [this.contentContainer, { rotation: 0 }, { duration: 0.06, ease: 'easeOut' }],
     ]);
+    this.contentAnimation.finished.then(() => this.setFeedback('none', false));
   }
 }
