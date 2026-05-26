@@ -1,5 +1,6 @@
 import { Container, Graphics } from 'pixi.js';
 
+import { EducationLevelScreen } from '.';
 import { engine } from '../../../engine/getEngine';
 import { getAlphabet, getKeyFromChar, getMappedFromKeyboardEvent } from '../../../utils/keymap';
 import { SoundButton } from '../../ui/sound-button';
@@ -149,12 +150,14 @@ export class LetterGrid extends Container {
     if (!pressedLetter) return;
     if (isCorrect) {
       pressedLetter.setFeedback('success');
-      if (++LetterGrid.rounds < MAX_ROUNDS) {
-        engine().navigation.showScreen(LetterGrid);
-      } else {
-        LetterGrid.rounds = 0;
-        engine().navigation.showScreen(HomeScreen);
-      }
+      setTimeout(() => {
+        if (++LetterGrid.rounds < MAX_ROUNDS) {
+          engine().navigation.showScreen(EducationLevelScreen);
+        } else {
+          LetterGrid.rounds = 0;
+          engine().navigation.showScreen(HomeScreen);
+        }
+      }, 1000);
     } else pressedLetter.setFeedback('error');
   };
   override destroy(options?: Parameters<Container['destroy']>[0]) {

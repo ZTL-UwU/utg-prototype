@@ -23,14 +23,14 @@ export class EducationLevelMapScreen extends Container {
       text: 'LEARN THE UYGHUR ALPHABET',
       style: {
         fontFamily: 'Concert One',
-        fontSize: 150,
-        fontWeight: '800',
+        fontSize: 100,
+        fontWeight: '400',
         fill: 0x6b3f1f,
       },
       layout: {
         position: 'absolute',
         top: 140,
-        left: 50,
+        left: 430,
       },
     });
 
