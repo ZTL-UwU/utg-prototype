@@ -1,4 +1,4 @@
-import gsap from 'gsap';
+import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Graphics, Text } from 'pixi.js';
 
 export type LetterFeedback = 'none' | 'error' | 'success';
@@ -34,6 +34,8 @@ export class Letter extends Container {
 
   private feedback: LetterFeedback = 'none';
   private isActive = false;
+  private focusAnimation?: AnimationPlaybackControls;
+  private contentAnimation?: AnimationPlaybackControls;
 
   constructor({ letter, cardSize = 88, cornerRadius = 18 }: LetterOptions) {
     super({
@@ -89,22 +91,21 @@ export class Letter extends Container {
     this.isActive = isActive;
     this.drawShadow();
     this.drawCard();
-    gsap.to(this.focusContainer.scale, {
-      x: isActive ? 1.06 : 1,
-      y: isActive ? 1.06 : 1,
-      duration: 0.3,
-      ease: 'power2.out',
-    });
+    this.focusAnimation = animate(
+      this.focusContainer.scale,
+      isActive ? { x: 1.2, y: 1.2 } : { x: 1, y: 1 },
+      { duration: 0.3, ease: 'easeOut' },
+    );
   }
 
-  setFeedback(feedback: LetterFeedback, animate = true) {
-    if (this.feedback === feedback && !animate) return;
+  setFeedback(feedback: LetterFeedback, animateFeedback = true) {
+    if (this.feedback === feedback && !animateFeedback) return;
 
     this.feedback = feedback;
     this.drawShadow();
     this.drawCard();
 
-    if (!animate) return;
+    if (!animateFeedback) return;
 
     if (feedback === 'success') {
       this.pulse();
@@ -114,8 +115,9 @@ export class Letter extends Container {
   }
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {
-    gsap.killTweensOf(this.focusContainer.scale);
-    gsap.killTweensOf(this.contentContainer);
+    console.log('destroy');
+    this.focusAnimation?.stop();
+    this.contentAnimation?.stop();
     super.destroy(options);
   }
 
@@ -142,35 +144,26 @@ export class Letter extends Container {
   }
 
   private pulse() {
-    gsap.killTweensOf(this.contentContainer);
     this.contentContainer.rotation = 0;
-    gsap
-      .timeline()
-      .to(this.contentContainer.scale, {
-        x: 1.12,
-        y: 1.12,
-        duration: 0.14,
-        ease: 'back.out(2.2)',
-      })
-      .to(this.contentContainer.scale, {
-        x: 1,
-        y: 1,
-        duration: 0.48,
-        ease: 'elastic.out(1, 0.38)',
-      });
+    this.contentAnimation = animate([
+      [this.contentContainer.scale, { x: 1.12, y: 1.12 }, { duration: 0.14, ease: 'backOut' }],
+      [
+        this.contentContainer.scale,
+        { x: 1, y: 1 },
+        { type: 'spring', bounce: 0.35, duration: 0.48 },
+      ],
+    ]);
   }
 
   private shake() {
-    gsap.killTweensOf(this.contentContainer);
     this.contentContainer.rotation = 0;
-
     const deg = Math.PI / 180;
-    gsap
-      .timeline()
-      .to(this.contentContainer, { rotation: -16 * deg, duration: 0.04, ease: 'none' })
-      .to(this.contentContainer, { rotation: 16 * deg, duration: 0.08, ease: 'none' })
-      .to(this.contentContainer, { rotation: -10 * deg, duration: 0.08, ease: 'none' })
-      .to(this.contentContainer, { rotation: 6 * deg, duration: 0.08, ease: 'none' })
-      .to(this.contentContainer, { rotation: 0, duration: 0.06, ease: 'power2.out' });
+    this.contentAnimation = animate([
+      [this.contentContainer, { rotation: -16 * deg }, { duration: 0.04, ease: 'linear' }],
+      [this.contentContainer, { rotation: 16 * deg }, { duration: 0.08, ease: 'linear' }],
+      [this.contentContainer, { rotation: -10 * deg }, { duration: 0.08, ease: 'linear' }],
+      [this.contentContainer, { rotation: 6 * deg }, { duration: 0.08, ease: 'linear' }],
+      [this.contentContainer, { rotation: 0 }, { duration: 0.06, ease: 'easeOut' }],
+    ]);
   }
 }
