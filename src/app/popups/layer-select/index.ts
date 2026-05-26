@@ -52,6 +52,8 @@ export class LayerSelectPopup extends Container {
         icon: Texture.from('layer-select/education-icon.png'),
         layout: { left: 252, top: 604 },
         onPress: () => {
+          void engine().navigation.hidePopup();
+
           void engine().navigation.showScreen(EducationLevelMapScreen);
         },
       },
@@ -59,6 +61,8 @@ export class LayerSelectPopup extends Container {
         icon: Texture.from('layer-select/typing-icon.png'),
         layout: { left: 640, top: 345 },
         onPress: () => {
+          void engine().navigation.hidePopup();
+
           void engine().navigation.showScreen(TypingLevelMapScreen);
         },
       },
