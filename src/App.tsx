@@ -7,7 +7,7 @@ import { KeyboardLayout } from './components/KeyboardLayout';
 import { MobileBlockerBanner } from './components/MobileBlockerBanner';
 import { CreationEngine } from './engine/engine';
 import { setEngine } from './engine/getEngine';
-import { useKeyboardStore } from './zustand_stores/keyboardStore';
+import { useKeyboardStore } from './zustandStores/keyboardStore';
 
 export default function App() {
   const { showKeyboard } = useKeyboardStore();

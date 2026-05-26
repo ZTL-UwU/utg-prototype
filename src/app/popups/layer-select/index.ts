@@ -3,6 +3,7 @@ import { animate } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { EducationLevelMapScreen } from '../../screens/education-level-map';
 import { TypingLevelMapScreen } from '../../screens/typing-level-map';
 
 export class LayerSelectPopup extends Container {
@@ -50,7 +51,9 @@ export class LayerSelectPopup extends Container {
       {
         icon: Texture.from('layer-select/education-icon.png'),
         layout: { left: 252, top: 604 },
-        onPress: () => {},
+        onPress: () => {
+          void engine().navigation.showScreen(EducationLevelMapScreen);
+        },
       },
       {
         icon: Texture.from('layer-select/typing-icon.png'),
