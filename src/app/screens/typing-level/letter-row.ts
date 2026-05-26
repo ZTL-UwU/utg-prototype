@@ -2,6 +2,7 @@ import { Container } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { getAlphabet, getMappedFromKeyboardEvent } from '../../../utils/keymap';
+import { useScoreManager } from '../../../zustandStores/scoreManager';
 import { TypingLevelMapScreen } from '../typing-level-map';
 import { Letter } from './letter';
 
@@ -71,12 +72,16 @@ export class LetterRow extends Container {
     if (isCorrect) {
       if (event.repeat) return;
 
+      useScoreManager.getState().recordCorrect();
       this.isRemoving = true;
       current.setFeedback('success', true);
       window.setTimeout(() => this.removeCurrentLetter(), 600);
       return;
     }
 
+    if (!event.repeat) {
+      useScoreManager.getState().recordMistake();
+    }
     current.setFeedback('error', !event.repeat);
   };
 
