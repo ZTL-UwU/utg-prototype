@@ -1,19 +1,26 @@
+import { animate } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
+import { engine } from '../../../engine/getEngine';
+import { BackButton } from '../../ui/back-button';
+import { HelpButton } from '../../ui/help-button';
+import { EducationLevelMapScreen } from '../education-level-map';
 import { LetterGrid } from './letter-grid';
 
 export class EducationLevelScreen extends Container {
   public static assetBundles = ['education-level', 'ui'];
   private background: Sprite;
-
+  private backButton: BackButton;
+  private helpButton: HelpButton;
   private letterGrid: LetterGrid;
+
   constructor() {
     super({
       layout: {
         position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
+        // display: 'flex',
+        // flexDirection: 'column',
+        // alignItems: 'center',
         justifyContent: 'center',
         width: '100%',
         height: '100%',
@@ -23,11 +30,24 @@ export class EducationLevelScreen extends Container {
       texture: Texture.from('education-level/background.svg'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
+    this.helpButton = new HelpButton();
+    this.backButton = new BackButton(() => {
+      void engine().navigation.showScreen(EducationLevelMapScreen);
+    });
+    // this.backButton.layout = {position : "absolute", top : "10%", left : "10%"};
     this.letterGrid = new LetterGrid();
-    this.addChild(this.background, this.letterGrid);
+    this.addChild(this.background, this.letterGrid, this.backButton, this.helpButton);
   }
   public resize(width: number, height: number) {
     this.layout = { width, height };
-    this.letterGrid.resize(width, height);
+    // this.letterGrid.resize(width, height);
+  }
+  public async show() {
+    this.letterGrid.alpha = 0;
+    this.letterGrid.scale.set(0.5);
+    await Promise.all([
+      animate(this.letterGrid, { alpha: 1 }, { duration: 0.5, ease: 'easeOut' }),
+      animate(this.letterGrid.scale, { x: 1, y: 1 }, { duration: 0.5, ease: 'easeOut' }),
+    ]);
   }
 }

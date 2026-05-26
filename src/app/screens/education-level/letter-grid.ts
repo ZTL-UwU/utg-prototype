@@ -32,7 +32,15 @@ export class LetterGrid extends Container {
   private bottomPanel: Container;
 
   constructor() {
-    super();
+    super({
+      layout: {
+        display: 'flex',
+        width: '100%',
+        height: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
+    });
     this.panel = new Container();
     this.backgroundTint = new Graphics();
     this.topPanel = new Container();
@@ -46,7 +54,6 @@ export class LetterGrid extends Container {
   }
 
   private initLayouts() {
-    this.backgroundTint.layout = { position: 'absolute', width: '100%', height: '100%' };
     this.panel.layout = {
       position: 'relative',
       display: 'flex',
@@ -59,6 +66,7 @@ export class LetterGrid extends Container {
       justifyContent: 'center',
       alignItems: 'center',
     };
+    this.backgroundTint.layout = { position: 'absolute', width: '100%', height: '100%' };
     this.topPanel.layout = { display: 'flex', gap: HGAP };
     this.bottomPanel.layout = { display: 'flex', gap: HGAP };
     this.soundButton.layout = {
@@ -73,12 +81,15 @@ export class LetterGrid extends Container {
       else this.bottomPanel.addChild(this.letters[i]);
     }
     this.panel.addChild(this.backgroundTint, this.soundButton, this.topPanel, this.bottomPanel);
+    this.backgroundTint
+      .clear()
+      .roundRect(0, 0, this.panel.width, this.panel.height, 12)
+      .fill(0xd1dcf0);
   }
   resize(width: number, height: number) {
     console.log('called');
     const panelW = CARD_SIZE * 2 + HGAP + HPADDING * 2;
     const panelH = BUTTON_DIM + 2 * (CARD_SIZE + VPADDING + VGAP);
-    this.backgroundTint.clear().roundRect(0, 0, panelW, panelH, 50).fill(0xd1dcf0);
     this.panel.x = (width - panelW) / 2;
     this.panel.y = (height - panelH) / 2;
   }
