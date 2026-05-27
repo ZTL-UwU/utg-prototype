@@ -1,37 +1,41 @@
-import { Container, Sprite, Texture } from 'pixi.js';
+import { FancyButton } from '@pixi/ui';
 
 import { engine } from '../../engine/getEngine';
 import useSessionStore from '../../zustandStores/sessionStore';
 import { EndScreen } from '../screens/end-screen';
 
-const BUTTON_DIM = 100;
-
-export class EndButton extends Container {
-  private button: Sprite;
-
+export class EndButton extends FancyButton {
   constructor(
     onPress: () => void = () => {
       const { correct, mistakes, levelType } = useSessionStore.getState();
+      console.log('pressed');
       engine().navigation.showScreen(EndScreen, { correct, mistakes, type: levelType });
     },
   ) {
     super({
-      layout: {
-        position: 'absolute',
-        bottom: '10%',
-        left: 40,
+      defaultView: 'ui/end-game-button.svg',
+      animations: {
+        hover: {
+          props: {
+            scale: { x: 1.03, y: 1.03 },
+          },
+          duration: 100,
+        },
+        pressed: {
+          props: {
+            scale: { x: 0.97, y: 0.97 },
+          },
+          duration: 100,
+        },
       },
     });
 
-    this.button = new Sprite({
-      texture: Texture.from('ui/end-game-button.svg'),
-      width: BUTTON_DIM,
-      height: BUTTON_DIM,
-      eventMode: 'static',
-      cursor: 'pointer',
-    });
+    this.layout = {
+      position: 'absolute',
+      bottom: '20%',
+      left: 30,
+    };
 
-    this.button.on('pointerdown', onPress);
-    this.addChild(this.button);
+    this.onPress.connect(onPress);
   }
 }
