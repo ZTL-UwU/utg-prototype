@@ -7,6 +7,7 @@ interface ScoreManagerState {
   recordCorrect: () => void;
   recordMistake: () => void;
   reset: () => void;
+  addSession: (correct: number, mistakes: number) => void;
 }
 
 export const useScoreManager = create<ScoreManagerState>()(
@@ -17,6 +18,11 @@ export const useScoreManager = create<ScoreManagerState>()(
       recordCorrect: () => set((state) => ({ correctCount: state.correctCount + 1 })),
       recordMistake: () => set((state) => ({ mistakeCount: state.mistakeCount + 1 })),
       reset: () => set({ correctCount: 0, mistakeCount: 0 }),
+      addSession: (correct: number, mistakes: number) =>
+        set((state) => ({
+          correctCount: state.correctCount + correct,
+          mistakeCount: state.mistakeCount + mistakes,
+        })),
     }),
     {
       name: 'utg-typing-score',

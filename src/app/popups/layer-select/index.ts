@@ -1,6 +1,6 @@
 import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
-import { Container, Sprite, Texture } from 'pixi.js';
+import { BlurFilter, Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { EducationLevelMapScreen } from '../../screens/education-level-map';
@@ -52,6 +52,8 @@ export class LayerSelectPopup extends Container {
         icon: Texture.from('layer-select/education-icon.png'),
         layout: { left: 252, top: 604 },
         onPress: () => {
+          void engine().navigation.hidePopup();
+
           void engine().navigation.showScreen(EducationLevelMapScreen);
         },
       },
@@ -59,6 +61,8 @@ export class LayerSelectPopup extends Container {
         icon: Texture.from('layer-select/typing-icon.png'),
         layout: { left: 640, top: 345 },
         onPress: () => {
+          void engine().navigation.hidePopup();
+
           void engine().navigation.showScreen(TypingLevelMapScreen);
         },
       },
@@ -100,6 +104,10 @@ export class LayerSelectPopup extends Container {
   }
 
   public async show() {
+    const currentEngine = engine();
+    if (currentEngine.navigation.currentScreen) {
+      currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 9 })];
+    }
     this.background.alpha = 0;
     this.background.scale.set(0.94);
 
@@ -110,6 +118,10 @@ export class LayerSelectPopup extends Container {
   }
 
   public async hide() {
+    const currentEngine = engine();
+    if (currentEngine.navigation.currentScreen) {
+      currentEngine.navigation.currentScreen.filters = [];
+    }
     await Promise.all([
       animate(this.background, { alpha: 0 }, { duration: 0.2, ease: 'linear' }),
       animate(this.background.scale, { x: 0.94, y: 0.94 }, { duration: 0.2, ease: 'linear' }),

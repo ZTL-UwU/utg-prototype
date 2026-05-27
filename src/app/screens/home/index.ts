@@ -1,4 +1,5 @@
 import { FancyButton } from '@pixi/ui';
+import { animate } from 'motion';
 import { Graphics, Sprite, Text, Texture, type TextDropShadow, type Ticker } from 'pixi.js';
 import { Container } from 'pixi.js';
 
@@ -146,7 +147,10 @@ export class HomeScreen extends Container {
   }
 
   /** Show screen with animations */
-  public async show(): Promise<void> {}
+  public async show(): Promise<void> {
+    this.background.alpha = 0;
+    await animate(this.background, { alpha: 1 }, { duration: 0.5, ease: 'easeOut' });
+  }
 
   /** Hide screen with animations */
   public async hide() {}

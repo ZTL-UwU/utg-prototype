@@ -3,7 +3,8 @@ import { Container } from 'pixi.js';
 import { engine } from '../../../engine/getEngine';
 import { getAlphabet, getMappedFromKeyboardEvent } from '../../../utils/keymap';
 import { useScoreManager } from '../../../zustandStores/scoreManager';
-import { TypingLevelMapScreen } from '../typing-level-map';
+import useSessionStore from '../../../zustandStores/sessionStore';
+import { EndScreen } from '../end-screen';
 import { Letter } from './letter';
 
 const CARD_SIZE = 140;
@@ -71,8 +72,8 @@ export class LetterRow extends Container {
 
     if (isCorrect) {
       if (event.repeat) return;
-
-      useScoreManager.getState().recordCorrect();
+      useSessionStore.getState().recordCorrect();
+      //   useScoreManager.getState().recordCorrect();
       this.isRemoving = true;
       current.setFeedback('success', true);
       window.setTimeout(() => this.removeCurrentLetter(), 600);
@@ -82,7 +83,8 @@ export class LetterRow extends Container {
     if (!event.repeat) {
       useScoreManager.getState().recordMistake();
     }
-    current.setFeedback('error', !event.repeat);
+    useSessionStore.getState().recordMistake();
+    // current.setFeedback('error', !event.repeat);
   };
 
   private removeCurrentLetter() {
@@ -97,8 +99,9 @@ export class LetterRow extends Container {
     this.isRemoving = false;
 
     if (this.letters.length === 0) {
-      void engine().navigation.showScreen(TypingLevelMapScreen);
-      return;
+      this.endGame();
+      //   void engine().navigation.showScreen(TypingLevelMapScreen);
+      //   return;
     }
 
     this.letterCards[0]?.setActive(true);
@@ -107,5 +110,12 @@ export class LetterRow extends Container {
   override destroy(options?: Parameters<Container['destroy']>[0]) {
     window.removeEventListener('keydown', this.handleKeyDown);
     super.destroy(options);
+  }
+  private endGame() {
+    const { correct, mistakes } = useSessionStore.getState();
+    useScoreManager.getState().addSession(correct, mistakes);
+    useSessionStore.getState().reset();
+    void engine().navigation.showScreen(EndScreen, { correct, mistakes, type: 'typing' });
+    return;
   }
 }

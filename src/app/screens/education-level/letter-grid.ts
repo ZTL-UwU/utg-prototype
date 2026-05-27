@@ -1,10 +1,19 @@
 import { Container, Graphics } from 'pixi.js';
 
+import { EducationLevelScreen } from '.';
+import { engine } from '../../../engine/getEngine';
 import { getAlphabet, getKeyFromChar, getMappedFromKeyboardEvent } from '../../../utils/keymap';
+import { useScoreManager } from '../../../zustandStores/scoreManager';
+import useSessionStore from '../../../zustandStores/sessionStore';
 import { SoundButton } from '../../ui/sound-button';
+import { EndScreen } from '../end-screen';
 import { Letter } from './letter';
 
+// Gameplay
 const NUM_CHOICES = 4;
+const MAX_ROUNDS = 5;
+
+// Scene Object
 const CARD_SIZE = 150;
 const HGAP = CARD_SIZE * 1.5;
 const VGAP = CARD_SIZE / 4;
@@ -40,6 +49,8 @@ export class LetterGrid extends Container {
   // FOR TESTING IN DEV ONLY
   private readableCorrectLetterString: string;
 
+  // STATIC ROUND COUNTER, RESET ON FIN
+  private static rounds = 0;
   constructor() {
     super({
       layout: {
@@ -137,12 +148,36 @@ export class LetterGrid extends Container {
     const pressedLetter: Letter | undefined = this.letterMap.get(translatedLetter);
     const isCorrect = translatedLetter === this.correctLetterString;
 
-    if (!pressedLetter) return;
-    if (isCorrect) pressedLetter.setFeedback('success');
-    else pressedLetter.setFeedback('error');
+    if (!pressedLetter) {
+      useSessionStore.getState().recordMistake();
+      return;
+    }
+    if (isCorrect) {
+      if (event.repeat) return;
+      pressedLetter.setFeedback('success');
+      useSessionStore.getState().recordCorrect();
+      setTimeout(() => {
+        if (++LetterGrid.rounds < MAX_ROUNDS) {
+          engine().navigation.showScreen(EducationLevelScreen);
+        } else {
+          this.endGame();
+        }
+      }, 1000);
+    } else {
+      useSessionStore.getState().recordMistake();
+      pressedLetter.setFeedback('error');
+    }
   };
   override destroy(options?: Parameters<Container['destroy']>[0]) {
     window.removeEventListener('keydown', this.handleKeyDown);
     super.destroy(options);
+  }
+  private endGame() {
+    LetterGrid.rounds = 0;
+    const { correct, mistakes } = useSessionStore.getState();
+
+    useScoreManager.getState().addSession(correct, mistakes);
+    useSessionStore.getState().reset();
+    engine().navigation.showScreen(EndScreen, { correct, mistakes, type: 'education' });
   }
 }

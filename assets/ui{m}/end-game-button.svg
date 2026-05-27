@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="123" height="123" viewBox="0 0 91.28125 91.28125" preserveAspectRatio="xMidYMid meet">
+
+  <!-- Background circle fill -->
+  <circle cx="45.640625" cy="45.640625" r="45.640625" fill="#f2c583"/>
+
+  <!-- Border ring -->
+  <circle cx="45.640625" cy="45.640625" r="42.640625" fill="none" stroke="#c98144" stroke-width="5.95"/>
+
+  <!-- Left triangle -->
+  <polygon points="26.64,33 26.64,58 40.64,45.5" fill="#502d1a"/>
+  <!-- Right triangle -->
+  <polygon points="41.64,33 41.64,58 55.64,45.5" fill="#502d1a"/>
+  <!-- End bar -->
+  <rect x="57.64" y="33" width="7" height="25" rx="2" fill="#502d1a"/>
+
+</svg>
