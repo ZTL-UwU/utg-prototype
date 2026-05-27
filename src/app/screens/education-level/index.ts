@@ -3,6 +3,7 @@ import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { BackButton } from '../../ui/back-button';
+import { EndButton } from '../../ui/end-button';
 import { HelpButton } from '../../ui/help-button';
 import { EducationLevelMapScreen } from '../education-level-map';
 import { LetterGrid } from './letter-grid';
@@ -12,6 +13,7 @@ export class EducationLevelScreen extends Container {
   private background: Sprite;
   private backButton: BackButton;
   private helpButton: HelpButton;
+  private endButton: EndButton;
   private letterGrid: LetterGrid;
 
   constructor() {
@@ -31,8 +33,15 @@ export class EducationLevelScreen extends Container {
     this.backButton = new BackButton(() => {
       void engine().navigation.showScreen(EducationLevelMapScreen);
     });
+    this.endButton = new EndButton();
     this.letterGrid = new LetterGrid();
-    this.addChild(this.background, this.letterGrid, this.backButton, this.helpButton);
+    this.addChild(
+      this.background,
+      this.letterGrid,
+      this.backButton,
+      this.helpButton,
+      this.endButton,
+    );
   }
   public resize(width: number, height: number) {
     this.layout = { width, height };
@@ -47,10 +56,10 @@ export class EducationLevelScreen extends Container {
   }
 
   // reset override from template to fix eventListener leakage
-  reset() {
+  public reset() {
     this.removeChild(this.letterGrid);
     this.letterGrid.destroy({ children: true });
-    this.letterGrid = new LetterGrid();
+    // this.letterGrid = new LetterGrid();
     this.addChild(this.letterGrid);
   }
 }
