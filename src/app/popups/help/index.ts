@@ -3,10 +3,19 @@ import { animate } from 'motion';
 import { BlurFilter, Container, Graphics, Texture, Sprite, Text } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { useScoreManager } from '../../../zustandStores/scoreManager';
+import { AccuracyDisplay } from './accuracy-display';
+
+function formatScoreContent(correctCount: number, mistakeCount: number) {
+  return `Correct: ${correctCount}\nMistakes: ${mistakeCount}`;
+}
 
 export class HelpPopup extends Container {
   private popupMask: Sprite;
   private dialog: Dialog;
+  private scoreContent: Text;
+  private accuracyDisplay: AccuracyDisplay;
+  private unsubscribeScore: () => void;
 
   constructor() {
     super({
@@ -29,8 +38,29 @@ export class HelpPopup extends Container {
       interactive: true,
     });
 
+    this.scoreContent = new Text({
+      text: formatScoreContent(0, 0),
+      resolution: 2,
+      style: {
+        fontFamily: 'Concert One',
+        fontSize: 28,
+        fill: 0x000000,
+      },
+    });
+
+    this.accuracyDisplay = new AccuracyDisplay();
+
+    this.updateScoreContent();
+    this.unsubscribeScore = useScoreManager.subscribe(() => {
+      this.updateScoreContent();
+    });
+
+    const dialogHeight = 350;
+    const dialogWidth = 420;
     this.dialog = new Dialog({
-      background: new Graphics().roundRect(0, 0, 400, 200, 20).fill(0xf2c583),
+      width: dialogWidth,
+      height: dialogHeight,
+      background: new Graphics().roundRect(0, 0, dialogWidth, dialogHeight, 20).fill(0xf2c583),
       title: new Text({
         text: 'Help',
         style: {
@@ -40,7 +70,11 @@ export class HelpPopup extends Container {
           fill: 0x000000,
         },
       }),
-      content: 'Are you sure?',
+      content: [this.scoreContent, ...this.accuracyDisplay.content],
+      scrollBox: {
+        type: 'vertical',
+        elementsMargin: 12,
+      },
       buttons: [
         new FancyButton({
           defaultView: new Graphics().roundRect(0, 0, 100, 40, 10).fill(0xffffff),
@@ -67,6 +101,13 @@ export class HelpPopup extends Container {
     });
   }
 
+  private updateScoreContent() {
+    const { correctCount, mistakeCount } = useScoreManager.getState();
+
+    this.scoreContent.text = formatScoreContent(correctCount, mistakeCount);
+    this.accuracyDisplay.update(correctCount, mistakeCount);
+  }
+
   /** Present the popup, animated */
   public async show() {
     const currentEngine = engine();
@@ -81,6 +122,8 @@ export class HelpPopup extends Container {
 
   /** Dismiss the popup, animated */
   public async hide() {
+    this.unsubscribeScore();
+
     const currentEngine = engine();
     if (currentEngine.navigation.currentScreen) {
       currentEngine.navigation.currentScreen.filters = [];
