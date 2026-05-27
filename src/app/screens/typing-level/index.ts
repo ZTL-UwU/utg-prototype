@@ -3,6 +3,7 @@ import { Container, Sprite, Text, Texture } from 'pixi.js';
 import { engine } from '../../../engine/getEngine';
 import { useKeyboardStore } from '../../../zustandStores/keyboardStore';
 import { BackButton } from '../../ui/back-button';
+import { EndButton } from '../../ui/end-button';
 import { HelpButton } from '../../ui/help-button';
 import { TypingLevelMapScreen } from '../typing-level-map';
 import { Camel } from './camel';
@@ -16,6 +17,7 @@ export class TypingLevelScreen extends Container {
   private letterRow: LetterRow;
   private helpButton: HelpButton;
   private backButton: BackButton;
+  private endButton: EndButton;
   private title: Text;
 
   constructor() {
@@ -58,12 +60,13 @@ export class TypingLevelScreen extends Container {
       void engine().navigation.showScreen(TypingLevelMapScreen);
     });
     this.helpButton = new HelpButton();
-
+    this.endButton = new EndButton();
     this.addChild(
       this.background,
       this.camel,
       this.backButton,
       this.helpButton,
+      this.endButton,
       this.title,
       this.letterRow,
     );
