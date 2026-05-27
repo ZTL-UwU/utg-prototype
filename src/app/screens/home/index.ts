@@ -5,6 +5,7 @@ import { Container } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { LayerSelectPopup } from '../../popups/layer-select';
+import { Butterfly } from './butterfly';
 
 /** The screen that holds the app */
 export class HomeScreen extends Container {
@@ -12,6 +13,7 @@ export class HomeScreen extends Container {
   public static assetBundles = ['home'];
 
   private background: Sprite;
+  private butterfly: Butterfly;
   private startButton: FancyButton;
   private titleContainer: Container;
   private title: Text;
@@ -36,6 +38,8 @@ export class HomeScreen extends Container {
         objectFit: 'cover',
       },
     });
+
+    this.butterfly = new Butterfly();
 
     this.titleContainer = new Container({
       layout: {
@@ -120,7 +124,7 @@ export class HomeScreen extends Container {
       void engine().navigation.showPopup(LayerSelectPopup);
     });
 
-    this.addChild(this.background, this.titleContainer, this.startButton);
+    this.addChild(this.background, this.butterfly, this.titleContainer, this.startButton);
   }
 
   /** Prepare the screen just before showing */
@@ -144,12 +148,17 @@ export class HomeScreen extends Container {
       width,
       height,
     };
+    this.butterfly.resize(width, height);
   }
 
   /** Show screen with animations */
   public async show(): Promise<void> {
     this.background.alpha = 0;
-    await animate(this.background, { alpha: 1 }, { duration: 0.5, ease: 'easeOut' });
+    this.butterfly.alpha = 0;
+    await Promise.all([
+      animate(this.background, { alpha: 1 }, { duration: 0.5, ease: 'easeOut' }),
+      animate(this.butterfly, { alpha: 1 }, { duration: 0.5, ease: 'easeOut', delay: 0.2 }),
+    ]);
   }
 
   /** Hide screen with animations */
