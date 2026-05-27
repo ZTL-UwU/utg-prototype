@@ -158,7 +158,7 @@ export class LetterGrid extends Container {
       useSessionStore.getState().recordCorrect();
       setTimeout(() => {
         if (++LetterGrid.rounds < MAX_ROUNDS) {
-          engine().navigation.showScreen(EducationLevelScreen);
+          void engine().navigation.showScreen(EducationLevelScreen);
         } else {
           this.endGame();
         }
@@ -178,6 +178,6 @@ export class LetterGrid extends Container {
 
     useScoreManager.getState().addSession(correct, mistakes);
     useSessionStore.getState().reset();
-    engine().navigation.showScreen(EndScreen, { correct, mistakes, type: 'education' });
+    void engine().navigation.showScreen(EndScreen, { correct, mistakes, type: 'education' });
   }
 }
