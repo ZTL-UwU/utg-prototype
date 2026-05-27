@@ -7,12 +7,14 @@ import { EndButton } from '../../ui/end-button';
 import { HelpButton } from '../../ui/help-button';
 import { TypingLevelMapScreen } from '../typing-level-map';
 import { Camel } from './camel';
+import { Clouds } from './clouds';
 import { LetterRow } from './letter-row';
 
 export class TypingLevelScreen extends Container {
   public static assetBundles = ['typing-level', 'ui'];
 
   private background: Sprite;
+  private clouds: Clouds;
   private camel: Camel;
   private letterRow: LetterRow;
   private helpButton: HelpButton;
@@ -39,6 +41,7 @@ export class TypingLevelScreen extends Container {
       },
     });
 
+    this.clouds = new Clouds();
     this.camel = new Camel();
     this.letterRow = new LetterRow();
 
@@ -63,6 +66,7 @@ export class TypingLevelScreen extends Container {
     this.endButton = new EndButton();
     this.addChild(
       this.background,
+      this.clouds,
       this.camel,
       this.backButton,
       this.helpButton,
@@ -77,6 +81,7 @@ export class TypingLevelScreen extends Container {
       width,
       height,
     };
+    this.clouds.resize(width, height);
     this.camel.resize(width, height);
   }
 
