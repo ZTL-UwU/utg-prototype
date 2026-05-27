@@ -95,7 +95,7 @@ export function KeyboardLayout() {
   }, []);
 
   return (
-    <div className="absolute bottom-10 flex w-screen">
+    <div className="absolute bottom-10 flex w-screen" style={{ pointerEvents: 'none' }}>
       <div
         className="mx-auto flex flex-col gap-2 rounded-4xl bg-[#f3ca8a] p-6 select-none shadow-[inset_0_-10px_0_#c98144] drop-shadow-lg"
         style={{ ['--u' as string]: '4.2rem' }}
