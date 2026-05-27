@@ -10,6 +10,12 @@ const PANEL_PADDING_X = 64;
 const PANEL_PADDING_Y = 48;
 const PANEL_GAP = 28;
 
+interface EndScreenProps {
+  correct: number;
+  mistakes: number;
+  type?: 'education' | 'typing';
+}
+
 export class EndScreen extends Container {
   public static assetBundles = ['end-screen', 'ui'];
 
@@ -23,12 +29,8 @@ export class EndScreen extends Container {
   private typeText: Text | null = null;
   private backButton: BackButton;
 
-  constructor(props: Record<string, unknown>) {
+  constructor({ correct, mistakes, type }: EndScreenProps) {
     super();
-
-    const correct = (props?.correct as number) ?? 0;
-    const mistakes = (props?.mistakes as number) ?? 0;
-    const type = props?.type as string | undefined;
     const total = correct + mistakes;
     const accuracy = total === 0 ? 0 : Math.round((correct / total) * 100);
     useSessionStore.getState().reset();
