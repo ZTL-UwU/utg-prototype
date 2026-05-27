@@ -189,7 +189,9 @@ export class Navigation {
   /**
    * Show up a popup over current screen
    */
-  public async showPopup(ctor: AppScreenConstructor) {
+  public async showPopup(ctor: AppScreenConstructor): Promise<void>;
+  public async showPopup<P>(ctor: AppScreenConstructor<[P]>, props: P): Promise<void>;
+  public async showPopup(ctor: AppScreenConstructor, props?: unknown) {
     if (this.currentScreen) {
       this.currentScreen.interactiveChildren = false;
       await this.currentScreen.pause?.();
@@ -206,7 +208,8 @@ export class Navigation {
       await this.hideAndRemoveScreen(this.currentPopup);
     }
 
-    this.currentPopup = new ctor();
+    this.currentPopup =
+      props !== undefined ? new (ctor as AppScreenConstructor<[unknown]>)(props) : new ctor();
     await this.addAndShowScreen(this.currentPopup);
   }
 

@@ -4,7 +4,7 @@ import { engine } from '../../../engine/getEngine';
 import { getAlphabet, getMappedFromKeyboardEvent } from '../../../utils/keymap';
 import { useScoreManager } from '../../../zustandStores/scoreManager';
 import useSessionStore from '../../../zustandStores/sessionStore';
-import { EndScreen } from '../end-screen';
+import { EndScreenPopup } from '../../popups/end-screen';
 import { Letter } from './letter';
 
 const CARD_SIZE = 140;
@@ -111,9 +111,9 @@ export class LetterRow extends Container {
 
   private endGame() {
     const { correct, mistakes } = useSessionStore.getState();
-    useSessionStore.getState().reset();
+    // useSessionStore.getState().reset();
     useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showScreen(EndScreen, { correct, mistakes, type: 'typing' });
+    void engine().navigation.showPopup(EndScreenPopup);
     return;
   }
 }
