@@ -4,15 +4,17 @@ import { BlurFilter, Container, Graphics, Texture, Sprite, Text } from 'pixi.js'
 
 import { engine } from '../../../engine/getEngine';
 import { useScoreManager } from '../../../zustandStores/scoreManager';
+import { AccuracyDisplay } from './accuracy-display';
 
 function formatScoreContent(correctCount: number, mistakeCount: number) {
-  return `Typing score (demo)\nCorrect: ${correctCount}\nMistakes: ${mistakeCount}`;
+  return `Correct: ${correctCount}\nMistakes: ${mistakeCount}`;
 }
 
 export class HelpPopup extends Container {
   private popupMask: Sprite;
   private dialog: Dialog;
   private scoreContent: Text;
+  private accuracyDisplay: AccuracyDisplay;
   private unsubscribeScore: () => void;
 
   constructor() {
@@ -46,15 +48,19 @@ export class HelpPopup extends Container {
       },
     });
 
+    this.accuracyDisplay = new AccuracyDisplay();
+
     this.updateScoreContent();
     this.unsubscribeScore = useScoreManager.subscribe(() => {
       this.updateScoreContent();
     });
 
+    const dialogHeight = 350;
+    const dialogWidth = 420;
     this.dialog = new Dialog({
-      width: 420,
-      height: 260,
-      background: new Graphics().roundRect(0, 0, 420, 300, 20).fill(0xf2c583),
+      width: dialogWidth,
+      height: dialogHeight,
+      background: new Graphics().roundRect(0, 0, dialogWidth, dialogHeight, 20).fill(0xf2c583),
       title: new Text({
         text: 'Help',
         style: {
@@ -64,7 +70,11 @@ export class HelpPopup extends Container {
           fill: 0x000000,
         },
       }),
-      content: [this.scoreContent],
+      content: [this.scoreContent, ...this.accuracyDisplay.content],
+      scrollBox: {
+        type: 'vertical',
+        elementsMargin: 12,
+      },
       buttons: [
         new FancyButton({
           defaultView: new Graphics().roundRect(0, 0, 100, 40, 10).fill(0xffffff),
@@ -93,7 +103,9 @@ export class HelpPopup extends Container {
 
   private updateScoreContent() {
     const { correctCount, mistakeCount } = useScoreManager.getState();
+
     this.scoreContent.text = formatScoreContent(correctCount, mistakeCount);
+    this.accuracyDisplay.update(correctCount, mistakeCount);
   }
 
   /** Present the popup, animated */
