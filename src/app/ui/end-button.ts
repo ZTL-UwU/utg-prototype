@@ -11,8 +11,8 @@ export class EndButton extends Container {
 
   constructor(
     onPress: () => void = () => {
-      const { correct, mistakes } = useSessionStore.getState();
-      engine().navigation.showScreen(EndScreen, { correct, mistakes });
+      const { correct, mistakes, levelType } = useSessionStore.getState();
+      engine().navigation.showScreen(EndScreen, { correct, mistakes, type: levelType });
     },
   ) {
     super({
