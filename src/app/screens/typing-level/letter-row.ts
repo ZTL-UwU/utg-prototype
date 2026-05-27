@@ -73,7 +73,6 @@ export class LetterRow extends Container {
     if (isCorrect) {
       if (event.repeat) return;
       useSessionStore.getState().recordCorrect();
-      //   useScoreManager.getState().recordCorrect();
       this.isRemoving = true;
       current.setFeedback('success', true);
       window.setTimeout(() => this.removeCurrentLetter(), 600);
@@ -81,10 +80,9 @@ export class LetterRow extends Container {
     }
 
     if (!event.repeat) {
-      useScoreManager.getState().recordMistake();
+      useSessionStore.getState().recordMistake();
     }
-    useSessionStore.getState().recordMistake();
-    // current.setFeedback('error', !event.repeat);
+    current.setFeedback('error', !event.repeat);
   };
 
   private removeCurrentLetter() {
@@ -100,8 +98,7 @@ export class LetterRow extends Container {
 
     if (this.letters.length === 0) {
       this.endGame();
-      //   void engine().navigation.showScreen(TypingLevelMapScreen);
-      //   return;
+      return;
     }
 
     this.letterCards[0]?.setActive(true);
@@ -111,10 +108,11 @@ export class LetterRow extends Container {
     window.removeEventListener('keydown', this.handleKeyDown);
     super.destroy(options);
   }
+
   private endGame() {
     const { correct, mistakes } = useSessionStore.getState();
-    useScoreManager.getState().addSession(correct, mistakes);
     useSessionStore.getState().reset();
+    useScoreManager.getState().addSession(correct, mistakes);
     void engine().navigation.showScreen(EndScreen, { correct, mistakes, type: 'typing' });
     return;
   }
