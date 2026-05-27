@@ -14,11 +14,24 @@ export class EducationLevelMapScreen extends Container {
   private helpButton: HelpButton;
 
   constructor() {
-    super();
+    super({
+      layout: {
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
+    });
+
     this.background = new Sprite({
       texture: Texture.from('education-level-map/background.svg'),
-      layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
+      layout: {
+        position: 'absolute',
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover',
+      },
     });
+
     this.title = new Text({
       text: 'LEARN THE UYGHUR ALPHABET',
       style: {
@@ -30,21 +43,19 @@ export class EducationLevelMapScreen extends Container {
       layout: {
         position: 'absolute',
         top: 140,
-        left: 430,
       },
     });
 
     this.backButton = new BackButton(() => {
       void engine().navigation.showScreen(HomeScreen);
     });
+
     this.helpButton = new HelpButton();
     this.levelRow = new LevelRow();
-    this.backButton = new BackButton(() => {
-      void engine().navigation.showScreen(HomeScreen);
-    });
-    this.helpButton = new HelpButton();
+
     this.addChild(this.background, this.title, this.backButton, this.helpButton, this.levelRow);
   }
+
   public resize(width: number, height: number) {
     this.layout = {
       width,

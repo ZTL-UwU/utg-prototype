@@ -51,26 +51,18 @@ export class LayerSelectPopup extends Container {
       {
         icon: Texture.from('layer-select/education-icon.png'),
         layout: { left: 252, top: 604 },
-        onPress: () => {
-          void engine().navigation.hidePopup();
-
-          void engine().navigation.showScreen(EducationLevelMapScreen);
-        },
+        screen: EducationLevelMapScreen,
       },
       {
         icon: Texture.from('layer-select/typing-icon.png'),
         layout: { left: 640, top: 345 },
-        onPress: () => {
-          void engine().navigation.hidePopup();
-
-          void engine().navigation.showScreen(TypingLevelMapScreen);
-        },
+        screen: TypingLevelMapScreen,
       },
       {
-        // TODO: Add the icon for the third button
+        // Placeholder for the third layer
         icon: Texture.from('layer-select/typing-icon.png'),
         layout: { left: 1028, top: 604 },
-        onPress: () => {},
+        screen: TypingLevelMapScreen,
       },
     ];
 
@@ -93,7 +85,7 @@ export class LayerSelectPopup extends Container {
       };
       button.onPress.connect(() => {
         void engine().navigation.hidePopup();
-        data.onPress();
+        void engine().navigation.showScreen(data.screen);
       });
       return button;
     });

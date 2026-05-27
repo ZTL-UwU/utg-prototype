@@ -16,7 +16,13 @@ export class TypingLevelMapScreen extends Container {
   private helpButton: HelpButton;
 
   constructor() {
-    super();
+    super({
+      layout: {
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
+    });
 
     this.background = new Sprite({
       texture: Texture.from('typing-level-map/background.png'),
@@ -57,10 +63,6 @@ export class TypingLevelMapScreen extends Container {
     this.layout = {
       width,
       height,
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 24,
     };
   }
 }
