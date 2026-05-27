@@ -18,9 +18,6 @@ export class EducationLevelScreen extends Container {
     super({
       layout: {
         position: 'relative',
-        // display: 'flex',
-        // flexDirection: 'column',
-        // alignItems: 'center',
         justifyContent: 'center',
         width: '100%',
         height: '100%',
@@ -34,13 +31,11 @@ export class EducationLevelScreen extends Container {
     this.backButton = new BackButton(() => {
       void engine().navigation.showScreen(EducationLevelMapScreen);
     });
-    // this.backButton.layout = {position : "absolute", top : "10%", left : "10%"};
     this.letterGrid = new LetterGrid();
     this.addChild(this.background, this.letterGrid, this.backButton, this.helpButton);
   }
   public resize(width: number, height: number) {
     this.layout = { width, height };
-    // this.letterGrid.resize(width, height);
   }
   public async show() {
     this.letterGrid.alpha = 0;
@@ -49,5 +44,13 @@ export class EducationLevelScreen extends Container {
       animate(this.letterGrid, { alpha: 1 }, { duration: 0.5, ease: 'easeOut' }),
       animate(this.letterGrid.scale, { x: 1, y: 1 }, { duration: 0.5, ease: 'easeOut' }),
     ]);
+  }
+
+  // reset override from template to fix eventListener leakage
+  reset() {
+    this.removeChild(this.letterGrid);
+    this.letterGrid.destroy({ children: true });
+    this.letterGrid = new LetterGrid();
+    this.addChild(this.letterGrid);
   }
 }
