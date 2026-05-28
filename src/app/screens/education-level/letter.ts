@@ -157,6 +157,7 @@ export class Letter extends Container {
     ]);
     void this.contentAnimation.finished.then(() => this.setFeedback('none', false));
   }
+
   private readonly handleClick = () => {
     if (this.isCorrect) {
       this.setFeedback('success');
