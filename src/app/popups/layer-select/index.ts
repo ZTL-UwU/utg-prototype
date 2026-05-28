@@ -100,26 +100,38 @@ export class LayerSelectPopup extends Container {
 
   public async show() {
     const currentEngine = engine();
-    if (currentEngine.navigation.currentScreen) {
-      currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 9 })];
-    }
+    if (!currentEngine.navigation.currentScreen) return;
+
+    currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 0 })];
+
     this.innerContainer.alpha = 0;
     this.innerContainer.scale.set(0.7);
 
+    const duration = 0.4;
     await Promise.all([
-      animate(this.innerContainer, { alpha: 1 }, { duration: 0.4, ease: 'backOut' }),
-      animate(this.innerContainer.scale, { x: 1, y: 1 }, { duration: 0.4, ease: 'backOut' }),
+      animate(this.innerContainer, { alpha: 1 }, { duration, ease: 'backOut' }),
+      animate(this.innerContainer.scale, { x: 1, y: 1 }, { duration, ease: 'backOut' }),
+      animate(
+        currentEngine.navigation.currentScreen.filters[0] as BlurFilter,
+        { strength: 9 },
+        { duration, ease: 'easeOut' },
+      ),
     ]);
   }
 
   public async hide() {
     const currentEngine = engine();
-    if (currentEngine.navigation.currentScreen) {
-      currentEngine.navigation.currentScreen.filters = [];
-    }
+    if (!currentEngine.navigation.currentScreen) return;
+
+    const duration = 0.2;
     await Promise.all([
-      animate(this.innerContainer, { alpha: 0 }, { duration: 0.2, ease: 'easeOut' }),
-      animate(this.innerContainer.scale, { x: 0.94, y: 0.94 }, { duration: 0.2, ease: 'easeOut' }),
+      animate(this.innerContainer, { alpha: 0 }, { duration, ease: 'easeOut' }),
+      animate(this.innerContainer.scale, { x: 0.94, y: 0.94 }, { duration, ease: 'easeOut' }),
+      animate(
+        currentEngine.navigation.currentScreen.filters[0] as BlurFilter,
+        { strength: 0 },
+        { duration, ease: 'easeOut' },
+      ),
     ]);
   }
 
