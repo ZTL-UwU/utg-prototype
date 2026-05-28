@@ -4,6 +4,7 @@ import { Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import useSessionStore from '../../../zustandStores/sessionStore';
+import { EducationLevelScreen } from '../education-level';
 import { TypingLevelScreen } from '../typing-level';
 
 export type TLevel = {
@@ -15,7 +16,7 @@ export type TLevel = {
 const SIZE = 221;
 
 export class LevelButton extends FancyButton {
-  constructor(level: TLevel) {
+  constructor(level: TLevel, type: 'education' | 'typing') {
     super({
       defaultView: Texture.from(
         level.unlocked ? level.miniMapImage : 'typing-level-map/button-locked.svg',
@@ -47,8 +48,10 @@ export class LevelButton extends FancyButton {
       ];
       this.onPress.connect(() => {
         useSessionStore.getState().reset();
-        useSessionStore.getState().startSession('typing');
-        void engine().navigation.showScreen(TypingLevelScreen);
+        useSessionStore.getState().startSession(type);
+        void engine().navigation.showScreen(
+          type == 'typing' ? TypingLevelScreen : EducationLevelScreen,
+        );
       });
     }
   }
