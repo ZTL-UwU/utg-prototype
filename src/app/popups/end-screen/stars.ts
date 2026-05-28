@@ -1,43 +1,37 @@
 import { Container, Sprite, Texture } from 'pixi.js';
 
-export class Stars extends Container {
-  private starsArray: Sprite[];
+const STAR_COUNT = 3;
+const STAR_GAP = 10;
 
-  constructor(starNum: number) {
+export class Stars extends Container {
+  constructor(starCount: number, popupWidth: number) {
+    const starSize = popupWidth / 8;
+
     super({
       layout: {
         display: 'flex',
-        gap: 10,
+        flexDirection: 'row',
+        gap: STAR_GAP,
         justifyContent: 'center',
         alignItems: 'center',
         alignSelf: 'center',
       },
     });
-    this.starsArray = Array.from({ length: 3 }, (_, i) => {
-      const sprite =
-        i < starNum
-          ? new Sprite(Texture.from('end-screen/full-star.svg'))
-          : new Sprite(Texture.from('end-screen/empty-star.svg'));
-      sprite.layout = true;
-      return sprite;
-    });
-    this.addChild(...this.starsArray);
-  }
 
-  resize(width: number, height: number) {
-    const starSize = Math.min(width / 4, height);
-    this.starsArray.forEach((star) => {
-      star.layout = { width: starSize, height: starSize, flexShrink: 0 };
+    const stars = Array.from({ length: STAR_COUNT }, (_, index) => {
+      const textureName =
+        index < starCount ? 'end-screen/full-star.svg' : 'end-screen/empty-star.svg';
+      const star = new Sprite({
+        texture: Texture.from(textureName),
+        layout: {
+          width: starSize,
+          height: starSize,
+          flexShrink: 0,
+        },
+      });
+      return star;
     });
-    this.layout = {
-      display: 'flex',
-      flexDirection: 'row',
-      gap: 10,
-      justifyContent: 'center',
-      alignItems: 'center',
-      alignSelf: 'center',
-      width,
-      height,
-    };
+
+    this.addChild(...stars);
   }
 }

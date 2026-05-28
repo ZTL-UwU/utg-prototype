@@ -33,7 +33,7 @@ export class EducationLevelScreen extends Container {
     this.backButton = new BackButton(() => {
       void engine().navigation.showScreen(LevelMapScreen, 'education');
     });
-    this.endButton = new EndButton();
+    this.endButton = new EndButton('education');
     this.letterGrid = new LetterGrid();
     this.addChild(
       this.background,
