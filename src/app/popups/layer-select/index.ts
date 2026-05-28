@@ -3,12 +3,12 @@ import { animate } from 'motion';
 import { BlurFilter, Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { EducationLevelMapScreen } from '../../screens/education-level-map';
-import { TypingLevelMapScreen } from '../../screens/typing-level-map';
+import { LevelMapScreen } from '../../screens/level-map';
 
 export class LayerSelectPopup extends Container {
   public static assetBundles = ['layer-select'];
 
+  private innerContainer: Container;
   private background: Sprite;
   private layerButtons: FancyButton[];
   private closeButton: FancyButton;
@@ -22,47 +22,49 @@ export class LayerSelectPopup extends Container {
       },
     });
 
+    const backgroundTexture = Texture.from('layer-select/background.png');
     this.background = new Sprite({
-      texture: Texture.from('layer-select/background.png'),
-      layout: true,
+      texture: backgroundTexture,
+      layout: {
+        width: backgroundTexture.width,
+        height: backgroundTexture.height,
+        objectFit: 'cover',
+      },
     });
 
     this.closeButton = new FancyButton({
       defaultView: Texture.from('layer-select/close-button.png'),
       scale: 1.5,
-      animations: {
-        hover: {
-          props: { scale: { x: 1.2, y: 1.2 } },
-          duration: 100,
-        },
-      },
-      anchor: 0.5,
     });
     this.closeButton.layout = {
       position: 'absolute',
-      top: 100,
-      left: 100,
+      top: 60,
+      left: 60,
     };
     this.closeButton.onPress.connect(() => {
       void engine().navigation.hidePopup();
     });
 
-    const buttonData = [
+    const buttonData: {
+      icon: Texture;
+      layout: { left: number; top: number };
+      screenType: 'typing' | 'education';
+    }[] = [
       {
         icon: Texture.from('layer-select/education-icon.png'),
         layout: { left: 252, top: 604 },
-        screen: EducationLevelMapScreen,
+        screenType: 'education',
       },
       {
         icon: Texture.from('layer-select/typing-icon.png'),
         layout: { left: 640, top: 345 },
-        screen: TypingLevelMapScreen,
+        screenType: 'typing',
       },
       {
         // Placeholder for the third layer
         icon: Texture.from('layer-select/typing-icon.png'),
         layout: { left: 1028, top: 604 },
-        screen: TypingLevelMapScreen,
+        screenType: 'typing',
       },
     ];
 
@@ -85,38 +87,51 @@ export class LayerSelectPopup extends Container {
       };
       button.onPress.connect(() => {
         void engine().navigation.hidePopup();
-        void engine().navigation.showScreen(data.screen);
+        void engine().navigation.showScreen(LevelMapScreen, data.screenType);
       });
       return button;
     });
 
-    this.background.addChild(this.closeButton, ...this.layerButtons);
+    this.innerContainer = new Container({ layout: true });
+    this.innerContainer.addChild(this.background, this.closeButton, ...this.layerButtons);
 
-    this.addChild(this.background);
+    this.addChild(this.innerContainer);
   }
 
   public async show() {
     const currentEngine = engine();
-    if (currentEngine.navigation.currentScreen) {
-      currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 9 })];
-    }
-    this.background.alpha = 0;
-    this.background.scale.set(0.94);
+    if (!currentEngine.navigation.currentScreen) return;
 
+    currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 0 })];
+
+    this.innerContainer.alpha = 0;
+    this.innerContainer.scale.set(0.7);
+
+    const duration = 0.4;
     await Promise.all([
-      animate(this.background, { alpha: 1 }, { duration: 0.2, ease: 'easeOut' }),
-      animate(this.background.scale, { x: 1, y: 1 }, { duration: 0.2, ease: 'easeOut' }),
+      animate(this.innerContainer, { alpha: 1 }, { duration, ease: 'backOut' }),
+      animate(this.innerContainer.scale, { x: 1, y: 1 }, { duration, ease: 'backOut' }),
+      animate(
+        currentEngine.navigation.currentScreen.filters[0] as BlurFilter,
+        { strength: 9 },
+        { duration, ease: 'easeOut' },
+      ),
     ]);
   }
 
   public async hide() {
     const currentEngine = engine();
-    if (currentEngine.navigation.currentScreen) {
-      currentEngine.navigation.currentScreen.filters = [];
-    }
+    if (!currentEngine.navigation.currentScreen) return;
+
+    const duration = 0.2;
     await Promise.all([
-      animate(this.background, { alpha: 0 }, { duration: 0.2, ease: 'linear' }),
-      animate(this.background.scale, { x: 0.94, y: 0.94 }, { duration: 0.2, ease: 'linear' }),
+      animate(this.innerContainer, { alpha: 0 }, { duration, ease: 'easeOut' }),
+      animate(this.innerContainer.scale, { x: 0.94, y: 0.94 }, { duration, ease: 'easeOut' }),
+      animate(
+        currentEngine.navigation.currentScreen.filters[0] as BlurFilter,
+        { strength: 0 },
+        { duration, ease: 'easeOut' },
+      ),
     ]);
   }
 

@@ -10,7 +10,7 @@ export class HelpButton extends FancyButton {
       animations: {
         hover: {
           props: {
-            scale: { x: 1.03, y: 1.03 },
+            scale: { x: 1.1, y: 1.1 },
           },
           duration: 100,
         },

@@ -50,7 +50,8 @@ export class LetterRow extends Container {
         position: 'absolute',
         left: index * STEP,
       };
-      card.setActive(index === 0);
+      card.alpha = 0;
+      card.setActive(index === 0, false);
       this.lettersContainer.addChild(card);
       return card;
     });
@@ -73,6 +74,8 @@ export class LetterRow extends Container {
     if (isCorrect) {
       if (event.repeat) return;
       useSessionStore.getState().recordCorrect();
+      console.log(useSessionStore.getState().correct, useSessionStore.getState().mistakes);
+
       this.isRemoving = true;
       current.setFeedback('success', true);
       window.setTimeout(() => this.removeCurrentLetter(), 600);
@@ -81,6 +84,7 @@ export class LetterRow extends Container {
 
     if (!event.repeat) {
       useSessionStore.getState().recordMistake();
+      console.log(useSessionStore.getState().correct, useSessionStore.getState().mistakes);
     }
     current.setFeedback('error', !event.repeat);
   };
@@ -109,9 +113,16 @@ export class LetterRow extends Container {
     super.destroy(options);
   }
 
+  public async playEnterAnimation() {
+    await Promise.all(this.letterCards.map((card, index) => card.playAppear(index * 0.08)));
+  }
+
+  public async playExitAnimation() {
+    await Promise.all(this.letterCards.map((card, index) => card.playDisappear(index * 0.02)));
+  }
+
   private endGame() {
     const { correct, mistakes } = useSessionStore.getState();
-    // useSessionStore.getState().reset();
     useScoreManager.getState().addSession(correct, mistakes);
     void engine().navigation.showPopup(EndScreenPopup);
     return;

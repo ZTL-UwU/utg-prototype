@@ -1,3 +1,4 @@
+import { animate } from 'motion';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
@@ -5,10 +6,13 @@ import { useKeyboardStore } from '../../../zustandStores/keyboardStore';
 import { BackButton } from '../../ui/back-button';
 import { EndButton } from '../../ui/end-button';
 import { HelpButton } from '../../ui/help-button';
-import { TypingLevelMapScreen } from '../typing-level-map';
+import { LevelMapScreen } from '../level-map';
 import { Camel } from './camel';
 import { Clouds } from './clouds';
 import { LetterRow } from './letter-row';
+
+const TITLE_LAYOUT_TOP = 30;
+const TITLE_OFFSCREEN = 200;
 
 export class TypingLevelScreen extends Container {
   public static assetBundles = ['typing-level', 'ui'];
@@ -55,12 +59,12 @@ export class TypingLevelScreen extends Container {
       },
       layout: {
         position: 'absolute',
-        top: 30,
+        top: TITLE_LAYOUT_TOP,
       },
     });
 
     this.backButton = new BackButton(() => {
-      void engine().navigation.showScreen(TypingLevelMapScreen);
+      void engine().navigation.showScreen(LevelMapScreen, 'typing');
     });
     this.helpButton = new HelpButton();
     this.endButton = new EndButton();
@@ -85,11 +89,31 @@ export class TypingLevelScreen extends Container {
     this.camel.resize(width, height);
   }
 
+  private get titleOffscreenY() {
+    return -(TITLE_OFFSCREEN + TITLE_LAYOUT_TOP);
+  }
+
   public async show() {
     useKeyboardStore.setState({ showKeyboard: true });
+
+    this.title.y = this.titleOffscreenY;
+
+    await Promise.all([
+      animate(this.title, { y: 0 }, { duration: 0.4, ease: 'backOut' }),
+      this.letterRow.playEnterAnimation(),
+    ]);
   }
 
   public async hide() {
     useKeyboardStore.setState({ showKeyboard: false });
+
+    await Promise.all([
+      animate(this.title, { y: this.titleOffscreenY }, { duration: 0.2, ease: 'backIn' }),
+      this.letterRow.playExitAnimation(),
+    ]);
+  }
+
+  public reset() {
+    this.letterRow.destroy({ children: true });
   }
 }

@@ -1,5 +1,6 @@
+import { FancyButton } from '@pixi/ui';
 import { DropShadowFilter } from 'pixi-filters';
-import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
+import { Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import useSessionStore from '../../../zustandStores/sessionStore';
@@ -13,18 +14,28 @@ export type TLevel = {
 
 const SIZE = 221;
 
-export class LevelButton extends Container {
+export class LevelButton extends FancyButton {
   constructor(level: TLevel) {
     super({
-      layout: {
-        width: SIZE,
-        height: SIZE,
+      defaultView: Texture.from(
+        level.unlocked ? level.miniMapImage : 'typing-level-map/button-locked.svg',
+      ),
+      anchor: 0.5,
+      animations: {
+        hover: level.unlocked
+          ? {
+              props: { scale: { x: 1.1, y: 1.1 } },
+              duration: 100,
+            }
+          : undefined,
       },
     });
 
-    const textureAlias = level.unlocked ? level.miniMapImage : 'typing-level-map/button-locked.svg';
-    const sprite = new Sprite(Texture.from(textureAlias));
-    this.addChild(sprite);
+    this.layout = {
+      width: SIZE,
+      height: SIZE,
+      isLeaf: true,
+    };
 
     if (level.unlocked) {
       this.filters = [
@@ -34,10 +45,7 @@ export class LevelButton extends Container {
           blur: 10,
         }),
       ];
-      this.hitArea = new Rectangle(0, 0, SIZE, SIZE);
-      this.eventMode = 'static';
-      this.cursor = 'pointer';
-      this.on('pointertap', () => {
+      this.onPress.connect(() => {
         useSessionStore.getState().reset();
         useSessionStore.getState().startSession('typing');
         void engine().navigation.showScreen(TypingLevelScreen);
