@@ -7,6 +7,9 @@ import { engine } from '../../../engine/getEngine';
 import { LayerSelectPopup } from '../../popups/layer-select';
 import { Butterfly } from './butterfly';
 
+const TITLE_ENTER_OFFSET = 60;
+const BUTTON_ENTER_OFFSET = 40;
+
 /** The screen that holds the app */
 export class HomeScreen extends Container {
   /** Assets bundles required by this screen */
@@ -153,16 +156,45 @@ export class HomeScreen extends Container {
 
   /** Show screen with animations */
   public async show(): Promise<void> {
-    this.background.alpha = 0;
     this.butterfly.alpha = 0;
+    this.titleContainer.alpha = 0;
+    this.titleContainer.y = TITLE_ENTER_OFFSET;
+    this.startButton.alpha = 0;
+    this.startButton.y = BUTTON_ENTER_OFFSET;
+    this.startButton.scale.set(0.92);
+
     await Promise.all([
-      animate(this.background, { alpha: 1 }, { duration: 0.5, ease: 'easeOut' }),
       animate(this.butterfly, { alpha: 1 }, { duration: 0.5, ease: 'easeOut', delay: 0.2 }),
+      animate(
+        this.titleContainer,
+        { alpha: 1, y: 0 },
+        { duration: 0.45, ease: 'backOut', delay: 0.35 },
+      ),
+      animate(this.startButton, { alpha: 1, y: 0 }, { duration: 0.4, ease: 'backOut', delay: 0.5 }),
+      animate(
+        this.startButton.scale,
+        { x: 1, y: 1 },
+        { duration: 0.4, ease: 'backOut', delay: 0.5 },
+      ),
     ]);
   }
 
   /** Hide screen with animations */
-  public async hide() {}
+  public async hide(): Promise<void> {
+    await Promise.all([
+      animate(
+        this.titleContainer,
+        { alpha: 0, y: -TITLE_ENTER_OFFSET },
+        { duration: 0.2, ease: 'backIn' },
+      ),
+      animate(
+        this.startButton,
+        { alpha: 0, y: BUTTON_ENTER_OFFSET },
+        { duration: 0.2, ease: 'backIn' },
+      ),
+      animate(this.startButton.scale, { x: 0.92, y: 0.92 }, { duration: 0.2, ease: 'backIn' }),
+    ]);
+  }
 
   /** Auto pause the app when window go out of focus */
   public blur() {}
