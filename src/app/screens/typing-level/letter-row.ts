@@ -130,7 +130,7 @@ export class LetterRow extends Container {
   private endGame() {
     const { correct, mistakes } = useSessionStore.getState();
     useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup);
+    void engine().navigation.showPopup(EndScreenPopup, 'typing');
     return;
   }
 }
