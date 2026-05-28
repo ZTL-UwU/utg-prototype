@@ -4,31 +4,9 @@ import { Container, Graphics } from 'pixi.js';
 import { LevelButton, type TLevel } from './level-button';
 
 export class LevelRow extends Container {
-  private levels: TLevel[] = [
-    {
-      id: 1,
-      unlocked: true,
-      miniMapImage: 'typing-level-map/button-preview.svg',
-    },
-    {
-      id: 2,
-      unlocked: false,
-      miniMapImage: 'typing-level-map/button-preview.svg',
-    },
-    {
-      id: 3,
-      unlocked: false,
-      miniMapImage: 'typing-level-map/button-preview.svg',
-    },
-    {
-      id: 4,
-      unlocked: false,
-      miniMapImage: 'typing-level-map/button-preview.svg',
-    },
-  ];
   private levelButtons?: (LevelButton | Graphics)[];
 
-  constructor() {
+  constructor(levels: TLevel[]) {
     super({
       layout: {
         position: 'absolute',
@@ -40,7 +18,7 @@ export class LevelRow extends Container {
       },
     });
 
-    this.levelButtons = this.levels.flatMap((level, i) => {
+    this.levelButtons = levels.flatMap((level, i) => {
       const fillerLine = new Graphics({ layout: { width: 100, height: 15 } })
         .roundRect(0, 0, 100, 15, 10)
         .fill(0xa66129);

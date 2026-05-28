@@ -7,8 +7,31 @@ import { HelpButton } from '../../ui/help-button';
 import { HomeScreen } from '../home';
 import { LevelRow } from './level-row';
 
-export class TypingLevelMapScreen extends Container {
-  public static assetBundles = ['typing-level-map', 'ui'];
+const mapData = {
+  typing: {
+    background: 'typing-level-map/background.png',
+    title: { text: 'TYPING JOURNEY', fontSize: 150 },
+    levels: [
+      { id: 1, unlocked: true, miniMapImage: 'typing-level-map/button-preview.svg' },
+      { id: 2, unlocked: false, miniMapImage: 'typing-level-map/button-preview.svg' },
+      { id: 3, unlocked: false, miniMapImage: 'typing-level-map/button-preview.svg' },
+      { id: 4, unlocked: false, miniMapImage: 'typing-level-map/button-preview.svg' },
+    ],
+  },
+  education: {
+    background: 'education-level-map/background.svg',
+    title: { text: 'LEARN THE UYGHUR ALPHABET', fontSize: 100 },
+    levels: [
+      { id: 1, unlocked: true, miniMapImage: 'education-level-map/button-preview.svg' },
+      { id: 2, unlocked: false, miniMapImage: 'education-level-map/button-preview.svg' },
+      { id: 3, unlocked: false, miniMapImage: 'education-level-map/button-preview.svg' },
+      { id: 4, unlocked: false, miniMapImage: 'education-level-map/button-preview.svg' },
+    ],
+  },
+};
+
+export class LevelMapScreen extends Container {
+  public static assetBundles = ['typing-level-map', 'education-level-map', 'ui'];
 
   private background: Sprite;
   private title: Text;
@@ -16,7 +39,7 @@ export class TypingLevelMapScreen extends Container {
   private backButton: BackButton;
   private helpButton: HelpButton;
 
-  constructor() {
+  constructor(type: 'typing' | 'education') {
     super({
       layout: {
         flexDirection: 'column',
@@ -26,7 +49,7 @@ export class TypingLevelMapScreen extends Container {
     });
 
     this.background = new Sprite({
-      texture: Texture.from('typing-level-map/background.png'),
+      texture: Texture.from(mapData[type].background),
       layout: {
         width: '100%',
         height: '100%',
@@ -42,10 +65,10 @@ export class TypingLevelMapScreen extends Container {
     this.helpButton = new HelpButton();
 
     this.title = new Text({
-      text: 'TYPING JOURNEY',
+      text: mapData[type].title.text,
       style: {
         fontFamily: 'Concert One',
-        fontSize: 150,
+        fontSize: mapData[type].title.fontSize,
         fontWeight: '800',
         fill: 0x6b3f1f,
       },
@@ -54,7 +77,7 @@ export class TypingLevelMapScreen extends Container {
         top: 140,
       },
     });
-    this.levelRow = new LevelRow();
+    this.levelRow = new LevelRow(mapData[type].levels);
 
     this.addChild(this.background, this.title, this.levelRow, this.backButton, this.helpButton);
   }

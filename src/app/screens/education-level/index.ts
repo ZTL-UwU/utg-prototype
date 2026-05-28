@@ -5,7 +5,7 @@ import { engine } from '../../../engine/getEngine';
 import { BackButton } from '../../ui/back-button';
 import { EndButton } from '../../ui/end-button';
 import { HelpButton } from '../../ui/help-button';
-import { EducationLevelMapScreen } from '../education-level-map';
+import { LevelMapScreen } from '../level-map';
 import { LetterGrid } from './letter-grid';
 
 export class EducationLevelScreen extends Container {
@@ -31,7 +31,7 @@ export class EducationLevelScreen extends Container {
     });
     this.helpButton = new HelpButton();
     this.backButton = new BackButton(() => {
-      void engine().navigation.showScreen(EducationLevelMapScreen);
+      void engine().navigation.showScreen(LevelMapScreen, 'education');
     });
     this.endButton = new EndButton();
     this.letterGrid = new LetterGrid();
