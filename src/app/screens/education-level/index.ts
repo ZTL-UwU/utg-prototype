@@ -2,6 +2,7 @@ import { animate } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { QuitPopup } from '../../popups/quit';
 import { BackButton } from '../../ui/back-button';
 import { EndButton } from '../../ui/end-button';
 import { HelpButton } from '../../ui/help-button';
@@ -31,7 +32,12 @@ export class EducationLevelScreen extends Container {
     });
     this.helpButton = new HelpButton();
     this.backButton = new BackButton(() => {
-      void engine().navigation.showScreen(LevelMapScreen, 'education');
+      void engine().navigation.showPopup(QuitPopup, {
+        type: 'education',
+        onQuit: () => {
+          void engine().navigation.showScreen(LevelMapScreen, 'education');
+        },
+      });
     });
     this.endButton = new EndButton('education');
     this.letterGrid = new LetterGrid();

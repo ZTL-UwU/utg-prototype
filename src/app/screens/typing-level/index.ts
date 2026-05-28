@@ -66,8 +66,11 @@ export class TypingLevelScreen extends Container {
     });
 
     this.backButton = new BackButton(() => {
-      void engine().navigation.showPopup(QuitPopup, () => {
-        void engine().navigation.showScreen(LevelMapScreen, 'typing');
+      void engine().navigation.showPopup(QuitPopup, {
+        type: 'typing',
+        onQuit: () => {
+          void engine().navigation.showScreen(LevelMapScreen, 'typing');
+        },
       });
     });
     this.helpButton = new HelpButton();

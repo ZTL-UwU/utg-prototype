@@ -4,13 +4,23 @@ import { BlurFilter, Container, Graphics, Texture, Sprite, Text } from 'pixi.js'
 
 import { engine } from '../../../engine/getEngine';
 
+const CRYING_MASCOT_TEXTURES = {
+  education: 'quit/crying-sheep.png',
+  typing: 'quit/crying-camel.png',
+} as const;
+
+export type QuitPopupProps = {
+  type: keyof typeof CRYING_MASCOT_TEXTURES;
+  onQuit: () => void;
+};
+
 export class QuitPopup extends Container {
   public static assetBundles = ['quit'];
 
   private popupMask: Sprite;
   private dialog: Dialog;
 
-  constructor(onQuit: () => void) {
+  constructor({ type, onQuit }: QuitPopupProps) {
     super({
       layout: {
         flexDirection: 'column',
@@ -35,11 +45,11 @@ export class QuitPopup extends Container {
     const dialogWidth = 700;
     const contentWidth = dialogWidth - 60;
 
-    const cryingCamel = new Sprite({
-      texture: Texture.from('quit/crying-camel.png'),
+    const cryingMascot = new Sprite({
+      texture: Texture.from(CRYING_MASCOT_TEXTURES[type]),
       layout: true,
     });
-    const cryingCamelContainer = new Container({
+    const cryingMascotContainer = new Container({
       layout: {
         width: contentWidth,
         display: 'flex',
@@ -47,7 +57,7 @@ export class QuitPopup extends Container {
         alignItems: 'center',
       },
     });
-    cryingCamelContainer.addChild(cryingCamel);
+    cryingMascotContainer.addChild(cryingMascot);
 
     const getBottomButton = (text: string, onPress: () => void) => {
       const button = new FancyButton({
@@ -120,7 +130,7 @@ export class QuitPopup extends Container {
           fill: 0x6b411e,
         },
       }),
-      content: [cryingCamelContainer],
+      content: [cryingMascotContainer],
       buttons: [quitButton, cancelButton],
       buttonList: {
         elementsMargin: 40,
