@@ -1,5 +1,5 @@
 import { animate } from 'motion';
-import { BlurFilter, Container, Sprite, Text, TextStyle, Texture } from 'pixi.js';
+import { BlurFilter, Container, Graphics, Text, TextStyle } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import useSessionStore from '../../../zustandStores/sessionStore';
@@ -7,12 +7,34 @@ import { LevelMapScreen } from '../../screens/level-map';
 import { BackButton } from '../../ui/back-button';
 import { Stars } from './stars';
 
-const STAT_STYLE = new TextStyle({
-  fontFamily: 'Concert One',
-  fontSize: 32,
-  fontWeight: '700',
-  fill: 0xfad68a,
-});
+const POPUP_WIDTH = 857;
+const POPUP_HEIGHT = 547;
+const POPUP_RADIUS = 28;
+
+const POPUP_BACKGROUND_COLORS = {
+  typing: 0x7e5433,
+  education: 0x5a8cd4,
+} as const;
+
+function createPopupBackground(width: number, height: number, type: 'education' | 'typing') {
+  return new Graphics()
+    .roundRect(0, 0, width, height, POPUP_RADIUS)
+    .fill(POPUP_BACKGROUND_COLORS[type]);
+}
+
+const POPUP_TEXT_COLORS = {
+  typing: 0xfad68a,
+  education: 0xfdf7e7,
+} as const;
+
+function createStatStyle(type: 'education' | 'typing') {
+  return new TextStyle({
+    fontFamily: 'Concert One',
+    fontSize: 32,
+    fontWeight: '700',
+    fill: POPUP_TEXT_COLORS[type],
+  });
+}
 
 function getStarCount(accuracy: number) {
   if (accuracy > 90) return 3;
@@ -40,7 +62,7 @@ export class EndScreenPopup extends Container {
   public static assetBundles = ['end-screen'];
 
   private innerContainer: Container;
-  private background: Sprite;
+  private background: Graphics;
   private contentContainer: Container;
   private backButton: BackButton;
   private stars: Stars;
@@ -55,37 +77,32 @@ export class EndScreenPopup extends Container {
     });
 
     const { correct, mistakes, accuracy, starCount } = readSessionResults();
-    const backgroundTexture = Texture.from('end-screen/end-popup-background.svg');
-    const popupWidth = backgroundTexture.width;
-    const popupHeight = backgroundTexture.height;
 
-    this.background = new Sprite({
-      texture: backgroundTexture,
-      layout: {
-        width: popupWidth,
-        height: popupHeight,
-        objectFit: 'cover',
-      },
-    });
+    this.background = createPopupBackground(POPUP_WIDTH, POPUP_HEIGHT, type);
+    this.background.layout = {
+      width: POPUP_WIDTH,
+      height: POPUP_HEIGHT,
+    };
 
-    this.stars = new Stars(starCount, popupWidth);
-    const correctText = new Text({ text: `Correct   ${correct}`, style: STAT_STYLE, layout: true });
+    this.stars = new Stars(starCount, POPUP_WIDTH);
+    const statStyle = createStatStyle(type);
+    const correctText = new Text({ text: `Correct   ${correct}`, style: statStyle, layout: true });
     const mistakesText = new Text({
       text: `Mistakes  ${mistakes}`,
-      style: STAT_STYLE,
+      style: statStyle,
       layout: true,
     });
     const accuracyText = new Text({
       text: `Accuracy  ${accuracy}%`,
-      style: STAT_STYLE,
+      style: statStyle,
       layout: true,
     });
 
     this.contentContainer = new Container({
       layout: {
         position: 'absolute',
-        width: popupWidth,
-        height: popupHeight,
+        width: POPUP_WIDTH,
+        height: POPUP_HEIGHT,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
