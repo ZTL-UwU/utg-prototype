@@ -74,7 +74,6 @@ export class LetterRow extends Container {
     if (isCorrect) {
       if (event.repeat) return;
       useSessionStore.getState().recordCorrect();
-      console.log(useSessionStore.getState().correct, useSessionStore.getState().mistakes);
 
       this.isRemoving = true;
       current.setFeedback('success', true);
@@ -84,7 +83,6 @@ export class LetterRow extends Container {
 
     if (!event.repeat) {
       useSessionStore.getState().recordMistake();
-      console.log(useSessionStore.getState().correct, useSessionStore.getState().mistakes);
     }
     current.setFeedback('error', !event.repeat);
   };
