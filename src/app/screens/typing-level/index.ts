@@ -3,6 +3,7 @@ import { Container, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { useKeyboardStore } from '../../../zustandStores/keyboardStore';
+import { QuitPopup } from '../../popups/quit';
 import { BackButton } from '../../ui/back-button';
 import { EndButton } from '../../ui/end-button';
 import { HelpButton } from '../../ui/help-button';
@@ -64,7 +65,9 @@ export class TypingLevelScreen extends Container {
     });
 
     this.backButton = new BackButton(() => {
-      void engine().navigation.showScreen(LevelMapScreen, 'typing');
+      void engine().navigation.showPopup(QuitPopup, () => {
+        void engine().navigation.showScreen(LevelMapScreen, 'typing');
+      });
     });
     this.helpButton = new HelpButton();
     this.endButton = new EndButton();
@@ -78,6 +81,16 @@ export class TypingLevelScreen extends Container {
       this.title,
       this.letterRow,
     );
+  }
+
+  public async pause() {
+    useKeyboardStore.setState({ showKeyboard: false });
+    await this.letterRow.pause();
+  }
+
+  public async resume() {
+    useKeyboardStore.setState({ showKeyboard: true });
+    await this.letterRow.resume();
   }
 
   public resize(width: number, height: number) {
