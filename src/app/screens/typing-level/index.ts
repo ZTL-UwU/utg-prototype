@@ -6,7 +6,7 @@ import { useKeyboardStore } from '../../../zustandStores/keyboardStore';
 import { BackButton } from '../../ui/back-button';
 import { EndButton } from '../../ui/end-button';
 import { HelpButton } from '../../ui/help-button';
-import { TypingLevelMapScreen } from '../typing-level-map';
+import { LevelMapScreen } from '../level-map';
 import { Camel } from './camel';
 import { Clouds } from './clouds';
 import { LetterRow } from './letter-row';
@@ -64,7 +64,7 @@ export class TypingLevelScreen extends Container {
     });
 
     this.backButton = new BackButton(() => {
-      void engine().navigation.showScreen(TypingLevelMapScreen);
+      void engine().navigation.showScreen(LevelMapScreen, 'typing');
     });
     this.helpButton = new HelpButton();
     this.endButton = new EndButton();

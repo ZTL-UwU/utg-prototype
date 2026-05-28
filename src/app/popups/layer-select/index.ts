@@ -3,8 +3,7 @@ import { animate } from 'motion';
 import { BlurFilter, Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { EducationLevelMapScreen } from '../../screens/education-level-map';
-import { TypingLevelMapScreen } from '../../screens/typing-level-map';
+import { LevelMapScreen } from '../../screens/level-map';
 
 export class LayerSelectPopup extends Container {
   public static assetBundles = ['layer-select'];
@@ -46,22 +45,26 @@ export class LayerSelectPopup extends Container {
       void engine().navigation.hidePopup();
     });
 
-    const buttonData = [
+    const buttonData: {
+      icon: Texture;
+      layout: { left: number; top: number };
+      screenType: 'typing' | 'education';
+    }[] = [
       {
         icon: Texture.from('layer-select/education-icon.png'),
         layout: { left: 252, top: 604 },
-        screen: EducationLevelMapScreen,
+        screenType: 'education',
       },
       {
         icon: Texture.from('layer-select/typing-icon.png'),
         layout: { left: 640, top: 345 },
-        screen: TypingLevelMapScreen,
+        screenType: 'typing',
       },
       {
         // Placeholder for the third layer
         icon: Texture.from('layer-select/typing-icon.png'),
         layout: { left: 1028, top: 604 },
-        screen: TypingLevelMapScreen,
+        screenType: 'typing',
       },
     ];
 
@@ -84,7 +87,7 @@ export class LayerSelectPopup extends Container {
       };
       button.onPress.connect(() => {
         void engine().navigation.hidePopup();
-        void engine().navigation.showScreen(data.screen);
+        void engine().navigation.showScreen(LevelMapScreen, data.screenType);
       });
       return button;
     });
@@ -101,7 +104,7 @@ export class LayerSelectPopup extends Container {
       currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 9 })];
     }
     this.innerContainer.alpha = 0;
-    this.innerContainer.scale.set(0.8);
+    this.innerContainer.scale.set(0.7);
 
     await Promise.all([
       animate(this.innerContainer, { alpha: 1 }, { duration: 0.4, ease: 'backOut' }),
