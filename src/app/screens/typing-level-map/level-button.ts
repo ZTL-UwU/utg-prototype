@@ -22,10 +22,12 @@ export class LevelButton extends FancyButton {
       ),
       anchor: 0.5,
       animations: {
-        hover: {
-          props: { scale: { x: 1.05, y: 1.05 } },
-          duration: 100,
-        },
+        hover: level.unlocked
+          ? {
+              props: { scale: { x: 1.1, y: 1.1 } },
+              duration: 100,
+            }
+          : undefined,
       },
     });
 

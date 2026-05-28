@@ -1,3 +1,4 @@
+import { animate } from 'motion';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
@@ -64,5 +65,23 @@ export class TypingLevelMapScreen extends Container {
       width,
       height,
     };
+  }
+
+  public async show() {
+    this.title.y = -(200 + 140);
+
+    await Promise.all([
+      animate(this.title, { y: 0 }, { duration: 0.4, ease: 'backOut' }),
+      this.levelRow.playEnterAnimation(engine().navigation.height),
+    ]);
+  }
+
+  public async hide() {
+    const screenHeight = engine().navigation.height;
+
+    await Promise.all([
+      animate(this.title, { y: -(200 + 140) }, { duration: 0.2, ease: 'backIn' }),
+      this.levelRow.playExitAnimation(screenHeight),
+    ]);
   }
 }
