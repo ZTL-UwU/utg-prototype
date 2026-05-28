@@ -87,6 +87,14 @@ export class LetterRow extends Container {
     current.setFeedback('error', !event.repeat);
   };
 
+  public async pause() {
+    window.removeEventListener('keydown', this.handleKeyDown);
+  }
+
+  public async resume() {
+    window.addEventListener('keydown', this.handleKeyDown);
+  }
+
   private removeCurrentLetter() {
     const card = this.letterCards.shift();
     this.letters.shift();
