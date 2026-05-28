@@ -125,11 +125,20 @@ export class HelpPopup extends Container {
     this.unsubscribeScore();
 
     const currentEngine = engine();
+    await Promise.all([
+      animate(this.popupMask, { alpha: 0 }, { duration: 0.2, ease: 'linear' }),
+      new Promise<void>((resolve) => {
+        const connection = this.dialog.onClose.connect(() => {
+          connection.disconnect();
+          resolve();
+        });
+        this.dialog.close();
+      }),
+    ]);
+
     if (currentEngine.navigation.currentScreen) {
       currentEngine.navigation.currentScreen.filters = [];
     }
-    animate(this.popupMask, { alpha: 0 }, { duration: 0.2, ease: 'linear' });
-    this.dialog.close();
   }
 
   public resize(width: number, height: number) {

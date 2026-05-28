@@ -35,11 +35,20 @@ export class LayerSelectPopup extends Container {
     this.closeButton = new FancyButton({
       defaultView: Texture.from('layer-select/close-button.png'),
       scale: 1.5,
+      animations: {
+        hover: {
+          props: {
+            scale: { x: 1.1, y: 1.1 },
+          },
+          duration: 100,
+        },
+      },
+      anchor: 0.5,
     });
     this.closeButton.layout = {
       position: 'absolute',
-      top: 60,
-      left: 60,
+      top: 100,
+      left: 100,
     };
     this.closeButton.onPress.connect(() => {
       void engine().navigation.hidePopup();
