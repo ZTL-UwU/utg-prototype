@@ -9,6 +9,7 @@ import { TypingLevelMapScreen } from '../../screens/typing-level-map';
 export class LayerSelectPopup extends Container {
   public static assetBundles = ['layer-select'];
 
+  private innerContainer: Container;
   private background: Sprite;
   private layerButtons: FancyButton[];
   private closeButton: FancyButton;
@@ -22,26 +23,24 @@ export class LayerSelectPopup extends Container {
       },
     });
 
+    const backgroundTexture = Texture.from('layer-select/background.png');
     this.background = new Sprite({
-      texture: Texture.from('layer-select/background.png'),
-      layout: true,
+      texture: backgroundTexture,
+      layout: {
+        width: backgroundTexture.width,
+        height: backgroundTexture.height,
+        objectFit: 'cover',
+      },
     });
 
     this.closeButton = new FancyButton({
       defaultView: Texture.from('layer-select/close-button.png'),
       scale: 1.5,
-      animations: {
-        hover: {
-          props: { scale: { x: 1.2, y: 1.2 } },
-          duration: 100,
-        },
-      },
-      anchor: 0.5,
     });
     this.closeButton.layout = {
       position: 'absolute',
-      top: 100,
-      left: 100,
+      top: 60,
+      left: 60,
     };
     this.closeButton.onPress.connect(() => {
       void engine().navigation.hidePopup();
@@ -90,9 +89,10 @@ export class LayerSelectPopup extends Container {
       return button;
     });
 
-    this.background.addChild(this.closeButton, ...this.layerButtons);
+    this.innerContainer = new Container({ layout: true });
+    this.innerContainer.addChild(this.background, this.closeButton, ...this.layerButtons);
 
-    this.addChild(this.background);
+    this.addChild(this.innerContainer);
   }
 
   public async show() {
@@ -100,12 +100,12 @@ export class LayerSelectPopup extends Container {
     if (currentEngine.navigation.currentScreen) {
       currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 9 })];
     }
-    this.background.alpha = 0;
-    this.background.scale.set(0.94);
+    this.innerContainer.alpha = 0;
+    this.innerContainer.scale.set(0.94);
 
     await Promise.all([
-      animate(this.background, { alpha: 1 }, { duration: 0.2, ease: 'easeOut' }),
-      animate(this.background.scale, { x: 1, y: 1 }, { duration: 0.2, ease: 'easeOut' }),
+      animate(this.innerContainer, { alpha: 1 }, { duration: 0.2, ease: 'easeOut' }),
+      animate(this.innerContainer.scale, { x: 1, y: 1 }, { duration: 0.2, ease: 'easeOut' }),
     ]);
   }
 
@@ -115,8 +115,8 @@ export class LayerSelectPopup extends Container {
       currentEngine.navigation.currentScreen.filters = [];
     }
     await Promise.all([
-      animate(this.background, { alpha: 0 }, { duration: 0.2, ease: 'linear' }),
-      animate(this.background.scale, { x: 0.94, y: 0.94 }, { duration: 0.2, ease: 'linear' }),
+      animate(this.innerContainer, { alpha: 0 }, { duration: 0.2, ease: 'linear' }),
+      animate(this.innerContainer.scale, { x: 0.94, y: 0.94 }, { duration: 0.2, ease: 'linear' }),
     ]);
   }
 
