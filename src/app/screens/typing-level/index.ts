@@ -89,11 +89,15 @@ export class TypingLevelScreen extends Container {
   public async pause() {
     await this.keyboard.pause();
     await this.letterRow.pause();
+    await this.clouds.pause();
+    await this.camel.pause();
   }
 
   public async resume() {
     await this.keyboard.resume();
     await this.letterRow.resume();
+    await this.clouds.resume();
+    await this.camel.resume();
   }
 
   public resize(width: number, height: number) {
