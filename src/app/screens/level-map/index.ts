@@ -77,7 +77,7 @@ export class LevelMapScreen extends Container {
         top: 140,
       },
     });
-    this.levelRow = new LevelRow(mapData[type].levels);
+    this.levelRow = new LevelRow(mapData[type].levels, type);
 
     this.addChild(this.background, this.title, this.levelRow, this.backButton, this.helpButton);
   }

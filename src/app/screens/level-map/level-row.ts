@@ -6,7 +6,7 @@ import { LevelButton, type TLevel } from './level-button';
 export class LevelRow extends Container {
   private levelButtons?: (LevelButton | Graphics)[];
 
-  constructor(levels: TLevel[]) {
+  constructor(levels: TLevel[], type: 'education' | 'typing') {
     super({
       layout: {
         position: 'absolute',
@@ -22,7 +22,7 @@ export class LevelRow extends Container {
       const fillerLine = new Graphics({ layout: { width: 100, height: 15 } })
         .roundRect(0, 0, 100, 15, 10)
         .fill(0xa66129);
-      const button = new LevelButton(level);
+      const button = new LevelButton(level, type);
 
       return i === 0 ? [button] : [fillerLine, button];
     });

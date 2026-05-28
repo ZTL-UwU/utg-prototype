@@ -74,9 +74,9 @@ export class TypingLevelScreen extends Container {
       this.camel,
       this.backButton,
       this.helpButton,
-      this.endButton,
       this.title,
       this.letterRow,
+      this.endButton,
     );
   }
 
