@@ -43,15 +43,17 @@ export class EducationLevelScreen extends Container {
       this.endButton,
     );
   }
+
   public resize(width: number, height: number) {
     this.layout = { width, height };
   }
+
   public async show() {
     this.letterGrid.alpha = 0;
     this.letterGrid.scale.set(0.5);
     await Promise.all([
-      animate(this.letterGrid, { alpha: 1 }, { duration: 0.5, ease: 'easeOut' }),
-      animate(this.letterGrid.scale, { x: 1, y: 1 }, { duration: 0.5, ease: 'easeOut' }),
+      animate(this.letterGrid, { alpha: 1 }, { duration: 0.5, ease: 'backOut' }),
+      animate(this.letterGrid.scale, { x: 1, y: 1 }, { duration: 0.5, ease: 'backOut' }),
     ]);
   }
 
