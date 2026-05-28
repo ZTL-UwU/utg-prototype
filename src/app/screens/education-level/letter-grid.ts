@@ -5,8 +5,8 @@ import { engine } from '../../../engine/getEngine';
 import { getAlphabet, getKeyFromChar, getMappedFromKeyboardEvent } from '../../../utils/keymap';
 import { useScoreManager } from '../../../zustandStores/scoreManager';
 import useSessionStore from '../../../zustandStores/sessionStore';
+import { EndScreenPopup } from '../../popups/end-screen';
 import { SoundButton } from '../../ui/sound-button';
-import { EndScreen } from '../end-screen';
 import { Letter } from './letter';
 
 // Gameplay
@@ -158,7 +158,7 @@ export class LetterGrid extends Container {
       useSessionStore.getState().recordCorrect();
       setTimeout(() => {
         if (++LetterGrid.rounds < MAX_ROUNDS) {
-          engine().navigation.showScreen(EducationLevelScreen);
+          void engine().navigation.showScreen(EducationLevelScreen);
         } else {
           this.endGame();
         }
@@ -177,7 +177,7 @@ export class LetterGrid extends Container {
     const { correct, mistakes } = useSessionStore.getState();
 
     useScoreManager.getState().addSession(correct, mistakes);
-    useSessionStore.getState().reset();
-    engine().navigation.showScreen(EndScreen, { correct, mistakes, type: 'education' });
+    // useSessionStore.getState().reset();
+    void engine().navigation.showPopup(EndScreenPopup);
   }
 }

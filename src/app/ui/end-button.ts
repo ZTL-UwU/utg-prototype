@@ -1,15 +1,15 @@
 import { FancyButton } from '@pixi/ui';
 
 import { engine } from '../../engine/getEngine';
-import useSessionStore from '../../zustandStores/sessionStore';
-import { EndScreen } from '../screens/end-screen';
-
+import { EndScreenPopup } from '../popups/end-screen';
 export class EndButton extends FancyButton {
   constructor(
     onPress: () => void = () => {
-      const { correct, mistakes, levelType } = useSessionStore.getState();
-      console.log('pressed');
-      engine().navigation.showScreen(EndScreen, { correct, mistakes, type: levelType });
+      //   const { correct, mistakes } = useSessionStore.getState();
+      //   const total = correct + mistakes;
+      //   const accuracy = total === 0 ? 0 : correct / total;
+      //   const starNum = accuracy >= 0.9 ? 3 : accuracy >= 0.7 ? 2 : accuracy >= 0.5 ? 1 : 0;
+      void engine().navigation.showPopup(EndScreenPopup);
     },
   ) {
     super({
@@ -32,7 +32,7 @@ export class EndButton extends FancyButton {
 
     this.layout = {
       position: 'absolute',
-      bottom: '20%',
+      bottom: '10%',
       left: 30,
     };
 

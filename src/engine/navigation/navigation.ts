@@ -30,8 +30,8 @@ interface AppScreen extends Container {
 }
 
 /** Interface for app screens constructors */
-interface AppScreenConstructor {
-  new (...args: any[]): AppScreen;
+interface AppScreenConstructor<Args extends unknown[] = []> {
+  new (...args: Args): AppScreen;
   /** List of assets bundles required by the screen */
   assetBundles?: string[];
 }
@@ -138,7 +138,9 @@ export class Navigation {
    * Hide current screen (if there is one) and present a new screen.
    * Any class that matches AppScreen interface can be used here.
    */
-  public async showScreen(ctor: AppScreenConstructor, props?: Record<string, unknown>) {
+  public async showScreen(ctor: AppScreenConstructor): Promise<void>;
+  public async showScreen<P>(ctor: AppScreenConstructor<[P]>, props: P): Promise<void>;
+  public async showScreen(ctor: AppScreenConstructor, props?: unknown) {
     // Block interactivity in current screen
     if (this.currentScreen) {
       this.currentScreen.interactiveChildren = false;
@@ -164,7 +166,10 @@ export class Navigation {
     }
 
     // Create the new screen and add that to the stage
-    this.currentScreen = props ? new ctor(props) : BigPool.get(ctor);
+    this.currentScreen =
+      props !== undefined
+        ? new (ctor as AppScreenConstructor<[unknown]>)(props)
+        : BigPool.get(ctor);
     await this.addAndShowScreen(this.currentScreen);
   }
 
@@ -184,7 +189,9 @@ export class Navigation {
   /**
    * Show up a popup over current screen
    */
-  public async showPopup(ctor: AppScreenConstructor) {
+  public async showPopup(ctor: AppScreenConstructor): Promise<void>;
+  public async showPopup<P>(ctor: AppScreenConstructor<[P]>, props: P): Promise<void>;
+  public async showPopup(ctor: AppScreenConstructor, props?: unknown) {
     if (this.currentScreen) {
       this.currentScreen.interactiveChildren = false;
       await this.currentScreen.pause?.();
@@ -201,7 +208,8 @@ export class Navigation {
       await this.hideAndRemoveScreen(this.currentPopup);
     }
 
-    this.currentPopup = new ctor();
+    this.currentPopup =
+      props !== undefined ? new (ctor as AppScreenConstructor<[unknown]>)(props) : new ctor();
     await this.addAndShowScreen(this.currentPopup);
   }
 
