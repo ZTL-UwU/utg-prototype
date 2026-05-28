@@ -3,14 +3,11 @@ import '@pixi/layout';
 
 import './index.css';
 import { HomeScreen } from './app/screens/home';
-import { KeyboardLayout } from './components/KeyboardLayout';
 import { MobileBlockerBanner } from './components/MobileBlockerBanner';
 import { CreationEngine } from './engine/engine';
 import { setEngine } from './engine/getEngine';
-import { useKeyboardStore } from './zustandStores/keyboardStore';
 
 export default function App() {
-  const { showKeyboard } = useKeyboardStore();
   const engineRef = useRef<CreationEngine | null>(null);
 
   if (engineRef.current === null) {
@@ -39,7 +36,6 @@ export default function App() {
     <>
       <MobileBlockerBanner />
       <div id="pixi-container" />
-      {showKeyboard && <KeyboardLayout />}
     </>
   );
 }

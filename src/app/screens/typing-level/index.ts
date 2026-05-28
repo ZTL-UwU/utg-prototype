@@ -2,11 +2,11 @@ import { animate } from 'motion';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { useKeyboardStore } from '../../../zustandStores/keyboardStore';
 import { QuitPopup } from '../../popups/quit';
 import { BackButton } from '../../ui/back-button';
 import { EndButton } from '../../ui/end-button';
 import { HelpButton } from '../../ui/help-button';
+import { KeyboardLayout } from '../../ui/keyboard-layout';
 import { LevelMapScreen } from '../level-map';
 import { Camel } from './camel';
 import { Clouds } from './clouds';
@@ -26,6 +26,7 @@ export class TypingLevelScreen extends Container {
   private backButton: BackButton;
   private endButton: EndButton;
   private title: Text;
+  private keyboard: KeyboardLayout;
 
   constructor() {
     super({
@@ -71,6 +72,7 @@ export class TypingLevelScreen extends Container {
     });
     this.helpButton = new HelpButton();
     this.endButton = new EndButton();
+    this.keyboard = new KeyboardLayout();
     this.addChild(
       this.background,
       this.clouds,
@@ -80,16 +82,17 @@ export class TypingLevelScreen extends Container {
       this.title,
       this.letterRow,
       this.endButton,
+      this.keyboard,
     );
   }
 
   public async pause() {
-    useKeyboardStore.setState({ showKeyboard: false });
+    await this.keyboard.pause();
     await this.letterRow.pause();
   }
 
   public async resume() {
-    useKeyboardStore.setState({ showKeyboard: true });
+    await this.keyboard.resume();
     await this.letterRow.resume();
   }
 
@@ -100,6 +103,7 @@ export class TypingLevelScreen extends Container {
     };
     this.clouds.resize(width, height);
     this.camel.resize(width, height);
+    this.keyboard.resize(width, height);
   }
 
   private get titleOffscreenY() {
@@ -107,22 +111,24 @@ export class TypingLevelScreen extends Container {
   }
 
   public async show() {
-    useKeyboardStore.setState({ showKeyboard: true });
+    void this.keyboard.resume();
 
     this.title.y = this.titleOffscreenY;
 
     await Promise.all([
       animate(this.title, { y: 0 }, { duration: 0.4, ease: 'backOut' }),
       this.letterRow.playEnterAnimation(),
+      this.keyboard.playEnterAnimation(),
     ]);
   }
 
   public async hide() {
-    useKeyboardStore.setState({ showKeyboard: false });
+    void this.keyboard.pause();
 
     await Promise.all([
       animate(this.title, { y: this.titleOffscreenY }, { duration: 0.2, ease: 'backIn' }),
       this.letterRow.playExitAnimation(),
+      this.keyboard.playExitAnimation(),
     ]);
   }
 

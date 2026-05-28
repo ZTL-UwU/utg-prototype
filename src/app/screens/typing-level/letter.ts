@@ -72,7 +72,7 @@ export class Letter extends Container {
         fontFamily: 'Noto Sans Arabic',
         fontSize: cardSize * 0.48,
         fontWeight: '700',
-        padding: 20,
+        padding: 30,
       },
     });
     letterLabel.layout = true;

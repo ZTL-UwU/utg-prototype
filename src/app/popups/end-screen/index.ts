@@ -1,7 +1,6 @@
 import { BlurFilter, Container, Sprite, Text, TextStyle, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { useKeyboardStore } from '../../../zustandStores/keyboardStore';
 import useSessionStore from '../../../zustandStores/sessionStore';
 import { HomeScreen } from '../../screens/home';
 import { BackButton } from '../../ui/back-button';
@@ -124,7 +123,6 @@ export class EndScreenPopup extends Container {
 
   async show() {
     if (engine().navigation.currentScreen != undefined) {
-      useKeyboardStore.getState().setShowKeyboard(false);
       engine().navigation.currentScreen!.filters = [new BlurFilter({ strength: 9 })];
     }
   }
