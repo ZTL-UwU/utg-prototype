@@ -1,8 +1,7 @@
 import { Container, Graphics } from 'pixi.js';
 
-import { EducationLevelScreen } from '.';
 import { engine } from '../../../engine/getEngine';
-import { getAlphabet, getKeyFromChar, getMappedFromKeyboardEvent } from '../../../utils/keymap';
+import { getAlphabet, getKeyFromChar } from '../../../utils/keymap';
 import { useScoreManager } from '../../../zustandStores/scoreManager';
 import useSessionStore from '../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../popups/end-screen';
@@ -11,7 +10,6 @@ import { Letter } from './letter';
 
 // Gameplay
 const NUM_CHOICES = 4;
-const MAX_ROUNDS = 5;
 
 // Scene Object
 const CARD_SIZE = 150;
@@ -50,7 +48,8 @@ export class LetterGrid extends Container {
   private readableCorrectLetterString: string;
 
   // STATIC ROUND COUNTER, RESET ON FIN
-  private static rounds = 0;
+  public static rounds = 0;
+  public static readonly MAX_ROUNDS = 5;
   constructor() {
     super({
       layout: {
@@ -79,19 +78,25 @@ export class LetterGrid extends Container {
     this.initLetterAttributes();
     this.initLayouts();
     this.populatePanel();
-
-    window.addEventListener('keydown', this.handleKeyDown);
     this.addChild(this.panel);
+    console.log(`correct letter : ${this.correctLetterString}`);
   }
 
   // init letters, letterMap, correctLetterString
   // ACCESSSES letterStrings
   private initLetterAttributes() {
+    this.correctLetterString = this.letterStrings[Math.floor(Math.random() * NUM_CHOICES)];
     this.letterStrings.forEach((letterString, _i) => {
-      this.letterMap.set(letterString, new Letter({ letter: letterString, cardSize: CARD_SIZE }));
+      this.letterMap.set(
+        letterString,
+        new Letter({
+          letter: letterString,
+          correctLetter: this.correctLetterString,
+          cardSize: CARD_SIZE,
+        }),
+      );
     });
     this.letters = [...this.letterMap.values()];
-    this.correctLetterString = this.letterStrings[Math.floor(Math.random() * NUM_CHOICES)];
     this.readableCorrectLetterString = getKeyFromChar(this.correctLetterString);
   }
 
@@ -143,40 +148,11 @@ export class LetterGrid extends Container {
     console.log(`correct letter is ${this.readableCorrectLetterString}`);
   };
 
-  private readonly handleKeyDown = (event: KeyboardEvent) => {
-    if (event.key == 'Shift' || this.letters.length === 0) return;
-
-    const translatedLetter: string = getMappedFromKeyboardEvent(event);
-    const pressedLetter: Letter | undefined = this.letterMap.get(translatedLetter);
-    const isCorrect = translatedLetter === this.correctLetterString;
-
-    if (!pressedLetter) {
-      useSessionStore.getState().recordMistake();
-      return;
-    }
-    if (isCorrect) {
-      if (event.repeat) return;
-      pressedLetter.setFeedback('success');
-      useSessionStore.getState().recordCorrect();
-      setTimeout(() => {
-        if (++LetterGrid.rounds < MAX_ROUNDS) {
-          void engine().navigation.showScreen(EducationLevelScreen);
-        } else {
-          this.endGame();
-        }
-      }, 1000);
-    } else {
-      useSessionStore.getState().recordMistake();
-      pressedLetter.setFeedback('error');
-    }
-  };
-
   override destroy(options?: Parameters<Container['destroy']>[0]) {
-    window.removeEventListener('keydown', this.handleKeyDown);
     super.destroy(options);
   }
 
-  private endGame() {
+  public static endGame() {
     LetterGrid.rounds = 0;
     const { correct, mistakes } = useSessionStore.getState();
 

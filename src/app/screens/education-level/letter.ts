@@ -1,10 +1,16 @@
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Graphics, Text } from 'pixi.js';
 
+import { EducationLevelScreen } from '.';
+import { engine } from '../../../engine/getEngine';
+import useSessionStore from '../../../zustandStores/sessionStore';
+import { LetterGrid } from './letter-grid';
+
 export type LetterFeedback = 'none' | 'error' | 'success';
 
 type LetterOptions = {
   letter: string;
+  correctLetter: string;
   cardSize?: number;
   cornerRadius?: number;
 };
@@ -29,12 +35,13 @@ export class Letter extends Container {
   private readonly card = new Graphics();
   private readonly cardSize: number;
   private readonly cornerRadius: number;
+  private readonly isCorrect: boolean;
 
   private feedback: LetterFeedback = 'none';
   private focusAnimation?: AnimationPlaybackControls;
   private contentAnimation?: AnimationPlaybackControls;
 
-  constructor({ letter, cardSize = 88, cornerRadius = 18 }: LetterOptions) {
+  constructor({ letter, correctLetter, cardSize = 88, cornerRadius = 18 }: LetterOptions) {
     super({
       layout: {
         width: cardSize,
@@ -74,11 +81,16 @@ export class Letter extends Container {
     });
     letterLabel.layout = true;
 
+    this.isCorrect = letter === correctLetter;
     this.drawShadow();
     this.drawCard();
     this.contentContainer.addChild(this.shadow, this.card, letterLabel);
     this.feedbackContainer.addChild(this.contentContainer);
     this.focusContainer.addChild(this.feedbackContainer);
+    this.eventMode = 'static';
+    this.onclick = () => {
+      this.handleClick();
+    };
     this.addChild(this.focusContainer);
   }
 
@@ -145,4 +157,20 @@ export class Letter extends Container {
     ]);
     void this.contentAnimation.finished.then(() => this.setFeedback('none', false));
   }
+  private readonly handleClick = () => {
+    if (this.isCorrect) {
+      this.setFeedback('success');
+      useSessionStore.getState().recordCorrect();
+      setTimeout(() => {
+        if (++LetterGrid.rounds < LetterGrid.MAX_ROUNDS) {
+          void engine().navigation.showScreen(EducationLevelScreen);
+        } else {
+          LetterGrid.endGame();
+        }
+      }, 1000);
+    } else {
+      useSessionStore.getState().recordMistake();
+      this.setFeedback('error');
+    }
+  };
 }
