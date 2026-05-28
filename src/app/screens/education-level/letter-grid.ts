@@ -138,9 +138,11 @@ export class LetterGrid extends Container {
     this.panel.x = (width - panelW) / 2;
     this.panel.y = (height - panelH) / 2;
   }
+
   private readonly soundButtonClick = () => {
     console.log(`correct letter is ${this.readableCorrectLetterString}`);
   };
+
   private readonly handleKeyDown = (event: KeyboardEvent) => {
     if (event.key == 'Shift' || this.letters.length === 0) return;
 
@@ -168,10 +170,12 @@ export class LetterGrid extends Container {
       pressedLetter.setFeedback('error');
     }
   };
+
   override destroy(options?: Parameters<Container['destroy']>[0]) {
     window.removeEventListener('keydown', this.handleKeyDown);
     super.destroy(options);
   }
+
   private endGame() {
     LetterGrid.rounds = 0;
     const { correct, mistakes } = useSessionStore.getState();

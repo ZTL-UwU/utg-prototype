@@ -59,7 +59,5 @@ export class EducationLevelScreen extends Container {
   public reset() {
     this.removeChild(this.letterGrid);
     this.letterGrid.destroy({ children: true });
-    // this.letterGrid = new LetterGrid();
-    this.addChild(this.letterGrid);
   }
 }

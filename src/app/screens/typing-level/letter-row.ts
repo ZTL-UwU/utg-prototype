@@ -74,6 +74,8 @@ export class LetterRow extends Container {
     if (isCorrect) {
       if (event.repeat) return;
       useSessionStore.getState().recordCorrect();
+      console.log(useSessionStore.getState().correct, useSessionStore.getState().mistakes);
+
       this.isRemoving = true;
       current.setFeedback('success', true);
       window.setTimeout(() => this.removeCurrentLetter(), 600);
@@ -82,6 +84,7 @@ export class LetterRow extends Container {
 
     if (!event.repeat) {
       useSessionStore.getState().recordMistake();
+      console.log(useSessionStore.getState().correct, useSessionStore.getState().mistakes);
     }
     current.setFeedback('error', !event.repeat);
   };
@@ -120,7 +123,6 @@ export class LetterRow extends Container {
 
   private endGame() {
     const { correct, mistakes } = useSessionStore.getState();
-    // useSessionStore.getState().reset();
     useScoreManager.getState().addSession(correct, mistakes);
     void engine().navigation.showPopup(EndScreenPopup);
     return;

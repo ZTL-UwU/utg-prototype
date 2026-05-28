@@ -112,4 +112,8 @@ export class TypingLevelScreen extends Container {
       this.letterRow.playExitAnimation(),
     ]);
   }
+
+  public reset() {
+    this.letterRow.destroy({ children: true });
+  }
 }
