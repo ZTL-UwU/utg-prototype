@@ -50,7 +50,8 @@ export class LetterRow extends Container {
         position: 'absolute',
         left: index * STEP,
       };
-      card.setActive(index === 0);
+      card.alpha = 0;
+      card.setActive(index === 0, false);
       this.lettersContainer.addChild(card);
       return card;
     });
@@ -107,6 +108,14 @@ export class LetterRow extends Container {
   override destroy(options?: Parameters<Container['destroy']>[0]) {
     window.removeEventListener('keydown', this.handleKeyDown);
     super.destroy(options);
+  }
+
+  public async playEnterAnimation() {
+    await Promise.all(this.letterCards.map((card, index) => card.playAppear(index * 0.08)));
+  }
+
+  public async playExitAnimation() {
+    await Promise.all(this.letterCards.map((card, index) => card.playDisappear(index * 0.02)));
   }
 
   private endGame() {

@@ -85,17 +85,75 @@ export class Letter extends Container {
     this.addChild(this.focusContainer);
   }
 
-  setActive(isActive: boolean) {
+  setActive(isActive: boolean, animateTransition = true) {
     if (this.isActive === isActive) return;
 
     this.isActive = isActive;
     this.drawShadow();
     this.drawCard();
+
+    const targetScale = isActive ? 1.2 : 1;
+    if (!animateTransition) {
+      this.focusContainer.scale.set(targetScale);
+      return;
+    }
+
     this.focusAnimation = animate(
       this.focusContainer.scale,
-      isActive ? { x: 1.2, y: 1.2 } : { x: 1, y: 1 },
+      { x: targetScale, y: targetScale },
       { duration: 0.3, ease: 'easeOut' },
     );
+  }
+
+  async playAppear(delay: number) {
+    const targetScale = this.isActive ? 1.2 : 1;
+    const fade = { alpha: 0 };
+    this.alpha = fade.alpha;
+    this.focusContainer.scale.set(0.6);
+
+    const duration = 0.4;
+    await Promise.all([
+      animate(
+        fade,
+        { alpha: 1 },
+        {
+          duration,
+          ease: 'backOut',
+          delay,
+          onUpdate: () => {
+            this.alpha = fade.alpha;
+          },
+        },
+      ),
+      animate(
+        this.focusContainer.scale,
+        { x: targetScale, y: targetScale },
+        { duration, ease: 'backOut', delay },
+      ),
+    ]);
+  }
+
+  async playDisappear(delay: number) {
+    this.focusAnimation?.stop();
+    this.contentAnimation?.stop();
+
+    const fade = { alpha: this.alpha };
+    const duration = 0.2;
+    await Promise.all([
+      animate(
+        fade,
+        { alpha: 0 },
+        {
+          duration,
+          ease: 'backIn',
+          delay,
+          onUpdate: () => {
+            this.alpha = fade.alpha;
+          },
+        },
+      ),
+      animate(this.focusContainer.scale, { x: 0, y: 0 }, { duration, ease: 'backIn', delay }),
+    ]);
   }
 
   setFeedback(feedback: LetterFeedback, animateFeedback = true) {
