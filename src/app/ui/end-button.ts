@@ -20,11 +20,13 @@ export class EndButton extends FancyButton {
           duration: 100,
         },
       },
+      anchorX: 0,
+      anchorY: 1,
     });
 
     this.layout = {
       position: 'absolute',
-      bottom: '10%',
+      bottom: 30,
       left: 30,
     };
 
