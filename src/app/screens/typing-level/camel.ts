@@ -42,6 +42,16 @@ export class Camel extends Container {
     );
   }
 
+  public async pause() {
+    this.walkAnimation?.pause();
+    this.sprite.stop();
+  }
+
+  public async resume() {
+    this.walkAnimation?.play();
+    this.sprite.play();
+  }
+
   resize(screenWidth: number, screenHeight: number) {
     this.y = screenHeight / 2 + 100;
     this.startWalk(screenWidth);

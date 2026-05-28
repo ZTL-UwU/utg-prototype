@@ -85,6 +85,18 @@ export class Clouds extends Container {
     };
   }
 
+  public async pause() {
+    for (const drift of this.drifts) {
+      drift.animation?.pause();
+    }
+  }
+
+  public async resume() {
+    for (const drift of this.drifts) {
+      drift.animation?.play();
+    }
+  }
+
   resize(screenWidth: number, screenHeight: number) {
     for (const drift of this.drifts) {
       this.startDrift(drift, screenWidth, screenHeight);
