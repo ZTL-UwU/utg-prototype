@@ -1,3 +1,4 @@
+import { animate } from 'motion';
 import { Container, Graphics } from 'pixi.js';
 
 import { LevelButton, type TLevel } from './level-button';
@@ -49,5 +50,50 @@ export class LevelRow extends Container {
     });
 
     this.addChild(...this.levelButtons);
+  }
+
+  private offScreenOffset(child: Container, screenHeight: number) {
+    return screenHeight + 40 - child.getGlobalPosition().y;
+  }
+
+  public async playEnterAnimation(screenHeight: number) {
+    const children = this.levelButtons ?? [];
+
+    for (const child of children) {
+      child.y = 0;
+      child.y = this.offScreenOffset(child, screenHeight);
+    }
+
+    await Promise.all(
+      children.map((child, index) =>
+        animate(
+          child,
+          { y: 0 },
+          {
+            duration: 0.4,
+            ease: 'backOut',
+            delay: index * 0.07,
+          },
+        ),
+      ),
+    );
+  }
+
+  public async playExitAnimation(screenHeight: number) {
+    const children = this.levelButtons ?? [];
+
+    await Promise.all(
+      children.map((child, index) =>
+        animate(
+          child,
+          { y: this.offScreenOffset(child, screenHeight) },
+          {
+            duration: 0.2,
+            ease: 'backIn',
+            delay: index * 0.02,
+          },
+        ),
+      ),
+    );
   }
 }
