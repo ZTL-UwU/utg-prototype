@@ -91,8 +91,7 @@ export class QuitPopup extends Container {
     };
 
     const quitButton = getBottomButton('QUIT', () => {
-      void engine().navigation.hidePopup();
-      onQuit();
+      void engine().navigation.hidePopup().then(onQuit);
     });
 
     const cancelButton = getBottomButton('STAY', () => {
@@ -133,7 +132,7 @@ export class QuitPopup extends Container {
         },
         close: {
           props: {},
-          duration: 300,
+          duration: 200,
         },
       },
     });
@@ -150,18 +149,27 @@ export class QuitPopup extends Container {
     }
 
     this.popupMask.alpha = 0;
-    animate(this.popupMask, { alpha: 0.5 }, { duration: 0.2, ease: 'linear' });
+    await animate(this.popupMask, { alpha: 0.5 }, { duration: 0.2, ease: 'linear' });
     this.dialog.open();
   }
 
   /** Dismiss the popup, animated */
   public async hide() {
     const currentEngine = engine();
+    await Promise.all([
+      animate(this.popupMask, { alpha: 0 }, { duration: 0.2, ease: 'linear' }),
+      new Promise<void>((resolve) => {
+        const connection = this.dialog.onClose.connect(() => {
+          connection.disconnect();
+          resolve();
+        });
+        this.dialog.close();
+      }),
+    ]);
+
     if (currentEngine.navigation.currentScreen) {
       currentEngine.navigation.currentScreen.filters = [];
     }
-    animate(this.popupMask, { alpha: 0 }, { duration: 0.2, ease: 'linear' });
-    this.dialog.close();
   }
 
   public resize(width: number, height: number) {
