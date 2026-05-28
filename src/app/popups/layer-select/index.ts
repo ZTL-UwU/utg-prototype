@@ -101,11 +101,11 @@ export class LayerSelectPopup extends Container {
       currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 9 })];
     }
     this.innerContainer.alpha = 0;
-    this.innerContainer.scale.set(0.94);
+    this.innerContainer.scale.set(0.8);
 
     await Promise.all([
-      animate(this.innerContainer, { alpha: 1 }, { duration: 0.2, ease: 'easeOut' }),
-      animate(this.innerContainer.scale, { x: 1, y: 1 }, { duration: 0.2, ease: 'easeOut' }),
+      animate(this.innerContainer, { alpha: 1 }, { duration: 0.4, ease: 'backOut' }),
+      animate(this.innerContainer.scale, { x: 1, y: 1 }, { duration: 0.4, ease: 'backOut' }),
     ]);
   }
 
@@ -115,8 +115,8 @@ export class LayerSelectPopup extends Container {
       currentEngine.navigation.currentScreen.filters = [];
     }
     await Promise.all([
-      animate(this.innerContainer, { alpha: 0 }, { duration: 0.2, ease: 'linear' }),
-      animate(this.innerContainer.scale, { x: 0.94, y: 0.94 }, { duration: 0.2, ease: 'linear' }),
+      animate(this.innerContainer, { alpha: 0 }, { duration: 0.2, ease: 'easeOut' }),
+      animate(this.innerContainer.scale, { x: 0.94, y: 0.94 }, { duration: 0.2, ease: 'easeOut' }),
     ]);
   }
 
