@@ -4,7 +4,7 @@ import { Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import useSessionStore from '../../../zustandStores/sessionStore';
-import { EducationLevelScreen } from '../education-level';
+import { EducationBubbleScreen } from '../education-level/level-2';
 import { TypingLevelScreen } from '../typing-level';
 
 export type TLevel = {
@@ -50,7 +50,7 @@ export class LevelButton extends FancyButton {
         useSessionStore.getState().reset();
         useSessionStore.getState().startSession(type);
         void engine().navigation.showScreen(
-          type == 'typing' ? TypingLevelScreen : EducationLevelScreen,
+          type == 'typing' ? TypingLevelScreen : EducationBubbleScreen,
         );
       });
     }
