@@ -52,6 +52,7 @@ export class EducationLevelScreen extends Container {
 
   public resize(width: number, height: number) {
     this.layout = { width, height };
+    this.letterGrid.resize(width, height);
   }
 
   public async show() {

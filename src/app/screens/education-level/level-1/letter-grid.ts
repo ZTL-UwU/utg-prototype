@@ -16,7 +16,7 @@ const CARD_SIZE = 150;
 const HGAP = CARD_SIZE * 1.5;
 const VGAP = CARD_SIZE / 4;
 const HPADDING = HGAP;
-const VPADDING = VGAP * 2;
+const VPADDING = VGAP;
 const BUTTON_DIM = 180;
 
 function getLetterStrings() {
@@ -53,11 +53,9 @@ export class LetterGrid extends Container {
   constructor() {
     super({
       layout: {
-        display: 'flex',
+        position: 'absolute',
         width: '100%',
         height: '100%',
-        alignItems: 'center',
-        justifyContent: 'center',
       },
     });
 
@@ -102,9 +100,11 @@ export class LetterGrid extends Container {
 
   private initLayouts() {
     this.panel.layout = {
-      position: 'relative',
+      position: 'absolute',
       display: 'flex',
       flexDirection: 'column',
+      width: CARD_SIZE * 2 + HGAP + HPADDING * 2,
+      height: BUTTON_DIM + 2 * (CARD_SIZE + VPADDING + VGAP),
       gap: VGAP,
       paddingLeft: HPADDING,
       paddingRight: HPADDING,
@@ -119,6 +119,9 @@ export class LetterGrid extends Container {
     this.soundButton.layout = {
       width: BUTTON_DIM,
       height: BUTTON_DIM,
+      position: 'absolute',
+      left: '50%',
+      top: '10%',
     };
   }
 
@@ -130,18 +133,15 @@ export class LetterGrid extends Container {
     }
 
     this.panel.addChild(this.backgroundTint, this.soundButton, this.topPanel, this.bottomPanel);
-    this.backgroundTint
-      .clear()
-      .roundRect(0, 0, this.panel.width, this.panel.height, 12)
-      .fill(0xd1dcf0); // background tint only works dynamically with panel height, width if panel already has children, otherwise both dims=0
+    // backgroundTint dimensions are drawn in resize() once layout constants are available
   }
 
   resize(width: number, height: number) {
-    console.log('called');
     const panelW = CARD_SIZE * 2 + HGAP + HPADDING * 2;
     const panelH = BUTTON_DIM + 2 * (CARD_SIZE + VPADDING + VGAP);
     this.panel.x = (width - panelW) / 2;
     this.panel.y = (height - panelH) / 2;
+    this.backgroundTint.clear().roundRect(0, 0, panelW, panelH, 12).fill(0xd1dcf0);
   }
 
   private readonly soundButtonClick = () => {
