@@ -4,13 +4,15 @@ import { Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import type { AppScreenConstructor } from '../../../engine/navigation/navigation';
-import useSessionStore from '../../../zustandStores/sessionStore';
+import { LevelSplashScreen } from '../level-splash';
 
 export type TLevel = {
   id: number;
+  title?: string;
   unlocked: boolean;
   miniMapImage: string;
   screen?: AppScreenConstructor;
+  background: string;
 };
 
 const SIZE = 221;
@@ -46,13 +48,9 @@ export class LevelButton extends FancyButton {
           blur: 10,
         }),
       ];
-      if (level.screen) {
-        this.onPress.connect(() => {
-          useSessionStore.getState().reset();
-          useSessionStore.getState().startSession(type);
-          void engine().navigation.showScreen(level.screen!);
-        });
-      }
+      this.onPress.connect(() => {
+        void engine().navigation.showScreen(LevelSplashScreen, { type, level });
+      });
     }
   }
 }

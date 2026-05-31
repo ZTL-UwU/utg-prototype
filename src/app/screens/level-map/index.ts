@@ -8,22 +8,45 @@ import { EducationLevelScreen } from '../education-level/level-1';
 import { EducationBubbleScreen } from '../education-level/level-2';
 import { HomeScreen } from '../home';
 import { TypingLevelScreen } from '../typing-level';
+import type { TLevel } from './level-button';
 import { LevelRow } from './level-row';
 
-const mapData = {
+const mapData: Record<
+  string,
+  { background: string; title: { text: string; fontSize: number }; levels: TLevel[] }
+> = {
   typing: {
     background: 'typing-level-map/background.png',
     title: { text: 'TYPING JOURNEY', fontSize: 150 },
     levels: [
       {
         id: 1,
+
+        title: 'TAKLAMAKAN DESERT',
         unlocked: true,
+
         miniMapImage: 'typing-level-map/button-preview.svg',
         screen: TypingLevelScreen,
+        background: 'typing-level/background.png',
       },
-      { id: 2, unlocked: false, miniMapImage: 'typing-level-map/button-preview.svg' },
-      { id: 3, unlocked: false, miniMapImage: 'typing-level-map/button-preview.svg' },
-      { id: 4, unlocked: false, miniMapImage: 'typing-level-map/button-preview.svg' },
+      {
+        id: 2,
+        unlocked: false,
+        miniMapImage: 'typing-level-map/button-preview.svg',
+        background: 'typing-level/background.png',
+      },
+      {
+        id: 3,
+        unlocked: false,
+        miniMapImage: 'typing-level-map/button-preview.svg',
+        background: 'typing-level/background.png',
+      },
+      {
+        id: 4,
+        unlocked: false,
+        miniMapImage: 'typing-level-map/button-preview.svg',
+        background: 'typing-level/background.png',
+      },
     ],
   },
   education: {
@@ -32,18 +55,34 @@ const mapData = {
     levels: [
       {
         id: 1,
+
         unlocked: true,
+
         miniMapImage: 'education-level-map/button-preview.svg',
         screen: EducationLevelScreen,
+        background: 'education-level/background.svg',
       },
       {
         id: 2,
+
         unlocked: true,
+
         miniMapImage: 'education-level-map/button-preview.svg',
         screen: EducationBubbleScreen,
+        background: 'education-level/background.svg',
       },
-      { id: 3, unlocked: false, miniMapImage: 'education-level-map/button-preview.svg' },
-      { id: 4, unlocked: false, miniMapImage: 'education-level-map/button-preview.svg' },
+      {
+        id: 3,
+        unlocked: false,
+        miniMapImage: 'education-level-map/button-preview.svg',
+        background: 'education-level/background.svg',
+      },
+      {
+        id: 4,
+        unlocked: false,
+        miniMapImage: 'education-level-map/button-preview.svg',
+        background: 'education-level/background.svg',
+      },
     ],
   },
 };
