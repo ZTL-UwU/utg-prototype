@@ -3,14 +3,14 @@ import { DropShadowFilter } from 'pixi-filters';
 import { Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import type { AppScreenConstructor } from '../../../engine/navigation/navigation';
 import useSessionStore from '../../../zustandStores/sessionStore';
-import { EducationBubbleScreen } from '../education-level/level-2';
-import { TypingLevelScreen } from '../typing-level';
 
 export type TLevel = {
   id: number;
   unlocked: boolean;
   miniMapImage: string;
+  screen?: AppScreenConstructor;
 };
 
 const SIZE = 221;
@@ -46,13 +46,13 @@ export class LevelButton extends FancyButton {
           blur: 10,
         }),
       ];
-      this.onPress.connect(() => {
-        useSessionStore.getState().reset();
-        useSessionStore.getState().startSession(type);
-        void engine().navigation.showScreen(
-          type == 'typing' ? TypingLevelScreen : EducationBubbleScreen,
-        );
-      });
+      if (level.screen) {
+        this.onPress.connect(() => {
+          useSessionStore.getState().reset();
+          useSessionStore.getState().startSession(type);
+          void engine().navigation.showScreen(level.screen!);
+        });
+      }
     }
   }
 }

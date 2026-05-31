@@ -30,7 +30,7 @@ interface AppScreen extends Container {
 }
 
 /** Interface for app screens constructors */
-interface AppScreenConstructor<Args extends unknown[] = []> {
+export interface AppScreenConstructor<Args extends unknown[] = []> {
   new (...args: Args): AppScreen;
   /** List of assets bundles required by the screen */
   assetBundles?: string[];

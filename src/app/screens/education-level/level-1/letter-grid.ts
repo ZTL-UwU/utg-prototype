@@ -157,7 +157,6 @@ export class LetterGrid extends Container {
     const { correct, mistakes } = useSessionStore.getState();
 
     useScoreManager.getState().addSession(correct, mistakes);
-    // useSessionStore.getState().reset();
     void engine().navigation.showPopup(EndScreenPopup, 'education');
   }
 }

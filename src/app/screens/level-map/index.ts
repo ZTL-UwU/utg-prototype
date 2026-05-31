@@ -4,7 +4,10 @@ import { Container, Sprite, Text, Texture } from 'pixi.js';
 import { engine } from '../../../engine/getEngine';
 import { BackButton } from '../../ui/back-button';
 import { HelpButton } from '../../ui/help-button';
+import { EducationLevelScreen } from '../education-level/level-1';
+import { EducationBubbleScreen } from '../education-level/level-2';
 import { HomeScreen } from '../home';
+import { TypingLevelScreen } from '../typing-level';
 import { LevelRow } from './level-row';
 
 const mapData = {
@@ -12,7 +15,12 @@ const mapData = {
     background: 'typing-level-map/background.png',
     title: { text: 'TYPING JOURNEY', fontSize: 150 },
     levels: [
-      { id: 1, unlocked: true, miniMapImage: 'typing-level-map/button-preview.svg' },
+      {
+        id: 1,
+        unlocked: true,
+        miniMapImage: 'typing-level-map/button-preview.svg',
+        screen: TypingLevelScreen,
+      },
       { id: 2, unlocked: false, miniMapImage: 'typing-level-map/button-preview.svg' },
       { id: 3, unlocked: false, miniMapImage: 'typing-level-map/button-preview.svg' },
       { id: 4, unlocked: false, miniMapImage: 'typing-level-map/button-preview.svg' },
@@ -22,8 +30,18 @@ const mapData = {
     background: 'education-level-map/background.svg',
     title: { text: 'LEARN THE UYGHUR ALPHABET', fontSize: 100 },
     levels: [
-      { id: 1, unlocked: true, miniMapImage: 'education-level-map/button-preview.svg' },
-      { id: 2, unlocked: false, miniMapImage: 'education-level-map/button-preview.svg' },
+      {
+        id: 1,
+        unlocked: true,
+        miniMapImage: 'education-level-map/button-preview.svg',
+        screen: EducationLevelScreen,
+      },
+      {
+        id: 2,
+        unlocked: true,
+        miniMapImage: 'education-level-map/button-preview.svg',
+        screen: EducationBubbleScreen,
+      },
       { id: 3, unlocked: false, miniMapImage: 'education-level-map/button-preview.svg' },
       { id: 4, unlocked: false, miniMapImage: 'education-level-map/button-preview.svg' },
     ],
