@@ -4,7 +4,10 @@ import { Container, Sprite, Text, Texture } from 'pixi.js';
 import { engine } from '../../../engine/getEngine';
 import { BackButton } from '../../ui/back-button';
 import { HelpButton } from '../../ui/help-button';
+import { EducationLevelScreen } from '../education-level/level-1';
+import { EducationBubbleScreen } from '../education-level/level-2';
 import { HomeScreen } from '../home';
+import { TypingLevelScreen } from '../typing-level';
 import type { TLevel } from './level-button';
 import { LevelRow } from './level-row';
 
@@ -18,9 +21,12 @@ const mapData: Record<
     levels: [
       {
         id: 1,
+
         title: 'TAKLAMAKAN DESERT',
         unlocked: true,
+
         miniMapImage: 'typing-level-map/button-preview.svg',
+        screen: TypingLevelScreen,
         background: 'typing-level/background.png',
       },
       {
@@ -49,14 +55,20 @@ const mapData: Record<
     levels: [
       {
         id: 1,
+
         unlocked: true,
+
         miniMapImage: 'education-level-map/button-preview.svg',
+        screen: EducationLevelScreen,
         background: 'education-level/background.svg',
       },
       {
         id: 2,
-        unlocked: false,
+
+        unlocked: true,
+
         miniMapImage: 'education-level-map/button-preview.svg',
+        screen: EducationBubbleScreen,
         background: 'education-level/background.svg',
       },
       {
@@ -123,7 +135,6 @@ export class LevelMapScreen extends Container {
       },
     });
     this.levelRow = new LevelRow(mapData[type].levels, type);
-
     this.addChild(this.background, this.title, this.levelRow, this.backButton, this.helpButton);
   }
 

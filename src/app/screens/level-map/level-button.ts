@@ -3,6 +3,7 @@ import { DropShadowFilter } from 'pixi-filters';
 import { Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import type { AppScreenConstructor } from '../../../engine/navigation/navigation';
 import { LevelSplashScreen } from '../level-splash';
 
 export type TLevel = {
@@ -10,6 +11,7 @@ export type TLevel = {
   title?: string;
   unlocked: boolean;
   miniMapImage: string;
+  screen?: AppScreenConstructor;
   background: string;
 };
 

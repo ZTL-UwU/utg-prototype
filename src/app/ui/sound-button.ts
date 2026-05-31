@@ -20,6 +20,8 @@ export class SoundButton extends FancyButton {
         },
       },
     });
+
+    this.anchor.set(0.5);
     this.onPress.connect(onClick);
     this.once('added', () => {
       this.scale.set(size / this.width);
