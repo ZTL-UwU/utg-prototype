@@ -47,7 +47,7 @@ export class LevelSplashScreen extends Container {
         fontFamily: 'Concert One',
         fontSize: 250,
         fontWeight: '800',
-        fill: 0xc98144,
+        fill: type == 'typing' ? 0xc98144 : 0xffffff,
       },
       charAnchor: 0.5,
       filters: [
@@ -87,7 +87,9 @@ export class LevelSplashScreen extends Container {
     });
 
     this.mascot = new Sprite({
-      texture: Texture.from('mascots/camel/default.png'),
+      texture: Texture.from(
+        type == 'typing' ? 'mascots/camel/default.png' : 'mascots/sheep/default.svg',
+      ),
       scale: 0.8,
       layout: {
         position: 'absolute',
@@ -106,13 +108,13 @@ export class LevelSplashScreen extends Container {
     this.startButton = new FancyButton({
       defaultView: new Graphics()
         .roundRect(0, 10, 300, 150, 40)
-        .fill(0xffe2bc)
+        .fill(type == 'typing' ? 0xffe2bc : 0x56e7e4)
         .roundRect(0, 0, 300, 150, 40)
-        .fill(0xc45a14),
+        .fill(type == 'typing' ? 0xc45a14 : 0x2d6b6a),
       text: new Text({
         text: 'START',
         style: {
-          fill: 0xffe2bc,
+          fill: type == 'typing' ? 0xffe2bc : 0xb2fffe,
           fontFamily: 'Concert One',
           fontSize: 80,
         },
