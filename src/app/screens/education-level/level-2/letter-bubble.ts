@@ -39,7 +39,7 @@ export class LetterBubble extends FancyButton {
         fill: 0x000000,
         fontFamily: 'Noto Sans Arabic',
         fontSize: SIZE * 0.4,
-        fontWeight: '700',
+        fontWeight: '600',
         padding: 20,
       },
     });
