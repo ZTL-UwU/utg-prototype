@@ -38,7 +38,7 @@ export class LetterBubble extends FancyButton {
         align: 'center',
         fill: 0x000000,
         fontFamily: 'Noto Sans Arabic',
-        fontSize: SIZE * 0.5,
+        fontSize: SIZE * 0.4,
         fontWeight: '700',
         padding: 20,
       },
@@ -50,7 +50,7 @@ export class LetterBubble extends FancyButton {
       const origW = this.width;
       const origH = this.height;
       this.scale.set(SIZE / origW);
-      letterLabel.position.set(origW / 2, origH / 2);
+      letterLabel.position.set((5 * origW) / 12, (5 * origH) / 12); // annoying magic number to center the letter label on the bubble svg
     });
 
     this.onPress.connect(() => {
