@@ -26,32 +26,23 @@ export class LetterBubble extends FancyButton {
           duration: 100,
         },
       },
+      text: new Text({
+        text: letter,
+        resolution: 2,
+        style: {
+          align: 'center',
+          fill: 0x000000,
+          fontFamily: 'Noto Sans Arabic',
+          fontSize: SIZE * 0.5,
+          fontWeight: '700',
+          padding: 20,
+        },
+      }),
+      anchor: 0.5,
     });
 
     this.isCorrect = letter === correctLetter;
     this.onCorrect = onCorrect;
-
-    const letterLabel = new Text({
-      text: letter,
-      resolution: 2,
-      style: {
-        align: 'center',
-        fill: 0x000000,
-        fontFamily: 'Noto Sans Arabic',
-        fontSize: SIZE * 0.4,
-        fontWeight: '600',
-        padding: 20,
-      },
-    });
-    letterLabel.anchor.set(0.5);
-    this.addChild(letterLabel);
-
-    this.once('added', () => {
-      const origW = this.width;
-      const origH = this.height;
-      this.scale.set(SIZE / origW);
-      letterLabel.position.set((5 * origW) / 12, (5 * origH) / 12); // annoying magic number to center the letter label on the bubble svg
-    });
 
     this.onPress.connect(() => {
       this.clicked = true;
