@@ -76,6 +76,7 @@ export class TypingLevelScreen extends Container {
     this.helpButton = new HelpButton();
     this.endButton = new EndButton('typing');
     this.keyboard = new KeyboardLayout();
+
     this.addChild(
       this.background,
       this.clouds,

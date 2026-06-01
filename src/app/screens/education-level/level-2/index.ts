@@ -92,6 +92,14 @@ export class EducationBubbleScreen extends Container {
     );
   }
 
+  public async pause() {
+    for (const bubble of this.bubbles) bubble.pauseFloat();
+  }
+
+  public async resume() {
+    for (const bubble of this.bubbles) bubble.resumeFloat();
+  }
+
   public resize(width: number, height: number) {
     this.layout = { width, height };
     this.screenHeight = height;
