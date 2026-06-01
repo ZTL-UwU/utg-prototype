@@ -15,9 +15,9 @@ const NUM_CHOICES = 4;
 const CARD_SIZE = 150;
 const HGAP = CARD_SIZE * 1.5;
 const VGAP = CARD_SIZE / 4;
-const HPADDING = HGAP;
-const VPADDING = VGAP;
-const BUTTON_DIM = 180;
+const HPADDING = HGAP / 2;
+const VPADDING = VGAP / 2;
+const BUTTON_DIM = 150;
 
 function getLetterStrings() {
   const entries = [...getAlphabet()];
@@ -108,20 +108,21 @@ export class LetterGrid extends Container {
       gap: VGAP,
       paddingLeft: HPADDING,
       paddingRight: HPADDING,
-      paddingTop: VPADDING,
-      paddingBottom: VPADDING,
+      paddingTop: VPADDING * 2,
+      paddingBottom: VPADDING / 2,
       justifyContent: 'center',
       alignItems: 'center',
     };
     this.backgroundTint.layout = { position: 'absolute', width: '100%', height: '100%' };
     this.topPanel.layout = { display: 'flex', gap: HGAP };
     this.bottomPanel.layout = { display: 'flex', gap: HGAP };
+    this.soundButton.anchor.set(0.5);
     this.soundButton.layout = {
       width: BUTTON_DIM,
       height: BUTTON_DIM,
       position: 'absolute',
-      left: '50%',
-      top: '10%',
+      left: '48%',
+      top: '15%',
     };
   }
 
@@ -141,7 +142,7 @@ export class LetterGrid extends Container {
     const panelH = BUTTON_DIM + 2 * (CARD_SIZE + VPADDING + VGAP);
     this.panel.x = (width - panelW) / 2;
     this.panel.y = (height - panelH) / 2;
-    this.backgroundTint.clear().roundRect(0, 0, panelW, panelH, 12).fill(0xd1dcf0);
+    this.backgroundTint.clear().roundRect(0, 0, panelW, panelH, 50).fill(0xd1dcf0);
   }
 
   private readonly soundButtonClick = () => {
