@@ -11,6 +11,7 @@ import { LevelMapScreen } from '../level-map';
 import { Camel } from './camel';
 import { Clouds } from './clouds';
 import { LetterRow } from './letter-row';
+import { SpineDemo } from './spine-demo';
 
 const TITLE_LAYOUT_TOP = 30;
 const TITLE_OFFSCREEN = 200;
@@ -21,6 +22,7 @@ export class TypingLevelScreen extends Container {
   private background: Sprite;
   private clouds: Clouds;
   private camel: Camel;
+  private spineDemo: SpineDemo;
   private letterRow: LetterRow;
   private helpButton: HelpButton;
   private backButton: BackButton;
@@ -49,6 +51,7 @@ export class TypingLevelScreen extends Container {
 
     this.clouds = new Clouds();
     this.camel = new Camel();
+    this.spineDemo = new SpineDemo();
     this.letterRow = new LetterRow();
 
     this.title = new Text({
@@ -81,6 +84,7 @@ export class TypingLevelScreen extends Container {
       this.background,
       this.clouds,
       this.camel,
+      this.spineDemo,
       this.backButton,
       this.helpButton,
       this.title,
@@ -95,6 +99,7 @@ export class TypingLevelScreen extends Container {
     await this.letterRow.pause();
     await this.clouds.pause();
     await this.camel.pause();
+    this.spineDemo.pause();
   }
 
   public async resume() {
@@ -102,6 +107,7 @@ export class TypingLevelScreen extends Container {
     await this.letterRow.resume();
     await this.clouds.resume();
     await this.camel.resume();
+    this.spineDemo.resume();
   }
 
   public resize(width: number, height: number) {
@@ -111,6 +117,7 @@ export class TypingLevelScreen extends Container {
     };
     this.clouds.resize(width, height);
     this.camel.resize(width, height);
+    this.spineDemo.resize(width, height);
     this.keyboard.resize(width, height);
   }
 

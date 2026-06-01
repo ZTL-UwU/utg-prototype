@@ -1,3 +1,4 @@
+import '@esotericsoftware/spine-pixi-v8';
 import { initDevtools } from '@pixi/devtools';
 import '@pixi/layout/devtools';
 import { sound } from '@pixi/sound';
