@@ -1,6 +1,6 @@
 import { Dialog, FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
-import { BlurFilter, Container, Graphics, Texture, Sprite, Text } from 'pixi.js';
+import { BlurFilter, Container, Graphics, Text } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { useScoreManager } from '../../../zustandStores/scoreManager';
@@ -10,8 +10,10 @@ function formatScoreContent(correctCount: number, mistakeCount: number) {
   return `Correct: ${correctCount}\nMistakes: ${mistakeCount}`;
 }
 
+const POPUP_MASK_OPACITY = 0.7;
+
 export class HelpPopup extends Container {
-  private popupMask: Sprite;
+  private popupMask: Graphics;
   private dialog: Dialog;
   private scoreContent: Text;
   private accuracyDisplay: AccuracyDisplay;
@@ -27,16 +29,13 @@ export class HelpPopup extends Container {
       },
     });
 
-    this.popupMask = new Sprite({
-      texture: Texture.WHITE,
-      layout: {
-        width: '100%',
-        height: '100%',
-        position: 'absolute',
-      },
-      tint: 0x0,
-      interactive: true,
-    });
+    this.popupMask = new Graphics();
+    this.popupMask.interactive = true;
+    this.popupMask.layout = {
+      width: '100%',
+      height: '100%',
+      position: 'absolute',
+    };
 
     this.scoreContent = new Text({
       text: formatScoreContent(0, 0),
@@ -116,7 +115,7 @@ export class HelpPopup extends Container {
     }
 
     this.popupMask.alpha = 0;
-    animate(this.popupMask, { alpha: 0.5 }, { duration: 0.2, ease: 'linear' });
+    animate(this.popupMask, { alpha: POPUP_MASK_OPACITY }, { duration: 0.2, ease: 'linear' });
     this.dialog.open();
   }
 
@@ -146,5 +145,6 @@ export class HelpPopup extends Container {
       width,
       height,
     };
+    this.popupMask.clear().rect(0, 0, width, height).fill(0x000000);
   }
 }
