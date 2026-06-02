@@ -50,7 +50,7 @@ const mapData: Record<
     ],
   },
   education: {
-    background: 'education-level-map/background.svg',
+    background: 'education-level-map/background.png',
     title: { text: 'LEARN THE UYGHUR ALPHABET', fontSize: 100 },
     levels: [
       {

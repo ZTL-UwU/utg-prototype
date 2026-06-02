@@ -6,8 +6,8 @@ import { BlurFilter, Container, Graphics, Texture, Sprite, Text } from 'pixi.js'
 import { engine } from '../../../engine/getEngine';
 
 const CRYING_MASCOT_TEXTURES = {
-  education: 'quit/crying-sheep.png',
-  typing: 'quit/crying-camel.png',
+  education: 'mascots/sheep/crying.png',
+  typing: 'mascots/camel/crying.png',
 } as const;
 
 export type QuitPopupProps = {
@@ -16,7 +16,7 @@ export type QuitPopupProps = {
 };
 
 export class QuitPopup extends Container {
-  public static assetBundles = ['quit'];
+  public static assetBundles = ['quit', 'mascots'];
 
   private popupMask: Sprite;
   private dialog: Dialog;

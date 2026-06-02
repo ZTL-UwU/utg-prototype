@@ -44,7 +44,7 @@ export class EducationBubbleScreen extends Container {
       },
     });
     this.background = new Sprite({
-      texture: Texture.from('education-level-2/background.svg'),
+      texture: Texture.from('education-level-2/background.png'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
     this.hud = new HUD({
