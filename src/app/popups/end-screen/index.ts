@@ -223,6 +223,7 @@ export class EndScreenPopup extends Container {
         { strength: 9 },
         { duration, ease: 'easeOut' },
       ),
+      this.stars.playShowAnimation(),
     ]);
   }
 
