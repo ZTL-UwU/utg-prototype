@@ -57,7 +57,7 @@ export class LayerSelectPopup extends Container {
     const buttonData: {
       icon: Texture;
       layout: { left: number; top: number };
-      screenType: 'typing' | 'education';
+      screenType?: 'typing' | 'education';
     }[] = [
       {
         icon: Texture.from('layer-select/education-icon.png'),
@@ -71,9 +71,8 @@ export class LayerSelectPopup extends Container {
       },
       {
         // Placeholder for the third layer
-        icon: Texture.from('layer-select/typing-icon.png'),
+        icon: Texture.from('layer-select/locked-icon.png'),
         layout: { left: 1028, top: 604 },
-        screenType: 'typing',
       },
     ];
 
@@ -94,10 +93,12 @@ export class LayerSelectPopup extends Container {
         position: 'absolute',
         ...data.layout,
       };
-      button.onPress.connect(() => {
-        void engine().navigation.hidePopup();
-        void engine().navigation.showScreen(LevelMapScreen, data.screenType);
-      });
+      if (data.screenType) {
+        button.onPress.connect(() => {
+          void engine().navigation.hidePopup();
+          void engine().navigation.showScreen(LevelMapScreen, data.screenType!);
+        });
+      }
       return button;
     });
 
