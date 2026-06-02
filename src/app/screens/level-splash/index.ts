@@ -108,13 +108,13 @@ export class LevelSplashScreen extends Container {
     this.startButton = new FancyButton({
       defaultView: new Graphics()
         .roundRect(0, 10, 300, 150, 40)
-        .fill(type == 'typing' ? 0xffe2bc : 0x56e7e4)
+        .fill(0xffe2bc)
         .roundRect(0, 0, 300, 150, 40)
         .fill(type == 'typing' ? 0xc45a14 : 0x2d6b6a),
       text: new Text({
         text: 'START',
         style: {
-          fill: type == 'typing' ? 0xffe2bc : 0xb2fffe,
+          fill: 0xffe2bc,
           fontFamily: 'Concert One',
           fontSize: 80,
         },

@@ -1,7 +1,8 @@
 import { FancyButton } from '@pixi/ui';
 import { animate, type AnimationPlaybackControls } from 'motion';
-import { Sprite, Text } from 'pixi.js';
+import { Container, Sprite, Text, type Ticker } from 'pixi.js';
 
+import { engine } from '../../../../engine/getEngine';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 
 const SIZE = 140;
@@ -10,9 +11,14 @@ export class LetterBubble extends FancyButton {
   private isCorrect: boolean;
   private readonly onCorrect?: () => void;
   private animation?: AnimationPlaybackControls;
-  private floatAnimation?: AnimationPlaybackControls;
+  private floatTick?: (ticker: Ticker) => void;
+  private floatStartY = 0;
+  private floatEndY = 0;
+  private floatDurationMs = 0;
+  private floatDelayMs = 0;
+  private floatElapsedMs = 0;
+  private floatOnEscaped?: () => void;
   private clicked = false;
-  private stopped = false;
 
   constructor(letter: string, correctLetter: string, onCorrect?: () => void) {
     super({
@@ -47,25 +53,65 @@ export class LetterBubble extends FancyButton {
 
     this.onPress.connect(() => {
       this.clicked = true;
-      this.floatAnimation?.stop();
+      this.pauseFloat();
       if (this.isCorrect) this.handleCorrect();
       else this.handleIncorrect();
     });
   }
 
   public startFloat(endY: number, duration: number, delay = 0, onEscaped?: () => void) {
-    this.floatAnimation = animate(this.position, { y: endY }, { duration, ease: 'linear', delay });
-    void this.floatAnimation.finished.then(() => {
-      if (!this.clicked && !this.stopped) {
-        if (this.isCorrect) useSessionStore.getState().recordMistake();
-        onEscaped?.();
-      }
-    });
+    this.pauseFloat();
+    this.floatStartY = this.y;
+    this.floatEndY = endY;
+    this.floatDurationMs = duration * 1000;
+    this.floatDelayMs = delay * 1000;
+    this.floatElapsedMs = 0;
+    this.floatOnEscaped = onEscaped;
+    this.attachFloatTick();
   }
 
-  public stopFloat() {
-    this.stopped = true;
-    this.floatAnimation?.stop();
+  public pauseFloat() {
+    if (this.floatTick) {
+      engine().ticker.remove(this.floatTick);
+      this.floatTick = undefined;
+    }
+  }
+
+  public resumeFloat() {
+    if (this.clicked || this.floatTick || this.floatDurationMs <= 0) return;
+    if (this.floatElapsedMs >= this.floatDelayMs + this.floatDurationMs) return;
+    this.attachFloatTick();
+  }
+
+  private attachFloatTick() {
+    this.floatTick = (ticker: Ticker) => {
+      if (this.clicked) return;
+
+      this.floatElapsedMs += ticker.deltaMS;
+
+      if (this.floatElapsedMs < this.floatDelayMs) return;
+
+      const progress = Math.min(
+        (this.floatElapsedMs - this.floatDelayMs) / this.floatDurationMs,
+        1,
+      );
+      this.y = this.floatStartY + (this.floatEndY - this.floatStartY) * progress;
+
+      if (progress >= 1) {
+        this.pauseFloat();
+        if (!this.clicked) {
+          if (this.isCorrect) useSessionStore.getState().recordMistake();
+          this.floatOnEscaped?.();
+        }
+      }
+    };
+
+    engine().ticker.add(this.floatTick);
+  }
+
+  override destroy(options?: Parameters<Container['destroy']>[0]) {
+    this.pauseFloat();
+    super.destroy(options);
   }
 
   private handleCorrect() {
