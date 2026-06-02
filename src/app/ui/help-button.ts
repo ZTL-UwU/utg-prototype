@@ -1,10 +1,10 @@
 import { FancyButton } from '@pixi/ui';
 
 import { engine } from '../../engine/getEngine';
-import { HelpPopup } from '../popups/help';
+import { TutorialPopup } from '../popups/tutorial';
 
 export class HelpButton extends FancyButton {
-  constructor() {
+  constructor(type: 'education' | 'typing') {
     super({
       defaultView: 'ui/help-button.svg',
       animations: {
@@ -32,7 +32,7 @@ export class HelpButton extends FancyButton {
     };
 
     this.onPress.connect(() => {
-      void engine().navigation.showPopup(HelpPopup);
+      void engine().navigation.showPopup(TutorialPopup, { type: type, exitable: true });
     });
   }
 }
