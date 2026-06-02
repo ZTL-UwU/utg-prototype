@@ -2,7 +2,6 @@ import { animate } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { LevelMapScreen } from '../../level-map';
@@ -35,9 +34,6 @@ export class EducationLevelScreen extends Container {
             void engine().navigation.showScreen(LevelMapScreen, 'education');
           },
         });
-      },
-      onEnd: () => {
-        void engine().navigation.showPopup(EndScreenPopup, 'education');
       },
     });
     this.letterGrid = new LetterGrid();

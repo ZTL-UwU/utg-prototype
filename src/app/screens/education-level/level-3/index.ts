@@ -45,7 +45,6 @@ export class EducationSheepScreen extends Container {
           type: 'education',
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, 'education'),
         }),
-      onEnd: () => void engine().navigation.showPopup(EndScreenPopup, 'education'),
     });
 
     const letters = getThreeUniqueLetters();

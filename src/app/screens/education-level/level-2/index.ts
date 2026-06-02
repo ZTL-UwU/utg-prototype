@@ -56,9 +56,6 @@ export class EducationBubbleScreen extends Container {
           },
         });
       },
-      onEnd: () => {
-        void engine().navigation.showPopup(EndScreenPopup, 'education');
-      },
     });
     this.soundButton = new SoundButton({ onClick: () => {}, size: 200 });
     this.soundButton.anchor.set(0.5);

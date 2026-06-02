@@ -2,7 +2,6 @@ import { animate } from 'motion';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { EndScreenPopup } from '../../popups/end-screen';
 import { QuitPopup } from '../../popups/quit';
 import { HUD } from '../../ui/hud';
 import { KeyboardLayout } from '../../ui/keyboard-layout';
@@ -70,9 +69,6 @@ export class TypingLevelScreen extends Container {
             void engine().navigation.showScreen(LevelMapScreen, 'typing');
           },
         });
-      },
-      onEnd: () => {
-        void engine().navigation.showPopup(EndScreenPopup, 'typing');
       },
     });
     this.keyboard = new KeyboardLayout();
