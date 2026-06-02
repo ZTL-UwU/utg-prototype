@@ -1,5 +1,5 @@
 import { animate } from 'motion';
-import { BlurFilter, Container, Graphics, Text, TextStyle } from 'pixi.js';
+import { BlurFilter, Container, Graphics, Sprite, Text, TextStyle, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import useSessionStore from '../../../zustandStores/sessionStore';
@@ -43,6 +43,21 @@ function getStarCount(accuracy: number) {
   return 0;
 }
 
+type MascotVariant = 'default' | 'welldone' | 'excellent';
+
+function getMascotVariant(starCount: number): MascotVariant {
+  if (starCount >= 3) return 'excellent';
+  if (starCount >= 2) return 'welldone';
+  return 'default';
+}
+
+function getMascotTexture(type: 'education' | 'typing', variant: MascotVariant) {
+  const animal = type === 'typing' ? 'camel' : 'sheep';
+  if (variant === 'excellent') return `mascots/${animal}/dialog/excellent.png`;
+  if (variant === 'welldone') return `mascots/${animal}/dialog/well-done.png`;
+  return type === 'typing' ? 'mascots/camel/default.png' : 'mascots/sheep/default.svg';
+}
+
 function readSessionResults() {
   const { correct, mistakes } = useSessionStore.getState();
   const total = correct + mistakes;
@@ -59,7 +74,7 @@ function readSessionResults() {
 }
 
 export class EndScreenPopup extends Container {
-  public static assetBundles = ['end-screen'];
+  public static assetBundles = ['end-screen', 'mascots'];
 
   private innerContainer: Container;
   private background: Graphics;
@@ -113,6 +128,17 @@ export class EndScreenPopup extends Container {
     });
     this.contentContainer.addChild(this.stars, correctText, mistakesText, accuracyText);
 
+    const mascot = new Sprite({
+      texture: Texture.from(getMascotTexture(type, getMascotVariant(starCount))),
+      layout: {
+        position: 'absolute',
+        right: 20,
+        bottom: 16,
+        width: 280,
+        objectFit: 'contain',
+      },
+    });
+
     this.backButton = new BackButton(() => {
       void engine().navigation.hidePopup();
       void engine().navigation.showScreen(LevelMapScreen, type);
@@ -120,7 +146,7 @@ export class EndScreenPopup extends Container {
     this.backButton.scale = 0.7;
 
     this.innerContainer = new Container({ layout: true });
-    this.innerContainer.addChild(this.background, this.contentContainer, this.backButton);
+    this.innerContainer.addChild(this.background, this.contentContainer, mascot, this.backButton);
     this.addChild(this.innerContainer);
   }
 
