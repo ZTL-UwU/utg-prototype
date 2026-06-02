@@ -102,11 +102,12 @@ export class LevelSplashScreen extends Container {
         left: 480,
       },
     });
-
+    console.log(type);
     this.hud = new HUD({
       onBack: () => {
         void engine().navigation.showScreen(LevelMapScreen, type);
       },
+      type: type,
     });
 
     const buttonWidth = 300;

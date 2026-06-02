@@ -35,6 +35,7 @@ export class EducationLevelScreen extends Container {
           },
         });
       },
+      type: 'education',
     });
     this.letterGrid = new LetterGrid();
     this.addChild(this.background, this.letterGrid, this.hud);

@@ -119,6 +119,7 @@ export class LevelMapScreen extends Container {
       onBack: () => {
         void engine().navigation.showScreen(HomeScreen);
       },
+      type: type,
     });
 
     this.title = new Text({

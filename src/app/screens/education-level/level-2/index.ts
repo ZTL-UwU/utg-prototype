@@ -56,6 +56,7 @@ export class EducationBubbleScreen extends Container {
           },
         });
       },
+      type: 'education',
     });
     this.soundButton = new SoundButton({ onClick: () => {}, size: 200 });
     this.soundButton.anchor.set(0.5);

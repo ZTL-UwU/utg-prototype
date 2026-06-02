@@ -70,6 +70,7 @@ export class TypingLevelScreen extends Container {
           },
         });
       },
+      type: 'typing',
     });
     this.keyboard = new KeyboardLayout();
 

@@ -5,10 +5,11 @@ import { HelpButton } from './help-button';
 
 interface HUDProps {
   onBack: () => void;
+  type: 'education' | 'typing';
 }
 
 export class HUD extends Container {
-  constructor({ onBack }: HUDProps) {
+  constructor({ onBack, type }: HUDProps) {
     super({
       layout: {
         position: 'absolute',
@@ -17,6 +18,6 @@ export class HUD extends Container {
       },
     });
 
-    this.addChild(new BackButton(onBack), new HelpButton());
+    this.addChild(new BackButton(onBack), new HelpButton(type));
   }
 }
