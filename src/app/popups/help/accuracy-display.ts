@@ -6,14 +6,7 @@ const PROGRESS_BAR_HEIGHT = 24;
 const PROGRESS_BAR_RADIUS = 12;
 const PROGRESS_BAR_BORDER = 2;
 
-function getAccuracyPercent(correctCount: number, mistakeCount: number) {
-  const total = correctCount + mistakeCount;
-  if (total === 0) {
-    return 0;
-  }
-
-  return Math.round((correctCount / total) * 100);
-}
+import { getAccuracyPercent } from '../../../zustandStores/scoreManager';
 
 function createAccuracyProgressBar() {
   const bg = new Graphics()

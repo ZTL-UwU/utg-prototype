@@ -4,6 +4,7 @@ import { BlurFilter, Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { LevelMapScreen } from '../../screens/level-map';
+import { UserStatsPopup } from '../user-stats';
 
 export class LayerSelectPopup extends Container {
   public static assetBundles = ['layer-select'];
@@ -121,8 +122,9 @@ export class LayerSelectPopup extends Container {
       right: 120,
     };
     this.userStatsButton.onPress.connect(() => {
-      void engine().navigation.hidePopup();
-      // void engine().navigation.showScreen(UserStatsScreen);
+      void engine().navigation.showPopup(UserStatsPopup, {
+        onBack: () => void engine().navigation.showPopup(LayerSelectPopup),
+      });
     });
 
     this.innerContainer = new Container({ layout: true });
