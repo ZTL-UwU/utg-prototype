@@ -3,19 +3,24 @@ import { animate } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import type { AppScreenConstructor } from '../../../engine/navigation/navigation';
 
 type TutorialProps = {
   type: 'education' | 'typing';
   exitable?: boolean;
+  nextScreen?: AppScreenConstructor;
 };
 
 export class TutorialPopup extends Container {
   public static assetBundles = ['tutorial-popups'];
   private background: Sprite;
   private exitButton: FancyButton;
+  private nextScreen?: AppScreenConstructor;
+  private autoAdvanceTimeout?: ReturnType<typeof setTimeout>;
 
-  constructor({ type, exitable = false }: TutorialProps) {
+  constructor({ type, exitable = false, nextScreen }: TutorialProps) {
     super({ layout: { position: 'absolute', width: '100%', height: '100%' } });
+    this.nextScreen = nextScreen;
     this.background = new Sprite({
       texture: Texture.from(
         type == 'typing'
@@ -61,6 +66,16 @@ export class TutorialPopup extends Container {
       currentEngine.navigation.currentScreen.tint = 0x666666;
     }
 
+    if (this.nextScreen) {
+      this.autoAdvanceTimeout = setTimeout(() => {
+        void engine()
+          .navigation.hidePopup()
+          .then(() => {
+            void engine().navigation.showScreen(this.nextScreen!);
+          });
+      }, 5000);
+    }
+
     await Promise.all([
       animate(this.background, { alpha: 1 }, { duration: 0.8, ease: 'backOut' }),
       animate(this.background.scale, { x: 1, y: 1 }, { duration: 0.8, ease: 'backOut' }),
@@ -68,6 +83,11 @@ export class TutorialPopup extends Container {
   }
 
   async hide() {
+    if (this.autoAdvanceTimeout !== undefined) {
+      clearTimeout(this.autoAdvanceTimeout);
+      this.autoAdvanceTimeout = undefined;
+    }
+
     const currentEngine = engine();
     if (currentEngine.navigation.currentScreen) {
       currentEngine.navigation.currentScreen.tint = 0xffffff;

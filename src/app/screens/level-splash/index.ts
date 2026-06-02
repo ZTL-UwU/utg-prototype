@@ -150,13 +150,10 @@ export class LevelSplashScreen extends Container {
 
       this.removeChildren();
       this.addChild(this.background);
-      void engine().navigation.showPopup(TutorialPopup, { type: type });
-      void setTimeout(() => {
-        void engine().navigation.hidePopup();
-        void engine().navigation.showScreen(level.screen!);
-      }, 5000);
-      // Placeholder for the session start
-      //   void engine().navigation.showScreen(level.screen!);
+      void engine().navigation.showPopup(TutorialPopup, {
+        type: type,
+        nextScreen: level.screen,
+      });
     });
 
     this.addChild(
