@@ -12,6 +12,7 @@ export class LayerSelectPopup extends Container {
   private background: Sprite;
   private layerButtons: FancyButton[];
   private closeButton: FancyButton;
+  private userStatsButton: FancyButton;
 
   constructor() {
     super({
@@ -102,10 +103,32 @@ export class LayerSelectPopup extends Container {
       return button;
     });
 
+    this.userStatsButton = new FancyButton({
+      defaultView: Texture.from('layer-select/user-icon.svg'),
+      animations: {
+        hover: {
+          props: {
+            scale: { x: 1.1, y: 1.1 },
+          },
+          duration: 100,
+        },
+      },
+      anchor: 0.5,
+    });
+    this.userStatsButton.layout = {
+      position: 'absolute',
+      top: 120,
+      right: 120,
+    };
+    this.userStatsButton.onPress.connect(() => {
+      void engine().navigation.hidePopup();
+      // void engine().navigation.showScreen(UserStatsScreen);
+    });
+
     this.innerContainer = new Container({ layout: true });
     this.innerContainer.addChild(this.background, this.closeButton, ...this.layerButtons);
 
-    this.addChild(this.innerContainer);
+    this.addChild(this.innerContainer, this.userStatsButton);
   }
 
   public async show() {
@@ -113,14 +136,19 @@ export class LayerSelectPopup extends Container {
     if (!currentEngine.navigation.currentScreen) return;
 
     currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 0 })];
+    currentEngine.navigation.currentScreen.tint = 0x666666;
 
     this.innerContainer.alpha = 0;
     this.innerContainer.scale.set(0.7);
+    this.userStatsButton.alpha = 0;
+    this.userStatsButton.position.x = 200;
 
     const duration = 0.4;
     await Promise.all([
       animate(this.innerContainer, { alpha: 1 }, { duration, ease: 'backOut' }),
       animate(this.innerContainer.scale, { x: 1, y: 1 }, { duration, ease: 'backOut' }),
+      animate(this.userStatsButton, { alpha: 1 }, { duration, ease: 'backOut' }),
+      animate(this.userStatsButton.position, { x: 0 }, { duration, ease: 'backOut' }),
       animate(
         currentEngine.navigation.currentScreen.filters[0] as BlurFilter,
         { strength: 9 },
@@ -133,10 +161,14 @@ export class LayerSelectPopup extends Container {
     const currentEngine = engine();
     if (!currentEngine.navigation.currentScreen) return;
 
+    currentEngine.navigation.currentScreen.tint = 0xffffff;
+
     const duration = 0.2;
     await Promise.all([
       animate(this.innerContainer, { alpha: 0 }, { duration, ease: 'easeOut' }),
       animate(this.innerContainer.scale, { x: 0.94, y: 0.94 }, { duration, ease: 'easeOut' }),
+      animate(this.userStatsButton, { alpha: 0 }, { duration, ease: 'easeOut' }),
+      animate(this.userStatsButton.position, { x: 200 }, { duration, ease: 'easeOut' }),
       animate(
         currentEngine.navigation.currentScreen.filters[0] as BlurFilter,
         { strength: 0 },
