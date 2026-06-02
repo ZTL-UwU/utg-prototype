@@ -6,12 +6,19 @@ import { Container, Graphics, SplitText, Sprite, Text, Texture } from 'pixi.js';
 import { engine } from '../../../engine/getEngine';
 import { curveSplitText } from '../../../utils/curve-split-text';
 import useSessionStore from '../../../zustandStores/sessionStore';
+import { TutorialPopup } from '../../popups/tutorial';
 import { HUD } from '../../ui/hud';
 import { LevelMapScreen } from '../level-map';
 import type { TLevel } from '../level-map/level-button';
 
 export class LevelSplashScreen extends Container {
-  public static assetBundles = ['typing-level', 'education-level', 'mascots', 'ui'];
+  public static assetBundles = [
+    'typing-level',
+    'tutorial-popups',
+    'education-level',
+    'mascots',
+    'ui',
+  ];
 
   private background: Sprite;
   private levelNumber: SplitText;
@@ -140,8 +147,15 @@ export class LevelSplashScreen extends Container {
       useSessionStore.getState().reset();
       useSessionStore.getState().startSession(type);
 
+      this.removeChildren();
+      this.addChild(this.background);
+      void engine().navigation.showPopup(TutorialPopup, { type: type });
+      void setTimeout(() => {
+        void engine().navigation.hidePopup();
+        void engine().navigation.showScreen(level.screen!);
+      }, 5000);
       // Placeholder for the session start
-      void engine().navigation.showScreen(level.screen!);
+      //   void engine().navigation.showScreen(level.screen!);
     });
 
     this.addChild(
