@@ -109,6 +109,10 @@ export class EducationBubbleScreen extends Container {
     }
   }
 
+  public reset() {
+    for (const bubble of this.bubbles) bubble.pauseFloat();
+  }
+
   public async show() {
     const FLOAT_DURATION = 10;
     for (let i = 0; i < this.bubbles.length; i++) {
