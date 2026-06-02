@@ -8,10 +8,12 @@ type TutorialProps = {
   type: 'education' | 'typing';
   exitable?: boolean;
 };
+
 export class TutorialPopup extends Container {
   public static assetBundles = ['tutorial-popups'];
   private background: Sprite;
   private exitButton: FancyButton;
+
   constructor({ type, exitable = false }: TutorialProps) {
     super({ layout: { position: 'absolute', width: '100%', height: '100%' } });
     this.background = new Sprite({
@@ -46,9 +48,11 @@ export class TutorialPopup extends Container {
       this.addChild(this.exitButton);
     }
   }
+
   resize(width: number, height: number) {
     this.layout = { width, height };
   }
+
   async show() {
     this.background.alpha = 0;
     this.background.scale.set(0.5, 0.5);
@@ -58,19 +62,21 @@ export class TutorialPopup extends Container {
     }
 
     await Promise.all([
-      animate(this.background, { alpha: 1 }, { duration: 0.8, ease: 'easeIn' }),
-      animate(this.background.scale, { x: 1, y: 1 }, { duration: 0.8, ease: 'easeIn' }),
+      animate(this.background, { alpha: 1 }, { duration: 0.8, ease: 'backOut' }),
+      animate(this.background.scale, { x: 1, y: 1 }, { duration: 0.8, ease: 'backOut' }),
     ]);
   }
+
   async hide() {
     const currentEngine = engine();
     if (currentEngine.navigation.currentScreen) {
       currentEngine.navigation.currentScreen.tint = 0xffffff;
     }
+
     await Promise.all([
-      animate(this.background.scale, { x: 0.1, y: 0.1 }, { duration: 0.4, ease: 'easeOut' }),
-      animate(this.background, { alpha: 0 }, { duration: 0.8, ease: 'easeOut' }),
-      animate(this.exitButton.scale, { x: 0.1, y: 0.1 }, { duration: 0.8, ease: 'easeOut' }),
+      animate(this.background.scale, { x: 0.1, y: 0.1 }, { duration: 0.6, ease: 'backIn' }),
+      animate(this.background, { alpha: 0 }, { duration: 0.5, ease: 'easeOut' }),
+      animate(this.exitButton.scale, { x: 0.1, y: 0.1 }, { duration: 0.6, ease: 'backIn' }),
     ]);
   }
 }
