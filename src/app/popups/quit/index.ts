@@ -1,5 +1,6 @@
 import { Dialog, FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
+import { DropShadowFilter } from 'pixi-filters';
 import { BlurFilter, Container, Graphics, Texture, Sprite, Text } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
@@ -138,6 +139,15 @@ export class QuitPopup extends Container {
       },
     });
     this.dialog.layout = true;
+    this.dialog.filters = [
+      new DropShadowFilter({
+        color: 0xffe2bc,
+        blur: 5,
+        offset: { x: 0, y: 0 },
+        alpha: 0.7,
+        quality: 6,
+      }),
+    ];
 
     this.addChild(this.popupMask, this.dialog);
   }
