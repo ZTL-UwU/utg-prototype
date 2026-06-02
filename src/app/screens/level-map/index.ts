@@ -6,6 +6,7 @@ import { BackButton } from '../../ui/back-button';
 import { HelpButton } from '../../ui/help-button';
 import { EducationLevelScreen } from '../education-level/level-1';
 import { EducationBubbleScreen } from '../education-level/level-2';
+import { EducationSheepScreen } from '../education-level/level-3';
 import { HomeScreen } from '../home';
 import { TypingLevelScreen } from '../typing-level';
 import type { TLevel } from './level-button';
@@ -73,8 +74,9 @@ const mapData: Record<
       },
       {
         id: 3,
-        unlocked: false,
+        unlocked: true,
         miniMapImage: 'education-level-map/button-preview.svg',
+        screen: EducationSheepScreen,
         background: 'education-level/background.svg',
       },
       {

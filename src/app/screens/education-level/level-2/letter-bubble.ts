@@ -12,6 +12,7 @@ export class LetterBubble extends FancyButton {
   private animation?: AnimationPlaybackControls;
   private floatAnimation?: AnimationPlaybackControls;
   private clicked = false;
+  private stopped = false;
 
   constructor(letter: string, correctLetter: string, onCorrect?: () => void) {
     super({
@@ -55,7 +56,7 @@ export class LetterBubble extends FancyButton {
   public startFloat(endY: number, duration: number, delay = 0, onEscaped?: () => void) {
     this.floatAnimation = animate(this.position, { y: endY }, { duration, ease: 'linear', delay });
     void this.floatAnimation.finished.then(() => {
-      if (!this.clicked) {
+      if (!this.clicked && !this.stopped) {
         if (this.isCorrect) useSessionStore.getState().recordMistake();
         onEscaped?.();
       }
@@ -63,6 +64,7 @@ export class LetterBubble extends FancyButton {
   }
 
   public stopFloat() {
+    this.stopped = true;
     this.floatAnimation?.stop();
   }
 
