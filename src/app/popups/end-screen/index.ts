@@ -4,12 +4,12 @@ import { BlurFilter, Container, Graphics, Sprite, Text, TextStyle, Texture } fro
 import { engine } from '../../../engine/getEngine';
 import useSessionStore from '../../../zustandStores/sessionStore';
 import { LevelMapScreen } from '../../screens/level-map';
-import { BackButton } from '../../ui/back-button';
+import { ContinueButton } from '../../ui/continue-button';
 import { Stars } from './stars';
 
-const POPUP_WIDTH = 857;
-const POPUP_HEIGHT = 547;
-const POPUP_RADIUS = 28;
+const POPUP_WIDTH = 940;
+const POPUP_HEIGHT = 600;
+const POPUP_RADIUS = 32;
 
 const POPUP_BACKGROUND_COLORS = {
   typing: 0x7e5433,
@@ -26,6 +26,16 @@ const POPUP_TEXT_COLORS = {
   typing: 0xfad68a,
   education: 0xfdf7e7,
 } as const;
+
+function createScoreTitleStyle(type: 'education' | 'typing') {
+  return new TextStyle({
+    fontFamily: 'Concert One',
+    fontSize: 48,
+    fontWeight: '700',
+    fill: POPUP_TEXT_COLORS[type],
+    letterSpacing: 4,
+  });
+}
 
 function createStatStyle(type: 'education' | 'typing') {
   return new TextStyle({
@@ -73,13 +83,17 @@ function readSessionResults() {
   };
 }
 
+function goToLevelMap(type: 'education' | 'typing') {
+  void engine().navigation.hidePopup();
+  void engine().navigation.showScreen(LevelMapScreen, type);
+}
+
 export class EndScreenPopup extends Container {
-  public static assetBundles = ['end-screen', 'mascots'];
+  public static assetBundles = ['end-screen', 'mascots', 'ui'];
 
   private innerContainer: Container;
   private background: Graphics;
   private contentContainer: Container;
-  private backButton: BackButton;
   private stars: Stars;
 
   constructor(type: 'education' | 'typing') {
@@ -100,18 +114,65 @@ export class EndScreenPopup extends Container {
     };
 
     this.stars = new Stars(starCount, POPUP_WIDTH);
+    const scoreTitle = new Text({
+      text: 'SCORE',
+      style: createScoreTitleStyle(type),
+      layout: true,
+    });
+
     const statStyle = createStatStyle(type);
-    const correctText = new Text({ text: `Correct   ${correct}`, style: statStyle, layout: true });
+    const correctText = new Text({
+      text: `Correct : ${correct}`,
+      style: statStyle,
+      layout: true,
+    });
     const mistakesText = new Text({
-      text: `Mistakes  ${mistakes}`,
+      text: `Mistakes : ${mistakes}`,
       style: statStyle,
       layout: true,
     });
     const accuracyText = new Text({
-      text: `Accuracy  ${accuracy}%`,
+      text: `Accuracy : ${accuracy}%`,
       style: statStyle,
       layout: true,
     });
+
+    const headerSection = new Container({
+      layout: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        width: '100%',
+        gap: 8,
+        paddingTop: 48,
+      },
+    });
+    headerSection.addChild(this.stars, scoreTitle);
+
+    const statsSection = new Container({
+      layout: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        gap: 18,
+        flex: 1,
+        paddingLeft: 88,
+        paddingTop: 16,
+        justifyContent: 'center',
+      },
+    });
+    statsSection.addChild(correctText, mistakesText, accuracyText);
+
+    const bodySection = new Container({
+      layout: {
+        display: 'flex',
+        flexDirection: 'row',
+        width: '100%',
+        flex: 1,
+        alignItems: 'center',
+      },
+    });
+    bodySection.addChild(statsSection);
 
     this.contentContainer = new Container({
       layout: {
@@ -120,33 +181,27 @@ export class EndScreenPopup extends Container {
         height: POPUP_HEIGHT,
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 12,
-        paddingTop: 24,
       },
     });
-    this.contentContainer.addChild(this.stars, correctText, mistakesText, accuracyText);
+    this.contentContainer.addChild(headerSection, bodySection);
 
     const mascot = new Sprite({
       texture: Texture.from(getMascotTexture(type, getMascotVariant(starCount))),
       layout: {
         position: 'absolute',
         right: 20,
-        bottom: 16,
-        width: 280,
+        bottom: 20,
+        width: 310,
         objectFit: 'contain',
       },
     });
 
-    this.backButton = new BackButton(() => {
-      void engine().navigation.hidePopup();
-      void engine().navigation.showScreen(LevelMapScreen, type);
-    });
-    this.backButton.scale = 0.7;
+    const continueButton = new ContinueButton(() => goToLevelMap(type));
+    continueButton.scale.set(0.7);
 
     this.innerContainer = new Container({ layout: true });
-    this.innerContainer.addChild(this.background, this.contentContainer, mascot, this.backButton);
+    this.innerContainer.addChild(this.background, this.contentContainer, mascot, continueButton);
+
     this.addChild(this.innerContainer);
   }
 
