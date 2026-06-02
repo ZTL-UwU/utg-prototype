@@ -31,3 +31,5 @@ dist-ssr
 public/assets
 .assetpack
 src/manifest.json
+
+.pnpm-store/*

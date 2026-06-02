@@ -41,7 +41,7 @@ export class QuitPopup extends Container {
       interactive: true,
     });
 
-    const dialogHeight = 560;
+    const dialogHeight = 600;
     const dialogWidth = 700;
     const contentWidth = dialogWidth - 60;
 
@@ -59,18 +59,9 @@ export class QuitPopup extends Container {
     });
     cryingMascotContainer.addChild(cryingMascot);
 
-    const getBottomButton = (text: string, onPress: () => void) => {
+    const getBottomButton = (asset: string, onPress: () => void) => {
       const button = new FancyButton({
-        defaultView: new Graphics().roundRect(0, 0, 150, 50, 10).fill(0x51351e),
-        text: new Text({
-          text,
-          style: {
-            fill: 0xf2c583,
-            fontFamily: 'Concert One',
-            fontSize: 24,
-            fontWeight: 'bold',
-          },
-        }),
+        defaultView: Texture.from(asset),
         animations: {
           hover: {
             props: {
@@ -100,11 +91,11 @@ export class QuitPopup extends Container {
       return button;
     };
 
-    const quitButton = getBottomButton('QUIT', () => {
+    const quitButton = getBottomButton('quit/quit-button.svg', () => {
       void engine().navigation.hidePopup().then(onQuit);
     });
 
-    const cancelButton = getBottomButton('STAY', () => {
+    const cancelButton = getBottomButton('quit/cancel-button.svg', () => {
       void engine().navigation.hidePopup();
     });
 
