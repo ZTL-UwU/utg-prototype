@@ -2,10 +2,9 @@ import { animate } from 'motion';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { EndScreenPopup } from '../../popups/end-screen';
 import { QuitPopup } from '../../popups/quit';
-import { BackButton } from '../../ui/back-button';
-import { EndButton } from '../../ui/end-button';
-import { HelpButton } from '../../ui/help-button';
+import { HUD } from '../../ui/hud';
 import { KeyboardLayout } from '../../ui/keyboard-layout';
 import { LevelMapScreen } from '../level-map';
 import { Camel } from './camel';
@@ -22,9 +21,7 @@ export class TypingLevelScreen extends Container {
   private clouds: Clouds;
   private camel: Camel;
   private letterRow: LetterRow;
-  private helpButton: HelpButton;
-  private backButton: BackButton;
-  private endButton: EndButton;
+  private hud: HUD;
   private title: Text;
   private keyboard: KeyboardLayout;
 
@@ -65,28 +62,29 @@ export class TypingLevelScreen extends Container {
       },
     });
 
-    this.backButton = new BackButton(() => {
-      void engine().navigation.showPopup(QuitPopup, {
-        type: 'typing',
-        onQuit: () => {
-          void engine().navigation.showScreen(LevelMapScreen, 'typing');
-        },
-      });
+    this.hud = new HUD({
+      onBack: () => {
+        void engine().navigation.showPopup(QuitPopup, {
+          type: 'typing',
+          onQuit: () => {
+            void engine().navigation.showScreen(LevelMapScreen, 'typing');
+          },
+        });
+      },
+      onEnd: () => {
+        void engine().navigation.showPopup(EndScreenPopup, 'typing');
+      },
     });
-    this.helpButton = new HelpButton();
-    this.endButton = new EndButton('typing');
     this.keyboard = new KeyboardLayout();
 
     this.addChild(
       this.background,
       this.clouds,
       this.camel,
-      this.backButton,
-      this.helpButton,
       this.title,
       this.letterRow,
-      this.endButton,
       this.keyboard,
+      this.hud,
     );
   }
 

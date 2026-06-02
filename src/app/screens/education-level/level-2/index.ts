@@ -6,9 +6,7 @@ import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
-import { BackButton } from '../../../ui/back-button';
-import { EndButton } from '../../../ui/end-button';
-import { HelpButton } from '../../../ui/help-button';
+import { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
 import { LevelMapScreen } from '../../level-map';
 import { LetterBubble } from './letter-bubble';
@@ -29,9 +27,7 @@ export class EducationBubbleScreen extends Container {
 
   private background: Sprite;
   private soundButton: SoundButton;
-  private backButton: BackButton;
-  private helpButton: HelpButton;
-  private endButton: EndButton;
+  private hud: HUD;
   private bubbles: LetterBubble[] = [];
   private bubbleContainer = new Container();
   private screenHeight = 0;
@@ -51,16 +47,19 @@ export class EducationBubbleScreen extends Container {
       texture: Texture.from('education-level-2/background.svg'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
-    this.backButton = new BackButton(() => {
-      void engine().navigation.showPopup(QuitPopup, {
-        type: 'education',
-        onQuit: () => {
-          void engine().navigation.showScreen(LevelMapScreen, 'education');
-        },
-      });
+    this.hud = new HUD({
+      onBack: () => {
+        void engine().navigation.showPopup(QuitPopup, {
+          type: 'education',
+          onQuit: () => {
+            void engine().navigation.showScreen(LevelMapScreen, 'education');
+          },
+        });
+      },
+      onEnd: () => {
+        void engine().navigation.showPopup(EndScreenPopup, 'education');
+      },
     });
-    this.endButton = new EndButton('education');
-    this.helpButton = new HelpButton();
     this.soundButton = new SoundButton({ onClick: () => {}, size: 200 });
     this.soundButton.anchor.set(0.5);
     this.soundButton.layout = { position: 'absolute', top: '20%', left: '50%' };
@@ -82,14 +81,7 @@ export class EducationBubbleScreen extends Container {
       height: '100%',
     };
 
-    this.addChild(
-      this.background,
-      this.bubbleContainer,
-      this.endButton,
-      this.helpButton,
-      this.soundButton,
-      this.backButton,
-    );
+    this.addChild(this.background, this.bubbleContainer, this.soundButton, this.hud);
   }
 
   public async pause() {

@@ -6,8 +6,7 @@ import { Container, Graphics, SplitText, Sprite, Text, Texture } from 'pixi.js';
 import { engine } from '../../../engine/getEngine';
 import { curveSplitText } from '../../../utils/curve-split-text';
 import useSessionStore from '../../../zustandStores/sessionStore';
-import { BackButton } from '../../ui/back-button';
-import { HelpButton } from '../../ui/help-button';
+import { HUD } from '../../ui/hud';
 import { LevelMapScreen } from '../level-map';
 import type { TLevel } from '../level-map/level-button';
 
@@ -17,8 +16,7 @@ export class LevelSplashScreen extends Container {
   private background: Sprite;
   private levelNumber: SplitText;
   private levelTitle: Text;
-  private backButton: BackButton;
-  private helpButton: HelpButton;
+  private hud: HUD;
   private startButton: FancyButton;
   private mascot: Sprite;
 
@@ -98,10 +96,11 @@ export class LevelSplashScreen extends Container {
       },
     });
 
-    this.backButton = new BackButton(() => {
-      void engine().navigation.showScreen(LevelMapScreen, type);
+    this.hud = new HUD({
+      onBack: () => {
+        void engine().navigation.showScreen(LevelMapScreen, type);
+      },
     });
-    this.helpButton = new HelpButton();
 
     const buttonWidth = 300;
     const buttonHeight = 150;
@@ -149,10 +148,9 @@ export class LevelSplashScreen extends Container {
       this.background,
       this.levelNumber,
       this.levelTitle,
-      this.backButton,
-      this.helpButton,
       this.mascot,
       this.startButton,
+      this.hud,
     );
   }
 

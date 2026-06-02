@@ -7,9 +7,7 @@ import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
-import { BackButton } from '../../../ui/back-button';
-import { EndButton } from '../../../ui/end-button';
-import { HelpButton } from '../../../ui/help-button';
+import { HUD } from '../../../ui/hud';
 import { LevelMapScreen } from '../../level-map';
 import { LetterFlower } from './letter-flower';
 
@@ -25,9 +23,7 @@ export class EducationSheepScreen extends Container {
   public static assetBundles = ['education-level-3', 'ui', 'mascots'];
 
   private background: Sprite;
-  private backButton: BackButton;
-  private helpButton: HelpButton;
-  private endButton: EndButton;
+  private hud: HUD;
   private flowers: LetterFlower[];
   private flowerContainer = new Container();
   private sheep: Sprite;
@@ -43,15 +39,14 @@ export class EducationSheepScreen extends Container {
       texture: Texture.from('education-level-3/background.svg'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
-    this.backButton = new BackButton(
-      () =>
+    this.hud = new HUD({
+      onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
           type: 'education',
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, 'education'),
         }),
-    );
-    this.helpButton = new HelpButton();
-    this.endButton = new EndButton('education');
+      onEnd: () => void engine().navigation.showPopup(EndScreenPopup, 'education'),
+    });
 
     const letters = getThreeUniqueLetters();
     this.flowers = letters.map((letter) => new LetterFlower(letter, FLOWER_SIZE));
@@ -67,14 +62,7 @@ export class EducationSheepScreen extends Container {
     this.sheep = new Sprite(Texture.from('mascots/sheep/default.svg'));
     this.sheep.anchor.set(0.5);
 
-    this.addChild(
-      this.background,
-      this.flowerContainer,
-      this.endButton,
-      this.helpButton,
-      this.backButton,
-      this.sheep,
-    );
+    this.addChild(this.background, this.flowerContainer, this.sheep, this.hud);
   }
 
   resize(width: number, height: number) {

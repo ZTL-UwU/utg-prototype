@@ -2,19 +2,16 @@ import { animate } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
-import { BackButton } from '../../../ui/back-button';
-import { EndButton } from '../../../ui/end-button';
-import { HelpButton } from '../../../ui/help-button';
+import { HUD } from '../../../ui/hud';
 import { LevelMapScreen } from '../../level-map';
 import { LetterGrid } from './letter-grid';
 
 export class EducationLevelScreen extends Container {
   public static assetBundles = ['education-level', 'ui'];
   private background: Sprite;
-  private backButton: BackButton;
-  private helpButton: HelpButton;
-  private endButton: EndButton;
+  private hud: HUD;
   private letterGrid: LetterGrid;
 
   constructor() {
@@ -30,24 +27,21 @@ export class EducationLevelScreen extends Container {
       texture: Texture.from('education-level/background.svg'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
-    this.helpButton = new HelpButton();
-    this.backButton = new BackButton(() => {
-      void engine().navigation.showPopup(QuitPopup, {
-        type: 'education',
-        onQuit: () => {
-          void engine().navigation.showScreen(LevelMapScreen, 'education');
-        },
-      });
+    this.hud = new HUD({
+      onBack: () => {
+        void engine().navigation.showPopup(QuitPopup, {
+          type: 'education',
+          onQuit: () => {
+            void engine().navigation.showScreen(LevelMapScreen, 'education');
+          },
+        });
+      },
+      onEnd: () => {
+        void engine().navigation.showPopup(EndScreenPopup, 'education');
+      },
     });
-    this.endButton = new EndButton('education');
     this.letterGrid = new LetterGrid();
-    this.addChild(
-      this.background,
-      this.letterGrid,
-      this.backButton,
-      this.helpButton,
-      this.endButton,
-    );
+    this.addChild(this.background, this.letterGrid, this.hud);
   }
 
   public resize(width: number, height: number) {

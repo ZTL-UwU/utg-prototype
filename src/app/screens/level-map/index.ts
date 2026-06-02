@@ -2,8 +2,7 @@ import { animate } from 'motion';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { BackButton } from '../../ui/back-button';
-import { HelpButton } from '../../ui/help-button';
+import { HUD } from '../../ui/hud';
 import { EducationLevelScreen } from '../education-level/level-1';
 import { EducationBubbleScreen } from '../education-level/level-2';
 import { EducationSheepScreen } from '../education-level/level-3';
@@ -95,8 +94,7 @@ export class LevelMapScreen extends Container {
   private background: Sprite;
   private title: Text;
   private levelRow: LevelRow;
-  private backButton: BackButton;
-  private helpButton: HelpButton;
+  private hud: HUD;
 
   constructor(type: 'typing' | 'education') {
     super({
@@ -117,11 +115,11 @@ export class LevelMapScreen extends Container {
       },
     });
 
-    this.backButton = new BackButton(() => {
-      void engine().navigation.showScreen(HomeScreen);
+    this.hud = new HUD({
+      onBack: () => {
+        void engine().navigation.showScreen(HomeScreen);
+      },
     });
-
-    this.helpButton = new HelpButton();
 
     this.title = new Text({
       text: mapData[type].title.text,
@@ -137,7 +135,7 @@ export class LevelMapScreen extends Container {
       },
     });
     this.levelRow = new LevelRow(mapData[type].levels, type);
-    this.addChild(this.background, this.title, this.levelRow, this.backButton, this.helpButton);
+    this.addChild(this.background, this.title, this.levelRow, this.hud);
   }
 
   /** Resize the screen, fired whenever window size changes */
