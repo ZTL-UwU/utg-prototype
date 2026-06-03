@@ -1,13 +1,14 @@
 import { animate, type AnimationPlaybackControls } from 'motion';
-import { Container, Sprite, Texture } from 'pixi.js';
+import { Container, ObservablePoint, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { getAlphabet, getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { getAlphabet } from '../../../../utils/keymap';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
+import { SoundButton } from '../../../ui/sound-button';
 import { LevelMapScreen } from '../../level-map';
 import { LetterFlower } from './letter-flower';
 
@@ -28,8 +29,9 @@ export class EducationSheepScreen extends Container {
   private flowerContainer = new Container();
   private sheep: Sprite;
   private flashSadAnimation?: AnimationPlaybackControls;
+  private soundButton: SoundButton;
 
-  private currentFlowerIndex = 0;
+  private readonly correctLetter: string;
   private isAnimating = false;
 
   constructor() {
@@ -47,9 +49,22 @@ export class EducationSheepScreen extends Container {
         }),
       type: 'education',
     });
+    this.soundButton = new SoundButton({ onClick: () => {}, size: 200 });
+    this.soundButton.anchor.set(0.5);
+    this.soundButton.layout = { position: 'absolute', left: '50%', top: '20%' };
 
     const letters = getThreeUniqueLetters();
-    this.flowers = letters.map((letter) => new LetterFlower(letter, FLOWER_SIZE));
+    this.correctLetter = letters[Math.floor(Math.random() * letters.length)];
+    this.flowers = letters.map(
+      (letter, i) =>
+        new LetterFlower(
+          letter,
+          () => {
+            this.handleFlowerClick(i);
+          },
+          FLOWER_SIZE,
+        ),
+    );
     for (const flower of this.flowers) this.flowerContainer.addChild(flower);
     this.flowerContainer.layout = {
       position: 'absolute',
@@ -62,7 +77,7 @@ export class EducationSheepScreen extends Container {
     this.sheep = new Sprite(Texture.from('mascots/sheep/default.svg'));
     this.sheep.anchor.set(0.5);
 
-    this.addChild(this.background, this.flowerContainer, this.sheep, this.hud);
+    this.addChild(this.background, this.flowerContainer, this.sheep, this.hud, this.soundButton);
   }
 
   resize(width: number, height: number) {
@@ -77,65 +92,61 @@ export class EducationSheepScreen extends Container {
   async show() {
     // resize() runs before show() in the navigation lifecycle, so flowers[0].x is already set
     this.sheep.position.set(this.flowers[0].x - 2 * this.flowers[0].width, 0.6 * this.height);
-    window.addEventListener('keydown', this.handleKeyDown);
   }
 
-  reset() {
-    window.removeEventListener('keydown', this.handleKeyDown);
-  }
+  /**
+   * ==================EVENT HANDLERS=======================
+   *
+   */
+  private readonly handleFlowerClick = (clickedFlowerIdx: number) => {
+    if (this.isAnimating) return;
 
-  override destroy(options?: Parameters<Container['destroy']>[0]) {
-    window.removeEventListener('keydown', this.handleKeyDown);
-    super.destroy(options);
-  }
-
-  private readonly handleKeyDown = (event: KeyboardEvent) => {
-    if (event.repeat || this.isAnimating || event.key == 'Shift') return;
-    const typed = getMappedFromKeyboardEvent(event);
-    if (typed === this.flowers[this.currentFlowerIndex].letter) {
-      void this.handleCorrectLetter();
-    } else if (typed) {
-      void this.sheepFlashSad();
-      useSessionStore.getState().recordMistake();
-    }
+    this.isAnimating = true;
+    const clickedFlower = this.flowers[clickedFlowerIdx];
+    if (clickedFlower.letter === this.correctLetter) void this.handleCorrectLetter(clickedFlower);
+    else void this.handleIncorrectLetter(clickedFlower);
+    this.isAnimating = false;
   };
 
-  private async handleCorrectLetter() {
-    this.isAnimating = true;
+  private async handleCorrectLetter(flower: LetterFlower) {
     useSessionStore.getState().recordCorrect();
-
-    // wilt current flower and play graze animation simultaneously
-    this.flowers[this.currentFlowerIndex].wilt();
-    await this.sheepFlashGraze();
-
-    this.currentFlowerIndex++;
-
-    if (this.currentFlowerIndex < this.flowers.length) {
-      await animate(
-        this.sheep,
-        {
-          x:
-            this.flowers[this.currentFlowerIndex].x -
-            2 * this.flowers[this.currentFlowerIndex].width,
-        },
-        { duration: 0.4, ease: 'backOut' },
-      ).finished;
-    } else {
-      const { correct, mistakes } = useSessionStore.getState();
-      useScoreManager.getState().addSession(correct, mistakes);
-      void engine().navigation.showPopup(EndScreenPopup, 'education');
-    }
-
-    this.isAnimating = false;
+    await this.moveSheepToFlower(flower)
+      .then(async () => {
+        await Promise.all([
+          this.sheepBounceHappy(this.sheep.scale),
+          flower.correctAnimation(),
+          //TODO : CORRECT SFX
+        ]);
+      })
+      .then(() => this.endGame());
+  }
+  private async handleIncorrectLetter(flower: LetterFlower) {
+    useSessionStore.getState().recordMistake();
+    await this.moveSheepToFlower(flower)
+      .then(
+        async () =>
+          await Promise.all([
+            this.sheepFlashGraze(this.sheep.scale), // CURRENT SCALE PASSED TO PRESERVE DIMENSION
+            flower.incorrectAnimation(),
+            flower.wilt(),
+            //TODO : INCORRECT SFX
+          ]),
+      )
+      .then(() => this.sheepFlashSad(this.sheep.scale));
   }
 
-  async sheepFlashSad() {
+  /**
+   * ==================SHEEP ANIMATIONS=======================
+   *
+   */
+
+  async sheepFlashSad(signedScale: ObservablePoint) {
     const defaultTex = this.sheep.texture;
     this.sheep.texture = Texture.from('mascots/sheep/sheep-crying.svg');
     this.flashSadAnimation = animate(
       [
-        [this.sheep.scale, { x: 1.1, y: 0.9 }, { duration: 0.12 }],
-        [this.sheep.scale, { x: 1, y: 1 }, { duration: 0.18 }],
+        [this.sheep.scale, { x: 1.1 * signedScale.x, y: 0.9 * signedScale.y }, { duration: 0.12 }],
+        [this.sheep.scale, { x: 1 * signedScale.x, y: 1 * signedScale.y }, { duration: 0.18 }],
       ],
       { defaultTransition: { ease: 'easeInOut' } },
     );
@@ -146,16 +157,65 @@ export class EducationSheepScreen extends Container {
     );
   }
 
-  private async sheepFlashGraze() {
+  private async sheepFlashGraze(signedScale: ObservablePoint) {
     const defaultTex = this.sheep.texture;
     this.sheep.texture = Texture.from('mascots/sheep/sheep-grazing.svg');
     await animate(
       [
-        [this.sheep.scale, { x: 0.9, y: 0.9 }, { duration: 0.12 }],
-        [this.sheep.scale, { x: 1, y: 1 }, { duration: 0.18 }],
+        [this.sheep.scale, { x: 0.9 * signedScale.x, y: 0.9 * signedScale.y }, { duration: 0.12 }],
+        [this.sheep.scale, { x: 1 * signedScale.x, y: 1 * signedScale.y }, { duration: 0.18 }],
       ],
       { defaultTransition: { ease: 'easeInOut' } },
     ).finished;
     this.sheep.texture = defaultTex;
+  }
+
+  private async sheepBounceHappy(signedScale: ObservablePoint) {
+    const defaultTex = this.sheep.texture;
+    this.sheep.texture = Texture.from('mascots/sheep/sheep-happy.svg');
+    const baseY = this.sheep.y;
+    await Promise.all([
+      animate(
+        this.sheep,
+        { y: [baseY, baseY * 1.5, baseY] },
+        { duration: 0.8, type: 'spring', bounce: 0.3 },
+      ),
+      animate([
+        [
+          this.sheep.scale,
+          { x: 1.5 * signedScale.x, y: 1.5 * signedScale.y },
+          { duration: 0.2, ease: 'linear' },
+        ],
+        [
+          this.sheep.scale,
+          { x: signedScale.x, y: signedScale.y },
+          { duration: 0.2, ease: 'linear' },
+        ],
+      ]),
+    ]).then(() => (this.sheep.texture = defaultTex));
+  }
+  private async moveSheepToFlower(flower: LetterFlower) {
+    if (this.sheep.x > flower.x) {
+      await Promise.all([
+        animate(this.sheep.scale, { x: -1 }, { duration: 0.2, ease: 'linear' }), //mirror to face the flower
+        animate(this.sheep, { x: flower.x + 2 * flower.width }, { duration: 0.4, ease: 'easeOut' }), // send to flowers right
+      ]);
+    } else {
+      await Promise.all([
+        animate(this.sheep.scale, { x: 1 }, { duration: 0.2, ease: 'linear' }),
+        animate(this.sheep, { x: flower.x - 2 * flower.width }, { duration: 0.4, ease: 'easeOut' }),
+      ]);
+    }
+  }
+
+  /**
+   *
+   * =====END GAME LOGIC========
+   */
+  private endGame() {
+    this.isAnimating = false;
+    const { correct, mistakes } = useSessionStore.getState();
+    useScoreManager.getState().addSession(correct, mistakes);
+    void engine().navigation.showPopup(EndScreenPopup, 'education');
   }
 }
