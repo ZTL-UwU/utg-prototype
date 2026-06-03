@@ -55,10 +55,10 @@ export class TutorialPopup extends Container {
     this.exitButton.layout = {
       isLeaf: true,
       position: 'absolute',
-      top: 40,
-      left: 40,
-      width: 100,
-      height: 100,
+      top: 30,
+      left: 30,
+      width: 80,
+      height: 80,
     };
     this.exitButton.onPress.connect(() => void engine().navigation.hidePopup());
 
