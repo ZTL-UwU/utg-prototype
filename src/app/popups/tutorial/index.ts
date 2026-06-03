@@ -1,6 +1,6 @@
 import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
-import { Container, Graphics, Sprite, Texture } from 'pixi.js';
+import { Container, Graphics, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import type { AppScreenConstructor } from '../../../engine/navigation/navigation';
@@ -11,15 +11,20 @@ type TutorialProps = {
   nextScreen?: AppScreenConstructor;
 };
 
+const AUTO_ADVANCE_MS = 3000;
+
 export class TutorialPopup extends Container {
   public static assetBundles = ['tutorial-popups'];
   private background: Sprite;
   private exitButton: FancyButton;
   private nextScreen?: AppScreenConstructor;
-  private autoAdvanceTimeout?: ReturnType<typeof setTimeout>;
+  private autoAdvanceTick?: (ticker: Ticker) => void;
+  private autoAdvanceElapsedMs = 0;
+  private progressBar?: Graphics;
   private backdrop: Graphics;
   private backdropColor: number;
   private exitable: boolean;
+
   constructor({ type, exitable = false, nextScreen }: TutorialProps) {
     super({ layout: { position: 'absolute', width: '100%', height: '100%' } });
     this.nextScreen = nextScreen;
@@ -69,6 +74,13 @@ export class TutorialPopup extends Container {
     if (exitable) {
       this.addChild(this.exitButton);
     }
+
+    if (nextScreen) {
+      const progressBarHeight = 20;
+      this.progressBar = new Graphics().rect(0, 0, 1, progressBarHeight).fill(0xf3ca8a);
+      this.progressBar.y = engine().screen.height - progressBarHeight;
+      this.addChild(this.progressBar);
+    }
   }
 
   resize(width: number, height: number) {
@@ -89,6 +101,10 @@ export class TutorialPopup extends Container {
       this.backdrop.alpha = 0;
       this.backdrop.scale.set(0.5, 0.5);
     }
+    if (this.progressBar) {
+      this.progressBar.alpha = 0;
+      this.progressBar.width = 0;
+    }
 
     const currentEngine = engine();
     if (currentEngine.navigation.currentScreen) {
@@ -96,18 +112,36 @@ export class TutorialPopup extends Container {
     }
 
     if (this.nextScreen) {
-      this.autoAdvanceTimeout = setTimeout(() => {
+      this.autoAdvanceElapsedMs = 0;
+      this.autoAdvanceTick = (ticker: Ticker) => {
+        this.autoAdvanceElapsedMs += ticker.deltaMS;
+
+        if (this.progressBar) {
+          this.progressBar.width = Math.min(
+            (this.autoAdvanceElapsedMs / AUTO_ADVANCE_MS) * engine().screen.width,
+            engine().screen.width,
+          );
+        }
+
+        if (this.autoAdvanceElapsedMs < AUTO_ADVANCE_MS) return;
+
+        this.clearAutoAdvanceTick();
         void engine()
           .navigation.hidePopup()
           .then(() => {
             void engine().navigation.showScreen(this.nextScreen!);
           });
-      }, 5000);
+      };
+
+      engine().ticker.add(this.autoAdvanceTick);
     }
 
     await Promise.all([
       animate(this.background, { alpha: 1 }, { duration: 0.8, ease: 'backOut' }),
       animate(this.background.scale, { x: 1, y: 1 }, { duration: 0.8, ease: 'backOut' }),
+      ...(this.progressBar
+        ? [animate(this.progressBar, { alpha: 1 }, { duration: 0.8, ease: 'backOut' })]
+        : []),
       ...(this.exitable
         ? [
             animate(this.backdrop, { alpha: 1 }, { duration: 0.8, ease: 'backOut' }),
@@ -117,11 +151,16 @@ export class TutorialPopup extends Container {
     ]);
   }
 
-  async hide() {
-    if (this.autoAdvanceTimeout !== undefined) {
-      clearTimeout(this.autoAdvanceTimeout);
-      this.autoAdvanceTimeout = undefined;
+  private clearAutoAdvanceTick() {
+    if (this.autoAdvanceTick) {
+      engine().ticker.remove(this.autoAdvanceTick);
+      this.autoAdvanceTick = undefined;
     }
+    this.autoAdvanceElapsedMs = 0;
+  }
+
+  async hide() {
+    this.clearAutoAdvanceTick();
 
     const currentEngine = engine();
     if (currentEngine.navigation.currentScreen) {
@@ -132,6 +171,9 @@ export class TutorialPopup extends Container {
       animate(this.background.scale, { x: 0.1, y: 0.1 }, { duration: 0.6, ease: 'backIn' }),
       animate(this.background, { alpha: 0 }, { duration: 0.5, ease: 'easeOut' }),
       animate(this.exitButton.scale, { x: 0.1, y: 0.1 }, { duration: 0.6, ease: 'backIn' }),
+      ...(this.progressBar
+        ? [animate(this.progressBar, { alpha: 0 }, { duration: 0.5, ease: 'easeOut' })]
+        : []),
       ...(this.exitable
         ? [
             animate(this.backdrop.scale, { x: 0.1, y: 0.1 }, { duration: 0.6, ease: 'backIn' }),
