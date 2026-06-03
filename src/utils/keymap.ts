@@ -10,6 +10,37 @@ export function getMappedFromKeyCode(code: string, shift: boolean): string {
   return letter?.text ?? '';
 }
 
+const AUXILIARY_LABELS: Record<string, string> = {
+  Tab: 'TAB',
+  CapsLock: 'CAPS',
+  ShiftLeft: 'SHIFT',
+  ShiftRight: 'SHIFT',
+  ControlLeft: 'CTRL',
+  ControlRight: 'CTRL',
+  AltLeft: 'MENU',
+  AltRight: 'ALT',
+  MetaLeft: 'WIN',
+  MetaRight: 'WIN',
+  Enter: 'ENTER',
+  Space: '',
+};
+
+/** Labels for modifier and special keys shown on the on-screen keyboard. */
+export function formatKeyboardLabel(text: string): string {
+  if (text.startsWith('*') && text.endsWith('*')) {
+    return text.slice(1, -1).toUpperCase();
+  }
+  return text;
+}
+
+export function getKeyboardLabel(code: string, shift: boolean): string {
+  const mapped = getMappedFromKeyCode(code, shift);
+  if (mapped.length > 0) {
+    return formatKeyboardLabel(mapped);
+  }
+  return AUXILIARY_LABELS[code] ?? '';
+}
+
 export function getMappedFromKeyboardEvent(event: KeyboardEvent): string {
   return getMappedFromKeyCode(event.code, event.shiftKey);
 }

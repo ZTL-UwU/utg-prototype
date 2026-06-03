@@ -1,30 +1,35 @@
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Graphics, Text } from 'pixi.js';
 
-import { getMappedFromKeyCode } from '../../utils/keymap';
+import { getKeyboardLabel } from '../../utils/keymap';
+
+export type KeyFeedback = 'none' | 'error' | 'success';
 
 type Key = {
   code: string;
   width?: number;
+  auxiliary?: boolean;
 };
 
-const qwerty: Key[][] = [
+const keyboardLayout: Key[][] = [
   [
-    { code: 'Digit1' },
-    { code: 'Digit2' },
-    { code: 'Digit3' },
-    { code: 'Digit4' },
-    { code: 'Digit5' },
-    { code: 'Digit6' },
-    { code: 'Digit7' },
-    { code: 'Digit8' },
-    { code: 'Digit9' },
-    { code: 'Digit0' },
-    { code: 'Minus' },
-    { code: 'Equal' },
-    { code: 'Backspace' },
+    { code: 'Backquote', auxiliary: true },
+    { code: 'Digit1', auxiliary: true },
+    { code: 'Digit2', auxiliary: true },
+    { code: 'Digit3', auxiliary: true },
+    { code: 'Digit4', auxiliary: true },
+    { code: 'Digit5', auxiliary: true },
+    { code: 'Digit6', auxiliary: true },
+    { code: 'Digit7', auxiliary: true },
+    { code: 'Digit8', auxiliary: true },
+    { code: 'Digit9', auxiliary: true },
+    { code: 'Digit0', auxiliary: true },
+    { code: 'Minus', auxiliary: true },
+    { code: 'Equal', auxiliary: true },
+    { code: 'Backspace', width: 1.7, auxiliary: true },
   ],
   [
+    { code: 'Tab', width: 1.7, auxiliary: true },
     { code: 'KeyQ' },
     { code: 'KeyW' },
     { code: 'KeyE' },
@@ -35,10 +40,12 @@ const qwerty: Key[][] = [
     { code: 'KeyI' },
     { code: 'KeyO' },
     { code: 'KeyP' },
-    { code: 'BracketLeft' },
-    { code: 'BracketRight' },
+    { code: 'BracketLeft', auxiliary: true },
+    { code: 'BracketRight', auxiliary: true },
+    { code: 'Backslash', auxiliary: true },
   ],
   [
+    { code: 'CapsLock', width: 2.05, auxiliary: true },
     { code: 'KeyA' },
     { code: 'KeyS' },
     { code: 'KeyD' },
@@ -48,10 +55,12 @@ const qwerty: Key[][] = [
     { code: 'KeyJ' },
     { code: 'KeyK' },
     { code: 'KeyL' },
-    { code: 'Semicolon' },
-    { code: 'Quote' },
+    { code: 'Semicolon', auxiliary: true },
+    { code: 'Quote', auxiliary: true },
+    { code: 'Enter', width: 1.8, auxiliary: true },
   ],
   [
+    { code: 'ShiftLeft', width: 2.5, auxiliary: true },
     { code: 'KeyZ' },
     { code: 'KeyX' },
     { code: 'KeyC' },
@@ -62,6 +71,18 @@ const qwerty: Key[][] = [
     { code: 'Comma' },
     { code: 'Period' },
     { code: 'Slash' },
+    { code: 'ShiftRight', width: 2.45, auxiliary: true },
+  ],
+  [
+    { code: '' },
+    { code: '' },
+    { code: '' },
+    { code: '' },
+    { code: 'Space', width: 6, auxiliary: true },
+    { code: '' },
+    { code: '' },
+    { code: '' },
+    { code: '', width: 2.3 },
   ],
 ];
 
@@ -73,8 +94,6 @@ const PANEL_PADDING = 24; // p-6
 const PANEL_RADIUS = 32; // rounded-4xl
 const KEY_RADIUS = 12; // rounded-xl
 const BOTTOM_MARGIN = 40; // bottom-10
-const INSET_SHADOW = 10; // shadow-[inset_0_-10px_0_#c98144]
-const FONT_SIZE = 30; // text-3xl
 const ENTER_Y_OFFSET = 72;
 const EXIT_Y_OFFSET = 48;
 
@@ -82,6 +101,8 @@ const PANEL_COLOR = 0xf3ca8a;
 const PANEL_SHADOW_COLOR = 0xc98144;
 const KEY_COLOR = 0xc98144;
 const KEY_PRESSED_COLOR = 0x8d6241;
+const KEY_SUCCESS_COLOR = 0x8ec24d;
+const KEY_ERROR_COLOR = 0xef5a42;
 const TEXT_COLOR = 0xffffff;
 
 class KeyCap extends Container {
@@ -89,10 +110,12 @@ class KeyCap extends Container {
   public readonly keyWidth: number;
 
   private readonly background = new Graphics();
+  private readonly keyContent = new Container();
   private readonly keyLabel: Text;
   private pressed = false;
+  private feedback: KeyFeedback = 'none';
 
-  constructor(code: string, widthMultiplier = 1) {
+  constructor(code: string, widthMultiplier = 1, isAuxiliary = false) {
     super();
     this.code = code;
     this.keyWidth = UNIT * widthMultiplier;
@@ -103,23 +126,31 @@ class KeyCap extends Container {
       style: {
         align: 'center',
         fill: TEXT_COLOR,
-        fontFamily: `'Noto Sans Arabic', 'Noto Sans'`,
-        fontSize: FONT_SIZE,
-        fontWeight: '700',
-        lineHeight: FONT_SIZE,
+        fontFamily: isAuxiliary ? 'Concert One' : 'Noto Sans Arabic',
+        fontSize: isAuxiliary ? 26 : 30,
+        fontWeight: '800',
+        lineHeight: isAuxiliary ? 26 : 30,
         padding: 30,
       },
+      anchor: 0.5,
     });
-    this.keyLabel.anchor.set(0.5);
     this.keyLabel.position.set(this.keyWidth / 2, UNIT / 2);
 
+    this.keyContent.addChild(this.keyLabel);
     this.drawBackground();
-    this.addChild(this.background, this.keyLabel);
+    this.addChild(this.background, this.keyContent);
   }
 
   public setPressed(pressed: boolean) {
     if (this.pressed === pressed) return;
     this.pressed = pressed;
+    this.drawBackground();
+  }
+
+  public setFeedback(feedback: KeyFeedback) {
+    if (this.feedback === feedback) return;
+
+    this.feedback = feedback;
     this.drawBackground();
   }
 
@@ -129,18 +160,27 @@ class KeyCap extends Container {
   }
 
   private drawBackground() {
+    const fillColor =
+      this.feedback === 'success'
+        ? KEY_SUCCESS_COLOR
+        : this.feedback === 'error'
+          ? KEY_ERROR_COLOR
+          : this.pressed
+            ? KEY_PRESSED_COLOR
+            : KEY_COLOR;
+
     this.background
       .clear()
       .roundRect(0, 0, this.keyWidth, UNIT, KEY_RADIUS)
-      .fill({ color: this.pressed ? KEY_PRESSED_COLOR : KEY_COLOR });
+      .fill({ color: fillColor });
   }
 }
 
 export class KeyboardLayout extends Container {
   private readonly panel = new Container();
-  private readonly panelShadow = new Graphics();
   private readonly panelBackground = new Graphics();
   private readonly keys: KeyCap[] = [];
+  private readonly keyByCode = new Map<string, KeyCap>();
 
   private readonly pressedCodes = new Set<string>();
   private listening = false;
@@ -201,6 +241,14 @@ export class KeyboardLayout extends Container {
     this.layoutPanel();
   }
 
+  public setKeyFeedback(code: string, feedback: KeyFeedback) {
+    this.keyByCode.get(code)?.setFeedback(feedback);
+  }
+
+  public clearKeyFeedback(code: string) {
+    this.setKeyFeedback(code, 'none');
+  }
+
   override destroy(options?: Parameters<Container['destroy']>[0]) {
     this.enterExitAnimation?.stop();
     this.setListening(false);
@@ -211,11 +259,14 @@ export class KeyboardLayout extends Container {
     const shiftPressed = false;
     let maxRowWidth = 0;
 
-    const rows = qwerty.map((row) => {
-      const caps = row.map(({ code, width }) => {
-        const cap = new KeyCap(code, width);
-        cap.setLabel(getMappedFromKeyCode(code, shiftPressed));
+    const rows = keyboardLayout.map((row) => {
+      const caps = row.map(({ code, width, auxiliary }) => {
+        const cap = new KeyCap(code, width, auxiliary);
+        cap.setLabel(getKeyboardLabel(code, shiftPressed));
         this.keys.push(cap);
+        if (code) {
+          this.keyByCode.set(code, cap);
+        }
         return cap;
       });
 
@@ -227,10 +278,11 @@ export class KeyboardLayout extends Container {
     });
 
     this.panelWidth = maxRowWidth + PANEL_PADDING * 2;
-    this.panelHeight = qwerty.length * UNIT + ROW_GAP * (qwerty.length - 1) + PANEL_PADDING * 2;
+    this.panelHeight =
+      keyboardLayout.length * UNIT + ROW_GAP * (keyboardLayout.length - 1) + PANEL_PADDING * 2;
 
     this.drawPanelBackground();
-    this.panel.addChild(this.panelShadow, this.panelBackground);
+    this.panel.addChild(this.panelBackground);
 
     rows.forEach(({ caps, rowWidth }, rowIndex) => {
       let x = (this.panelWidth - rowWidth) / 2;
@@ -245,14 +297,11 @@ export class KeyboardLayout extends Container {
   }
 
   private drawPanelBackground() {
-    this.panelShadow
-      .clear()
-      .roundRect(0, 0, this.panelWidth, this.panelHeight, PANEL_RADIUS)
-      .fill({ color: PANEL_SHADOW_COLOR });
-
     this.panelBackground
       .clear()
-      .roundRect(0, 0, this.panelWidth, this.panelHeight - INSET_SHADOW, PANEL_RADIUS)
+      .roundRect(0, 12, this.panelWidth, this.panelHeight, PANEL_RADIUS)
+      .fill({ color: PANEL_SHADOW_COLOR })
+      .roundRect(0, 0, this.panelWidth, this.panelHeight, PANEL_RADIUS)
       .fill({ color: PANEL_COLOR });
   }
 
@@ -286,7 +335,14 @@ export class KeyboardLayout extends Container {
       window.removeEventListener('keyup', this.onKeyUp);
       window.removeEventListener('blur', this.onBlur);
       this.pressedCodes.clear();
+      this.clearAllKeyFeedback();
       this.refreshKeys();
+    }
+  }
+
+  private clearAllKeyFeedback() {
+    for (const cap of this.keys) {
+      cap.setFeedback('none');
     }
   }
 
@@ -311,7 +367,7 @@ export class KeyboardLayout extends Container {
 
     for (const cap of this.keys) {
       cap.setPressed(this.pressedCodes.has(cap.code));
-      cap.setLabel(getMappedFromKeyCode(cap.code, shiftPressed));
+      cap.setLabel(getKeyboardLabel(cap.code, shiftPressed));
     }
   }
 }
