@@ -56,7 +56,7 @@ export class UserStatsPopup extends Container {
 
   private panel: Container;
   private backButton: BackButton;
-  private highestScoreValue: Text;
+  private totalStarsValue: Text;
   private averageAccuracyValue: Text;
   private correctAttemptsValue: Text;
   private incorrectAttemptsValue: Text;
@@ -98,7 +98,7 @@ export class UserStatsPopup extends Container {
       children: [profileIcon, userName],
     });
 
-    this.highestScoreValue = new Text({ text: '0', style: VALUE_STYLE, layout: true });
+    this.totalStarsValue = new Text({ text: '0', style: VALUE_STYLE, layout: true });
     this.averageAccuracyValue = new Text({ text: '0%', style: VALUE_STYLE, layout: true });
     this.correctAttemptsValue = new Text({ text: '0', style: VALUE_STYLE, layout: true });
     this.incorrectAttemptsValue = new Text({ text: '0', style: VALUE_STYLE, layout: true });
@@ -112,7 +112,7 @@ export class UserStatsPopup extends Container {
         paddingLeft: 60,
       },
       children: [
-        createStatRow('Highest Score', this.highestScoreValue),
+        createStatRow('Total Stars', this.totalStarsValue),
         createStatRow('Average Accuracy', this.averageAccuracyValue),
         createStatRow('Correct Attempts', this.correctAttemptsValue),
         createStatRow('Incorrect Attempts', this.incorrectAttemptsValue),
@@ -190,10 +190,10 @@ export class UserStatsPopup extends Container {
   }
 
   private updateStats() {
-    const { correctCount, mistakeCount, highestAccuracy } = useScoreManager.getState();
+    const { correctCount, mistakeCount, totalStars } = useScoreManager.getState();
     const averageAccuracy = getAccuracyPercent(correctCount, mistakeCount);
 
-    this.highestScoreValue.text = String(highestAccuracy);
+    this.totalStarsValue.text = String(totalStars);
     this.averageAccuracyValue.text = `${averageAccuracy}%`;
     this.correctAttemptsValue.text = String(correctCount);
     this.incorrectAttemptsValue.text = String(mistakeCount);

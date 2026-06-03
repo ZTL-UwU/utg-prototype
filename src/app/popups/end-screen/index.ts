@@ -2,6 +2,7 @@ import { animate } from 'motion';
 import { BlurFilter, Container, Graphics, Sprite, Text, TextStyle, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { getStarCount } from '../../../zustandStores/scoreManager';
 import useSessionStore from '../../../zustandStores/sessionStore';
 import { LevelMapScreen } from '../../screens/level-map';
 import { ContinueButton } from '../../ui/continue-button';
@@ -44,13 +45,6 @@ function createStatStyle(type: 'education' | 'typing') {
     fontWeight: '700',
     fill: POPUP_TEXT_COLORS[type],
   });
-}
-
-function getStarCount(accuracy: number) {
-  if (accuracy > 90) return 3;
-  if (accuracy > 70) return 2;
-  if (accuracy > 50) return 1;
-  return 0;
 }
 
 type MascotVariant = 'default' | 'welldone' | 'excellent';
