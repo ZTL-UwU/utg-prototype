@@ -45,7 +45,8 @@ export class TypingLevelScreen extends Container {
 
     this.clouds = new Clouds();
     this.camel = new Camel();
-    this.letterRow = new LetterRow();
+    this.keyboard = new KeyboardLayout();
+    this.letterRow = new LetterRow(this.keyboard);
 
     this.title = new Text({
       text: 'TAKLAMAKAN DESERT',
@@ -72,8 +73,6 @@ export class TypingLevelScreen extends Container {
       },
       type: 'typing',
     });
-    this.keyboard = new KeyboardLayout();
-
     this.addChild(
       this.background,
       this.clouds,

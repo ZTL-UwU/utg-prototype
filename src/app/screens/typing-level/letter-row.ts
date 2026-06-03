@@ -5,6 +5,7 @@ import { getAlphabet, getMappedFromKeyboardEvent } from '../../../utils/keymap';
 import { useScoreManager } from '../../../zustandStores/scoreManager';
 import useSessionStore from '../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../popups/end-screen';
+import type { KeyboardLayout } from '../../ui/keyboard-layout';
 import { Letter } from './letter';
 
 const CARD_SIZE = 140;
@@ -25,6 +26,7 @@ function makeRow(): string[] {
 export class LetterRow extends Container {
   private letters = makeRow();
   private letterCards: Letter[] = [];
+  private readonly keyboard: KeyboardLayout;
 
   private isRemoving = false;
   private lettersContainer = new Container({
@@ -34,7 +36,7 @@ export class LetterRow extends Container {
     },
   });
 
-  constructor() {
+  constructor(keyboard: KeyboardLayout) {
     super({
       layout: {
         width: ROW_WIDTH,
@@ -43,6 +45,8 @@ export class LetterRow extends Container {
         top: '25%',
       },
     });
+
+    this.keyboard = keyboard;
 
     this.letterCards = this.letters.map((letter, index) => {
       const card = new Letter({ letter, cardSize: CARD_SIZE });
@@ -66,25 +70,32 @@ export class LetterRow extends Container {
       return;
     }
 
+    if (event.repeat) return;
+
     const current = this.letterCards[0];
     if (!current) return;
 
     const isCorrect = getMappedFromKeyboardEvent(event) === this.letters[0];
 
     if (isCorrect) {
-      if (event.repeat) return;
       useSessionStore.getState().recordCorrect();
 
       this.isRemoving = true;
       current.setFeedback('success', true);
-      window.setTimeout(() => this.removeCurrentLetter(), 600);
+      this.keyboard.setKeyFeedback(event.code, 'success');
+      window.setTimeout(() => {
+        this.keyboard.clearKeyFeedback(event.code);
+        this.removeCurrentLetter();
+      }, 600);
       return;
     }
 
-    if (!event.repeat) {
-      useSessionStore.getState().recordMistake();
+    useSessionStore.getState().recordMistake();
+    current.setFeedback('error', true);
+    if (event.code) {
+      this.keyboard.setKeyFeedback(event.code, 'error');
+      window.setTimeout(() => this.keyboard.clearKeyFeedback(event.code), 350);
     }
-    current.setFeedback('error', !event.repeat);
   };
 
   public async pause() {
