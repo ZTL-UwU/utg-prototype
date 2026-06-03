@@ -3,6 +3,8 @@ import { Container, Graphics, Text } from 'pixi.js';
 
 import { getKeyboardLabel } from '../../utils/keymap';
 
+export type KeyFeedback = 'none' | 'error' | 'success';
+
 type Key = {
   code: string;
   width?: number;
@@ -99,6 +101,8 @@ const PANEL_COLOR = 0xf3ca8a;
 const PANEL_SHADOW_COLOR = 0xc98144;
 const KEY_COLOR = 0xc98144;
 const KEY_PRESSED_COLOR = 0x8d6241;
+const KEY_SUCCESS_COLOR = 0x8ec24d;
+const KEY_ERROR_COLOR = 0xef5a42;
 const TEXT_COLOR = 0xffffff;
 
 class KeyCap extends Container {
@@ -106,8 +110,10 @@ class KeyCap extends Container {
   public readonly keyWidth: number;
 
   private readonly background = new Graphics();
+  private readonly keyContent = new Container();
   private readonly keyLabel: Text;
   private pressed = false;
+  private feedback: KeyFeedback = 'none';
 
   constructor(code: string, widthMultiplier = 1, isAuxiliary = false) {
     super();
@@ -126,17 +132,25 @@ class KeyCap extends Container {
         lineHeight: isAuxiliary ? 26 : 30,
         padding: 30,
       },
+      anchor: 0.5,
     });
-    this.keyLabel.anchor.set(0.5);
     this.keyLabel.position.set(this.keyWidth / 2, UNIT / 2);
 
+    this.keyContent.addChild(this.keyLabel);
     this.drawBackground();
-    this.addChild(this.background, this.keyLabel);
+    this.addChild(this.background, this.keyContent);
   }
 
   public setPressed(pressed: boolean) {
     if (this.pressed === pressed) return;
     this.pressed = pressed;
+    this.drawBackground();
+  }
+
+  public setFeedback(feedback: KeyFeedback) {
+    if (this.feedback === feedback) return;
+
+    this.feedback = feedback;
     this.drawBackground();
   }
 
@@ -146,10 +160,19 @@ class KeyCap extends Container {
   }
 
   private drawBackground() {
+    const fillColor =
+      this.feedback === 'success'
+        ? KEY_SUCCESS_COLOR
+        : this.feedback === 'error'
+          ? KEY_ERROR_COLOR
+          : this.pressed
+            ? KEY_PRESSED_COLOR
+            : KEY_COLOR;
+
     this.background
       .clear()
       .roundRect(0, 0, this.keyWidth, UNIT, KEY_RADIUS)
-      .fill({ color: this.pressed ? KEY_PRESSED_COLOR : KEY_COLOR });
+      .fill({ color: fillColor });
   }
 }
 
@@ -157,6 +180,7 @@ export class KeyboardLayout extends Container {
   private readonly panel = new Container();
   private readonly panelBackground = new Graphics();
   private readonly keys: KeyCap[] = [];
+  private readonly keyByCode = new Map<string, KeyCap>();
 
   private readonly pressedCodes = new Set<string>();
   private listening = false;
@@ -217,6 +241,14 @@ export class KeyboardLayout extends Container {
     this.layoutPanel();
   }
 
+  public setKeyFeedback(code: string, feedback: KeyFeedback) {
+    this.keyByCode.get(code)?.setFeedback(feedback);
+  }
+
+  public clearKeyFeedback(code: string) {
+    this.setKeyFeedback(code, 'none');
+  }
+
   override destroy(options?: Parameters<Container['destroy']>[0]) {
     this.enterExitAnimation?.stop();
     this.setListening(false);
@@ -232,6 +264,9 @@ export class KeyboardLayout extends Container {
         const cap = new KeyCap(code, width, auxiliary);
         cap.setLabel(getKeyboardLabel(code, shiftPressed));
         this.keys.push(cap);
+        if (code) {
+          this.keyByCode.set(code, cap);
+        }
         return cap;
       });
 
@@ -300,7 +335,14 @@ export class KeyboardLayout extends Container {
       window.removeEventListener('keyup', this.onKeyUp);
       window.removeEventListener('blur', this.onBlur);
       this.pressedCodes.clear();
+      this.clearAllKeyFeedback();
       this.refreshKeys();
+    }
+  }
+
+  private clearAllKeyFeedback() {
+    for (const cap of this.keys) {
+      cap.setFeedback('none');
     }
   }
 
