@@ -1,30 +1,33 @@
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Graphics, Text } from 'pixi.js';
 
-import { getMappedFromKeyCode } from '../../utils/keymap';
+import { getKeyboardLabel } from '../../utils/keymap';
 
 type Key = {
   code: string;
   width?: number;
+  auxiliary?: boolean;
 };
 
-const qwerty: Key[][] = [
+const keyboardLayout: Key[][] = [
   [
-    { code: 'Digit1' },
-    { code: 'Digit2' },
-    { code: 'Digit3' },
-    { code: 'Digit4' },
-    { code: 'Digit5' },
-    { code: 'Digit6' },
-    { code: 'Digit7' },
-    { code: 'Digit8' },
-    { code: 'Digit9' },
-    { code: 'Digit0' },
-    { code: 'Minus' },
-    { code: 'Equal' },
-    { code: 'Backspace' },
+    { code: 'Backquote', auxiliary: true },
+    { code: 'Digit1', auxiliary: true },
+    { code: 'Digit2', auxiliary: true },
+    { code: 'Digit3', auxiliary: true },
+    { code: 'Digit4', auxiliary: true },
+    { code: 'Digit5', auxiliary: true },
+    { code: 'Digit6', auxiliary: true },
+    { code: 'Digit7', auxiliary: true },
+    { code: 'Digit8', auxiliary: true },
+    { code: 'Digit9', auxiliary: true },
+    { code: 'Digit0', auxiliary: true },
+    { code: 'Minus', auxiliary: true },
+    { code: 'Equal', auxiliary: true },
+    { code: 'Backspace', width: 1.7, auxiliary: true },
   ],
   [
+    { code: 'Tab', width: 1.7, auxiliary: true },
     { code: 'KeyQ' },
     { code: 'KeyW' },
     { code: 'KeyE' },
@@ -35,10 +38,12 @@ const qwerty: Key[][] = [
     { code: 'KeyI' },
     { code: 'KeyO' },
     { code: 'KeyP' },
-    { code: 'BracketLeft' },
-    { code: 'BracketRight' },
+    { code: 'BracketLeft', auxiliary: true },
+    { code: 'BracketRight', auxiliary: true },
+    { code: 'Backslash', auxiliary: true },
   ],
   [
+    { code: 'CapsLock', width: 2.05, auxiliary: true },
     { code: 'KeyA' },
     { code: 'KeyS' },
     { code: 'KeyD' },
@@ -48,10 +53,12 @@ const qwerty: Key[][] = [
     { code: 'KeyJ' },
     { code: 'KeyK' },
     { code: 'KeyL' },
-    { code: 'Semicolon' },
-    { code: 'Quote' },
+    { code: 'Semicolon', auxiliary: true },
+    { code: 'Quote', auxiliary: true },
+    { code: 'Enter', width: 1.8, auxiliary: true },
   ],
   [
+    { code: 'ShiftLeft', width: 2.5, auxiliary: true },
     { code: 'KeyZ' },
     { code: 'KeyX' },
     { code: 'KeyC' },
@@ -62,6 +69,18 @@ const qwerty: Key[][] = [
     { code: 'Comma' },
     { code: 'Period' },
     { code: 'Slash' },
+    { code: 'ShiftRight', width: 2.45, auxiliary: true },
+  ],
+  [
+    { code: '' },
+    { code: '' },
+    { code: '' },
+    { code: '' },
+    { code: 'Space', width: 6, auxiliary: true },
+    { code: '' },
+    { code: '' },
+    { code: '' },
+    { code: '', width: 2.3 },
   ],
 ];
 
@@ -73,8 +92,6 @@ const PANEL_PADDING = 24; // p-6
 const PANEL_RADIUS = 32; // rounded-4xl
 const KEY_RADIUS = 12; // rounded-xl
 const BOTTOM_MARGIN = 40; // bottom-10
-const INSET_SHADOW = 10; // shadow-[inset_0_-10px_0_#c98144]
-const FONT_SIZE = 30; // text-3xl
 const ENTER_Y_OFFSET = 72;
 const EXIT_Y_OFFSET = 48;
 
@@ -92,7 +109,7 @@ class KeyCap extends Container {
   private readonly keyLabel: Text;
   private pressed = false;
 
-  constructor(code: string, widthMultiplier = 1) {
+  constructor(code: string, widthMultiplier = 1, isAuxiliary = false) {
     super();
     this.code = code;
     this.keyWidth = UNIT * widthMultiplier;
@@ -103,10 +120,10 @@ class KeyCap extends Container {
       style: {
         align: 'center',
         fill: TEXT_COLOR,
-        fontFamily: `'Noto Sans Arabic', 'Noto Sans'`,
-        fontSize: FONT_SIZE,
-        fontWeight: '700',
-        lineHeight: FONT_SIZE,
+        fontFamily: isAuxiliary ? 'Concert One' : 'Noto Sans Arabic',
+        fontSize: isAuxiliary ? 26 : 30,
+        fontWeight: '800',
+        lineHeight: isAuxiliary ? 26 : 30,
         padding: 30,
       },
     });
@@ -138,7 +155,6 @@ class KeyCap extends Container {
 
 export class KeyboardLayout extends Container {
   private readonly panel = new Container();
-  private readonly panelShadow = new Graphics();
   private readonly panelBackground = new Graphics();
   private readonly keys: KeyCap[] = [];
 
@@ -211,10 +227,10 @@ export class KeyboardLayout extends Container {
     const shiftPressed = false;
     let maxRowWidth = 0;
 
-    const rows = qwerty.map((row) => {
-      const caps = row.map(({ code, width }) => {
-        const cap = new KeyCap(code, width);
-        cap.setLabel(getMappedFromKeyCode(code, shiftPressed));
+    const rows = keyboardLayout.map((row) => {
+      const caps = row.map(({ code, width, auxiliary }) => {
+        const cap = new KeyCap(code, width, auxiliary);
+        cap.setLabel(getKeyboardLabel(code, shiftPressed));
         this.keys.push(cap);
         return cap;
       });
@@ -227,10 +243,11 @@ export class KeyboardLayout extends Container {
     });
 
     this.panelWidth = maxRowWidth + PANEL_PADDING * 2;
-    this.panelHeight = qwerty.length * UNIT + ROW_GAP * (qwerty.length - 1) + PANEL_PADDING * 2;
+    this.panelHeight =
+      keyboardLayout.length * UNIT + ROW_GAP * (keyboardLayout.length - 1) + PANEL_PADDING * 2;
 
     this.drawPanelBackground();
-    this.panel.addChild(this.panelShadow, this.panelBackground);
+    this.panel.addChild(this.panelBackground);
 
     rows.forEach(({ caps, rowWidth }, rowIndex) => {
       let x = (this.panelWidth - rowWidth) / 2;
@@ -245,14 +262,11 @@ export class KeyboardLayout extends Container {
   }
 
   private drawPanelBackground() {
-    this.panelShadow
-      .clear()
-      .roundRect(0, 0, this.panelWidth, this.panelHeight, PANEL_RADIUS)
-      .fill({ color: PANEL_SHADOW_COLOR });
-
     this.panelBackground
       .clear()
-      .roundRect(0, 0, this.panelWidth, this.panelHeight - INSET_SHADOW, PANEL_RADIUS)
+      .roundRect(0, 12, this.panelWidth, this.panelHeight, PANEL_RADIUS)
+      .fill({ color: PANEL_SHADOW_COLOR })
+      .roundRect(0, 0, this.panelWidth, this.panelHeight, PANEL_RADIUS)
       .fill({ color: PANEL_COLOR });
   }
 
@@ -311,7 +325,7 @@ export class KeyboardLayout extends Container {
 
     for (const cap of this.keys) {
       cap.setPressed(this.pressedCodes.has(cap.code));
-      cap.setLabel(getMappedFromKeyCode(cap.code, shiftPressed));
+      cap.setLabel(getKeyboardLabel(cap.code, shiftPressed));
     }
   }
 }
