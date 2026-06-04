@@ -13,7 +13,7 @@ const BUTTON_ENTER_OFFSET = 40;
 /** The screen that holds the app */
 export class HomeScreen extends Container {
   /** Assets bundles required by this screen */
-  public static assetBundles = ['home', 'audio'];
+  public static assetBundles = ['home'];
 
   private background: Sprite;
   private butterfly: Butterfly;
@@ -124,7 +124,7 @@ export class HomeScreen extends Container {
     };
 
     this.startButton.onPress.connect(() => {
-      engine().audio.sfx.play('audio/sfx/button-click.mp3');
+      engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
       void engine().navigation.showPopup(LayerSelectPopup);
     });
 
@@ -157,7 +157,7 @@ export class HomeScreen extends Container {
 
   /** Show screen with animations */
   public async show(): Promise<void> {
-    await engine().audio.bgm.play('audio/bgm-main.mp3', { volume: 0.2, start: 4 });
+    await engine().audio.bgm.play('preload-audio/bgm-main.mp3', { volume: 0.2, start: 4 });
     this.butterfly.alpha = 0;
     this.titleContainer.alpha = 0;
     this.titleContainer.y = TITLE_ENTER_OFFSET;

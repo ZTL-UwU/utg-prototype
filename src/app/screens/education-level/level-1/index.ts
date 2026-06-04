@@ -8,7 +8,7 @@ import { LevelMapScreen } from '../../level-map';
 import { LetterGrid } from './letter-grid';
 
 export class EducationLevelScreen extends Container {
-  public static assetBundles = ['education-level', 'ui'];
+  public static assetBundles = ['education-level', 'ui', 'education-audio'];
   private background: Sprite;
   private hud: HUD;
   private letterGrid: LetterGrid;

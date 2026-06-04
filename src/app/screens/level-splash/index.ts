@@ -12,13 +12,7 @@ import { LevelMapScreen } from '../level-map';
 import type { TLevel } from '../level-map/level-button';
 
 export class LevelSplashScreen extends Container {
-  public static assetBundles = [
-    'typing-level',
-    'tutorial-popups',
-    'education-level',
-    'mascots',
-    'ui',
-  ];
+  public static assetBundles = ['level-splash', 'typing-level', 'education-level', 'mascots', 'ui'];
 
   private background: Sprite;
   private levelNumber: SplitText;
@@ -145,7 +139,7 @@ export class LevelSplashScreen extends Container {
     };
 
     this.startButton.onPress.connect(() => {
-      engine().audio.sfx.play('audio/sfx/game-start.mp3');
+      engine().audio.sfx.play('level-splash/game-start.mp3');
       useSessionStore.getState().reset();
       useSessionStore.getState().startSession(type);
 

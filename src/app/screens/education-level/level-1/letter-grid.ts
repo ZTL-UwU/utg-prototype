@@ -145,7 +145,7 @@ export class LetterGrid extends Container {
   }
 
   private readonly soundButtonClick = () => {
-    engine().audio.sfx.play(`audio/letters/${this.correctLetterString}.mp3`);
+    engine().audio.sfx.play(`education-audio/letters/${this.correctLetterString}.mp3`);
   };
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {
