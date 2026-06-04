@@ -161,6 +161,7 @@ export class Letter extends Container {
   private readonly handleClick = () => {
     if (this.isCorrect) {
       this.setFeedback('success');
+      this.eventMode = 'none';
       engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
       useSessionStore.getState().recordCorrect();
       setTimeout(() => {
