@@ -22,6 +22,7 @@ export class EducationLevelScreen extends Container {
         height: '100%',
       },
     });
+    engine().audio.bgm.setVolume(0);
     this.background = new Sprite({
       texture: Texture.from('education-level/background.svg'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },

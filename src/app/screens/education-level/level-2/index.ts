@@ -1,4 +1,4 @@
-import { Container, Sprite, Texture } from 'pixi.js';
+import { Assets, Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { getAlphabet } from '../../../../utils/keymap';
@@ -43,6 +43,8 @@ export class EducationBubbleScreen extends Container {
         justifyContent: 'center',
       },
     });
+    engine().audio.bgm.setVolume(0);
+
     this.background = new Sprite({
       texture: Texture.from('education-level-2/background.png'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
@@ -58,12 +60,24 @@ export class EducationBubbleScreen extends Container {
       },
       type: 'education',
     });
-    this.soundButton = new SoundButton({ onClick: () => {}, size: 200 });
+
+    let [correctLetter, wrong1, wrong2]: string[] = getThreeUniqueLetters();
+
+    while (!Assets.resolver.hasKey(`${correctLetter}.mp3`)) {
+      console.log(`Audio file "${correctLetter}.mp3" missing. Rolling a new set`);
+
+      [correctLetter, wrong1, wrong2] = getThreeUniqueLetters();
+    }
+
+    const letters = [correctLetter, wrong1, wrong2].sort(() => Math.random() - 0.5);
+    this.soundButton = new SoundButton({
+      onClick: () => {
+        engine().audio.sfx.play(`audio/letters/${correctLetter}.mp3`);
+      },
+      size: 200,
+    });
     this.soundButton.anchor.set(0.5);
     this.soundButton.layout = { position: 'absolute', top: '20%', left: '50%' };
-
-    const [correctLetter, wrong1, wrong2] = getThreeUniqueLetters();
-    const letters = [correctLetter, wrong1, wrong2].sort(() => Math.random() - 0.5);
 
     this.correctBubbleIndex = letters.indexOf(correctLetter);
     this.bubbles = letters.map(

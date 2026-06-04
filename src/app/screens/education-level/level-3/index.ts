@@ -1,5 +1,5 @@
 import { animate, type AnimationPlaybackControls } from 'motion';
-import { Container, ObservablePoint, Sprite, Texture } from 'pixi.js';
+import { Assets, Container, ObservablePoint, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { getAlphabet } from '../../../../utils/keymap';
@@ -31,11 +31,12 @@ export class EducationSheepScreen extends Container {
   private flashSadAnimation?: AnimationPlaybackControls;
   private soundButton: SoundButton;
 
-  private readonly correctLetter: string;
+  private correctLetter: string;
   private isAnimating = false;
 
   constructor() {
     super({ layout: { position: 'relative', width: '100%', height: '100%' } });
+    engine().audio.bgm.setVolume(0);
 
     this.background = new Sprite({
       texture: Texture.from('education-level-3/background.svg'),
@@ -49,12 +50,32 @@ export class EducationSheepScreen extends Container {
         }),
       type: 'education',
     });
-    this.soundButton = new SoundButton({ onClick: () => {}, size: 200 });
+
+    let letters: string[] = [];
+    let correctLetter: string = '';
+
+    while (true) {
+      letters = getThreeUniqueLetters();
+      correctLetter = letters[Math.floor(Math.random() * letters.length)];
+
+      if (Assets.resolver.hasKey(`${correctLetter}.mp3`)) {
+        break;
+      }
+      console.log(`Audio for "${correctLetter}.mp3" is missing. Re-rolling letters...`);
+    }
+
+    letters.sort(() => Math.random() - 0.5);
+
+    this.correctLetter = correctLetter;
+    this.soundButton = new SoundButton({
+      onClick: () => {
+        engine().audio.sfx.play(`audio/letters/${this.correctLetter}.mp3`);
+      },
+      size: 200,
+    });
     this.soundButton.anchor.set(0.5);
     this.soundButton.layout = { position: 'absolute', left: '50%', top: '20%' };
 
-    const letters = getThreeUniqueLetters();
-    this.correctLetter = letters[Math.floor(Math.random() * letters.length)];
     this.flowers = letters.map(
       (letter, i) =>
         new LetterFlower(
@@ -115,7 +136,7 @@ export class EducationSheepScreen extends Container {
         await Promise.all([
           this.sheepBounceHappy(this.sheep.scale),
           flower.correctAnimation(),
-          //TODO : CORRECT SFX
+          engine().audio.sfx.play('audio/sfx/correct-answer.mp3'),
         ]);
       })
       .then(() => this.endGame());
@@ -129,7 +150,7 @@ export class EducationSheepScreen extends Container {
             this.sheepFlashGraze(this.sheep.scale), // CURRENT SCALE PASSED TO PRESERVE DIMENSION
             flower.incorrectAnimation(),
             flower.wilt(),
-            //TODO : INCORRECT SFX
+            engine().audio.sfx.play('audio/sfx/wrong-answer.mp3'),
           ]),
       )
       .then(() => this.sheepFlashSad(this.sheep.scale));
@@ -195,6 +216,7 @@ export class EducationSheepScreen extends Container {
     ]).then(() => (this.sheep.texture = defaultTex));
   }
   private async moveSheepToFlower(flower: LetterFlower) {
+    engine().audio.sfx.play('audio/sfx/sheep.mp3');
     if (this.sheep.x > flower.x) {
       await Promise.all([
         animate(this.sheep.scale, { x: -1 }, { duration: 0.2, ease: 'linear' }), //mirror to face the flower

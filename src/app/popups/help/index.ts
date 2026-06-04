@@ -113,7 +113,7 @@ export class HelpPopup extends Container {
     if (currentEngine.navigation.currentScreen) {
       currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 5 })];
     }
-
+    currentEngine.audio.sfx.play('audio/sfx/popup.mp3', { volume: 1 });
     this.popupMask.alpha = 0;
     animate(this.popupMask, { alpha: POPUP_MASK_OPACITY }, { duration: 0.2, ease: 'linear' });
     this.dialog.open();

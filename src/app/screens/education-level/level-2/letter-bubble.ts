@@ -115,11 +115,13 @@ export class LetterBubble extends FancyButton {
   }
 
   private handleCorrect() {
+    engine().audio.sfx.play('audio/sfx/correct-answer.mp3');
     useSessionStore.getState().recordCorrect();
     this.pulse();
   }
 
   private handleIncorrect() {
+    engine().audio.sfx.play('audio/sfx/wrong-answer.mp3');
     useSessionStore.getState().recordMistake();
     this.shake();
   }
@@ -149,6 +151,7 @@ export class LetterBubble extends FancyButton {
       [this, { rotation: 0 }, { duration: 0.06, ease: 'easeOut' }],
     ]);
     void this.animation.finished.then(() => {
+      engine().audio.sfx.play('audio/sfx/bubble-pop.mp3');
       this.tint = 0xffffff;
       this.defaultView = Sprite.from('education-level-2/bubble_popped.svg');
       this.eventMode = 'none';
