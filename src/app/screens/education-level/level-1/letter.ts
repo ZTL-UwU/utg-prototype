@@ -161,7 +161,7 @@ export class Letter extends Container {
   private readonly handleClick = () => {
     if (this.isCorrect) {
       this.setFeedback('success');
-      engine().audio.sfx.play('audio/sfx/correct-answer.mp3');
+      engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
       useSessionStore.getState().recordCorrect();
       setTimeout(() => {
         if (++LetterGrid.rounds < LetterGrid.MAX_ROUNDS) {
@@ -171,7 +171,7 @@ export class Letter extends Container {
         }
       }, 1000);
     } else {
-      engine().audio.sfx.play('audio/sfx/wrong-answer.mp3');
+      engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
 
       useSessionStore.getState().recordMistake();
       this.setFeedback('error');

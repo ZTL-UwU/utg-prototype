@@ -23,7 +23,7 @@ function endGame() {
 }
 
 export class EducationBubbleScreen extends Container {
-  public static assetBundles = ['education-level-2', 'education-level', 'ui'];
+  public static assetBundles = ['education-level-2', 'education-level', 'ui', 'education-audio'];
 
   private background: Sprite;
   private soundButton: SoundButton;
@@ -72,7 +72,7 @@ export class EducationBubbleScreen extends Container {
     const letters = [correctLetter, wrong1, wrong2].sort(() => Math.random() - 0.5);
     this.soundButton = new SoundButton({
       onClick: () => {
-        engine().audio.sfx.play(`audio/letters/${correctLetter}.mp3`);
+        engine().audio.sfx.play(`education-audio/letters/${correctLetter}.mp3`);
       },
       size: 200,
     });

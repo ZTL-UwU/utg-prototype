@@ -47,7 +47,7 @@ export class CreationEngine extends Application {
 
     // Init PixiJS assets with this asset manifest
     await Assets.init({ manifest, basePath: 'assets' });
-    await Assets.loadBundle('preload');
+    await Assets.loadBundle(['preload', 'preload-audio']);
 
     // List all existing bundles names
     // @ts-ignore - This is a dynamically generated file by AssetPack

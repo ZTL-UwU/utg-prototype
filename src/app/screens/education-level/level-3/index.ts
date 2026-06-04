@@ -21,7 +21,7 @@ function getThreeUniqueLetters(): [string, string, string] {
 }
 
 export class EducationSheepScreen extends Container {
-  public static assetBundles = ['education-level-3', 'ui', 'mascots'];
+  public static assetBundles = ['education-level-3', 'ui', 'mascots', 'education-audio'];
 
   private background: Sprite;
   private hud: HUD;
@@ -69,7 +69,7 @@ export class EducationSheepScreen extends Container {
     this.correctLetter = correctLetter;
     this.soundButton = new SoundButton({
       onClick: () => {
-        engine().audio.sfx.play(`audio/letters/${this.correctLetter}.mp3`);
+        engine().audio.sfx.play(`education-audio/letters/${this.correctLetter}.mp3`);
       },
       size: 200,
     });
@@ -134,7 +134,7 @@ export class EducationSheepScreen extends Container {
     await this.moveSheepToFlower(flower)
       .then(async () => {
         await Promise.all([this.sheepBounceHappy(this.sheep.scale), flower.correctAnimation()]);
-        engine().audio.sfx.play('audio/sfx/correct-answer.mp3');
+        engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
       })
       .then(() => this.endGame());
   }
@@ -147,7 +147,7 @@ export class EducationSheepScreen extends Container {
           flower.incorrectAnimation(),
         ]);
         flower.wilt();
-        engine().audio.sfx.play('audio/sfx/wrong-answer.mp3');
+        engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
       })
       .then(() => this.sheepFlashSad(this.sheep.scale));
   }
@@ -212,7 +212,7 @@ export class EducationSheepScreen extends Container {
     ]).then(() => (this.sheep.texture = defaultTex));
   }
   private async moveSheepToFlower(flower: LetterFlower) {
-    engine().audio.sfx.play('audio/sfx/sheep.mp3');
+    engine().audio.sfx.play('education-level-3/sheep.mp3');
     if (this.sheep.x > flower.x) {
       await Promise.all([
         animate(this.sheep.scale, { x: -1 }, { duration: 0.2, ease: 'linear' }), //mirror to face the flower
