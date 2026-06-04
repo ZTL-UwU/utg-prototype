@@ -133,26 +133,22 @@ export class EducationSheepScreen extends Container {
     useSessionStore.getState().recordCorrect();
     await this.moveSheepToFlower(flower)
       .then(async () => {
-        await Promise.all([
-          this.sheepBounceHappy(this.sheep.scale),
-          flower.correctAnimation(),
-          engine().audio.sfx.play('audio/sfx/correct-answer.mp3'),
-        ]);
+        await Promise.all([this.sheepBounceHappy(this.sheep.scale), flower.correctAnimation()]);
+        engine().audio.sfx.play('audio/sfx/correct-answer.mp3');
       })
       .then(() => this.endGame());
   }
   private async handleIncorrectLetter(flower: LetterFlower) {
     useSessionStore.getState().recordMistake();
     await this.moveSheepToFlower(flower)
-      .then(
-        async () =>
-          await Promise.all([
-            this.sheepFlashGraze(this.sheep.scale), // CURRENT SCALE PASSED TO PRESERVE DIMENSION
-            flower.incorrectAnimation(),
-            flower.wilt(),
-            engine().audio.sfx.play('audio/sfx/wrong-answer.mp3'),
-          ]),
-      )
+      .then(async () => {
+        await Promise.all([
+          this.sheepFlashGraze(this.sheep.scale), // CURRENT SCALE PASSED TO PRESERVE DIMENSION
+          flower.incorrectAnimation(),
+        ]);
+        flower.wilt();
+        engine().audio.sfx.play('audio/sfx/wrong-answer.mp3');
+      })
       .then(() => this.sheepFlashSad(this.sheep.scale));
   }
 
