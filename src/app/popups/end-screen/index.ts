@@ -47,19 +47,18 @@ function createStatStyle(type: 'education' | 'typing') {
   });
 }
 
-type MascotVariant = 'default' | 'welldone' | 'excellent';
+type MascotVariant = 'excellent' | 'well-done' | 'good-try' | 'try-again';
 
 function getMascotVariant(starCount: number): MascotVariant {
   if (starCount >= 3) return 'excellent';
-  if (starCount >= 2) return 'welldone';
-  return 'default';
+  if (starCount >= 2) return 'well-done';
+  if (starCount >= 1) return 'good-try';
+  return 'try-again';
 }
 
 function getMascotTexture(type: 'education' | 'typing', variant: MascotVariant) {
   const animal = type === 'typing' ? 'camel' : 'sheep';
-  if (variant === 'excellent') return `mascots/${animal}/dialog/excellent.png`;
-  if (variant === 'welldone') return `mascots/${animal}/dialog/well-done.png`;
-  return type === 'typing' ? 'mascots/camel/default.png' : 'mascots/sheep/default.svg';
+  return `mascots/${animal}/dialog/${variant}.png`;
 }
 
 function readSessionResults() {
