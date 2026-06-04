@@ -66,7 +66,7 @@ export class TutorialPopup extends Container {
       height: 80,
     };
     this.exitButton.onPress.connect(() => {
-      engine().audio.sfx.play('preload-audio/sfx/button-click.mp3', { volume: 1 });
+      engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
       void engine().navigation.hidePopup();
     });
 
@@ -103,7 +103,7 @@ export class TutorialPopup extends Container {
     if (this.exitable) {
       this.backdrop.alpha = 0;
       this.backdrop.scale.set(0.5, 0.5);
-      engine().audio.sfx.play('preload-audio/sfx/popup.mp3', { volume: 1 });
+      engine().audio.sfx.play('preload-audio/sfx/popup.mp3');
     }
     if (this.progressBar) {
       this.progressBar.alpha = 0;
