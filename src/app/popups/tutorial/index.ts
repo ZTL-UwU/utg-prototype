@@ -65,7 +65,10 @@ export class TutorialPopup extends Container {
       width: 80,
       height: 80,
     };
-    this.exitButton.onPress.connect(() => void engine().navigation.hidePopup());
+    this.exitButton.onPress.connect(() => {
+      engine().audio.sfx.play('audio/sfx/button-click.mp3', { volume: 1 });
+      void engine().navigation.hidePopup();
+    });
 
     if (exitable) {
       this.addChild(this.backdrop); // behind the SVG
@@ -100,6 +103,7 @@ export class TutorialPopup extends Container {
     if (this.exitable) {
       this.backdrop.alpha = 0;
       this.backdrop.scale.set(0.5, 0.5);
+      engine().audio.sfx.play('audio/sfx/popup.mp3', { volume: 1 });
     }
     if (this.progressBar) {
       this.progressBar.alpha = 0;

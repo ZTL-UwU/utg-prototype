@@ -49,6 +49,7 @@ export class LevelButton extends FancyButton {
         }),
       ];
       this.onPress.connect(() => {
+        engine().audio.sfx.play('audio/sfx/button-click.mp3', { volume: 1 });
         void engine().navigation.showScreen(LevelSplashScreen, { type, level });
       });
     }

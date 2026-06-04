@@ -104,7 +104,7 @@ export class LevelMapScreen extends Container {
         justifyContent: 'center',
       },
     });
-
+    engine().audio.bgm.setVolume(0.2);
     this.background = new Sprite({
       texture: Texture.from(mapData[type].background),
       layout: {

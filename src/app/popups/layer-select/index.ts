@@ -53,6 +53,7 @@ export class LayerSelectPopup extends Container {
       left: 100,
     };
     this.closeButton.onPress.connect(() => {
+      engine().audio.sfx.play('audio/sfx/button-click.mp3', { volume: 1 });
       void engine().navigation.hidePopup();
     });
 
@@ -97,6 +98,7 @@ export class LayerSelectPopup extends Container {
       };
       if (data.screenType) {
         button.onPress.connect(() => {
+          engine().audio.sfx.play('audio/sfx/button-click.mp3', { volume: 1 });
           void engine().navigation.hidePopup();
           void engine().navigation.showScreen(LevelMapScreen, data.screenType!);
         });
@@ -122,6 +124,7 @@ export class LayerSelectPopup extends Container {
       right: 120,
     };
     this.userStatsButton.onPress.connect(() => {
+      engine().audio.sfx.play('audio/sfx/button-click.mp3', { volume: 1 });
       void engine().navigation.showPopup(UserStatsPopup, {
         onBack: () => void engine().navigation.showPopup(LayerSelectPopup),
       });
@@ -136,7 +139,7 @@ export class LayerSelectPopup extends Container {
   public async show() {
     const currentEngine = engine();
     if (!currentEngine.navigation.currentScreen) return;
-
+    currentEngine.audio.sfx.play('audio/sfx/popup.mp3', { volume: 1 });
     currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 0 })];
     currentEngine.navigation.currentScreen.tint = 0x666666;
 

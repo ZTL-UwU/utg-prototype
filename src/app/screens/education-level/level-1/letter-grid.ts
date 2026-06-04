@@ -1,7 +1,7 @@
-import { Container, Graphics } from 'pixi.js';
+import { Container, Graphics, Assets } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { getAlphabet, getKeyFromChar } from '../../../../utils/keymap';
+import { getAlphabet } from '../../../../utils/keymap';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -44,9 +44,6 @@ export class LetterGrid extends Container {
   private letterMap: Map<string, Letter>;
   private correctLetterString: string;
 
-  // FOR TESTING IN DEV ONLY
-  private readableCorrectLetterString: string;
-
   // STATIC ROUND COUNTER, RESET ON FIN
   public static rounds = 0;
   public static readonly MAX_ROUNDS = 5;
@@ -68,7 +65,6 @@ export class LetterGrid extends Container {
 
     // init Letter Attributes so linter is happy
     this.correctLetterString = '';
-    this.readableCorrectLetterString = '';
     this.letterMap = new Map();
     this.letters = [];
 
@@ -84,6 +80,10 @@ export class LetterGrid extends Container {
   // ACCESSSES letterStrings
   private initLetterAttributes() {
     this.correctLetterString = this.letterStrings[Math.floor(Math.random() * NUM_CHOICES)];
+    while (!Assets.resolver.hasKey(`${this.correctLetterString}.mp3`)) {
+      console.log('changed to safe letter');
+      this.correctLetterString = this.letterStrings[Math.floor(Math.random() * NUM_CHOICES)];
+    }
     this.letterStrings.forEach((letterString, _i) => {
       this.letterMap.set(
         letterString,
@@ -95,7 +95,6 @@ export class LetterGrid extends Container {
       );
     });
     this.letters = [...this.letterMap.values()];
-    this.readableCorrectLetterString = getKeyFromChar(this.correctLetterString);
   }
 
   private initLayouts() {
@@ -146,7 +145,7 @@ export class LetterGrid extends Container {
   }
 
   private readonly soundButtonClick = () => {
-    console.log(`correct letter is ${this.readableCorrectLetterString}`);
+    engine().audio.sfx.play(`audio/letters/${this.correctLetterString}.mp3`);
   };
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {

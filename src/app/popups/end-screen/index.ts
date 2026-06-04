@@ -89,7 +89,7 @@ export class EndScreenPopup extends Container {
   private background: Graphics;
   private contentContainer: Container;
   private stars: Stars;
-
+  private starCount: number;
   constructor(type: 'education' | 'typing') {
     super({
       layout: {
@@ -100,7 +100,7 @@ export class EndScreenPopup extends Container {
     });
 
     const { correct, mistakes, accuracy, starCount } = readSessionResults();
-
+    this.starCount = starCount;
     this.background = createPopupBackground(POPUP_WIDTH, POPUP_HEIGHT, type);
     this.background.layout = {
       width: POPUP_WIDTH,
@@ -202,9 +202,12 @@ export class EndScreenPopup extends Container {
   public async show() {
     const currentEngine = engine();
     if (!currentEngine.navigation.currentScreen) return;
-
     currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 0 })];
-
+    if (this.starCount <= 1) {
+      engine().audio.sfx.play('audio/sfx/failed-level.mp3');
+    } else {
+      engine().audio.sfx.play('audio/sfx/level-complete.mp3');
+    }
     this.innerContainer.alpha = 0;
     this.innerContainer.scale.set(0.7);
 

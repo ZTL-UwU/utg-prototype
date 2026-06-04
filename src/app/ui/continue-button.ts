@@ -1,5 +1,7 @@
 import { FancyButton } from '@pixi/ui';
 
+import { engine } from '../../engine/getEngine';
+
 export class ContinueButton extends FancyButton {
   constructor(onPress: () => void) {
     super({
@@ -28,6 +30,9 @@ export class ContinueButton extends FancyButton {
       bottom: 28,
     };
 
-    this.onPress.connect(onPress);
+    this.onPress.connect(() => {
+      engine().audio.sfx.play('audio/sfx/button-click.mp3');
+      onPress();
+    });
   }
 }
