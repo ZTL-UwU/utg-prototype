@@ -32,6 +32,7 @@ export class EducationBubbleScreen extends Container {
   private bubbleContainer = new Container();
   private screenHeight = 0;
   private correctBubbleIndex = 0;
+  private correctLetter: string;
 
   constructor() {
     super({
@@ -72,13 +73,13 @@ export class EducationBubbleScreen extends Container {
     const letters = [correctLetter, wrong1, wrong2].sort(() => Math.random() - 0.5);
     this.soundButton = new SoundButton({
       onClick: () => {
-        engine().audio.sfx.play(`education-audio/letters/${correctLetter}.mp3`);
+        this.soundButtonClick();
       },
       size: 200,
     });
     this.soundButton.anchor.set(0.5);
     this.soundButton.layout = { position: 'absolute', top: '20%', left: '50%' };
-
+    this.correctLetter = correctLetter;
     this.correctBubbleIndex = letters.indexOf(correctLetter);
     this.bubbles = letters.map(
       (letter) =>
@@ -94,6 +95,7 @@ export class EducationBubbleScreen extends Container {
     };
 
     this.addChild(this.background, this.bubbleContainer, this.soundButton, this.hud);
+    this.soundButtonClick();
   }
 
   public async pause() {
@@ -128,5 +130,8 @@ export class EducationBubbleScreen extends Container {
         i === this.correctBubbleIndex ? endGame : undefined,
       );
     }
+  }
+  private soundButtonClick() {
+    engine().audio.sfx.play(`education-audio/letters/${this.correctLetter}.mp3`);
   }
 }

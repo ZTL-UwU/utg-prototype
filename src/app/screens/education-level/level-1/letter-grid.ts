@@ -73,7 +73,7 @@ export class LetterGrid extends Container {
     this.initLayouts();
     this.populatePanel();
     this.addChild(this.panel);
-    console.log(`correct letter : ${this.correctLetterString}`);
+    this.soundButtonClick();
   }
 
   // init letters, letterMap, correctLetterString
@@ -146,6 +146,7 @@ export class LetterGrid extends Container {
 
   private readonly soundButtonClick = () => {
     engine().audio.sfx.play(`education-audio/letters/${this.correctLetterString}.mp3`);
+    console.log(`Now playing: education-audio/letters/${this.correctLetterString}.mp3`);
   };
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {

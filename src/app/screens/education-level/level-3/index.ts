@@ -69,7 +69,7 @@ export class EducationSheepScreen extends Container {
     this.correctLetter = correctLetter;
     this.soundButton = new SoundButton({
       onClick: () => {
-        engine().audio.sfx.play(`education-audio/letters/${this.correctLetter}.mp3`);
+        this.soundButtonClick();
       },
       size: 200,
     });
@@ -99,6 +99,7 @@ export class EducationSheepScreen extends Container {
     this.sheep.anchor.set(0.5);
 
     this.addChild(this.background, this.flowerContainer, this.sheep, this.hud, this.soundButton);
+    this.soundButtonClick();
   }
 
   resize(width: number, height: number) {
@@ -113,6 +114,9 @@ export class EducationSheepScreen extends Container {
   async show() {
     // resize() runs before show() in the navigation lifecycle, so flowers[0].x is already set
     this.sheep.position.set(this.flowers[0].x - 2 * this.flowers[0].width, 0.6 * this.height);
+  }
+  private soundButtonClick() {
+    engine().audio.sfx.play(`education-audio/letters/${this.correctLetter}.mp3`);
   }
 
   /**
