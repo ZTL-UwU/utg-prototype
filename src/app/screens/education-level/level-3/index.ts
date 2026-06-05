@@ -22,6 +22,8 @@ function getThreeUniqueLetters(): [string, string, string] {
 
 export class EducationSheepScreen extends Container {
   public static assetBundles = ['education-level-3', 'ui', 'mascots', 'education-audio'];
+  public static rounds = 0;
+  public static readonly MAX_ROUNDS = 5;
 
   private background: Sprite;
   private hud: HUD;
@@ -128,9 +130,9 @@ export class EducationSheepScreen extends Container {
 
     this.isAnimating = true;
     const clickedFlower = this.flowers[clickedFlowerIdx];
+    clickedFlower.eventMode = 'none';
     if (clickedFlower.letter === this.correctLetter) void this.handleCorrectLetter(clickedFlower);
     else void this.handleIncorrectLetter(clickedFlower);
-    this.isAnimating = false;
   };
 
   private async handleCorrectLetter(flower: LetterFlower) {
@@ -153,7 +155,10 @@ export class EducationSheepScreen extends Container {
         flower.wilt();
         engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
       })
-      .then(() => this.sheepFlashSad(this.sheep.scale));
+      .then(() => this.sheepFlashSad(this.sheep.scale))
+      .then(() => {
+        this.isAnimating = false;
+      });
   }
 
   /**
@@ -236,8 +241,13 @@ export class EducationSheepScreen extends Container {
    */
   private endGame() {
     this.isAnimating = false;
-    const { correct, mistakes } = useSessionStore.getState();
-    useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, 'education');
+    if (++EducationSheepScreen.rounds < EducationSheepScreen.MAX_ROUNDS) {
+      void engine().navigation.showScreen(EducationSheepScreen);
+    } else {
+      EducationSheepScreen.rounds = 0;
+      const { correct, mistakes } = useSessionStore.getState();
+      useScoreManager.getState().addSession(correct, mistakes);
+      void engine().navigation.showPopup(EndScreenPopup, 'education');
+    }
   }
 }

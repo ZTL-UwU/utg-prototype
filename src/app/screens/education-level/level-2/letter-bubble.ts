@@ -50,7 +50,7 @@ export class LetterBubble extends FancyButton {
 
     this.isCorrect = letter === correctLetter;
     this.onCorrect = onCorrect;
-
+    this.eventMode = 'static';
     this.onPress.connect(() => {
       this.clicked = true;
       this.pauseFloat();
@@ -117,6 +117,7 @@ export class LetterBubble extends FancyButton {
   private handleCorrect() {
     engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
     useSessionStore.getState().recordCorrect();
+    this.eventMode = 'none';
     this.pulse();
   }
 

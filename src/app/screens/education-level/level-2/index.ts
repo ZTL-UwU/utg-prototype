@@ -17,13 +17,20 @@ function getThreeUniqueLetters(): [string, string, string] {
 }
 
 function endGame() {
-  const { correct, mistakes } = useSessionStore.getState();
-  useScoreManager.getState().addSession(correct, mistakes);
-  void engine().navigation.showPopup(EndScreenPopup, 'education');
+  if (++EducationBubbleScreen.rounds < EducationBubbleScreen.MAX_ROUNDS) {
+    void engine().navigation.showScreen(EducationBubbleScreen);
+  } else {
+    EducationBubbleScreen.rounds = 0;
+    const { correct, mistakes } = useSessionStore.getState();
+    useScoreManager.getState().addSession(correct, mistakes);
+    void engine().navigation.showPopup(EndScreenPopup, 'education');
+  }
 }
 
 export class EducationBubbleScreen extends Container {
   public static assetBundles = ['education-level-2', 'education-level', 'ui', 'education-audio'];
+  public static rounds = 0;
+  public static readonly MAX_ROUNDS = 5;
 
   private background: Sprite;
   private soundButton: SoundButton;
