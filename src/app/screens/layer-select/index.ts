@@ -1,21 +1,24 @@
 import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
-import { BlurFilter, Container, Sprite, Texture } from 'pixi.js';
+import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { LevelMapScreen } from '../../screens/level-map';
-import { UserStatsPopup } from '../user-stats';
+import { UserStatsPopup } from '../../popups/user-stats';
+import { HomeScreen } from '../home';
+import { LevelMapScreen } from '../level-map';
 
-export class LayerSelectPopup extends Container {
-  public static assetBundles = ['layer-select'];
+export class LayerSelectScreen extends Container {
+  public static assetBundles = ['layer-select', 'home'];
 
   private innerContainer: Container;
+  private mapBackground: Sprite;
   private background: Sprite;
   private layerButtons: FancyButton[];
   private closeButton: FancyButton;
   private userStatsButton: FancyButton;
+  private skipShowAnimation: boolean;
 
-  constructor() {
+  constructor({ skipShowAnimation = false }: { skipShowAnimation?: boolean } = {}) {
     super({
       layout: {
         flexDirection: 'column',
@@ -24,8 +27,20 @@ export class LayerSelectPopup extends Container {
       },
     });
 
-    const backgroundTexture = Texture.from('layer-select/background.png');
     this.background = new Sprite({
+      texture: Texture.from('home/background.png'),
+      layout: {
+        width: '100%',
+        height: '100%',
+        position: 'absolute',
+        objectFit: 'cover',
+      },
+    });
+
+    this.skipShowAnimation = skipShowAnimation;
+
+    const backgroundTexture = Texture.from('layer-select/background.png');
+    this.mapBackground = new Sprite({
       texture: backgroundTexture,
       layout: {
         width: backgroundTexture.width,
@@ -54,7 +69,7 @@ export class LayerSelectPopup extends Container {
     };
     this.closeButton.onPress.connect(() => {
       engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      void engine().navigation.hidePopup();
+      void engine().navigation.showScreen(HomeScreen);
     });
 
     const buttonData: {
@@ -73,7 +88,6 @@ export class LayerSelectPopup extends Container {
         screenType: 'typing',
       },
       {
-        // Placeholder for the third layer
         icon: Texture.from('layer-select/locked-icon.png'),
         layout: { left: 1028, top: 604 },
       },
@@ -99,7 +113,6 @@ export class LayerSelectPopup extends Container {
       if (data.screenType) {
         button.onPress.connect(() => {
           engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-          void engine().navigation.hidePopup();
           void engine().navigation.showScreen(LevelMapScreen, data.screenType!);
         });
       }
@@ -125,23 +138,27 @@ export class LayerSelectPopup extends Container {
     };
     this.userStatsButton.onPress.connect(() => {
       engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      void engine().navigation.showPopup(UserStatsPopup, {
-        onBack: () => void engine().navigation.showPopup(LayerSelectPopup),
-      });
+      void engine().navigation.showPopup(UserStatsPopup);
     });
 
     this.innerContainer = new Container({ layout: true });
-    this.innerContainer.addChild(this.background, this.closeButton, ...this.layerButtons);
+    this.innerContainer.addChild(this.mapBackground, this.closeButton, ...this.layerButtons);
 
-    this.addChild(this.innerContainer, this.userStatsButton);
+    this.addChild(this.background, this.innerContainer, this.userStatsButton);
+  }
+
+  public resize(width: number, height: number) {
+    this.layout = {
+      width,
+      height,
+    };
   }
 
   public async show() {
+    if (this.skipShowAnimation) return;
+
     const currentEngine = engine();
-    if (!currentEngine.navigation.currentScreen) return;
     currentEngine.audio.sfx.play('preload-audio/sfx/popup.mp3');
-    currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 0 })];
-    currentEngine.navigation.currentScreen.tint = 0x666666;
 
     this.innerContainer.alpha = 0;
     this.innerContainer.scale.set(0.7);
@@ -154,38 +171,18 @@ export class LayerSelectPopup extends Container {
       animate(this.innerContainer.scale, { x: 1, y: 1 }, { duration, ease: 'backOut' }),
       animate(this.userStatsButton, { alpha: 1 }, { duration, ease: 'backOut' }),
       animate(this.userStatsButton.position, { x: 0 }, { duration, ease: 'backOut' }),
-      animate(
-        currentEngine.navigation.currentScreen.filters[0] as BlurFilter,
-        { strength: 9 },
-        { duration, ease: 'easeOut' },
-      ),
+      animate(this.background, { alpha: 0.5 }, { duration, ease: 'backOut' }),
     ]);
   }
 
   public async hide() {
-    const currentEngine = engine();
-    if (!currentEngine.navigation.currentScreen) return;
-
-    currentEngine.navigation.currentScreen.tint = 0xffffff;
-
     const duration = 0.2;
     await Promise.all([
       animate(this.innerContainer, { alpha: 0 }, { duration, ease: 'easeOut' }),
       animate(this.innerContainer.scale, { x: 0.94, y: 0.94 }, { duration, ease: 'easeOut' }),
       animate(this.userStatsButton, { alpha: 0 }, { duration, ease: 'easeOut' }),
       animate(this.userStatsButton.position, { x: 200 }, { duration, ease: 'easeOut' }),
-      animate(
-        currentEngine.navigation.currentScreen.filters[0] as BlurFilter,
-        { strength: 0 },
-        { duration, ease: 'easeOut' },
-      ),
+      animate(this.background, { alpha: 1 }, { duration, ease: 'easeOut' }),
     ]);
-  }
-
-  public resize(width: number, height: number) {
-    this.layout = {
-      width,
-      height,
-    };
   }
 }

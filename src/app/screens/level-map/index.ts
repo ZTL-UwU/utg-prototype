@@ -6,7 +6,7 @@ import { HUD } from '../../ui/hud';
 import { EducationLevelScreen } from '../education-level/level-1';
 import { EducationBubbleScreen } from '../education-level/level-2';
 import { EducationSheepScreen } from '../education-level/level-3';
-import { HomeScreen } from '../home';
+import { LayerSelectScreen } from '../layer-select';
 import { TypingLevelScreen } from '../typing-level';
 import type { TLevel } from './level-button';
 import { LevelRow } from './level-row';
@@ -117,7 +117,7 @@ export class LevelMapScreen extends Container {
 
     this.hud = new HUD({
       onBack: () => {
-        void engine().navigation.showScreen(HomeScreen);
+        void engine().navigation.showScreen(LayerSelectScreen);
       },
       type: type,
     });

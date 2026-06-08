@@ -5,10 +5,6 @@ import { engine } from '../../../engine/getEngine';
 import { getAccuracyPercent, useScoreManager } from '../../../zustandStores/scoreManager';
 import { BackButton } from '../../ui/back-button';
 
-export type UserStatsPopupProps = {
-  onBack?: () => void;
-};
-
 const POPUP_WIDTH = 1481;
 const POPUP_HEIGHT = 833;
 const LABEL_COLOR = 0x808080;
@@ -62,7 +58,7 @@ export class UserStatsPopup extends Container {
   private incorrectAttemptsValue: Text;
   private unsubscribeScore: () => void;
 
-  constructor({ onBack }: UserStatsPopupProps = {}) {
+  constructor() {
     super({
       layout: {
         flexDirection: 'column',
@@ -72,9 +68,7 @@ export class UserStatsPopup extends Container {
     });
 
     this.backButton = new BackButton(() => {
-      void engine()
-        .navigation.hidePopup()
-        .then(() => onBack?.());
+      void engine().navigation.hidePopup();
     });
 
     const profileIcon = new Sprite({
@@ -208,7 +202,7 @@ export class UserStatsPopup extends Container {
 
     this.panel.alpha = 0;
     this.panel.scale.set(1);
-    this.panel.y = 300;
+    this.panel.y = 1000;
     this.backButton.alpha = 0;
 
     const duration = 0.4;

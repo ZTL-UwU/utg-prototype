@@ -4,7 +4,7 @@ import { Assets, BigPool, Container } from 'pixi.js';
 import type { CreationEngine } from '../engine';
 
 /** Interface for app screens */
-interface AppScreen extends Container {
+export interface AppScreen extends Container {
   /** Show the screen */
   show?(): Promise<void>;
   /** Hide the screen */

@@ -20,7 +20,7 @@ export default function App() {
 
     const init = async () => {
       await engine.init({
-        background: '#1E1E1E',
+        background: '#000000',
         resizeOptions: { minWidth: 768, minHeight: 1024, letterbox: false },
         antialias: true,
       });
