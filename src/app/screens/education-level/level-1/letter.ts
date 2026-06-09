@@ -73,7 +73,7 @@ export class Letter extends Container {
       style: {
         align: 'center',
         fill: 0xffffff,
-        fontFamily: 'Noto Sans Arabic',
+        fontFamily: 'Noto Naskh Arabic Bold',
         fontSize: cardSize * 0.48,
         fontWeight: '700',
         padding: 20,

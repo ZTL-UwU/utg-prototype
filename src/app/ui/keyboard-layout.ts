@@ -126,9 +126,9 @@ class KeyCap extends Container {
       style: {
         align: 'center',
         fill: TEXT_COLOR,
-        fontFamily: isAuxiliary ? 'Concert One' : 'Noto Sans Arabic',
+        fontFamily: isAuxiliary ? 'Concert One' : 'Noto Naskh Arabic Bold',
         fontSize: isAuxiliary ? 26 : 30,
-        fontWeight: '800',
+        fontWeight: '700',
         lineHeight: isAuxiliary ? 26 : 30,
         padding: 30,
       },

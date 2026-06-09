@@ -39,9 +39,9 @@ export class LetterBubble extends FancyButton {
         style: {
           align: 'center',
           fill: 0x000000,
-          fontFamily: 'Noto Sans Arabic',
+          fontFamily: 'Noto Naskh Arabic Bold',
           fontSize: SIZE * 0.4,
-          fontWeight: '600',
+          fontWeight: '700',
           padding: 20,
         },
       }),

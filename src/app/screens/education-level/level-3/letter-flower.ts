@@ -15,8 +15,8 @@ export class LetterFlower extends Sprite {
       style: {
         align: 'center',
         fill: 0x000000,
-        fontFamily: 'Noto Sans Arabic',
-        fontWeight: '600',
+        fontFamily: 'Noto Naskh Arabic Bold',
+        fontWeight: '700',
         padding: 20,
       },
     });
