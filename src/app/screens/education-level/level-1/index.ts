@@ -6,13 +6,14 @@ import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { LevelMapScreen } from '../../level-map';
 import { LetterGrid } from './letter-grid';
+import { MessageContainer } from './message-container';
 
 export class EducationLevelScreen extends Container {
   public static assetBundles = ['education-level', 'ui', 'education-audio'];
   private background: Sprite;
   private hud: HUD;
   private letterGrid: LetterGrid;
-
+  private messageContainer: MessageContainer;
   constructor() {
     super({
       layout: {
@@ -39,12 +40,14 @@ export class EducationLevelScreen extends Container {
       type: 'education',
     });
     this.letterGrid = new LetterGrid();
-    this.addChild(this.background, this.letterGrid, this.hud);
+    this.messageContainer = new MessageContainer();
+    this.addChild(this.background, this.letterGrid, this.hud, this.messageContainer);
   }
 
   public resize(width: number, height: number) {
     this.layout = { width, height };
     this.letterGrid.resize(width, height);
+    this.messageContainer.resize(width, height);
   }
 
   public async show() {

@@ -63,8 +63,12 @@ export class MessageContainer extends Container {
   showMessage(isCorrect: boolean) {
     void animate(
       isCorrect ? this.correctText.scale : this.wrongText.scale,
-      { x: [0, 1, 0], y: [0, 1, 0] },
-      { duration: 2, ease: 'easeInOut' },
+      { x: [0, 1, 1, 0], y: [0, 1, 1, 0] },
+      {
+        duration: 1.8,
+        times: [0, 0.4 / 1.8, 1.4 / 1.8, 1],
+        ease: ['easeOut', 'linear', 'easeIn'],
+      },
     );
   }
 
