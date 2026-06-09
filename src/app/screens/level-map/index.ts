@@ -119,7 +119,8 @@ export class LevelMapScreen extends Container {
       onBack: () => {
         void engine().navigation.showScreen(LayerSelectScreen);
       },
-      type: type,
+      // TODO: temporary for now
+      type: type === 'education' ? 'tutorial' : type,
     });
 
     this.title = new Text({
