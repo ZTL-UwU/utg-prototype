@@ -4,7 +4,10 @@ export class LetterPopup extends Container {
   /**
    *
    */
-  constructor() {
+  private letter: string;
+  constructor(letter: string) {
     super();
+    this.letter = letter;
+    console.log(this.letter);
   }
 }
