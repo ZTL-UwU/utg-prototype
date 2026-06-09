@@ -2,6 +2,7 @@ import { FancyButton } from '@pixi/ui';
 import { Assets, Graphics, Text } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { LetterPopup } from './letter-popup';
 
 function drawButton(size: number, state: 'default' | 'hover' | 'pressed') {
   const buttonColor = state === 'default' ? 0x5a8cd4 : state === 'hover' ? 0x71a0e3 : 0x22539a;
@@ -56,5 +57,6 @@ export class LetterKey extends FancyButton {
     if (Assets.resolver.hasKey(`${this.letter}.mp3`)) {
       engine().audio.sfx.play(`education-audio/letters/${this.letter}.mp3`);
     }
+    engine().navigation.showPopup(LetterPopup, this.letter);
   };
 }
