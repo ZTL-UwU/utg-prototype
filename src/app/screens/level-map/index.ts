@@ -60,7 +60,7 @@ const mapData: Record<
 
         miniMapImage: 'education-level-map/button-preview.svg',
         screen: EducationLevelScreen,
-        background: 'education-level/background.svg',
+        background: 'education-level/background.png',
       },
       {
         id: 2,
@@ -69,20 +69,20 @@ const mapData: Record<
 
         miniMapImage: 'education-level-map/button-preview.svg',
         screen: EducationBubbleScreen,
-        background: 'education-level/background.svg',
+        background: 'education-level/background.png',
       },
       {
         id: 3,
         unlocked: true,
         miniMapImage: 'education-level-map/button-preview.svg',
         screen: EducationSheepScreen,
-        background: 'education-level/background.svg',
+        background: 'education-level/background.png',
       },
       {
         id: 4,
         unlocked: false,
         miniMapImage: 'education-level-map/button-preview.svg',
-        background: 'education-level/background.svg',
+        background: 'education-level/background.png',
       },
     ],
   },

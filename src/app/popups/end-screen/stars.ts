@@ -38,7 +38,7 @@ export class Stars extends Container {
 
     this.starSprites = starLayouts.map((layout, index) => {
       const textureName =
-        index < starCount ? 'end-screen/full-star.svg' : 'end-screen/empty-star.svg';
+        index < starCount ? 'end-screen/full-star.png' : 'end-screen/empty-star.png';
       const { left, top, size } = layout;
 
       const starContainer = new Container({
