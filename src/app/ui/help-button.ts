@@ -2,9 +2,11 @@ import { FancyButton } from '@pixi/ui';
 
 import { engine } from '../../engine/getEngine';
 import { TutorialPopup } from '../popups/tutorial';
+import { EducationTutorialScreen } from '../screens/education-level/level-tutorial';
 
 export class HelpButton extends FancyButton {
-  constructor(type: 'education' | 'typing') {
+  // TODO: temporary for now
+  constructor(type: 'education' | 'typing' | 'tutorial') {
     super({
       defaultView: 'ui/help-button.svg',
       animations: {
@@ -33,7 +35,11 @@ export class HelpButton extends FancyButton {
 
     this.onPress.connect(() => {
       engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      void engine().navigation.showPopup(TutorialPopup, { type: type, exitable: true });
+      if (type === 'tutorial') {
+        void engine().navigation.showScreen(EducationTutorialScreen);
+      } else {
+        void engine().navigation.showPopup(TutorialPopup, { type, exitable: true });
+      }
     });
   }
 }

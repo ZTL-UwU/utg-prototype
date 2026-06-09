@@ -5,7 +5,7 @@ import { HelpButton } from './help-button';
 
 interface HUDProps {
   onBack: () => void;
-  type: 'education' | 'typing';
+  type: 'education' | 'typing' | 'tutorial';
 }
 
 export class HUD extends Container {
