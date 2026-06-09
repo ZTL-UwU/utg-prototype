@@ -11,21 +11,25 @@ const examples = new Map<string, string>([
   ['ئە', 'ئەينەك'],
 ]);
 
+const COLORS = {
+  BACKGROUND: 0xe8eef8,
+  TEXT_BASE: 0x1b427a,
+  TEXT_HIGHLIGHT: 0x86bd65,
+} as const;
+
 const BASE_WORD_STYLE = new TextStyle({
   fontSize: 128,
-  fill: 0x1b427a,
+  fill: COLORS.TEXT_BASE,
   fontFamily: 'Noto Naskh Arabic Bold',
 });
+
 const HIGHLIGHTED_WORD_STYLE = new TextStyle({
   fontSize: BASE_WORD_STYLE.fontSize,
   fontFamily: BASE_WORD_STYLE.fontFamily,
-  fill: 0x86bd65,
+  fill: COLORS.TEXT_HIGHLIGHT,
 });
 
 export class LetterPopup extends Container {
-  /**
-   *
-   */
   public static assetBundles = ['education-tutorial'];
 
   private letter: string;
@@ -33,64 +37,66 @@ export class LetterPopup extends Container {
   private background: Graphics;
   private closeButton: FancyButton;
   private soundButton: SoundButton;
+
   constructor(letter: string) {
     super({ layout: { position: 'relative', width: '100%', height: '100%' } });
     this.letter = letter;
     this.exampleWord = examples.get(letter);
+
     this.background = new Graphics();
     this.background.layout = { position: 'absolute', width: '100%', height: '100%' };
 
-    this.closeButton = new FancyButton({
-      defaultView: 'education-tutorial/x.svg',
-      animations: {
-        hover: {
-          props: { scale: { x: 1.03, y: 1.03 } },
-          duration: 100,
-        },
-        pressed: {
-          props: { scale: { x: 0.97, y: 0.97 } },
-          duration: 100,
-        },
-      },
-    });
-    this.closeButton.anchor.set(0.5);
-    this.closeButton.layout = { position: 'absolute', top: '10%', left: '5%' };
-    this.closeButton.onPress.connect(() => engine().navigation.hidePopup());
+    this.closeButton = this.createCloseButton();
     this.soundButton = new SoundButton({ onClick: () => {}, size: 250 });
     this.soundButton.anchor.set(0.5);
     this.soundButton.layout = { position: 'absolute', bottom: '25%', left: '50%' };
+
     this.addChild(this.background, this.closeButton, this.soundButton);
 
     if (this.exampleWord) {
-      // WORD + IMAGE RENDER LOGIC
-      console.log('word exists');
-      const wordContainer = this.returnWordContainer(this.exampleWord);
-      const exampleImage: Sprite = new Sprite(
-        Texture.from(`education-tutorial/letter-items/${this.letter}.svg`),
-      );
-      exampleImage.anchor.set(0.5);
-      exampleImage.layout = { position: 'absolute', left: '65%', top: '25%' };
-      this.addChild(wordContainer, exampleImage);
+      this.addChild(this.buildWordContainer(this.exampleWord), this.createExampleImage());
     } else {
       this.removeChild(this.soundButton);
-      const notice = new MissingWordNotice();
-      this.addChild(notice);
+      this.addChild(new MissingWordNotice());
     }
   }
+
   resize(width: number, height: number) {
     this.layout = { width, height };
-    this.background.clear().rect(0, 0, width, height).fill(0xe8eef8);
+    this.background.clear().rect(0, 0, width, height).fill(COLORS.BACKGROUND);
   }
+
   async show() {
     this.y = screen.height + 10;
     await animate(this.position, { y: 0 }, { duration: 0.8, ease: 'easeIn' });
   }
+
   async hide() {
     await animate(this.position, { y: screen.height + 10 }, { duration: 0.8, ease: 'easeOut' });
   }
 
-  private returnWordContainer(word: string) {
-    const baseStyle = BASE_WORD_STYLE;
+  private createCloseButton(): FancyButton {
+    const button = new FancyButton({
+      defaultView: 'education-tutorial/x.svg',
+      animations: {
+        hover: { props: { scale: { x: 1.03, y: 1.03 } }, duration: 100 },
+        pressed: { props: { scale: { x: 0.97, y: 0.97 } }, duration: 100 },
+      },
+    });
+    button.anchor.set(0.5);
+    button.layout = { position: 'absolute', top: '10%', left: '5%' };
+    button.onPress.connect(() => engine().navigation.hidePopup());
+    return button;
+  }
+
+  private createExampleImage(): Sprite {
+    const image = new Sprite(Texture.from(`education-tutorial/letter-items/${this.letter}.svg`));
+    image.anchor.set(0.5);
+    image.layout = { position: 'absolute', left: '65%', top: '25%' };
+    return image;
+  }
+
+  private buildWordContainer(word: string): Container {
     const group = new Container();
 
     // Layer 1: full word, base color — this is the layer that preserves shaping.
@@ -98,11 +104,11 @@ export class LetterPopup extends Container {
     group.addChild(base);
 
     // Layer 2: full word, highlight color, stacked exactly on top.
-    const hl = new Text({ text: word, style: HIGHLIGHTED_WORD_STYLE });
-    group.addChild(hl);
+    const highlight = new Text({ text: word, style: HIGHLIGHTED_WORD_STYLE });
+    group.addChild(highlight);
 
     // Measure the visual width of the first cluster as it appears in context.
-    const clusterWidth = this.measureClusterWidth(this.letter, baseStyle);
+    const clusterWidth = this.measureClusterWidth(this.letter, BASE_WORD_STYLE);
 
     // Mask: rectangle on the RIGHT edge of the bounding box (RTL start).
     // Only the highlight layer is masked — base layer shows through everywhere else.
@@ -110,7 +116,7 @@ export class LetterPopup extends Container {
       .rect(base.width - clusterWidth, 0, clusterWidth, base.height)
       .fill(0xffffff);
     group.addChild(mask);
-    hl.mask = mask;
+    highlight.mask = mask;
 
     // Center the group within the popup using layout
     group.layout = { position: 'absolute', left: '25%', top: '35%' };
@@ -122,7 +128,7 @@ export class LetterPopup extends Container {
   private measureClusterWidth(cluster: string, style: TextStyle): number {
     // Trailing ZWJ forces the cluster to shape in initial form,
     // matching how it appears at the start of an RTL word.
-    const ZWJ = '\u200D';
+    const ZWJ = '‍';
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d')!;
