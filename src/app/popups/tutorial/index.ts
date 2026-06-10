@@ -44,8 +44,8 @@ export class TutorialPopup extends Container {
     this.background = new Sprite({
       texture: Texture.from(
         type == 'typing'
-          ? 'tutorial-popups/typing-tutorial.svg'
-          : 'tutorial-popups/education-tutorial.svg',
+          ? 'tutorial-popups/typing-tutorial.png'
+          : 'tutorial-popups/education-tutorial.png',
       ),
       layout: {
         position: 'absolute',

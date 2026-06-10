@@ -87,7 +87,7 @@ export class LevelSplashScreen extends Container {
 
     this.mascot = new Sprite({
       texture: Texture.from(
-        type == 'typing' ? 'mascots/camel/default.png' : 'mascots/sheep/default.svg',
+        type == 'typing' ? 'mascots/camel/default.png' : 'mascots/sheep/default.png',
       ),
       scale: 0.8,
       layout: {
