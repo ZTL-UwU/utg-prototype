@@ -126,18 +126,18 @@ export class LetterPopup extends Container {
 
   private buildWordContainer(word: string): Container {
     const group = new Container();
-
+    const isProblematicLetter: boolean = this.letter === 'ت' || this.letter === 'پ';
     const base = new Text({ text: word, style: BASE_WORD_STYLE });
     group.addChild(base);
 
     const highlight = new Text({ text: word, style: HIGHLIGHTED_WORD_STYLE });
     group.addChild(highlight);
 
-    // Measure the visual width of the first cluster as it appears in context.
     const clusterWidth = this.measureClusterWidth(this.letter, BASE_WORD_STYLE);
+    const maskWidth = isProblematicLetter ? clusterWidth * 1.5 : clusterWidth;
 
     const mask = new Graphics()
-      .roundRect(base.width - clusterWidth, 0, clusterWidth, base.height)
+      .roundRect(base.width - maskWidth, 0, maskWidth, base.height)
       .fill(0xffffff);
     group.addChild(mask);
     highlight.mask = mask;
@@ -149,16 +149,15 @@ export class LetterPopup extends Container {
   }
 
   private measureClusterWidth(cluster: string, style: TextStyle): number {
-    // Trailing ZWJ forces the cluster to shape in initial form,
-    // matching how it appears at the start of an RTL word.
-    const ZWJ = '‍';
-
+    const ZWJ = '\u200D';
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d')!;
-    // Build a font string that matches the TextStyle.
-    ctx.font = `${style.fontSize}px "${style.fontFamily.toString()}"`;
+    ctx.font = `${style.fontSize}px "${style.fontFamily}"`;
     ctx.direction = 'rtl';
-    const measuredWidth = ctx.measureText(cluster + ZWJ).width;
-    return 1.1 * measuredWidth;
+
+    const metrics = ctx.measureText(cluster + ZWJ);
+    const inkExtent = metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight;
+
+    return Math.max(metrics.width, inkExtent);
   }
 }
