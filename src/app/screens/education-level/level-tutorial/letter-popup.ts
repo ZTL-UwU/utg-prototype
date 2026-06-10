@@ -21,12 +21,14 @@ const BASE_WORD_STYLE = new TextStyle({
   fontSize: 128,
   fill: COLORS.TEXT_BASE,
   fontFamily: 'Noto Naskh Arabic Bold',
+  padding: 40,
 });
 
 const HIGHLIGHTED_WORD_STYLE = new TextStyle({
   fontSize: BASE_WORD_STYLE.fontSize,
   fontFamily: BASE_WORD_STYLE.fontFamily,
   fill: COLORS.TEXT_HIGHLIGHT,
+  padding: BASE_WORD_STYLE.padding,
 });
 
 export class LetterPopup extends Container {
@@ -134,7 +136,7 @@ export class LetterPopup extends Container {
     const ctx = canvas.getContext('2d')!;
     // Build a font string that matches the TextStyle. Include weight if your
     // font name doesn't already encode it (yours does — "Noto Naskh Arabic Bold").
-    ctx.font = `${style.fontSize}px "${style.fontFamily}"`;
+    ctx.font = `${style.fontSize}px "${style.fontFamily.toString()}"`;
     ctx.direction = 'rtl';
 
     return ctx.measureText(cluster + ZWJ).width;
