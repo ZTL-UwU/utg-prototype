@@ -18,9 +18,15 @@ export class TutorialPopup extends Container {
   private background: Sprite;
   private exitButton: FancyButton;
   private nextScreen?: AppScreenConstructor;
-  private autoAdvanceTick?: (ticker: Ticker) => void;
+
   private autoAdvanceElapsedMs = 0;
-  private progressBar?: Graphics;
+  private progressBar?: Container;
+  private progressBarTrack?: Graphics;
+  private progressBarFill?: Graphics;
+  private progressBarWidth = 0;
+  private progressBarHeight = 0;
+  private progress = 0;
+
   private backdrop: Graphics;
   private backdropColor: number;
   private exitable: boolean;
@@ -79,15 +85,55 @@ export class TutorialPopup extends Container {
     }
 
     if (nextScreen) {
-      const progressBarHeight = 20;
-      this.progressBar = new Graphics().rect(0, 0, 1, progressBarHeight).fill(0xf3ca8a);
-      this.progressBar.y = engine().screen.height - progressBarHeight;
+      this.progressBar = new Container();
+      this.progressBarTrack = new Graphics();
+      this.progressBarFill = new Graphics();
+      this.progressBar.addChild(this.progressBarTrack, this.progressBarFill);
       this.addChild(this.progressBar);
+      this.layoutProgressBar();
+    }
+  }
+
+  private layoutProgressBar() {
+    if (!this.progressBar || !this.progressBarTrack || !this.progressBarFill) return;
+
+    const { width, height } = engine().screen;
+    const barWidth = 400;
+    const barHeight = 35;
+    this.progressBarWidth = barWidth;
+    this.progressBarHeight = barHeight;
+
+    this.progressBar.x = (width - barWidth) / 2;
+    this.progressBar.y = height - barHeight - 32;
+
+    this.progressBarTrack
+      .clear()
+      .roundRect(0, 0, barWidth, barHeight, barHeight / 2)
+      .stroke({ width: 3, color: 0xfbf0de, alignment: 0.5 });
+
+    this.redrawProgressBarFill();
+  }
+
+  private redrawProgressBarFill() {
+    if (!this.progressBarFill) return;
+
+    const padding = 4;
+    const innerWidth = this.progressBarWidth - padding * 2;
+    const innerHeight = this.progressBarHeight - padding * 2;
+    const filledWidth = Math.max(0, Math.min(innerWidth, innerWidth * this.progress));
+
+    this.progressBarFill.clear();
+    if (filledWidth > 0) {
+      this.progressBarFill
+        .roundRect(padding, padding, filledWidth, innerHeight, innerHeight / 2)
+        .fill(0xfbf0de);
     }
   }
 
   resize(width: number, height: number) {
     this.layout = { width, height };
+
+    this.layoutProgressBar();
 
     if (this.exitable) {
       const w = width * 0.9;
@@ -105,39 +151,16 @@ export class TutorialPopup extends Container {
       this.backdrop.scale.set(0.5, 0.5);
       engine().audio.sfx.play('preload-audio/sfx/popup.mp3');
     }
+
     if (this.progressBar) {
       this.progressBar.alpha = 0;
-      this.progressBar.width = 0;
+      this.progress = 0;
+      this.redrawProgressBarFill();
     }
 
     const currentEngine = engine();
     if (currentEngine.navigation.currentScreen) {
       currentEngine.navigation.currentScreen.tint = 0x666666;
-    }
-
-    if (this.nextScreen) {
-      this.autoAdvanceElapsedMs = 0;
-      this.autoAdvanceTick = (ticker: Ticker) => {
-        this.autoAdvanceElapsedMs += ticker.deltaMS;
-
-        if (this.progressBar) {
-          this.progressBar.width = Math.min(
-            (this.autoAdvanceElapsedMs / AUTO_ADVANCE_MS) * engine().screen.width,
-            engine().screen.width,
-          );
-        }
-
-        if (this.autoAdvanceElapsedMs < AUTO_ADVANCE_MS) return;
-
-        this.clearAutoAdvanceTick();
-        void engine()
-          .navigation.hidePopup()
-          .then(() => {
-            void engine().navigation.showScreen(this.nextScreen!);
-          });
-      };
-
-      engine().ticker.add(this.autoAdvanceTick);
     }
 
     await Promise.all([
@@ -155,17 +178,23 @@ export class TutorialPopup extends Container {
     ]);
   }
 
-  private clearAutoAdvanceTick() {
-    if (this.autoAdvanceTick) {
-      engine().ticker.remove(this.autoAdvanceTick);
-      this.autoAdvanceTick = undefined;
+  update(ticker: Ticker) {
+    if (!this.nextScreen) return;
+
+    const currentEngine = engine();
+    this.autoAdvanceElapsedMs += ticker.deltaMS;
+
+    this.progress = Math.min(this.autoAdvanceElapsedMs / AUTO_ADVANCE_MS, 1);
+    this.redrawProgressBarFill();
+
+    if (this.autoAdvanceElapsedMs >= AUTO_ADVANCE_MS) {
+      void currentEngine.navigation.hidePopup().then(() => {
+        void currentEngine.navigation.showScreen(this.nextScreen!);
+      });
     }
-    this.autoAdvanceElapsedMs = 0;
   }
 
   async hide() {
-    this.clearAutoAdvanceTick();
-
     const currentEngine = engine();
     if (currentEngine.navigation.currentScreen) {
       currentEngine.navigation.currentScreen.tint = 0xffffff;
