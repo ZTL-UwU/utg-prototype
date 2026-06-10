@@ -37,7 +37,9 @@ export class EducationTutorialScreen extends Container {
       onBack: () => {
         void engine().navigation.showScreen(LevelMapScreen, 'education');
       },
-      type: 'education',
+      toTutorial: false,
+      helpAsset: 'tutorial-popups/education-tutorial.png',
+      backdropColor: 0x4a90e2,
     });
 
     this.letterGrid = new LetterGrid(letters);

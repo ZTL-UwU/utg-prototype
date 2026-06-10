@@ -37,7 +37,9 @@ export class EducationLevelScreen extends Container {
           },
         });
       },
-      type: 'education',
+      toTutorial: false,
+      helpAsset: 'tutorial-popups/education-level-1.png',
+      backdropColor: 0x4a90e2,
     });
     this.letterGrid = new LetterGrid();
     this.messageContainer = new MessageContainer();

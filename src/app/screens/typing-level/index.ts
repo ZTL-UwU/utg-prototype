@@ -71,7 +71,9 @@ export class TypingLevelScreen extends Container {
           },
         });
       },
-      type: 'typing',
+      toTutorial: false,
+      helpAsset: 'tutorial-popups/typing-tutorial.png',
+      backdropColor: 0x7d5600,
     });
     this.addChild(
       this.background,
