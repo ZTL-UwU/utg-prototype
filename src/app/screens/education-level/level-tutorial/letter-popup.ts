@@ -43,17 +43,15 @@ const COLORS = {
 } as const;
 
 const BASE_WORD_STYLE = new TextStyle({
-  fontSize: 128,
+  fontSize: 250,
   fill: COLORS.TEXT_BASE,
   fontFamily: 'Noto Naskh Arabic Bold',
-  padding: 40,
 });
 
 const HIGHLIGHTED_WORD_STYLE = new TextStyle({
   fontSize: BASE_WORD_STYLE.fontSize,
   fontFamily: BASE_WORD_STYLE.fontFamily,
   fill: COLORS.TEXT_HIGHLIGHT,
-  padding: BASE_WORD_STYLE.padding,
 });
 
 export class LetterPopup extends Container {
@@ -74,7 +72,7 @@ export class LetterPopup extends Container {
     this.background.layout = { position: 'absolute', width: '100%', height: '100%' };
 
     this.closeButton = this.createCloseButton();
-    this.soundButton = new SoundButton({ onClick: () => {}, size: 250 });
+    this.soundButton = new SoundButton({ onClick: () => {}, size: 300 });
     this.soundButton.anchor.set(0.5);
     this.soundButton.layout = { position: 'absolute', bottom: '25%', left: '50%' };
 
@@ -119,11 +117,10 @@ export class LetterPopup extends Container {
   private createExampleImage(): Sprite {
     const texture = Texture.from(`education-tutorial/letter-items/${this.letter}.png`);
     if (!texture) return new Sprite();
-    console.log(texture.width, texture.height);
     const image = new Sprite({ texture });
-    image.scale = Math.min(500 / texture.width, 450 / texture.height);
+    image.scale = Math.min(600 / texture.width, 500 / texture.height);
     image.anchor.set(0.5);
-    image.layout = { position: 'absolute', left: '65%', top: '25%' };
+    image.layout = { position: 'absolute', left: '60%', top: '10%' };
     return image;
   }
 
@@ -140,12 +137,12 @@ export class LetterPopup extends Container {
     const clusterWidth = this.measureClusterWidth(this.letter, BASE_WORD_STYLE);
 
     const mask = new Graphics()
-      .rect(base.width - clusterWidth, 0, clusterWidth, base.height)
+      .roundRect(base.width - clusterWidth, 0, clusterWidth, base.height)
       .fill(0xffffff);
     group.addChild(mask);
     highlight.mask = mask;
 
-    group.layout = { position: 'absolute', left: '25%', top: '35%' };
+    group.layout = { position: 'absolute', left: '15%', top: '25%' };
     group.pivot.set(base.width / 2, base.height / 2);
 
     return group;
@@ -161,7 +158,7 @@ export class LetterPopup extends Container {
     // Build a font string that matches the TextStyle.
     ctx.font = `${style.fontSize}px "${style.fontFamily.toString()}"`;
     ctx.direction = 'rtl';
-
-    return ctx.measureText(cluster + ZWJ).width;
+    const measuredWidth = ctx.measureText(cluster + ZWJ).width;
+    return 1.1 * measuredWidth;
   }
 }
