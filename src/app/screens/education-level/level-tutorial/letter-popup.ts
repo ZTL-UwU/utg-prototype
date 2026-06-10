@@ -92,7 +92,10 @@ export class LetterPopup extends Container {
   }
 
   private createExampleImage(): Sprite {
-    const image = new Sprite(Texture.from(`education-tutorial/letter-items/${this.letter}.svg`));
+    const texture = Texture.from(`education-tutorial/letter-items/${this.letter}.png`);
+    console.log(texture.width, texture.height);
+    const image = new Sprite({ texture });
+    image.scale = Math.min(500 / texture.width, 450 / texture.height);
     image.anchor.set(0.5);
     image.layout = { position: 'absolute', left: '65%', top: '25%' };
     return image;
