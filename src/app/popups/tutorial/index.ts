@@ -4,6 +4,7 @@ import { Container, Graphics, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import type { AppScreenConstructor } from '../../../engine/navigation/navigation';
+import { RoundedProgressBar } from '../../ui/rounded-progress-bar';
 
 type TutorialProps = {
   type: 'education' | 'typing';
@@ -20,12 +21,7 @@ export class TutorialPopup extends Container {
   private nextScreen?: AppScreenConstructor;
 
   private autoAdvanceElapsedMs = 0;
-  private progressBar?: Container;
-  private progressBarTrack?: Graphics;
-  private progressBarFill?: Graphics;
-  private progressBarWidth = 0;
-  private progressBarHeight = 0;
-  private progress = 0;
+  private progressBar?: RoundedProgressBar;
 
   private backdrop: Graphics;
   private backdropColor: number;
@@ -85,55 +81,24 @@ export class TutorialPopup extends Container {
     }
 
     if (nextScreen) {
-      this.progressBar = new Container();
-      this.progressBarTrack = new Graphics();
-      this.progressBarFill = new Graphics();
-      this.progressBar.addChild(this.progressBarTrack, this.progressBarFill);
+      this.progressBar = new RoundedProgressBar();
       this.addChild(this.progressBar);
-      this.layoutProgressBar();
+      this.layoutProgressBar(engine().screen.width, engine().screen.height);
     }
   }
 
-  private layoutProgressBar() {
-    if (!this.progressBar || !this.progressBarTrack || !this.progressBarFill) return;
+  private layoutProgressBar(screenWidth: number, screenHeight: number) {
+    if (!this.progressBar) return;
 
-    const { width, height } = engine().screen;
-    const barWidth = 400;
-    const barHeight = 35;
-    this.progressBarWidth = barWidth;
-    this.progressBarHeight = barHeight;
-
-    this.progressBar.x = (width - barWidth) / 2;
-    this.progressBar.y = height - barHeight - 32;
-
-    this.progressBarTrack
-      .clear()
-      .roundRect(0, 0, barWidth, barHeight, barHeight / 2)
-      .stroke({ width: 3, color: 0xfbf0de, alignment: 0.5 });
-
-    this.redrawProgressBarFill();
-  }
-
-  private redrawProgressBarFill() {
-    if (!this.progressBarFill) return;
-
-    const padding = 4;
-    const innerWidth = this.progressBarWidth - padding * 2;
-    const innerHeight = this.progressBarHeight - padding * 2;
-    const filledWidth = Math.max(0, Math.min(innerWidth, innerWidth * this.progress));
-
-    this.progressBarFill.clear();
-    if (filledWidth > 0) {
-      this.progressBarFill
-        .roundRect(padding, padding, filledWidth, innerHeight, innerHeight / 2)
-        .fill(0xfbf0de);
-    }
+    const bottomOffset = 32;
+    this.progressBar.x = (screenWidth - this.progressBar.width) / 2;
+    this.progressBar.y = screenHeight - this.progressBar.height - bottomOffset;
   }
 
   resize(width: number, height: number) {
     this.layout = { width, height };
 
-    this.layoutProgressBar();
+    this.layoutProgressBar(width, height);
 
     if (this.exitable) {
       const w = width * 0.9;
@@ -154,8 +119,7 @@ export class TutorialPopup extends Container {
 
     if (this.progressBar) {
       this.progressBar.alpha = 0;
-      this.progress = 0;
-      this.redrawProgressBarFill();
+      this.progressBar.progress = 0;
     }
 
     const currentEngine = engine();
@@ -184,8 +148,9 @@ export class TutorialPopup extends Container {
     const currentEngine = engine();
     this.autoAdvanceElapsedMs += ticker.deltaMS;
 
-    this.progress = Math.min(this.autoAdvanceElapsedMs / AUTO_ADVANCE_MS, 1);
-    this.redrawProgressBarFill();
+    if (this.progressBar) {
+      this.progressBar.progress = Math.min(this.autoAdvanceElapsedMs / AUTO_ADVANCE_MS, 1);
+    }
 
     if (this.autoAdvanceElapsedMs >= AUTO_ADVANCE_MS) {
       void currentEngine.navigation.hidePopup().then(() => {
