@@ -5,14 +5,22 @@ import { engine } from '../../../../engine/getEngine';
 import { LetterPopup } from './letter-popup';
 
 function drawButton(size: number, state: 'default' | 'hover' | 'pressed') {
-  const buttonColor = state === 'default' ? 0x5a8cd4 : state === 'hover' ? 0x71a0e3 : 0x22539a;
-  const shadowColor = state === 'default' ? 0x4673b8 : state === 'hover' ? 0x4673b8 : 0x1b427a;
+  const buttonColor = state === 'default' ? 0x5a8cd4 : state === 'hover' ? 0x22539a : 0x22539a;
+  const shadowColor = state === 'default' ? 0x4673b8 : state === 'hover' ? 0xfff5da : 0x1b427a;
+  const hoverShadowSize = size * 1.1;
+  const hoverPadding = size * 0.05;
 
-  return new Graphics()
-    .roundRect(0, 4, size, size, 25)
-    .fill({ color: shadowColor })
-    .roundRect(0, 0, size, size, 25)
-    .fill({ color: buttonColor });
+  return state === 'hover'
+    ? new Graphics()
+        .roundRect(0, 0, hoverShadowSize, hoverShadowSize, 25)
+        .fill({ color: shadowColor })
+        .roundRect(hoverPadding, hoverPadding, size, size, 25)
+        .fill({ color: buttonColor })
+    : new Graphics()
+        .roundRect(0, 4, size, size, 25)
+        .fill({ color: shadowColor })
+        .roundRect(0, 0, size, size, 25)
+        .fill({ color: buttonColor });
 }
 
 export class LetterKey extends FancyButton {
