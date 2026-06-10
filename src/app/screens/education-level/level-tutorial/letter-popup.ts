@@ -6,9 +6,34 @@ import { engine } from '../../../../engine/getEngine';
 import { SoundButton } from '../../../ui/sound-button';
 import { MissingWordNotice } from './missing-word-notice';
 
-const examples = new Map<string, string>([
-  ['ئا', 'ئايروپىلان'],
+const exampleWords = new Map<string, string>([
+  ['خ', 'خوراز'],
+  ['چ', 'چاينەك'],
+  ['ج', 'جان'],
+  ['ت', 'تاۋۇز '],
+  ['پ', 'پاراخوت '],
+  ['ب', 'بولقا'],
   ['ئە', 'ئەينەك'],
+  ['ئا', 'ئايروپىلان'],
+  ['ف', 'فونتان'],
+  ['غ', 'غاز'],
+  ['ش', 'شام'],
+  ['س', 'سائەت'],
+  ['ژ', 'ژۇرنال'],
+  ['ز', 'زەنجىر'],
+  ['ر', 'رادىئو'],
+  ['د', 'دەزمال'],
+  ['ھ', 'ھھارۋا'],
+  ['ن', 'نان'],
+  ['م', 'ماشىنا'],
+  ['ل', 'لەگەن'],
+  ['ڭ', 'ڭوز'],
+  ['گ', 'گىلەم'],
+  ['ك', 'كۆلەيكە'],
+  ['ق', 'قوغۇن'],
+  ['ي', 'يەلپۈگۈچ'],
+  ['ئى', 'ئىت'],
+  ['ئې', 'ئېيىق'],
 ]);
 
 const COLORS = {
@@ -43,7 +68,7 @@ export class LetterPopup extends Container {
   constructor(letter: string) {
     super({ layout: { position: 'relative', width: '100%', height: '100%' } });
     this.letter = letter;
-    this.exampleWord = examples.get(letter);
+    this.exampleWord = exampleWords.get(letter);
 
     this.background = new Graphics();
     this.background.layout = { position: 'absolute', width: '100%', height: '100%' };
@@ -93,6 +118,7 @@ export class LetterPopup extends Container {
 
   private createExampleImage(): Sprite {
     const texture = Texture.from(`education-tutorial/letter-items/${this.letter}.png`);
+    if (!texture) return new Sprite();
     console.log(texture.width, texture.height);
     const image = new Sprite({ texture });
     image.scale = Math.min(500 / texture.width, 450 / texture.height);
