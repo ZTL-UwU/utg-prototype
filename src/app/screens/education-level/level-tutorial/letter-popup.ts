@@ -68,11 +68,11 @@ export class LetterPopup extends Container {
 
   async show() {
     this.y = screen.height + 10;
-    await animate(this.position, { y: 0 }, { duration: 0.8, ease: 'easeIn' });
+    await animate(this.position, { y: 0 }, { duration: 0.6, ease: 'easeOut' });
   }
 
   async hide() {
-    await animate(this.position, { y: screen.height + 10 }, { duration: 0.8, ease: 'easeOut' });
+    await animate(this.position, { y: screen.height + 10 }, { duration: 0.4, ease: 'easeOut' });
   }
 
   private createCloseButton(): FancyButton {
