@@ -11,7 +11,7 @@ export class MessageContainer extends Container {
   private correctText: Text;
   private wrongText: Text;
   private unsubs: Array<() => void> = [];
-
+  private isAnimating: boolean;
   constructor() {
     super({
       layout: {
@@ -20,7 +20,7 @@ export class MessageContainer extends Container {
         height: '100%',
       },
     });
-
+    this.isAnimating = false;
     this.correctText = new Text({
       text: CORRECT_TEXT,
       style: BASE_STYLE,
@@ -61,6 +61,8 @@ export class MessageContainer extends Container {
   }
 
   showMessage(isCorrect: boolean) {
+    if (this.isAnimating) return;
+    this.isAnimating = true;
     void animate(
       isCorrect ? this.correctText.scale : this.wrongText.scale,
       { x: [0, 1, 1, 0], y: [0, 1, 1, 0] },
@@ -69,7 +71,7 @@ export class MessageContainer extends Container {
         times: [0, 0.4 / 1.8, 1.4 / 1.8, 1],
         ease: ['easeOut', 'linear', 'easeIn'],
       },
-    );
+    ).then(() => (this.isAnimating = false));
   }
 
   override destroy(options?: DestroyOptions): void {
