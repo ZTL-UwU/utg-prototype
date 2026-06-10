@@ -7,7 +7,8 @@ import type { AppScreenConstructor } from '../../../engine/navigation/navigation
 import { RoundedProgressBar } from '../../ui/rounded-progress-bar';
 
 type TutorialProps = {
-  type: 'education' | 'typing';
+  asset: string;
+  backdropColor: number;
   exitable?: boolean;
   nextScreen?: AppScreenConstructor;
 };
@@ -27,10 +28,10 @@ export class TutorialPopup extends Container {
   private backdropColor: number;
   private exitable: boolean;
 
-  constructor({ type, exitable = false, nextScreen }: TutorialProps) {
+  constructor({ asset, backdropColor, exitable = false, nextScreen }: TutorialProps) {
     super({ layout: { position: 'absolute', width: '100%', height: '100%' } });
     this.nextScreen = nextScreen;
-    this.backdropColor = type === 'typing' ? 0x7d5600 : 0x4a90e2;
+    this.backdropColor = backdropColor;
     this.exitable = exitable;
     this.backdrop = new Graphics();
     this.backdrop.layout = {
@@ -42,11 +43,7 @@ export class TutorialPopup extends Container {
     };
 
     this.background = new Sprite({
-      texture: Texture.from(
-        type == 'typing'
-          ? 'tutorial-popups/typing-tutorial.png'
-          : 'tutorial-popups/education-tutorial.png',
-      ),
+      texture: Texture.from(asset),
       layout: {
         position: 'absolute',
         width: '84%',
@@ -73,12 +70,9 @@ export class TutorialPopup extends Container {
     });
 
     if (exitable) {
-      this.addChild(this.backdrop); // behind the SVG
+      this.addChild(this.backdrop, this.exitButton); // behind the SVG
     }
     this.addChild(this.background);
-    if (exitable) {
-      this.addChild(this.exitButton);
-    }
 
     if (nextScreen) {
       this.progressBar = new RoundedProgressBar();

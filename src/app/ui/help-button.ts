@@ -5,8 +5,15 @@ import { TutorialPopup } from '../popups/tutorial';
 import { EducationTutorialScreen } from '../screens/education-level/level-tutorial';
 
 export class HelpButton extends FancyButton {
-  // TODO: temporary for now
-  constructor(type: 'education' | 'typing' | 'tutorial') {
+  constructor({
+    toTutorial,
+    helpAsset,
+    backdropColor,
+  }: {
+    toTutorial: boolean;
+    helpAsset?: string;
+    backdropColor?: number;
+  }) {
     super({
       defaultView: 'ui/help-button.svg',
       animations: {
@@ -35,10 +42,14 @@ export class HelpButton extends FancyButton {
 
     this.onPress.connect(() => {
       engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      if (type === 'tutorial') {
+      if (toTutorial) {
         void engine().navigation.showScreen(EducationTutorialScreen);
       } else {
-        void engine().navigation.showPopup(TutorialPopup, { type, exitable: true });
+        void engine().navigation.showPopup(TutorialPopup, {
+          asset: helpAsset!,
+          backdropColor: backdropColor!,
+          exitable: true,
+        });
       }
     });
   }

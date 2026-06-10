@@ -96,12 +96,14 @@ export class LevelSplashScreen extends Container {
         left: 480,
       },
     });
-    console.log(type);
+
     this.hud = new HUD({
       onBack: () => {
         void engine().navigation.showScreen(LevelMapScreen, type);
       },
-      type: type,
+      toTutorial: false,
+      helpAsset: level.helpAsset,
+      backdropColor: level.backdropColor,
     });
 
     const buttonWidth = 300;
@@ -146,7 +148,8 @@ export class LevelSplashScreen extends Container {
       this.removeChildren();
       this.addChild(this.background);
       void engine().navigation.showPopup(TutorialPopup, {
-        type: type,
+        asset: level.helpAsset,
+        backdropColor: level.backdropColor,
         nextScreen: level.screen,
       });
     });
