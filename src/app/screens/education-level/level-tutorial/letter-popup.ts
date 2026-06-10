@@ -104,26 +104,21 @@ export class LetterPopup extends Container {
   private buildWordContainer(word: string): Container {
     const group = new Container();
 
-    // Layer 1: full word, base color — this is the layer that preserves shaping.
     const base = new Text({ text: word, style: BASE_WORD_STYLE });
     group.addChild(base);
 
-    // Layer 2: full word, highlight color, stacked exactly on top.
     const highlight = new Text({ text: word, style: HIGHLIGHTED_WORD_STYLE });
     group.addChild(highlight);
 
     // Measure the visual width of the first cluster as it appears in context.
     const clusterWidth = this.measureClusterWidth(this.letter, BASE_WORD_STYLE);
 
-    // Mask: rectangle on the RIGHT edge of the bounding box (RTL start).
-    // Only the highlight layer is masked — base layer shows through everywhere else.
     const mask = new Graphics()
       .rect(base.width - clusterWidth, 0, clusterWidth, base.height)
       .fill(0xffffff);
     group.addChild(mask);
     highlight.mask = mask;
 
-    // Center the group within the popup using layout
     group.layout = { position: 'absolute', left: '25%', top: '35%' };
     group.pivot.set(base.width / 2, base.height / 2);
 
@@ -137,8 +132,7 @@ export class LetterPopup extends Container {
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d')!;
-    // Build a font string that matches the TextStyle. Include weight if your
-    // font name doesn't already encode it (yours does — "Noto Naskh Arabic Bold").
+    // Build a font string that matches the TextStyle.
     ctx.font = `${style.fontSize}px "${style.fontFamily.toString()}"`;
     ctx.direction = 'rtl';
 
