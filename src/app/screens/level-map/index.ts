@@ -21,31 +21,37 @@ const mapData: Record<
     levels: [
       {
         id: 1,
-
         title: 'TAKLAMAKAN DESERT',
         unlocked: true,
-
         miniMapImage: 'typing-level-map/button-preview.svg',
         screen: TypingLevelScreen,
         background: 'typing-level/background.png',
+        helpAsset: 'tutorial-popups/typing-tutorial.png',
+        backdropColor: 0x7d5600,
       },
       {
         id: 2,
         unlocked: false,
         miniMapImage: 'typing-level-map/button-preview.svg',
         background: 'typing-level/background.png',
+        helpAsset: 'tutorial-popups/typing-tutorial.png',
+        backdropColor: 0x7d5600,
       },
       {
         id: 3,
         unlocked: false,
         miniMapImage: 'typing-level-map/button-preview.svg',
         background: 'typing-level/background.png',
+        helpAsset: 'tutorial-popups/typing-tutorial.png',
+        backdropColor: 0x7d5600,
       },
       {
         id: 4,
         unlocked: false,
         miniMapImage: 'typing-level-map/button-preview.svg',
         background: 'typing-level/background.png',
+        helpAsset: 'tutorial-popups/typing-tutorial.png',
+        backdropColor: 0x7d5600,
       },
     ],
   },
@@ -55,21 +61,21 @@ const mapData: Record<
     levels: [
       {
         id: 1,
-
         unlocked: true,
-
         miniMapImage: 'education-level-map/button-preview.svg',
         screen: EducationLevelScreen,
         background: 'education-level/background.png',
+        helpAsset: 'tutorial-popups/education-level-1.png',
+        backdropColor: 0x4a90e2,
       },
       {
         id: 2,
-
         unlocked: true,
-
         miniMapImage: 'education-level-map/button-preview.svg',
         screen: EducationBubbleScreen,
         background: 'education-level/background.png',
+        helpAsset: 'tutorial-popups/education-level-2.png',
+        backdropColor: 0x4a90e2,
       },
       {
         id: 3,
@@ -77,12 +83,17 @@ const mapData: Record<
         miniMapImage: 'education-level-map/button-preview.svg',
         screen: EducationSheepScreen,
         background: 'education-level/background.png',
+        // TODO: missing tutorial asset
+        helpAsset: 'tutorial-popups/education-tutorial.png',
+        backdropColor: 0x4a90e2,
       },
       {
         id: 4,
         unlocked: false,
         miniMapImage: 'education-level-map/button-preview.svg',
         background: 'education-level/background.png',
+        helpAsset: 'tutorial-popups/education-tutorial.png',
+        backdropColor: 0x4a90e2,
       },
     ],
   },
@@ -119,8 +130,9 @@ export class LevelMapScreen extends Container {
       onBack: () => {
         void engine().navigation.showScreen(LayerSelectScreen);
       },
-      // TODO: temporary for now
-      type: type === 'education' ? 'tutorial' : type,
+      toTutorial: type === 'education',
+      helpAsset: type === 'typing' ? 'tutorial-popups/typing-tutorial.png' : undefined,
+      backdropColor: type === 'typing' ? 0x7d5600 : undefined,
     });
 
     this.title = new Text({

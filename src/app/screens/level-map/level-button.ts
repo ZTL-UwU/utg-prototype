@@ -13,6 +13,8 @@ export type TLevel = {
   miniMapImage: string;
   screen?: AppScreenConstructor;
   background: string;
+  helpAsset: string;
+  backdropColor: number;
 };
 
 const SIZE = 221;

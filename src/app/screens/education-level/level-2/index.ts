@@ -66,7 +66,9 @@ export class EducationBubbleScreen extends Container {
           },
         });
       },
-      type: 'education',
+      toTutorial: false,
+      helpAsset: 'tutorial-popups/education-level-2.png',
+      backdropColor: 0x4a90e2,
     });
 
     let [correctLetter, wrong1, wrong2]: string[] = getThreeUniqueLetters();
