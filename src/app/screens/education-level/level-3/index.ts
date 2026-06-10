@@ -97,7 +97,7 @@ export class EducationSheepScreen extends Container {
       height: '100%',
     };
 
-    this.sheep = new Sprite(Texture.from('mascots/sheep/default.svg'));
+    this.sheep = new Sprite(Texture.from('mascots/sheep/default.png'));
     this.sheep.anchor.set(0.5);
 
     this.addChild(this.background, this.flowerContainer, this.sheep, this.hud, this.soundButton);
@@ -168,7 +168,7 @@ export class EducationSheepScreen extends Container {
 
   async sheepFlashSad(signedScale: ObservablePoint) {
     const defaultTex = this.sheep.texture;
-    this.sheep.texture = Texture.from('mascots/sheep/sheep-crying.svg');
+    this.sheep.texture = Texture.from('mascots/sheep/sheep-crying.png');
     this.flashSadAnimation = animate(
       [
         [this.sheep.scale, { x: 1.1 * signedScale.x, y: 0.9 * signedScale.y }, { duration: 0.12 }],
@@ -185,7 +185,7 @@ export class EducationSheepScreen extends Container {
 
   private async sheepFlashGraze(signedScale: ObservablePoint) {
     const defaultTex = this.sheep.texture;
-    this.sheep.texture = Texture.from('mascots/sheep/sheep-grazing.svg');
+    this.sheep.texture = Texture.from('mascots/sheep/sheep-grazing.png');
     await animate(
       [
         [this.sheep.scale, { x: 0.9 * signedScale.x, y: 0.9 * signedScale.y }, { duration: 0.12 }],
@@ -198,7 +198,7 @@ export class EducationSheepScreen extends Container {
 
   private async sheepBounceHappy(signedScale: ObservablePoint) {
     const defaultTex = this.sheep.texture;
-    this.sheep.texture = Texture.from('mascots/sheep/sheep-happy.svg');
+    this.sheep.texture = Texture.from('mascots/sheep/sheep-happy.png');
     const baseY = this.sheep.y;
     await Promise.all([
       animate(
