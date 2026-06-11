@@ -46,7 +46,7 @@ export class CreationEngine extends Application {
     await initDevtools({ app: this });
 
     // Init PixiJS assets with this asset manifest
-    await Assets.init({ manifest, basePath: 'assets' });
+    await Assets.init({ manifest, basePath: `${import.meta.env.BASE_URL}assets` });
     await Assets.loadBundle(['preload', 'preload-audio']);
 
     // List all existing bundles names
