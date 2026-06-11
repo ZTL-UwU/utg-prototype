@@ -55,7 +55,7 @@ const HIGHLIGHTED_WORD_STYLE = new TextStyle({
 });
 
 export class LetterPopup extends Container {
-  public static assetBundles = ['education-tutorial'];
+  public static assetBundles = ['education-tutorial', 'education-letter-images'];
 
   private letter: string;
   private exampleWord: string | undefined;
@@ -115,7 +115,7 @@ export class LetterPopup extends Container {
   }
 
   private createExampleImage(): Sprite {
-    const texture = Texture.from(`education-tutorial/letter-items/${this.letter}.png`);
+    const texture = Texture.from(`education-letter-images/${this.letter}.png`);
     if (!texture) return new Sprite();
     const image = new Sprite({ texture });
     image.scale = Math.min(600 / texture.width, 500 / texture.height);
