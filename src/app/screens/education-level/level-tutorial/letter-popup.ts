@@ -43,15 +43,17 @@ const COLORS = {
 } as const;
 
 const BASE_WORD_STYLE = new TextStyle({
-  fontSize: 250,
+  fontSize: 180,
   fill: COLORS.TEXT_BASE,
   fontFamily: 'Noto Naskh Arabic Bold',
+  padding: 40,
 });
 
 const HIGHLIGHTED_WORD_STYLE = new TextStyle({
   fontSize: BASE_WORD_STYLE.fontSize,
-  fontFamily: BASE_WORD_STYLE.fontFamily,
   fill: COLORS.TEXT_HIGHLIGHT,
+  fontFamily: BASE_WORD_STYLE.fontFamily,
+  padding: BASE_WORD_STYLE.padding,
 });
 
 export class LetterPopup extends Container {
@@ -118,9 +120,9 @@ export class LetterPopup extends Container {
     const texture = Texture.from(`education-letter-images/${this.letter}.png`);
     if (!texture) return new Sprite();
     const image = new Sprite({ texture });
-    image.scale = Math.min(600 / texture.width, 500 / texture.height);
+    image.scale = Math.min(400 / texture.width, 400 / texture.height);
     image.anchor.set(0.5);
-    image.layout = { position: 'absolute', left: '60%', top: '10%' };
+    image.layout = { position: 'absolute', left: '65%', top: '20%' };
     return image;
   }
 
@@ -137,12 +139,12 @@ export class LetterPopup extends Container {
     const maskWidth = isProblematicLetter ? clusterWidth * 1.5 : clusterWidth;
 
     const mask = new Graphics()
-      .roundRect(base.width - maskWidth, 0, maskWidth, base.height)
+      .roundRect(base.width - maskWidth, 0, maskWidth, base.height + BASE_WORD_STYLE.padding) // added padding to height instead of increasing offset to prevent clipping both at the top and bottom of words.
       .fill(0xffffff);
     group.addChild(mask);
     highlight.mask = mask;
 
-    group.layout = { position: 'absolute', left: '15%', top: '25%' };
+    group.layout = { position: 'absolute', left: '20%', top: '25%' };
     group.pivot.set(base.width / 2, base.height / 2);
 
     return group;
