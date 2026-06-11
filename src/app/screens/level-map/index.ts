@@ -6,6 +6,7 @@ import { HUD } from '../../ui/hud';
 import { EducationLevelScreen } from '../education-level/level-1';
 import { EducationBubbleScreen } from '../education-level/level-2';
 import { EducationSheepScreen } from '../education-level/level-3';
+import { EducationImageScreen } from '../education-level/level-4';
 import { LayerSelectScreen } from '../layer-select';
 import { TypingLevelScreen } from '../typing-level';
 import type { TLevel } from './level-button';
@@ -89,10 +90,11 @@ const mapData: Record<
       },
       {
         id: 4,
-        unlocked: false,
+        unlocked: true,
         miniMapImage: 'education-level-map/button-preview.svg',
+        screen: EducationImageScreen,
         background: 'education-level/background.png',
-        helpAsset: 'tutorial-popups/education-tutorial.png',
+        helpAsset: 'tutorial-popups/education-level-4.png',
         backdropColor: 0x4a90e2,
       },
     ],
