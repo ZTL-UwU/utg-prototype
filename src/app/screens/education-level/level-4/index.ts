@@ -1,3 +1,4 @@
+import { animate } from 'motion';
 import { Assets, Container, Graphics } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
@@ -126,6 +127,47 @@ export class EducationImageScreen extends Container {
       this.choices[i].y = height * CHOICE_Y_RATIO;
     }
     this.background.clear().rect(0, 0, width, height).fill(0xe8eef8);
+  }
+
+  public async show() {
+    await Promise.all(
+      this.choices.map((choice, i) => {
+        const targetY = choice.y;
+        const targetScaleX = choice.scale.x;
+        const targetScaleY = choice.scale.y;
+        choice.alpha = 0;
+        choice.y = targetY + 80;
+        choice.scale.set(targetScaleX * 0.4, targetScaleY * 0.4);
+        const delay = i * 0.12;
+        return Promise.all([
+          animate(choice, { alpha: 1, y: targetY }, { duration: 0.55, ease: 'backOut', delay }),
+          animate(
+            choice.scale,
+            { x: targetScaleX, y: targetScaleY },
+            { duration: 0.55, ease: 'backOut', delay },
+          ),
+        ]);
+      }),
+    );
+  }
+
+  public async hide() {
+    await Promise.all(
+      this.choices.map((choice, i) => {
+        const targetY = choice.y;
+        const targetScaleX = choice.scale.x;
+        const targetScaleY = choice.scale.y;
+        const delay = i * 0.06;
+        return Promise.all([
+          animate(choice, { alpha: 0, y: targetY + 80 }, { duration: 0.3, ease: 'backIn', delay }),
+          animate(
+            choice.scale,
+            { x: targetScaleX * 0.4, y: targetScaleY * 0.4 },
+            { duration: 0.3, ease: 'backIn', delay },
+          ),
+        ]);
+      }),
+    );
   }
 
   private soundButtonClick() {
