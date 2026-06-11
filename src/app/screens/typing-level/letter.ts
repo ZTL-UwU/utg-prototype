@@ -173,7 +173,6 @@ export class Letter extends Container {
   }
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {
-    console.log('destroy');
     this.focusAnimation?.stop();
     this.contentAnimation?.stop();
     super.destroy(options);
