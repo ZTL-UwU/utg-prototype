@@ -1,6 +1,6 @@
 import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
-import { Container, Graphics, TextStyle, Text, Sprite, Texture } from 'pixi.js';
+import { Container, Graphics, HTMLText, HTMLTextStyle, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { SoundButton } from '../../../ui/sound-button';
@@ -42,18 +42,17 @@ const COLORS = {
   TEXT_HIGHLIGHT: 0x86bd65,
 } as const;
 
-const BASE_WORD_STYLE = new TextStyle({
+const WORD_STYLE = new HTMLTextStyle({
   fontSize: 180,
   fill: COLORS.TEXT_BASE,
   fontFamily: 'Noto Naskh Arabic Bold',
   padding: 40,
-});
-
-const HIGHLIGHTED_WORD_STYLE = new TextStyle({
-  fontSize: BASE_WORD_STYLE.fontSize,
-  fill: COLORS.TEXT_HIGHLIGHT,
-  fontFamily: BASE_WORD_STYLE.fontFamily,
-  padding: BASE_WORD_STYLE.padding,
+  cssOverrides: ['direction: rtl'],
+  tagStyles: {
+    span: {
+      fill: COLORS.TEXT_HIGHLIGHT,
+    },
+  },
 });
 
 export class LetterPopup extends Container {
@@ -126,40 +125,12 @@ export class LetterPopup extends Container {
     return image;
   }
 
-  private buildWordContainer(word: string): Container {
-    const group = new Container();
-    const isProblematicLetter: boolean = this.letter === 'ت' || this.letter === 'پ';
-    const base = new Text({ text: word, style: BASE_WORD_STYLE });
-    group.addChild(base);
-
-    const highlight = new Text({ text: word, style: HIGHLIGHTED_WORD_STYLE });
-    group.addChild(highlight);
-
-    const clusterWidth = this.measureClusterWidth(this.letter, BASE_WORD_STYLE);
-    const maskWidth = isProblematicLetter ? clusterWidth * 1.5 : clusterWidth;
-
-    const mask = new Graphics()
-      .roundRect(base.width - maskWidth, 0, maskWidth, base.height + BASE_WORD_STYLE.padding) // added padding to height instead of increasing offset to prevent clipping both at the top and bottom of words.
-      .fill(0xffffff);
-    group.addChild(mask);
-    highlight.mask = mask;
-
-    group.layout = { position: 'absolute', left: '20%', top: '25%' };
-    group.pivot.set(base.width / 2, base.height / 2);
-
-    return group;
-  }
-
-  private measureClusterWidth(cluster: string, style: TextStyle): number {
-    const ZWJ = '\u200D';
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d')!;
-    ctx.font = `${style.fontSize}px "${style.fontFamily}"`;
-    ctx.direction = 'rtl';
-
-    const metrics = ctx.measureText(cluster + ZWJ);
-    const inkExtent = metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight;
-
-    return Math.max(metrics.width, inkExtent);
+  private buildWordContainer(word: string): HTMLText {
+    return new HTMLText({
+      text: `<span>${this.letter}</span>${word.slice(this.letter.length)}`,
+      style: WORD_STYLE,
+      anchor: 0.5,
+      layout: { position: 'absolute', left: '20%', top: '25%' },
+    });
   }
 }
