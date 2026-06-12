@@ -7,6 +7,7 @@ import { EducationLevelScreen } from '../education-level/level-1';
 import { EducationBubbleScreen } from '../education-level/level-2';
 import { EducationSheepScreen } from '../education-level/level-3';
 import { EducationImageScreen } from '../education-level/level-4';
+import { EducationWordScreen } from '../education-level/level-5';
 import { LayerSelectScreen } from '../layer-select';
 import { TypingLevelScreen } from '../typing-level';
 import type { TLevel } from './level-button';
@@ -95,6 +96,15 @@ const mapData: Record<
         screen: EducationImageScreen,
         background: 'education-level/background.png',
         helpAsset: 'tutorial-popups/education-level-4.png',
+        backdropColor: 0x4a90e2,
+      },
+      {
+        id: 5,
+        unlocked: true,
+        miniMapImage: 'education-level-map/button-preview.svg',
+        screen: EducationWordScreen,
+        background: 'education-level/background.png',
+        helpAsset: 'tutorial-popups/education-level-5.png',
         backdropColor: 0x4a90e2,
       },
     ],

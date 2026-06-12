@@ -1,59 +1,21 @@
 import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
-import { Container, Graphics, HTMLText, HTMLTextStyle, Sprite, Texture } from 'pixi.js';
+import { Container, Graphics, HTMLText, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import {
+  createExampleWordStyle,
+  EXAMPLE_WORDS,
+  getCompletedWordMarkup,
+} from '../../../../utils/example-words';
 import { SoundButton } from '../../../ui/sound-button';
 import { MissingWordNotice } from './missing-word-notice';
 
-const exampleWords = new Map<string, string>([
-  ['خ', 'خوراز'],
-  ['چ', 'چاينەك'],
-  ['ج', 'جان'],
-  ['ت', 'تاۋۇز '],
-  ['پ', 'پاراخوت '],
-  ['ب', 'بولقا'],
-  ['ئە', 'ئەينەك'],
-  ['ئا', 'ئايروپىلان'],
-  ['ف', 'فونتان'],
-  ['غ', 'غاز'],
-  ['ش', 'شام'],
-  ['س', 'سائەت'],
-  ['ژ', 'ژۇرنال'],
-  ['ز', 'زەنجىر'],
-  ['ر', 'رادىئو'],
-  ['د', 'دەزمال'],
-  ['ھ', 'ھھارۋا'],
-  ['ن', 'نان'],
-  ['م', 'ماشىنا'],
-  ['ل', 'لەگەن'],
-  ['ڭ', 'ڭوز'],
-  ['گ', 'گىلەم'],
-  ['ك', 'كۆلەيكە'],
-  ['ق', 'قوغۇن'],
-  ['ي', 'يەلپۈگۈچ'],
-  ['ئى', 'ئىت'],
-  ['ئې', 'ئېيىق'],
-]);
-
 const COLORS = {
   BACKGROUND: 0xe8eef8,
-  TEXT_BASE: 0x1b427a,
-  TEXT_HIGHLIGHT: 0x86bd65,
 } as const;
 
-const WORD_STYLE = new HTMLTextStyle({
-  fontSize: 180,
-  fill: COLORS.TEXT_BASE,
-  fontFamily: 'Noto Naskh Arabic Bold',
-  padding: 40,
-  cssOverrides: ['direction: rtl'],
-  tagStyles: {
-    span: {
-      fill: COLORS.TEXT_HIGHLIGHT,
-    },
-  },
-});
+const WORD_STYLE = createExampleWordStyle(180);
 
 export class LetterPopup extends Container {
   public static assetBundles = ['education-tutorial', 'education-letter-images'];
@@ -67,7 +29,7 @@ export class LetterPopup extends Container {
   constructor(letter: string) {
     super({ layout: { position: 'relative', width: '100%', height: '100%' } });
     this.letter = letter;
-    this.exampleWord = exampleWords.get(letter);
+    this.exampleWord = EXAMPLE_WORDS.get(letter);
 
     this.background = new Graphics();
     this.background.layout = { position: 'absolute', width: '100%', height: '100%' };
@@ -127,7 +89,7 @@ export class LetterPopup extends Container {
 
   private buildWordContainer(word: string): HTMLText {
     return new HTMLText({
-      text: `<span>${this.letter}</span>${word.slice(this.letter.length)}`,
+      text: getCompletedWordMarkup(this.letter, word),
       style: WORD_STYLE,
       anchor: 0.5,
       layout: { position: 'absolute', left: '20%', top: '25%' },

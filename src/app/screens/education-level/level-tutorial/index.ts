@@ -2,15 +2,16 @@ import { animate } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { EDUCATION_LETTERS } from '../../../../utils/example-words';
 import { HUD } from '../../../ui/hud';
 import { LevelMapScreen } from '../../level-map';
 import { LetterGrid } from './letter-grid';
 
 const letters = [
-  ['خ', 'چ', 'ج', 'ت', 'پ', 'ب', 'ئە', 'ئا'],
-  ['ف', 'غ', 'ش', 'س', 'ژ', 'ز', 'ر', 'د'],
-  ['ھ', 'ن', 'م', 'ل', 'ڭ', 'گ', 'ك', 'ق'],
-  ['ي', 'ئى', 'ئې', 'ۋ', 'ئۈ', 'ئۆ', 'ئۇ', 'ئو'],
+  EDUCATION_LETTERS.slice(0, 8),
+  EDUCATION_LETTERS.slice(8, 16),
+  EDUCATION_LETTERS.slice(16, 24),
+  EDUCATION_LETTERS.slice(24, 32),
 ];
 
 export class EducationTutorialScreen extends Container {
