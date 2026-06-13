@@ -1,12 +1,14 @@
 import { Container, Graphics, Assets } from 'pixi.js';
 
+import { EducationLevelScreen } from '.';
 import { engine } from '../../../../engine/getEngine';
+import { waitFor } from '../../../../engine/utils/waitFor';
 import { getAlphabet } from '../../../../utils/keymap';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
+import { LetterChoice } from '../../../ui/letter-choice';
 import { SoundButton } from '../../../ui/sound-button';
-import { Letter } from './letter';
 
 // Gameplay
 const NUM_CHOICES = 4;
@@ -40,9 +42,10 @@ export class LetterGrid extends Container {
   private bottomPanel: Container;
 
   // Letter Attributes
-  private letters: Letter[];
-  private letterMap: Map<string, Letter>;
+  private letters: LetterChoice[];
+  private letterMap: Map<string, LetterChoice>;
   private correctLetterString: string;
+  private isResolving = false;
 
   // STATIC ROUND COUNTER, RESET ON FIN
   public static rounds = 0;
@@ -84,13 +87,14 @@ export class LetterGrid extends Container {
       console.log('changed to safe letter');
       this.correctLetterString = this.letterStrings[Math.floor(Math.random() * NUM_CHOICES)];
     }
-    this.letterStrings.forEach((letterString, _i) => {
+    this.letterStrings.forEach((letterString) => {
       this.letterMap.set(
         letterString,
-        new Letter({
+        new LetterChoice({
           letter: letterString,
-          correctLetter: this.correctLetterString,
-          cardSize: CARD_SIZE,
+          onPress: (choice) => void this.handleChoice(choice),
+          size: CARD_SIZE,
+          cornerRadius: 18,
         }),
       );
     });
@@ -128,8 +132,9 @@ export class LetterGrid extends Container {
   private populatePanel() {
     // add letters equally to top/bottom panels
     for (let i = 0; i < NUM_CHOICES; i++) {
-      if (i < NUM_CHOICES / 2) this.topPanel.addChild(this.letters[i]);
-      else this.bottomPanel.addChild(this.letters[i]);
+      const choiceSlot = this.createChoiceSlot(this.letters[i]);
+      if (i < NUM_CHOICES / 2) this.topPanel.addChild(choiceSlot);
+      else this.bottomPanel.addChild(choiceSlot);
     }
 
     this.panel.addChild(this.backgroundTint, this.soundButton, this.topPanel, this.bottomPanel);
@@ -148,6 +153,43 @@ export class LetterGrid extends Container {
     engine().audio.sfx.play(`education-audio/letters/${this.correctLetterString}.mp3`);
     console.log(`Now playing: education-audio/letters/${this.correctLetterString}.mp3`);
   };
+
+  private createChoiceSlot(choice: LetterChoice) {
+    const slot = new Container({
+      layout: {
+        width: CARD_SIZE,
+        height: CARD_SIZE,
+        flexShrink: 0,
+      },
+    });
+    choice.position.set(CARD_SIZE / 2, CARD_SIZE / 2);
+    slot.addChild(choice);
+    return slot;
+  }
+
+  private async handleChoice(choice: LetterChoice) {
+    if (this.isResolving) return;
+    this.isResolving = true;
+
+    if (choice.letter !== this.correctLetterString) {
+      engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
+      useSessionStore.getState().recordMistake();
+      await choice.showIncorrect();
+      this.isResolving = false;
+      return;
+    }
+
+    engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
+    useSessionStore.getState().recordCorrect();
+    this.letters.forEach((letter) => letter.setInteractive(false));
+    await Promise.all([choice.showCorrect(), waitFor(1)]);
+
+    if (++LetterGrid.rounds < LetterGrid.MAX_ROUNDS) {
+      void engine().navigation.showScreen(EducationLevelScreen);
+    } else {
+      LetterGrid.endGame();
+    }
+  }
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {
     super.destroy(options);
