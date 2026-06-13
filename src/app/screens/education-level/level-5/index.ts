@@ -15,9 +15,9 @@ import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
+import { LetterChoice } from '../../../ui/letter-choice';
 import { SoundButton } from '../../../ui/sound-button';
 import { LevelMapScreen } from '../../level-map';
-import { LetterChoice } from './letter-choice';
 
 const PANEL_WIDTH = 1500;
 const PANEL_HEIGHT = 760;
@@ -107,7 +107,11 @@ export class EducationWordScreen extends Container {
     this.soundButton.position.set(SOUND_BUTTON_X, 220);
 
     this.choices = round.choices.map(
-      (letter) => new LetterChoice(letter, (choice) => void this.handleChoice(choice)),
+      (letter) =>
+        new LetterChoice({
+          letter,
+          onPress: (choice) => void this.handleChoice(choice),
+        }),
     );
     this.choices.forEach((choice, index) => {
       choice.position.set(CHOICE_X[index], CHOICE_Y);
@@ -203,7 +207,7 @@ export class EducationWordScreen extends Container {
 
     engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
     useSessionStore.getState().recordCorrect();
-    this.choices.forEach((item) => item.setInteractionEnabled(false));
+    this.choices.forEach((item) => item.setInteractive(false));
     this.wordText.text = getCompletedWordMarkup(this.correctLetter, this.word);
     this.fitWordText();
     this.feedback.visible = true;
