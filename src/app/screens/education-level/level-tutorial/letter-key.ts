@@ -12,7 +12,7 @@ function drawButton(size: number, state: 'default' | 'hover' | 'pressed') {
 
   return state === 'hover'
     ? new Graphics()
-        .roundRect(0, 0, hoverShadowSize, hoverShadowSize, 25)
+        .roundRect(0, 0, hoverShadowSize, hoverShadowSize, 30)
         .fill({ color: shadowColor })
         .roundRect(hoverPadding, hoverPadding, size, size, 25)
         .fill({ color: buttonColor })
