@@ -3,6 +3,7 @@ import { EducationBubbleScreen } from '../education-level/level-2';
 import { EducationSheepScreen } from '../education-level/level-3';
 import { EducationImageScreen } from '../education-level/level-4';
 import { EducationWordScreen } from '../education-level/level-5';
+import { EducationSheepJumpScreen } from '../education-level/level-6';
 import { TypingLevelScreen } from '../typing-level';
 import type { TLevel } from './level-button';
 
@@ -60,6 +61,7 @@ const educationMap1: TMapUnit = {
     },
   ],
 };
+
 const educationMap2: TMapUnit = {
   type: 'education',
   background: 'education-level-map/background.png',
@@ -71,16 +73,17 @@ const educationMap2: TMapUnit = {
       miniMapImage: 'education-level-map/button-preview.svg',
       screen: EducationWordScreen,
       background: 'education-level/background.png',
-      helpAsset: 'tutorial-popups/education-level-1.png',
+      helpAsset: 'tutorial-popups/education-level-5.png',
       backdropColor: 0x4a90e2,
     },
     {
       id: 6,
-      unlocked: false,
+      unlocked: true,
       miniMapImage: 'education-level-map/button-preview.svg',
-      screen: EducationBubbleScreen,
+      screen: EducationSheepJumpScreen,
       background: 'education-level/background.png',
-      helpAsset: 'tutorial-popups/education-level-2.png',
+      // TODO: missing tutorial asset
+      helpAsset: 'tutorial-popups/education-tutorial.png',
       backdropColor: 0x4a90e2,
     },
     {
@@ -104,6 +107,7 @@ const educationMap2: TMapUnit = {
     },
   ],
 };
+
 const typingMap1: TMapUnit = {
   type: 'typing',
   background: 'typing-level-map/background.png',
