@@ -15,6 +15,7 @@ export type TMapUnit = {
   backdropColor?: number;
   levels: TLevel[];
   nextMap?: TMapUnit;
+  prevMap?: TMapUnit;
 };
 
 const educationMap1: TMapUnit = {
@@ -153,6 +154,7 @@ const typingMap1: TMapUnit = {
 };
 
 educationMap1.nextMap = educationMap2;
+educationMap2.prevMap = educationMap1;
 
 export const mapUnitStore: Record<string, TMapUnit> = {
   'education-map-1': educationMap1,
