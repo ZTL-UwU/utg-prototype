@@ -2,6 +2,7 @@ import { animate } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { EDUCATION_LETTERS } from '../../../../utils/example-words';
 import { TutorialPopup } from '../../../popups/tutorial';
 import { HUD } from '../../../ui/hud';
 import { LevelMapScreen } from '../../level-map';
@@ -9,10 +10,10 @@ import type { TMapUnit } from '../../level-map/units';
 import { LetterGrid } from './letter-grid';
 
 const letters = [
-  ['خ', 'چ', 'ج', 'ت', 'پ', 'ب', 'ئە', 'ئا'],
-  ['ف', 'غ', 'ش', 'س', 'ژ', 'ز', 'ر', 'د'],
-  ['ھ', 'ن', 'م', 'ل', 'ڭ', 'گ', 'ك', 'ق'],
-  ['ي', 'ئى', 'ئې', 'ۋ', 'ئۈ', 'ئۆ', 'ئۇ', 'ئو'],
+  EDUCATION_LETTERS.slice(0, 8),
+  EDUCATION_LETTERS.slice(8, 16),
+  EDUCATION_LETTERS.slice(16, 24),
+  EDUCATION_LETTERS.slice(24, 32),
 ];
 
 export class EducationTutorialScreen extends Container {
@@ -56,10 +57,17 @@ export class EducationTutorialScreen extends Container {
 
   public async show() {
     this.letterGrid.alpha = 0;
-    this.letterGrid.scale.set(0.5);
+    this.letterGrid.scale.set(0.4);
     await Promise.all([
-      animate(this.letterGrid, { alpha: 1 }, { duration: 0.5, ease: 'backOut' }),
-      animate(this.letterGrid.scale, { x: 1, y: 1 }, { duration: 0.5, ease: 'backOut' }),
+      animate(this.letterGrid, { alpha: 1 }, { duration: 0.4, ease: 'backOut' }),
+      animate(this.letterGrid.scale, { x: 1, y: 1 }, { duration: 0.4, ease: 'backOut' }),
+    ]);
+  }
+
+  public async hide() {
+    await Promise.all([
+      animate(this.letterGrid, { alpha: 0 }, { duration: 0.2, ease: 'easeIn' }),
+      animate(this.letterGrid.scale, { x: 0.4, y: 0.4 }, { duration: 0.2, ease: 'easeIn' }),
     ]);
   }
 }

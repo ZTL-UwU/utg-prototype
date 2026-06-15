@@ -2,6 +2,7 @@ import { EducationLevelScreen } from '../education-level/level-1';
 import { EducationBubbleScreen } from '../education-level/level-2';
 import { EducationSheepScreen } from '../education-level/level-3';
 import { EducationImageScreen } from '../education-level/level-4';
+import { EducationWordScreen } from '../education-level/level-5';
 import { TypingLevelScreen } from '../typing-level';
 import type { TLevel } from './level-button';
 
@@ -68,14 +69,14 @@ const educationMap2: TMapUnit = {
       id: 5,
       unlocked: true,
       miniMapImage: 'education-level-map/button-preview.svg',
-      screen: EducationLevelScreen,
+      screen: EducationWordScreen,
       background: 'education-level/background.png',
       helpAsset: 'tutorial-popups/education-level-1.png',
       backdropColor: 0x4a90e2,
     },
     {
       id: 6,
-      unlocked: true,
+      unlocked: false,
       miniMapImage: 'education-level-map/button-preview.svg',
       screen: EducationBubbleScreen,
       background: 'education-level/background.png',
@@ -84,7 +85,7 @@ const educationMap2: TMapUnit = {
     },
     {
       id: 7,
-      unlocked: true,
+      unlocked: false,
       miniMapImage: 'education-level-map/button-preview.svg',
       screen: EducationSheepScreen,
       background: 'education-level/background.png',
@@ -94,7 +95,7 @@ const educationMap2: TMapUnit = {
     },
     {
       id: 8,
-      unlocked: true,
+      unlocked: false,
       miniMapImage: 'education-level-map/button-preview.svg',
       screen: EducationImageScreen,
       background: 'education-level/background.png',

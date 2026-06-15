@@ -3,9 +3,9 @@ import { FancyButton } from '@pixi/ui';
 import { engine } from '../../engine/getEngine';
 
 export class HelpButton extends FancyButton {
-  constructor({ onHelp }: { onHelp?: () => void }) {
+  constructor({ onHelp, toTutorial }: { onHelp?: () => void; toTutorial?: boolean }) {
     super({
-      defaultView: 'ui/help-button.svg',
+      defaultView: toTutorial ? 'ui/tutorial-button.svg' : 'ui/help-button.svg',
       animations: {
         hover: {
           props: {
