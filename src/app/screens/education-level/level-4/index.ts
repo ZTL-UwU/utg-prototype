@@ -98,10 +98,11 @@ export class EducationImageScreen extends Container {
 
     this.soundButton = new SoundButton({
       onClick: () => this.soundButtonClick(),
-      size: 200,
+      size: 250,
+      isLarge: true,
     });
     this.soundButton.anchor.set(0.5);
-    this.soundButton.layout = { position: 'absolute', left: '50%', bottom: '12%' };
+    this.soundButton.layout = { position: 'absolute', left: '50%', bottom: '20%' };
 
     this.choices = letters.map(
       (letter) =>

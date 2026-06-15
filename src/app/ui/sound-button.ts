@@ -2,11 +2,13 @@ import { FancyButton } from '@pixi/ui';
 type SoundButtonProps = {
   onClick: () => void;
   size?: number;
+  isLarge?: boolean;
 };
 export class SoundButton extends FancyButton {
-  constructor({ onClick, size = 80 }: SoundButtonProps) {
+  constructor({ onClick, size = 80, isLarge = false }: SoundButtonProps) {
+    const asset = isLarge ? 'ui/sound-button-large.png' : 'ui/sound-button.svg';
     super({
-      defaultView: 'ui/sound-button.svg',
+      defaultView: asset,
       animations: {
         hover: {
           props: { scale: { x: 1.03, y: 1.03 } },
