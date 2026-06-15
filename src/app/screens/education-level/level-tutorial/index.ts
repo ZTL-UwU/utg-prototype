@@ -54,10 +54,17 @@ export class EducationTutorialScreen extends Container {
 
   public async show() {
     this.letterGrid.alpha = 0;
-    this.letterGrid.scale.set(0.5);
+    this.letterGrid.scale.set(0.4);
     await Promise.all([
-      animate(this.letterGrid, { alpha: 1 }, { duration: 0.5, ease: 'backOut' }),
-      animate(this.letterGrid.scale, { x: 1, y: 1 }, { duration: 0.5, ease: 'backOut' }),
+      animate(this.letterGrid, { alpha: 1 }, { duration: 0.4, ease: 'backOut' }),
+      animate(this.letterGrid.scale, { x: 1, y: 1 }, { duration: 0.4, ease: 'backOut' }),
+    ]);
+  }
+
+  public async hide() {
+    await Promise.all([
+      animate(this.letterGrid, { alpha: 0 }, { duration: 0.2, ease: 'easeIn' }),
+      animate(this.letterGrid.scale, { x: 0.4, y: 0.4 }, { duration: 0.2, ease: 'easeIn' }),
     ]);
   }
 }
