@@ -1,12 +1,13 @@
 import { animate } from 'motion';
 import { Container, Graphics } from 'pixi.js';
 
-import { LevelButton, type TLevel } from './level-button';
+import { LevelButton } from './level-button';
+import type { TMapUnit } from './units';
 
 export class LevelRow extends Container {
   private levelButtons?: (LevelButton | Graphics)[];
 
-  constructor(levels: TLevel[], type: 'education' | 'typing') {
+  constructor(mapUnit: TMapUnit) {
     super({
       layout: {
         position: 'absolute',
@@ -18,11 +19,11 @@ export class LevelRow extends Container {
       },
     });
 
-    this.levelButtons = levels.flatMap((level, i) => {
+    this.levelButtons = mapUnit.levels.flatMap((level, i) => {
       const fillerLine = new Graphics({ layout: { width: 100, height: 15 } })
         .roundRect(0, 0, 100, 15, 10)
         .fill(0xa66129);
-      const button = new LevelButton(level, type);
+      const button = new LevelButton(level, mapUnit);
 
       return i === 0 ? [button] : [fillerLine, button];
     });

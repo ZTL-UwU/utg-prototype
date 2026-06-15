@@ -5,6 +5,7 @@ import { engine } from '../../../engine/getEngine';
 import { getStarCount } from '../../../zustandStores/scoreManager';
 import useSessionStore from '../../../zustandStores/sessionStore';
 import { LevelMapScreen } from '../../screens/level-map';
+import { mapUnitStore } from '../../screens/level-map/units';
 import { ContinueButton } from '../../ui/continue-button';
 import { Stars } from './stars';
 
@@ -78,7 +79,7 @@ function readSessionResults() {
 
 function goToLevelMap(type: 'education' | 'typing') {
   void engine().navigation.hidePopup();
-  void engine().navigation.showScreen(LevelMapScreen, type);
+  void engine().navigation.showScreen(LevelMapScreen, mapUnitStore[`${type}-map-1`]);
 }
 
 export class EndScreenPopup extends Container {

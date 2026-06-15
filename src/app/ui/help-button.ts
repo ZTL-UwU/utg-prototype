@@ -1,19 +1,9 @@
 import { FancyButton } from '@pixi/ui';
 
 import { engine } from '../../engine/getEngine';
-import { TutorialPopup } from '../popups/tutorial';
-import { EducationTutorialScreen } from '../screens/education-level/level-tutorial';
 
 export class HelpButton extends FancyButton {
-  constructor({
-    toTutorial,
-    helpAsset,
-    backdropColor,
-  }: {
-    toTutorial: boolean;
-    helpAsset?: string;
-    backdropColor?: number;
-  }) {
+  constructor({ onHelp, toTutorial }: { onHelp?: () => void; toTutorial?: boolean }) {
     super({
       defaultView: toTutorial ? 'ui/tutorial-button.svg' : 'ui/help-button.svg',
       animations: {
@@ -42,15 +32,7 @@ export class HelpButton extends FancyButton {
 
     this.onPress.connect(() => {
       engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      if (toTutorial) {
-        void engine().navigation.showScreen(EducationTutorialScreen);
-      } else {
-        void engine().navigation.showPopup(TutorialPopup, {
-          asset: helpAsset!,
-          backdropColor: backdropColor!,
-          exitable: true,
-        });
-      }
+      onHelp?.();
     });
   }
 }

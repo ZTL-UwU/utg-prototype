@@ -7,9 +7,11 @@ import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
+import { TutorialPopup } from '../../../popups/tutorial';
 import { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
 import { LevelMapScreen } from '../../level-map';
+import type { TMapUnit } from '../../level-map/units';
 import { LetterChoice } from './letter-choice';
 
 const X_SLOTS = [0.2, 0.5, 0.8];
@@ -30,9 +32,9 @@ function getThreeUniqueLetters(): [string, string, string] {
   return [entries[0], entries[1], entries[2]];
 }
 
-function endGame() {
+function endGame(mapUnit: TMapUnit) {
   if (++EducationImageScreen.rounds < EducationImageScreen.MAX_ROUNDS) {
-    void engine().navigation.showScreen(EducationImageScreen);
+    void engine().navigation.showScreen(EducationImageScreen, mapUnit);
   } else {
     EducationImageScreen.rounds = 0;
     const { correct, mistakes } = useSessionStore.getState();
@@ -58,7 +60,7 @@ export class EducationImageScreen extends Container {
   private choiceContainer = new Container();
   private correctLetter: string;
 
-  constructor() {
+  constructor(mapUnit: TMapUnit) {
     super({
       layout: {
         position: 'relative',
@@ -72,12 +74,15 @@ export class EducationImageScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: 'education',
-          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, 'education'),
+          type: mapUnit.type,
+          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      toTutorial: false,
-      helpAsset: 'tutorial-popups/education-level-4.png',
-      backdropColor: 0x4a90e2,
+      onHelp: () =>
+        void engine().navigation.showPopup(TutorialPopup, {
+          asset: 'tutorial-popups/education-level-4.png',
+          backdropColor: 0x4a90e2,
+          exitable: true,
+        }),
     });
 
     let letters: string[] = [];
@@ -106,7 +111,11 @@ export class EducationImageScreen extends Container {
 
     this.choices = letters.map(
       (letter) =>
-        new LetterChoice(letter, correctLetter, letter === correctLetter ? endGame : undefined),
+        new LetterChoice(
+          letter,
+          correctLetter,
+          letter === correctLetter ? () => endGame(mapUnit) : undefined,
+        ),
     );
     for (const choice of this.choices) this.choiceContainer.addChild(choice);
     this.choiceContainer.layout = {

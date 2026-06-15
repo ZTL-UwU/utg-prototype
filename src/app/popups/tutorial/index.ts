@@ -3,14 +3,13 @@ import { animate } from 'motion';
 import { Container, Graphics, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import type { AppScreenConstructor } from '../../../engine/navigation/navigation';
 import { RoundedProgressBar } from '../../ui/rounded-progress-bar';
 
 type TutorialProps = {
   asset: string;
   backdropColor: number;
   exitable?: boolean;
-  nextScreen?: AppScreenConstructor;
+  onNext?: () => void;
 };
 
 const AUTO_ADVANCE_MS = 3000;
@@ -19,7 +18,7 @@ export class TutorialPopup extends Container {
   public static assetBundles = ['tutorial-popups'];
   private background: Sprite;
   private exitButton: FancyButton;
-  private nextScreen?: AppScreenConstructor;
+  private onNext?: () => void;
 
   private autoAdvanceElapsedMs = 0;
   private progressBar?: RoundedProgressBar;
@@ -28,9 +27,9 @@ export class TutorialPopup extends Container {
   private backdropColor: number;
   private exitable: boolean;
 
-  constructor({ asset, backdropColor, exitable = false, nextScreen }: TutorialProps) {
+  constructor({ asset, backdropColor, exitable = false, onNext }: TutorialProps) {
     super({ layout: { position: 'absolute', width: '100%', height: '100%' } });
-    this.nextScreen = nextScreen;
+    this.onNext = onNext;
     this.backdropColor = backdropColor;
     this.exitable = exitable;
     this.backdrop = new Graphics();
@@ -74,7 +73,7 @@ export class TutorialPopup extends Container {
     }
     this.addChild(this.background);
 
-    if (nextScreen) {
+    if (onNext) {
       this.progressBar = new RoundedProgressBar();
       this.addChild(this.progressBar);
       this.layoutProgressBar(engine().screen.width, engine().screen.height);
@@ -137,7 +136,7 @@ export class TutorialPopup extends Container {
   }
 
   update(ticker: Ticker) {
-    if (!this.nextScreen) return;
+    if (!this.onNext) return;
 
     const currentEngine = engine();
     this.autoAdvanceElapsedMs += ticker.deltaMS;
@@ -147,8 +146,9 @@ export class TutorialPopup extends Container {
     }
 
     if (this.autoAdvanceElapsedMs >= AUTO_ADVANCE_MS) {
+      const onNext = this.onNext;
       void currentEngine.navigation.hidePopup().then(() => {
-        void currentEngine.navigation.showScreen(this.nextScreen!);
+        onNext();
       });
     }
   }

@@ -10,6 +10,7 @@ import { TutorialPopup } from '../../popups/tutorial';
 import { HUD } from '../../ui/hud';
 import { LevelMapScreen } from '../level-map';
 import type { TLevel } from '../level-map/level-button';
+import type { TMapUnit } from '../level-map/units';
 
 export class LevelSplashScreen extends Container {
   public static assetBundles = ['level-splash', 'typing-level', 'education-level', 'mascots', 'ui'];
@@ -21,7 +22,7 @@ export class LevelSplashScreen extends Container {
   private startButton: FancyButton;
   private mascot: Sprite;
 
-  constructor({ type, level }: { type: 'typing' | 'education'; level: TLevel }) {
+  constructor({ level, mapUnit }: { level: TLevel; mapUnit: TMapUnit }) {
     super({
       layout: {
         flexDirection: 'column',
@@ -46,7 +47,7 @@ export class LevelSplashScreen extends Container {
         fontFamily: 'Concert One',
         fontSize: 250,
         fontWeight: '800',
-        fill: type == 'typing' ? 0xc98144 : 0xffffff,
+        fill: mapUnit.type == 'typing' ? 0xc98144 : 0xffffff,
       },
       charAnchor: 0.5,
       filters: [
@@ -87,7 +88,7 @@ export class LevelSplashScreen extends Container {
 
     this.mascot = new Sprite({
       texture: Texture.from(
-        type == 'typing' ? 'mascots/camel/default.png' : 'mascots/sheep/default.png',
+        mapUnit.type == 'typing' ? 'mascots/camel/default.png' : 'mascots/sheep/default.png',
       ),
       scale: 0.8,
       layout: {
@@ -98,12 +99,13 @@ export class LevelSplashScreen extends Container {
     });
 
     this.hud = new HUD({
-      onBack: () => {
-        void engine().navigation.showScreen(LevelMapScreen, type);
-      },
-      toTutorial: false,
-      helpAsset: level.helpAsset,
-      backdropColor: level.backdropColor,
+      onBack: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
+      onHelp: () =>
+        void engine().navigation.showPopup(TutorialPopup, {
+          asset: level.helpAsset,
+          backdropColor: level.backdropColor,
+          exitable: true,
+        }),
     });
 
     const buttonWidth = 300;
@@ -113,7 +115,7 @@ export class LevelSplashScreen extends Container {
         .roundRect(0, 10, 300, 150, 40)
         .fill(0xffe2bc)
         .roundRect(0, 0, 300, 150, 40)
-        .fill(type == 'typing' ? 0xc45a14 : 0x2d6b6a),
+        .fill(mapUnit.type == 'typing' ? 0xc45a14 : 0x2d6b6a),
       text: new Text({
         text: 'START',
         style: {
@@ -143,14 +145,14 @@ export class LevelSplashScreen extends Container {
     this.startButton.onPress.connect(() => {
       engine().audio.sfx.play('level-splash/game-start.mp3');
       useSessionStore.getState().reset();
-      useSessionStore.getState().startSession(type);
+      useSessionStore.getState().startSession(mapUnit.type);
 
       this.removeChildren();
       this.addChild(this.background);
       void engine().navigation.showPopup(TutorialPopup, {
         asset: level.helpAsset,
         backdropColor: level.backdropColor,
-        nextScreen: level.screen,
+        onNext: () => void engine().navigation.showScreen(level.screen!, mapUnit),
       });
     });
 

@@ -9,6 +9,7 @@ import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { LetterChoice } from '../../../ui/letter-choice';
 import { SoundButton } from '../../../ui/sound-button';
+import type { TMapUnit } from '../../level-map/units';
 
 // Gameplay
 const NUM_CHOICES = 4;
@@ -50,7 +51,8 @@ export class LetterGrid extends Container {
   // STATIC ROUND COUNTER, RESET ON FIN
   public static rounds = 0;
   public static readonly MAX_ROUNDS = 5;
-  constructor() {
+  private mapUnit: TMapUnit;
+  constructor(mapUnit: TMapUnit) {
     super({
       layout: {
         position: 'absolute',
@@ -71,6 +73,7 @@ export class LetterGrid extends Container {
     this.letterMap = new Map();
     this.letters = [];
 
+    this.mapUnit = mapUnit;
     // Constructor logic wrapped in helpers for better readability
     this.initLetterAttributes();
     this.initLayouts();
@@ -185,7 +188,7 @@ export class LetterGrid extends Container {
     await Promise.all([choice.showCorrect(), waitFor(1)]);
 
     if (++LetterGrid.rounds < LetterGrid.MAX_ROUNDS) {
-      void engine().navigation.showScreen(EducationLevelScreen);
+      void engine().navigation.showScreen(EducationLevelScreen, this.mapUnit);
     } else {
       LetterGrid.endGame();
     }

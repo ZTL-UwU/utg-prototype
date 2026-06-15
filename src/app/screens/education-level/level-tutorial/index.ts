@@ -3,8 +3,10 @@ import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { EDUCATION_LETTERS } from '../../../../utils/example-words';
+import { TutorialPopup } from '../../../popups/tutorial';
 import { HUD } from '../../../ui/hud';
 import { LevelMapScreen } from '../../level-map';
+import type { TMapUnit } from '../../level-map/units';
 import { LetterGrid } from './letter-grid';
 
 const letters = [
@@ -21,7 +23,7 @@ export class EducationTutorialScreen extends Container {
   private hud: HUD;
   private letterGrid: LetterGrid;
 
-  constructor() {
+  constructor(mapUnit: TMapUnit) {
     super();
 
     this.background = new Sprite({
@@ -35,12 +37,13 @@ export class EducationTutorialScreen extends Container {
     });
 
     this.hud = new HUD({
-      onBack: () => {
-        void engine().navigation.showScreen(LevelMapScreen, 'education');
-      },
-      toTutorial: false,
-      helpAsset: 'tutorial-popups/education-tutorial.png',
-      backdropColor: 0x4a90e2,
+      onBack: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
+      onHelp: () =>
+        void engine().navigation.showPopup(TutorialPopup, {
+          asset: 'tutorial-popups/education-tutorial.png',
+          backdropColor: 0x4a90e2,
+          exitable: true,
+        }),
     });
 
     this.letterGrid = new LetterGrid(letters);
