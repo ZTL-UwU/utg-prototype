@@ -39,6 +39,7 @@ function drawDashedRing(g: Graphics, r: number, color = 0xa66129, width = 15) {
     g.stroke();
   }
 }
+
 export class LevelButton extends FancyButton {
   private ring: Graphics;
   private ringAnimation?: AnimationPlaybackControls;
@@ -56,7 +57,7 @@ export class LevelButton extends FancyButton {
         hover: level.unlocked
           ? {
               props: { scale: { x: 1.1, y: 1.1 } },
-              duration: 100,
+              duration: 200,
             }
           : undefined,
       },
@@ -83,15 +84,25 @@ export class LevelButton extends FancyButton {
     if (level.unlocked) {
       drawDashedRing(this.ring, this.currentRadius);
       this.addChild(this.ring);
-      const defaultShadow = new DropShadowFilter({ color: 0x000000, alpha: 0.15, blur: 10 });
-      const hoverShadow = new DropShadowFilter({ color: 0xffff00, alpha: 0.85, blur: 14 });
+      const defaultShadow = new DropShadowFilter({
+        quality: 10,
+        color: 0x000000,
+        alpha: 0.15,
+        blur: 10,
+      });
+      const hoverShadow = new DropShadowFilter({
+        quality: 10,
+        color: 0xffde59,
+        alpha: 0.85,
+        blur: 14,
+      });
       this.filters = [defaultShadow];
 
       this.onHover.connect(() => {
         this.filters = [hoverShadow];
         this.ringAnimation?.stop();
         this.ringAnimation = animate(this.currentRadius, RING_HOVER_RADIUS, {
-          duration: 0.25,
+          duration: 0.2,
           ease: 'easeOut',
           onUpdate: (r) => {
             this.currentRadius = r;
@@ -104,8 +115,8 @@ export class LevelButton extends FancyButton {
         this.filters = [defaultShadow];
         this.ringAnimation?.stop();
         this.ringAnimation = animate(this.currentRadius, RING_IDLE_RADIUS, {
-          duration: 0.3,
-          ease: 'easeInOut',
+          duration: 0.2,
+          ease: 'easeIn',
           onUpdate: (r) => {
             this.currentRadius = r;
             drawDashedRing(this.ring, r);

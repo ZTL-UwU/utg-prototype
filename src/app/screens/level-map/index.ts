@@ -140,11 +140,7 @@ export class LevelMapScreen extends Container {
       const naturalX = this.prevMapButton.x;
       this.prevMapButton.x = naturalX - engine().navigation.width;
       animations.push(
-        animate(
-          this.prevMapButton,
-          { x: naturalX },
-          { duration: 0.4, ease: 'easeOut', delay: 0.15 },
-        ),
+        animate(this.prevMapButton, { x: naturalX }, { duration: 0.4, ease: 'easeOut' }),
       );
     }
 
@@ -152,11 +148,7 @@ export class LevelMapScreen extends Container {
       const naturalX = this.nextMapButton.x;
       this.nextMapButton.x = naturalX + engine().navigation.width;
       animations.push(
-        animate(
-          this.nextMapButton,
-          { x: naturalX },
-          { duration: 0.4, ease: 'easeOut', delay: 0.15 },
-        ),
+        animate(this.nextMapButton, { x: naturalX }, { duration: 0.4, ease: 'easeOut' }),
       );
     }
 
