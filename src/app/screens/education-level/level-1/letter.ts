@@ -4,6 +4,7 @@ import { Container, Graphics, Text } from 'pixi.js';
 import { EducationLevelScreen } from '.';
 import { engine } from '../../../../engine/getEngine';
 import useSessionStore from '../../../../zustandStores/sessionStore';
+import type { TMapUnit } from '../../level-map/units';
 import { LetterGrid } from './letter-grid';
 
 export type LetterFeedback = 'none' | 'error' | 'success';
@@ -13,6 +14,7 @@ type LetterOptions = {
   correctLetter: string;
   cardSize?: number;
   cornerRadius?: number;
+  mapUnit: TMapUnit;
 };
 
 const cardColors = {
@@ -36,12 +38,13 @@ export class Letter extends Container {
   private readonly cardSize: number;
   private readonly cornerRadius: number;
   private readonly isCorrect: boolean;
+  private readonly mapUnit: TMapUnit;
 
   private feedback: LetterFeedback = 'none';
   private focusAnimation?: AnimationPlaybackControls;
   private contentAnimation?: AnimationPlaybackControls;
 
-  constructor({ letter, correctLetter, cardSize = 88, cornerRadius = 18 }: LetterOptions) {
+  constructor({ letter, correctLetter, cardSize = 88, cornerRadius = 18, mapUnit }: LetterOptions) {
     super({
       layout: {
         width: cardSize,
@@ -82,6 +85,7 @@ export class Letter extends Container {
     letterLabel.layout = true;
 
     this.isCorrect = letter === correctLetter;
+    this.mapUnit = mapUnit;
     this.drawShadow();
     this.drawCard();
     this.contentContainer.addChild(this.shadow, this.card, letterLabel);
@@ -166,7 +170,7 @@ export class Letter extends Container {
       useSessionStore.getState().recordCorrect();
       setTimeout(() => {
         if (++LetterGrid.rounds < LetterGrid.MAX_ROUNDS) {
-          void engine().navigation.showScreen(EducationLevelScreen);
+          void engine().navigation.showScreen(EducationLevelScreen, this.mapUnit);
         } else {
           LetterGrid.endGame();
         }

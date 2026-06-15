@@ -5,13 +5,11 @@ import { HelpButton } from './help-button';
 
 interface HUDProps {
   onBack: () => void;
-  toTutorial: boolean;
-  helpAsset?: string;
-  backdropColor?: number;
+  onHelp?: () => void;
 }
 
 export class HUD extends Container {
-  constructor({ onBack, toTutorial, helpAsset, backdropColor }: HUDProps) {
+  constructor({ onBack, onHelp }: HUDProps) {
     super({
       layout: {
         position: 'absolute',
@@ -20,6 +18,6 @@ export class HUD extends Container {
       },
     });
 
-    this.addChild(new BackButton(onBack), new HelpButton({ toTutorial, helpAsset, backdropColor }));
+    this.addChild(new BackButton(onBack), new HelpButton({ onHelp }));
   }
 }

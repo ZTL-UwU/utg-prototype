@@ -6,6 +6,7 @@ import { engine } from '../../../engine/getEngine';
 import { UserStatsPopup } from '../../popups/user-stats';
 import { HomeScreen } from '../home';
 import { LevelMapScreen } from '../level-map';
+import { mapUnitStore } from '../level-map/units';
 
 export class LayerSelectScreen extends Container {
   public static assetBundles = ['layer-select', 'home'];
@@ -113,7 +114,11 @@ export class LayerSelectScreen extends Container {
       if (data.screenType) {
         button.onPress.connect(() => {
           engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-          void engine().navigation.showScreen(LevelMapScreen, data.screenType!);
+          //   void engine().navigation.showScreen(LevelMapScreen, data.screenType!);
+          void engine().navigation.showScreen(
+            LevelMapScreen,
+            mapUnitStore[data.screenType === 'education' ? 'education-map-1' : 'typing-map-1'],
+          );
         });
       }
       return button;

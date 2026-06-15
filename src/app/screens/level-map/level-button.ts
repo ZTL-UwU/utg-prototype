@@ -1,17 +1,18 @@
 import { FancyButton } from '@pixi/ui';
 import { DropShadowFilter } from 'pixi-filters';
-import { Texture } from 'pixi.js';
+import { Texture, Text } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import type { AppScreenConstructor } from '../../../engine/navigation/navigation';
 import { LevelSplashScreen } from '../level-splash';
+import type { TMapUnit } from './units';
 
 export type TLevel = {
   id: number;
   title?: string;
   unlocked: boolean;
   miniMapImage: string;
-  screen?: AppScreenConstructor;
+  screen?: AppScreenConstructor<any[]>;
   background: string;
   helpAsset: string;
   backdropColor: number;
@@ -20,10 +21,12 @@ export type TLevel = {
 const SIZE = 221;
 
 export class LevelButton extends FancyButton {
-  constructor(level: TLevel, type: 'education' | 'typing') {
+  constructor(level: TLevel, mapUnit: TMapUnit) {
     super({
       defaultView: Texture.from(
-        level.unlocked ? level.miniMapImage : 'typing-level-map/button-locked.svg',
+        level.unlocked
+          ? 'typing-level-map/button-unlocked.png'
+          : 'typing-level-map/button-locked.svg',
       ),
       anchor: 0.5,
       animations: {
@@ -34,6 +37,17 @@ export class LevelButton extends FancyButton {
             }
           : undefined,
       },
+      text: level.unlocked
+        ? new Text({
+            text: String(level.id),
+            style: {
+              fontFamily: 'Concert One',
+              fontSize: 110,
+              fontWeight: 'bold',
+              fill: 0x8b4513,
+            },
+          })
+        : undefined,
     });
 
     this.layout = {
@@ -52,7 +66,7 @@ export class LevelButton extends FancyButton {
       ];
       this.onPress.connect(() => {
         engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-        void engine().navigation.showScreen(LevelSplashScreen, { type, level });
+        void engine().navigation.showScreen(LevelSplashScreen, { level, mapUnit });
       });
     }
   }

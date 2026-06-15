@@ -6,9 +6,11 @@ import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
+import { TutorialPopup } from '../../../popups/tutorial';
 import { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
 import { LevelMapScreen } from '../../level-map';
+import type { TMapUnit } from '../../level-map/units';
 import { LetterBubble } from './letter-bubble';
 
 function getThreeUniqueLetters(): [string, string, string] {
@@ -16,16 +18,16 @@ function getThreeUniqueLetters(): [string, string, string] {
   return [entries[0].text, entries[1].text, entries[2].text];
 }
 
-function endGame() {
-  if (++EducationBubbleScreen.rounds < EducationBubbleScreen.MAX_ROUNDS) {
-    void engine().navigation.showScreen(EducationBubbleScreen);
-  } else {
-    EducationBubbleScreen.rounds = 0;
-    const { correct, mistakes } = useSessionStore.getState();
-    useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, 'education');
-  }
-}
+// function endGame() {
+//   if (++EducationBubbleScreen.rounds < EducationBubbleScreen.MAX_ROUNDS) {
+//     void engine().navigation.showScreen(EducationBubbleScreen, mapUnit);
+//   } else {
+//     EducationBubbleScreen.rounds = 0;
+//     const { correct, mistakes } = useSessionStore.getState();
+//     useScoreManager.getState().addSession(correct, mistakes);
+//     void engine().navigation.showPopup(EndScreenPopup, 'education');
+//   }
+// }
 
 export class EducationBubbleScreen extends Container {
   public static assetBundles = ['education-level-2', 'education-level', 'ui', 'education-audio'];
@@ -40,8 +42,21 @@ export class EducationBubbleScreen extends Container {
   private screenHeight = 0;
   private correctBubbleIndex = 0;
   private correctLetter: string;
-
-  constructor() {
+  readonly endGame = () => {
+    if (++EducationBubbleScreen.rounds < EducationBubbleScreen.MAX_ROUNDS) {
+      void engine().navigation.showScreen(EducationBubbleScreen, this.mapUnit);
+    } else {
+      EducationBubbleScreen.rounds = 0;
+      const { correct, mistakes } = useSessionStore.getState();
+      useScoreManager.getState().addSession(correct, mistakes);
+      void engine().navigation.showPopup(EndScreenPopup, 'education');
+    }
+  };
+  private soundButtonClick() {
+    engine().audio.sfx.play(`education-audio/letters/${this.correctLetter}.mp3`);
+  }
+  private mapUnit: TMapUnit;
+  constructor(mapUnit: TMapUnit) {
     super({
       layout: {
         position: 'relative',
@@ -52,23 +67,23 @@ export class EducationBubbleScreen extends Container {
       },
     });
     engine().audio.bgm.setVolume(0);
-
+    this.mapUnit = mapUnit;
     this.background = new Sprite({
       texture: Texture.from('education-level-2/background.png'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
     this.hud = new HUD({
-      onBack: () => {
+      onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: 'education',
-          onQuit: () => {
-            void engine().navigation.showScreen(LevelMapScreen, 'education');
-          },
-        });
-      },
-      toTutorial: false,
-      helpAsset: 'tutorial-popups/education-level-2.png',
-      backdropColor: 0x4a90e2,
+          type: mapUnit.type,
+          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
+        }),
+      onHelp: () =>
+        void engine().navigation.showPopup(TutorialPopup, {
+          asset: 'tutorial-popups/education-level-2.png',
+          backdropColor: 0x4a90e2,
+          exitable: true,
+        }),
     });
 
     let [correctLetter, wrong1, wrong2]: string[] = getThreeUniqueLetters();
@@ -92,7 +107,11 @@ export class EducationBubbleScreen extends Container {
     this.correctBubbleIndex = letters.indexOf(correctLetter);
     this.bubbles = letters.map(
       (letter) =>
-        new LetterBubble(letter, correctLetter, letter === correctLetter ? endGame : undefined),
+        new LetterBubble(
+          letter,
+          correctLetter,
+          letter === correctLetter ? this.endGame : undefined,
+        ),
     );
     for (const b of this.bubbles) this.bubbleContainer.addChild(b);
     this.bubbleContainer.layout = {
@@ -136,11 +155,8 @@ export class EducationBubbleScreen extends Container {
         -160,
         FLOAT_DURATION,
         i * 0.5,
-        i === this.correctBubbleIndex ? endGame : undefined,
+        i === this.correctBubbleIndex ? this.endGame : undefined,
       );
     }
-  }
-  private soundButtonClick() {
-    engine().audio.sfx.play(`education-audio/letters/${this.correctLetter}.mp3`);
   }
 }

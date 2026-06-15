@@ -3,9 +3,11 @@ import { Container, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { QuitPopup } from '../../popups/quit';
+import { TutorialPopup } from '../../popups/tutorial';
 import { HUD } from '../../ui/hud';
 import { KeyboardLayout } from '../../ui/keyboard-layout';
 import { LevelMapScreen } from '../level-map';
+import type { TMapUnit } from '../level-map/units';
 import { Camel } from './camel';
 import { Clouds } from './clouds';
 import { LetterRow } from './letter-row';
@@ -24,7 +26,7 @@ export class TypingLevelScreen extends Container {
   private title: Text;
   private keyboard: KeyboardLayout;
 
-  constructor() {
+  constructor(mapUnit: TMapUnit) {
     super({
       layout: {
         flexDirection: 'column',
@@ -63,17 +65,17 @@ export class TypingLevelScreen extends Container {
     });
 
     this.hud = new HUD({
-      onBack: () => {
+      onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: 'typing',
-          onQuit: () => {
-            void engine().navigation.showScreen(LevelMapScreen, 'typing');
-          },
-        });
-      },
-      toTutorial: false,
-      helpAsset: 'tutorial-popups/typing-tutorial.png',
-      backdropColor: 0x7d5600,
+          type: mapUnit.type,
+          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
+        }),
+      onHelp: () =>
+        void engine().navigation.showPopup(TutorialPopup, {
+          asset: 'tutorial-popups/typing-tutorial.png',
+          backdropColor: 0x7d5600,
+          exitable: true,
+        }),
     });
     this.addChild(
       this.background,

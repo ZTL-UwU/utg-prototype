@@ -7,9 +7,11 @@ import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
+import { TutorialPopup } from '../../../popups/tutorial';
 import { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
 import { LevelMapScreen } from '../../level-map';
+import type { TMapUnit } from '../../level-map/units';
 import { LetterFlower } from './letter-flower';
 
 const FLOWER_SIZE = 100;
@@ -35,10 +37,12 @@ export class EducationSheepScreen extends Container {
 
   private correctLetter: string;
   private isAnimating = false;
+  private mapUnit: TMapUnit;
 
-  constructor() {
+  constructor(mapUnit: TMapUnit) {
     super({ layout: { position: 'relative', width: '100%', height: '100%' } });
     engine().audio.bgm.setVolume(0);
+    this.mapUnit = mapUnit;
 
     this.background = new Sprite({
       texture: Texture.from('education-level-3/background.png'),
@@ -47,12 +51,15 @@ export class EducationSheepScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: 'education',
-          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, 'education'),
+          type: mapUnit.type,
+          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      toTutorial: false,
-      helpAsset: 'tutorial-popups/education-level-3.png',
-      backdropColor: 0x4a90e2,
+      onHelp: () =>
+        void engine().navigation.showPopup(TutorialPopup, {
+          asset: 'tutorial-popups/education-level-3.png',
+          backdropColor: 0x4a90e2,
+          exitable: true,
+        }),
     });
 
     let letters: string[] = [];
@@ -244,7 +251,7 @@ export class EducationSheepScreen extends Container {
   private endGame() {
     this.isAnimating = false;
     if (++EducationSheepScreen.rounds < EducationSheepScreen.MAX_ROUNDS) {
-      void engine().navigation.showScreen(EducationSheepScreen);
+      void engine().navigation.showScreen(EducationSheepScreen, this.mapUnit);
     } else {
       EducationSheepScreen.rounds = 0;
       const { correct, mistakes } = useSessionStore.getState();

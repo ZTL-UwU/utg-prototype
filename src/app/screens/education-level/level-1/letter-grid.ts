@@ -6,6 +6,7 @@ import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { SoundButton } from '../../../ui/sound-button';
+import type { TMapUnit } from '../../level-map/units';
 import { Letter } from './letter';
 
 // Gameplay
@@ -47,7 +48,8 @@ export class LetterGrid extends Container {
   // STATIC ROUND COUNTER, RESET ON FIN
   public static rounds = 0;
   public static readonly MAX_ROUNDS = 5;
-  constructor() {
+  private mapUnit: TMapUnit;
+  constructor(mapUnit: TMapUnit) {
     super({
       layout: {
         position: 'absolute',
@@ -68,6 +70,7 @@ export class LetterGrid extends Container {
     this.letterMap = new Map();
     this.letters = [];
 
+    this.mapUnit = mapUnit;
     // Constructor logic wrapped in helpers for better readability
     this.initLetterAttributes();
     this.initLayouts();
@@ -91,6 +94,7 @@ export class LetterGrid extends Container {
           letter: letterString,
           correctLetter: this.correctLetterString,
           cardSize: CARD_SIZE,
+          mapUnit: this.mapUnit,
         }),
       );
     });

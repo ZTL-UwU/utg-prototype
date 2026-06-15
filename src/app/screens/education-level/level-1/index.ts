@@ -3,8 +3,10 @@ import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { QuitPopup } from '../../../popups/quit';
+import { TutorialPopup } from '../../../popups/tutorial';
 import { HUD } from '../../../ui/hud';
 import { LevelMapScreen } from '../../level-map';
+import type { TMapUnit } from '../../level-map/units';
 import { LetterGrid } from './letter-grid';
 import { MessageContainer } from './message-container';
 
@@ -14,7 +16,7 @@ export class EducationLevelScreen extends Container {
   private hud: HUD;
   private letterGrid: LetterGrid;
   private messageContainer: MessageContainer;
-  constructor() {
+  constructor(mapUnit: TMapUnit) {
     super({
       layout: {
         position: 'relative',
@@ -29,19 +31,19 @@ export class EducationLevelScreen extends Container {
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
     this.hud = new HUD({
-      onBack: () => {
+      onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: 'education',
-          onQuit: () => {
-            void engine().navigation.showScreen(LevelMapScreen, 'education');
-          },
-        });
-      },
-      toTutorial: false,
-      helpAsset: 'tutorial-popups/education-level-1.png',
-      backdropColor: 0x4a90e2,
+          type: mapUnit.type,
+          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
+        }),
+      onHelp: () =>
+        void engine().navigation.showPopup(TutorialPopup, {
+          asset: 'tutorial-popups/education-level-1.png',
+          backdropColor: 0x4a90e2,
+          exitable: true,
+        }),
     });
-    this.letterGrid = new LetterGrid();
+    this.letterGrid = new LetterGrid(mapUnit);
     this.messageContainer = new MessageContainer();
     this.addChild(this.background, this.letterGrid, this.hud, this.messageContainer);
   }
