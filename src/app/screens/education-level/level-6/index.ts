@@ -1,10 +1,12 @@
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { EDUCATION_LETTERS } from '../../../../utils/example-words';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { LevelMapScreen } from '../../level-map';
 import { mapUnitStore } from '../../level-map/units';
+import { LetterTile } from './letter-tile';
 
 export class EducationSheepJumpScreen extends Container {
   public static assetBundles = ['education-level-6', 'ui'];
@@ -38,7 +40,9 @@ export class EducationSheepJumpScreen extends Container {
       backdropColor: 0x4a90e2,
     });
 
-    this.addChild(this.background, this.hud);
+    const tile = new LetterTile(EDUCATION_LETTERS[0]);
+    tile.position.set(engine().navigation.width / 2, engine().navigation.height / 2);
+    this.addChild(this.background, this.hud, tile);
   }
 
   public resize(width: number, height: number) {
