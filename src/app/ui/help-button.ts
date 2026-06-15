@@ -15,7 +15,7 @@ export class HelpButton extends FancyButton {
     backdropColor?: number;
   }) {
     super({
-      defaultView: 'ui/help-button.svg',
+      defaultView: toTutorial ? 'ui/tutorial-button.svg' : 'ui/help-button.svg',
       animations: {
         hover: {
           props: {
