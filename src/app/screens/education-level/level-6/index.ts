@@ -1,5 +1,5 @@
 import { animate, type AnimationPlaybackControls, type AnimationSequence } from 'motion';
-import { Container, Sprite, Texture } from 'pixi.js';
+import { Container, Sprite, Texture, TilingSprite } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { EDUCATION_LETTERS } from '../../../../utils/example-words';
@@ -103,6 +103,8 @@ function createRepositionSequence(
   targets: TileTarget[],
   sheep: Sprite,
   sheepTarget: SheepTarget,
+  background: TilingSprite,
+  backgroundTarget: SheepTarget,
 ): AnimationSequence {
   const sequence: AnimationSequence = targets.flatMap(({ tile, x, y, alpha }) => [
     [tile, { alpha }, { duration: TILE_FADE_DURATION, ease: 'easeIn', at: 0 }],
@@ -119,6 +121,11 @@ function createRepositionSequence(
     { duration: TILE_MOVE_DURATION, ease: 'easeInOut', at: TILE_FADE_DURATION },
   ]);
   sequence.push([
+    background.tilePosition,
+    { x: backgroundTarget.x, y: backgroundTarget.y },
+    { duration: TILE_MOVE_DURATION, ease: 'easeInOut', at: TILE_FADE_DURATION },
+  ]);
+  sequence.push([
     sheep,
     { rotation: getClosestRotation(sheep.rotation, SHEEP_FRONT_ROTATION) },
     { duration: SHEEP_TURN_DURATION, ease: 'easeInOut', at: TILE_FADE_DURATION },
@@ -130,7 +137,7 @@ function createRepositionSequence(
 export class EducationSheepJumpScreen extends Container {
   public static assetBundles = ['education-level-6', 'ui', 'education-audio'];
 
-  private readonly background: Sprite;
+  private readonly background: TilingSprite;
   private readonly hud: HUD;
   private readonly soundButton: SoundButton;
   private readonly initialTile: LetterTile;
@@ -166,9 +173,11 @@ export class EducationSheepJumpScreen extends Container {
       };
     });
 
-    this.background = new Sprite({
+    this.background = new TilingSprite({
       texture: Texture.from('education-level-6/background-grass.png'),
-      layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
+      width: engine().navigation.width,
+      height: engine().navigation.height,
+      layout: { position: 'absolute', width: '100%', height: '100%' },
     });
 
     this.hud = new HUD({
@@ -237,6 +246,7 @@ export class EducationSheepJumpScreen extends Container {
 
   public resize(width: number, height: number) {
     this.layout = { width, height };
+    this.resizeBackground(width, height);
     this.resizeSheep();
     void this.repositionTiles();
   }
@@ -265,6 +275,7 @@ export class EducationSheepJumpScreen extends Container {
 
     const { bottomCenter, positionOffsets } = getPositionOffsets();
     const globalOffset = getGlobalOffset(this.step, this.map, positionOffsets);
+    const backgroundTarget = { x: globalOffset.x, y: globalOffset.y };
 
     let parentPosition = { ...bottomCenter };
     let sheepTarget: SheepTarget | undefined;
@@ -317,6 +328,7 @@ export class EducationSheepJumpScreen extends Container {
         tile.enabled = interactive;
       }
       this.sheep.position.set(sheepTarget.x, sheepTarget.y);
+      this.background.tilePosition.set(backgroundTarget.x, backgroundTarget.y);
       return;
     }
 
@@ -325,7 +337,9 @@ export class EducationSheepJumpScreen extends Container {
       tile.enabled = interactive;
     }
 
-    const animation = animate(createRepositionSequence(targets, this.sheep, sheepTarget));
+    const animation = animate(
+      createRepositionSequence(targets, this.sheep, sheepTarget, this.background, backgroundTarget),
+    );
     this.repositionAnimation = animation;
 
     try {
@@ -424,5 +438,16 @@ export class EducationSheepJumpScreen extends Container {
     );
 
     this.sheep.scale.set(sheepScale);
+  }
+
+  private resizeBackground(width: number, height: number) {
+    this.background.width = width;
+    this.background.height = height;
+
+    const coverScale = Math.max(
+      width / this.background.texture.width,
+      height / this.background.texture.height,
+    );
+    this.background.tileScale.set(coverScale);
   }
 }
