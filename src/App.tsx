@@ -25,8 +25,14 @@ export default function App() {
         antialias: true,
       });
 
-      // Show the main screen once the load screen is dismissed
-      await engine.navigation.showScreen(HomeScreen);
+      // TODO: remove — temporary debug shortcut to level 6 via ?debug-level=6
+      const debugLevel = new URLSearchParams(window.location.search).get('debug-level');
+      if (debugLevel === '6') {
+        const { EducationSheepJumpScreen } = await import('./app/screens/education-level/level-6');
+        await engine.navigation.showScreen(EducationSheepJumpScreen);
+      } else {
+        await engine.navigation.showScreen(HomeScreen);
+      }
     };
 
     void init();

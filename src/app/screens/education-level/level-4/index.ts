@@ -104,7 +104,7 @@ export class EducationImageScreen extends Container {
     this.soundButton = new SoundButton({
       onClick: () => this.soundButtonClick(),
       size: 250,
-      isLarge: true,
+      variant: 'large',
     });
     this.soundButton.anchor.set(0.5);
     this.soundButton.layout = { position: 'absolute', left: '50%', bottom: '20%' };
