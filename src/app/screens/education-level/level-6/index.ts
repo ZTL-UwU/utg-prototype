@@ -1,4 +1,4 @@
-import { animate, type AnimationPlaybackControls } from 'motion';
+import { animate, type AnimationPlaybackControls, type AnimationSequence } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
@@ -45,6 +45,32 @@ function getGlobalOffset(
   return globalOffset;
 }
 
+function getTileAlpha(step: number, rowIndex: number, tileIndex: number, answerIndex: number) {
+  return rowIndex < step && tileIndex !== answerIndex ? 0 : 1;
+}
+
+const TILE_FADE_DURATION = 0.8;
+const TILE_MOVE_DURATION = 1.5;
+
+type TileTarget = {
+  tile: LetterTile;
+  x: number;
+  y: number;
+  alpha: number;
+  interactive: boolean;
+};
+
+function createRepositionSequence(targets: TileTarget[]): AnimationSequence {
+  return targets.flatMap(({ tile, x, y, alpha }) => [
+    [tile, { alpha }, { duration: TILE_FADE_DURATION, ease: 'easeIn', at: 0 }],
+    [
+      tile.position,
+      { x, y },
+      { duration: TILE_MOVE_DURATION, ease: 'easeInOut', at: TILE_FADE_DURATION },
+    ],
+  ]);
+}
+
 export class EducationSheepJumpScreen extends Container {
   public static assetBundles = ['education-level-6', 'ui', 'education-audio'];
 
@@ -53,7 +79,7 @@ export class EducationSheepJumpScreen extends Container {
   private readonly soundButton: SoundButton;
   private readonly initialTile: LetterTile;
   private tileRows: LetterTile[][] = [];
-  private repositionAnimations: AnimationPlaybackControls[] = [];
+  private repositionAnimation?: AnimationPlaybackControls;
 
   private map: {
     letters: string[];
@@ -99,9 +125,7 @@ export class EducationSheepJumpScreen extends Container {
     });
 
     this.soundButton = new SoundButton({
-      onClick: () => {
-        engine().audio.sfx.play(`education-audio/letters/${this.map[0].answer}.mp3`);
-      },
+      onClick: () => this.playCurrentAnswerAudio(),
       size: 200,
       variant: 'brown',
     });
@@ -121,7 +145,7 @@ export class EducationSheepJumpScreen extends Container {
       const tiles = this.map[i].letters.map((letter, j) => {
         const tile = new LetterTile({
           letter,
-          onClick: () => this.handleTileClick(letter),
+          onClick: () => this.handleTileClick(i, j),
         });
         tile.position.set(
           parentPosition.x + positionOffsets[j].x,
@@ -139,6 +163,7 @@ export class EducationSheepJumpScreen extends Container {
       ...this.tileRows.flat(),
       this.soundButton,
     );
+    this.playCurrentAnswerAudio();
   }
 
   public resize(width: number, height: number) {
@@ -146,11 +171,21 @@ export class EducationSheepJumpScreen extends Container {
     void this.repositionTiles();
   }
 
-  public handleTileClick(letter: string) {
-    if (letter === this.map[this.step].letters[this.map[this.step].answer]) {
-      this.step++;
-      void this.repositionTiles(true);
+  public async handleTileClick(rowIndex: number, tileIndex: number) {
+    const currentRound = this.map[this.step];
+    const tile = this.tileRows[rowIndex]?.[tileIndex];
+    if (rowIndex !== this.step || !currentRound || !tile || tile.isWrong) return;
+
+    if (tileIndex !== currentRound.answer) {
+      engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
+      tile.markWrong();
+      return;
     }
+
+    engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
+    this.step++;
+    await this.repositionTiles(true);
+    this.playCurrentAnswerAudio();
   }
 
   private async repositionTiles(animated = false) {
@@ -160,11 +195,13 @@ export class EducationSheepJumpScreen extends Container {
     const globalOffset = getGlobalOffset(this.step, this.map, positionOffsets);
 
     let parentPosition = { ...bottomCenter };
-    const targets: { tile: LetterTile; x: number; y: number }[] = [
+    const targets: TileTarget[] = [
       {
         tile: this.initialTile,
         x: bottomCenter.x + globalOffset.x,
         y: bottomCenter.y + globalOffset.y,
+        alpha: 1,
+        interactive: false,
       },
     ];
 
@@ -172,10 +209,13 @@ export class EducationSheepJumpScreen extends Container {
       const row = this.tileRows[i];
 
       for (let j = 0; j < row.length; j++) {
+        const answerIndex = this.map[i].answer;
         targets.push({
           tile: row[j],
           x: parentPosition.x + positionOffsets[j].x + globalOffset.x,
           y: parentPosition.y + positionOffsets[j].y + globalOffset.y,
+          alpha: getTileAlpha(this.step, i, j, answerIndex),
+          interactive: i === this.step && !row[j].isWrong,
         });
       }
 
@@ -184,23 +224,27 @@ export class EducationSheepJumpScreen extends Container {
     }
 
     if (!animated) {
-      for (const { tile, x, y } of targets) {
+      for (const { tile, x, y, alpha, interactive } of targets) {
         tile.position.set(x, y);
+        tile.alpha = alpha;
+        tile.enabled = interactive;
       }
       return;
     }
 
     this.interactiveChildren = false;
-    const animations = targets.map(({ tile, x, y }) =>
-      animate(tile.position, { x, y }, { duration: 0.8, ease: 'easeOut' }),
-    );
-    this.repositionAnimations = animations;
+    for (const { tile, interactive } of targets) {
+      tile.enabled = interactive;
+    }
+
+    const animation = animate(createRepositionSequence(targets));
+    this.repositionAnimation = animation;
 
     try {
-      await Promise.all(animations.map((animation) => animation.finished));
+      await animation.finished;
     } finally {
-      if (this.repositionAnimations === animations) {
-        this.repositionAnimations = [];
+      if (this.repositionAnimation === animation) {
+        this.repositionAnimation = undefined;
         this.interactiveChildren = true;
       }
     }
@@ -212,12 +256,23 @@ export class EducationSheepJumpScreen extends Container {
   }
 
   private stopRepositionAnimations() {
-    if (this.repositionAnimations.length === 0) return;
+    if (!this.repositionAnimation) return;
 
-    for (const animation of this.repositionAnimations) {
-      animation.stop();
-    }
-    this.repositionAnimations = [];
+    this.repositionAnimation.stop();
+    this.repositionAnimation = undefined;
     this.interactiveChildren = true;
+  }
+
+  private getCurrentAnswerLetter() {
+    const round = this.map[this.step];
+    if (!round) return undefined;
+    return round.letters[round.answer];
+  }
+
+  private playCurrentAnswerAudio() {
+    const letter = this.getCurrentAnswerLetter();
+    if (!letter) return;
+
+    engine().audio.sfx.play(`education-audio/letters/${letter}.mp3`);
   }
 }

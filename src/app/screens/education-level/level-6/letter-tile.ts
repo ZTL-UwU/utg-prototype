@@ -1,7 +1,11 @@
 import { FancyButton } from '@pixi/ui';
 import { Text, Texture } from 'pixi.js';
 
+const WRONG_TILE_TINT = 0x888888;
+
 export class LetterTile extends FancyButton {
+  private wrong = false;
+
   constructor({ letter, onClick }: { letter?: string; onClick?: () => void }) {
     super({
       defaultView: Texture.from(`education-level-6/tile.png`),
@@ -31,5 +35,15 @@ export class LetterTile extends FancyButton {
     if (onClick) {
       this.onPress.connect(onClick);
     }
+  }
+
+  public get isWrong() {
+    return this.wrong;
+  }
+
+  public markWrong() {
+    this.wrong = true;
+    this.enabled = false;
+    this.tint = WRONG_TILE_TINT;
   }
 }
