@@ -2,11 +2,11 @@ import { FancyButton } from '@pixi/ui';
 import { Text, Texture } from 'pixi.js';
 
 export class LetterTile extends FancyButton {
-  constructor(letter: string) {
+  constructor({ letter, onClick }: { letter?: string; onClick?: () => void }) {
     super({
       defaultView: Texture.from(`education-level-6/tile.png`),
       text: new Text({
-        text: letter,
+        text: letter ?? '',
         style: {
           fontFamily: 'Noto Naskh Arabic Bold',
           fontWeight: '700',
@@ -27,5 +27,9 @@ export class LetterTile extends FancyButton {
       },
       anchor: 0.5,
     });
+
+    if (onClick) {
+      this.onPress.connect(onClick);
+    }
   }
 }
