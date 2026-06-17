@@ -5,8 +5,10 @@ import { engine } from '../../../../engine/getEngine';
 import { EDUCATION_LETTERS } from '../../../../utils/example-words';
 import { TutorialPopup } from '../../../popups/tutorial';
 import { HUD } from '../../../ui/hud';
+import { VideoButton } from '../../../ui/video-button';
 import { LevelMapScreen } from '../../level-map';
 import type { TMapUnit } from '../../level-map/units';
+import { EducationYoutubeScreen } from '../youtube-videos';
 import { LetterGrid } from './letter-grid';
 
 const letters = [
@@ -22,6 +24,7 @@ export class EducationTutorialScreen extends Container {
   private background: Sprite;
   private hud: HUD;
   private letterGrid: LetterGrid;
+  private videoButton: VideoButton;
 
   constructor(mapUnit: TMapUnit) {
     super();
@@ -47,7 +50,12 @@ export class EducationTutorialScreen extends Container {
     });
 
     this.letterGrid = new LetterGrid(letters);
-    this.addChild(this.background, this.letterGrid, this.hud);
+
+    this.videoButton = new VideoButton(
+      () => void engine().navigation.showScreen(EducationYoutubeScreen, mapUnit),
+    );
+
+    this.addChild(this.background, this.letterGrid, this.videoButton, this.hud);
   }
 
   public resize(width: number, height: number) {

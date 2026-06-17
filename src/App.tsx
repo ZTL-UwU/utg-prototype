@@ -5,6 +5,7 @@ import './index.css';
 import { HomeScreen } from './app/screens/home';
 import { mapUnitStore } from './app/screens/level-map/units';
 import { MobileBlockerBanner } from './components/MobileBlockerBanner';
+import { ScreenOverlay } from './components/ScreenOverlay';
 import { CreationEngine } from './engine/engine';
 import { setEngine } from './engine/getEngine';
 
@@ -44,6 +45,7 @@ export default function App() {
     <>
       <MobileBlockerBanner />
       <div id="pixi-container" />
+      <ScreenOverlay />
     </>
   );
 }
