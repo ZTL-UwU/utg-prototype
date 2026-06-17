@@ -1,13 +1,13 @@
 import { animate } from 'motion';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
-import { engine } from '../../../engine/getEngine';
-import { QuitPopup } from '../../popups/quit';
-import { TutorialPopup } from '../../popups/tutorial';
-import { HUD } from '../../ui/hud';
-import { KeyboardLayout } from '../../ui/keyboard-layout';
-import { LevelMapScreen } from '../level-map';
-import type { TMapUnit } from '../level-map/units';
+import { engine } from '../../../../engine/getEngine';
+import { QuitPopup } from '../../../popups/quit';
+import { TutorialPopup } from '../../../popups/tutorial';
+import { HUD } from '../../../ui/hud';
+import { KeyboardLayout } from '../../../ui/keyboard-layout';
+import { LevelMapScreen } from '../../level-map';
+import type { TMapUnit } from '../../level-map/units';
 import { Camel } from './camel';
 import { Clouds } from './clouds';
 import { LetterRow } from './letter-row';
@@ -16,7 +16,7 @@ const TITLE_LAYOUT_TOP = 30;
 const TITLE_OFFSCREEN = 200;
 
 export class TypingLevelScreen extends Container {
-  public static assetBundles = ['typing-level-1', 'ui'];
+  public static assetBundles = ['typing-level', 'typing-level-1', 'ui'];
 
   private background: Sprite;
   private clouds: Clouds;
@@ -36,7 +36,7 @@ export class TypingLevelScreen extends Container {
     });
 
     this.background = new Sprite({
-      texture: Texture.from('typing-level-1/background.png'),
+      texture: Texture.from('typing-level/background.png'),
       layout: {
         width: '100%',
         height: '100%',
@@ -77,6 +77,7 @@ export class TypingLevelScreen extends Container {
           exitable: true,
         }),
     });
+
     this.addChild(
       this.background,
       this.clouds,
@@ -107,6 +108,7 @@ export class TypingLevelScreen extends Container {
       width,
       height,
     };
+
     this.clouds.resize(width, height);
     this.camel.resize(width, height);
     this.keyboard.resize(width, height);
