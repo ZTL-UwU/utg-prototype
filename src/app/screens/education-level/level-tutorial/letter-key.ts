@@ -1,4 +1,5 @@
 import { FancyButton } from '@pixi/ui';
+import { animate } from 'motion';
 import { Assets, Graphics, Text } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
@@ -59,6 +60,29 @@ export class LetterKey extends FancyButton {
     this.letter = letter;
     this.eventMode = 'static';
     this.onPress.connect(this.handlePress);
+  }
+
+  public bounce(): void {
+    const baseY = this.position.y;
+    const bounceDepths = [30, 20, 5];
+    this.setState('hover');
+    void animate(
+      this.position,
+      {
+        y: [
+          baseY,
+          baseY - bounceDepths[0],
+          baseY,
+          baseY - bounceDepths[1],
+          baseY,
+          baseY - bounceDepths[2],
+          baseY,
+        ],
+      },
+      { duration: 1.4, ease: 'easeOut' },
+    ).then(() => {
+      this.setState('default');
+    });
   }
 
   private readonly handlePress = () => {

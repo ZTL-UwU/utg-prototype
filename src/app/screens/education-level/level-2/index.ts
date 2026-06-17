@@ -18,17 +18,6 @@ function getThreeUniqueLetters(): [string, string, string] {
   return [entries[0].text, entries[1].text, entries[2].text];
 }
 
-// function endGame() {
-//   if (++EducationBubbleScreen.rounds < EducationBubbleScreen.MAX_ROUNDS) {
-//     void engine().navigation.showScreen(EducationBubbleScreen, mapUnit);
-//   } else {
-//     EducationBubbleScreen.rounds = 0;
-//     const { correct, mistakes } = useSessionStore.getState();
-//     useScoreManager.getState().addSession(correct, mistakes);
-//     void engine().navigation.showPopup(EndScreenPopup, 'education');
-//   }
-// }
-
 export class EducationBubbleScreen extends Container {
   public static assetBundles = ['education-level-2', 'education-level', 'ui', 'education-audio'];
   public static rounds = 0;
