@@ -16,7 +16,7 @@ const TITLE_LAYOUT_TOP = 30;
 const TITLE_OFFSCREEN = 200;
 
 export class TypingLevelScreen extends Container {
-  public static assetBundles = ['typing-level', 'ui'];
+  public static assetBundles = ['typing-level-1', 'ui'];
 
   private background: Sprite;
   private clouds: Clouds;
@@ -36,7 +36,7 @@ export class TypingLevelScreen extends Container {
     });
 
     this.background = new Sprite({
-      texture: Texture.from('typing-level/background.png'),
+      texture: Texture.from('typing-level-1/background.png'),
       layout: {
         width: '100%',
         height: '100%',

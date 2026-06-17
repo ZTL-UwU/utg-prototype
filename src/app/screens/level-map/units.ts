@@ -4,7 +4,7 @@ import { EducationSheepScreen } from '../education-level/level-3';
 import { EducationImageScreen } from '../education-level/level-4';
 import { EducationWordScreen } from '../education-level/level-5';
 import { EducationSheepJumpScreen } from '../education-level/level-6';
-import { TypingLevelScreen } from '../typing-level';
+import { TypingLevelScreen } from '../typing-level-1';
 import type { TLevel } from './level-button';
 
 export type TMapUnit = {
@@ -121,7 +121,7 @@ const typingMap1: TMapUnit = {
       unlocked: true,
       miniMapImage: 'typing-level-map/button-preview.svg',
       screen: TypingLevelScreen,
-      background: 'typing-level/background.png',
+      background: 'typing-level-1/background.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
       backdropColor: 0x7d5600,
     },
@@ -129,7 +129,7 @@ const typingMap1: TMapUnit = {
       id: 2,
       unlocked: false,
       miniMapImage: 'typing-level-map/button-preview.svg',
-      background: 'typing-level/background.png',
+      background: 'typing-level-1/background.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
       backdropColor: 0x7d5600,
     },
@@ -137,7 +137,7 @@ const typingMap1: TMapUnit = {
       id: 3,
       unlocked: false,
       miniMapImage: 'typing-level-map/button-preview.svg',
-      background: 'typing-level/background.png',
+      background: 'typing-level-1/background.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
       backdropColor: 0x7d5600,
     },
@@ -145,7 +145,7 @@ const typingMap1: TMapUnit = {
       id: 4,
       unlocked: false,
       miniMapImage: 'typing-level-map/button-preview.svg',
-      background: 'typing-level/background.png',
+      background: 'typing-level-1/background.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
       backdropColor: 0x7d5600,
     },
