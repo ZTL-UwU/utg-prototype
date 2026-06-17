@@ -16,21 +16,21 @@ type CloudDrift = {
 export class Clouds extends Container {
   private readonly drifts: CloudDrift[] = [
     {
-      sprite: new Sprite(Texture.from('typing-level/cloud.png')),
+      sprite: new Sprite(Texture.from('typing-level-1/cloud.png')),
       direction: 'ltr',
       yRatio: 0.12,
       scale: 1.05,
       delay: 0,
     },
     {
-      sprite: new Sprite(Texture.from('typing-level/cloud.png')),
+      sprite: new Sprite(Texture.from('typing-level-1/cloud.png')),
       direction: 'rtl',
       yRatio: 0.3,
       scale: 1.02,
       delay: 18,
     },
     {
-      sprite: new Sprite(Texture.from('typing-level/cloud.png')),
+      sprite: new Sprite(Texture.from('typing-level-1/cloud.png')),
       direction: 'rtl',
       yRatio: 0.35,
       scale: 1,
