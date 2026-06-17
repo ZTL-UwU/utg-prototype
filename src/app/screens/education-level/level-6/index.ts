@@ -36,23 +36,6 @@ function getPositionOffsets() {
   return { positionOffsets, bottomCenter };
 }
 
-function getGlobalOffset(
-  step: number,
-  map: { answer: number }[],
-  positionOffsets: { x: number; y: number }[],
-) {
-  let globalOffset = { x: 0, y: 0 };
-  for (let i = 0; i < step; i++) {
-    globalOffset.x -= positionOffsets[map[i].answer].x;
-    globalOffset.y -= positionOffsets[map[i].answer].y;
-  }
-  return globalOffset;
-}
-
-function getTileAlpha(step: number, rowIndex: number, tileIndex: number, answerIndex: number) {
-  return rowIndex < step && tileIndex !== answerIndex ? 0 : 1;
-}
-
 const TILE_FADE_DURATION = 0.8;
 const TILE_MOVE_DURATION = 1.5;
 const SHEEP_MAX_WIDTH_RATIO = 0.28;
@@ -105,70 +88,6 @@ function getClosestRotation(currentRotation: number, targetRotation: number) {
     Math.cos(targetRotation - currentRotation),
   );
   return currentRotation + delta;
-}
-
-function getSheepFacingRotation(sheep: Sprite, target: SheepTarget) {
-  const deltaX = target.x - sheep.x;
-  const deltaY = target.y - sheep.y;
-  if (deltaX === 0 && deltaY === 0) return sheep.rotation;
-
-  const targetRotation = Math.atan2(deltaY, deltaX) + Math.PI / 2;
-  return getClosestRotation(sheep.rotation, targetRotation);
-}
-
-function getSheepJumpApexY(startY: number, endY: number, jumpDistance: number, minHeight: number) {
-  const jumpHeight = Math.max(jumpDistance * SHEEP_JUMP_HEIGHT_RATIO, minHeight);
-  return Math.min(startY, endY) - jumpHeight;
-}
-
-function getWalkYKeyframes(startY: number, endY: number, stepCount: number, bobAmplitude: number) {
-  const keyframes = [startY];
-
-  for (let step = 1; step < stepCount; step++) {
-    const progress = step / stepCount;
-    const baseY = startY + (endY - startY) * progress;
-    const bob =
-      Math.sin(progress * Math.PI * (stepCount - 1)) * bobAmplitude * (1 - progress * 0.35);
-    keyframes.push(baseY - bob);
-  }
-
-  keyframes.push(endY);
-  return keyframes;
-}
-
-function createRepositionSequence(
-  targets: TileTarget[],
-  sheep: Sprite,
-  sheepTarget: SheepTarget,
-  background: TilingSprite,
-  backgroundTarget: SheepTarget,
-): AnimationSequence {
-  const sequence: AnimationSequence = targets.flatMap(({ tile, x, y, alpha }) => [
-    [tile, { alpha }, { duration: TILE_FADE_DURATION, ease: 'easeIn', at: 0 }],
-    [
-      tile.position,
-      { x, y },
-      { duration: TILE_MOVE_DURATION, ease: 'easeInOut', at: TILE_FADE_DURATION },
-    ],
-  ]);
-
-  sequence.push([
-    sheep.position,
-    { x: sheepTarget.x, y: sheepTarget.y },
-    { duration: TILE_MOVE_DURATION, ease: 'easeInOut', at: TILE_FADE_DURATION },
-  ]);
-  sequence.push([
-    background.tilePosition,
-    { x: backgroundTarget.x, y: backgroundTarget.y },
-    { duration: TILE_MOVE_DURATION, ease: 'easeInOut', at: TILE_FADE_DURATION },
-  ]);
-  sequence.push([
-    sheep,
-    { rotation: getClosestRotation(sheep.rotation, SHEEP_FRONT_ROTATION) },
-    { duration: SHEEP_TURN_DURATION, ease: 'easeOut', at: TILE_FADE_DURATION },
-  ]);
-
-  return sequence;
 }
 
 export class EducationSheepJumpScreen extends Container {
@@ -291,7 +210,15 @@ export class EducationSheepJumpScreen extends Container {
 
   public resize(width: number, height: number) {
     this.layout = { width, height };
-    this.resizeBackground(width, height);
+
+    this.background.width = width;
+    this.background.height = height;
+    const coverScale = Math.max(
+      width / this.background.texture.width,
+      height / this.background.texture.height,
+    );
+    this.background.tileScale.set(coverScale);
+
     this.resizeSheep();
     void this.repositionTiles();
     this.positionStonePath();
@@ -318,7 +245,9 @@ export class EducationSheepJumpScreen extends Container {
 
     if (this.step >= this.map.length) {
       await this.playFinalWalkAnimation();
-      this.endGame();
+      const { correct, mistakes } = useSessionStore.getState();
+      useScoreManager.getState().addSession(correct, mistakes);
+      void engine().navigation.showPopup(EndScreenPopup, 'education');
       return;
     }
 
@@ -329,7 +258,13 @@ export class EducationSheepJumpScreen extends Container {
     this.stopRepositionAnimations();
 
     const { bottomCenter, positionOffsets } = getPositionOffsets();
-    const globalOffset = getGlobalOffset(this.step, this.map, positionOffsets);
+
+    let globalOffset = { x: 0, y: 0 };
+    for (let i = 0; i < this.step; i++) {
+      globalOffset.x -= positionOffsets[this.map[i].answer].x;
+      globalOffset.y -= positionOffsets[this.map[i].answer].y;
+    }
+
     const backgroundTarget = { x: globalOffset.x, y: globalOffset.y };
 
     let parentPosition = { ...bottomCenter };
@@ -356,7 +291,7 @@ export class EducationSheepJumpScreen extends Container {
           tile: row[j],
           x: parentPosition.x + positionOffsets[j].x + globalOffset.x,
           y: parentPosition.y + positionOffsets[j].y + globalOffset.y,
-          alpha: getTileAlpha(this.step, i, j, answerIndex),
+          alpha: i < this.step && j !== answerIndex ? 0 : 1,
           interactive: i === this.step && !row[j].isWrong,
         };
         targets.push(tileTarget);
@@ -392,9 +327,31 @@ export class EducationSheepJumpScreen extends Container {
       tile.enabled = interactive;
     }
 
-    const animation = animate(
-      createRepositionSequence(targets, this.sheep, sheepTarget, this.background, backgroundTarget),
-    );
+    const sequence: AnimationSequence = targets.flatMap(({ tile, x, y, alpha }) => [
+      [tile, { alpha }, { duration: TILE_FADE_DURATION, ease: 'easeIn', at: 0 }],
+      [
+        tile.position,
+        { x, y },
+        { duration: TILE_MOVE_DURATION, ease: 'easeInOut', at: TILE_FADE_DURATION },
+      ],
+    ]);
+    sequence.push([
+      this.sheep.position,
+      { x: sheepTarget.x, y: sheepTarget.y },
+      { duration: TILE_MOVE_DURATION, ease: 'easeInOut', at: TILE_FADE_DURATION },
+    ]);
+    sequence.push([
+      this.background.tilePosition,
+      { x: backgroundTarget.x, y: backgroundTarget.y },
+      { duration: TILE_MOVE_DURATION, ease: 'easeInOut', at: TILE_FADE_DURATION },
+    ]);
+    sequence.push([
+      this.sheep,
+      { rotation: getClosestRotation(this.sheep.rotation, SHEEP_FRONT_ROTATION) },
+      { duration: SHEEP_TURN_DURATION, ease: 'easeOut', at: TILE_FADE_DURATION },
+    ]);
+
+    const animation = animate(sequence);
     this.repositionAnimation = animation;
 
     try {
@@ -444,12 +401,18 @@ export class EducationSheepJumpScreen extends Container {
       y: -this.sheep.height * 0.65,
     };
     const walkStepCount = Math.max(4, Math.round(SHEEP_WALKAWAY_DURATION / 0.32));
-    const walkYKeyframes = getWalkYKeyframes(
-      startY,
-      walkTarget.y,
-      walkStepCount,
-      this.sheep.height * 0.035,
-    );
+    const walkBobAmplitude = this.sheep.height * 0.035;
+    const walkYKeyframes = [startY];
+    for (let step = 1; step < walkStepCount; step++) {
+      const progress = step / walkStepCount;
+      const baseY = startY + (walkTarget.y - startY) * progress;
+      const bob =
+        Math.sin(progress * Math.PI * (walkStepCount - 1)) *
+        walkBobAmplitude *
+        (1 - progress * 0.35);
+      walkYKeyframes.push(baseY - bob);
+    }
+    walkYKeyframes.push(walkTarget.y);
 
     engine().audio.sfx.play(SHEEP_WALK_SOUND);
 
@@ -485,10 +448,11 @@ export class EducationSheepJumpScreen extends Container {
     }
   }
 
-  private endGame() {
-    const { correct, mistakes } = useSessionStore.getState();
-    useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, 'education');
+  private playCurrentAnswerAudio() {
+    const round = this.map[this.step];
+    if (!round) return;
+
+    engine().audio.sfx.play(`education-audio/letters/${round.letters[round.answer]}.mp3`);
   }
 
   private async moveSheepToTile(rowIndex: number, tileIndex: number, tile: LetterTile) {
@@ -500,12 +464,18 @@ export class EducationSheepJumpScreen extends Container {
     const startX = this.sheep.x;
     const startY = this.sheep.y;
     const jumpDistance = Math.hypot(tile.x - startX, tile.y - startY);
-    const apexY = getSheepJumpApexY(
-      startY,
-      tile.y,
-      jumpDistance,
+    const jumpHeight = Math.max(
+      jumpDistance * SHEEP_JUMP_HEIGHT_RATIO,
       this.sheep.height * SHEEP_MIN_JUMP_HEIGHT_RATIO,
     );
+    const apexY = Math.min(startY, tile.y) - jumpHeight;
+
+    const deltaX = tile.x - this.sheep.x;
+    const deltaY = tile.y - this.sheep.y;
+    const facingRotation =
+      deltaX === 0 && deltaY === 0
+        ? this.sheep.rotation
+        : getClosestRotation(this.sheep.rotation, Math.atan2(deltaY, deltaX) + Math.PI / 2);
 
     let prepAnimation: AnimationPlaybackControls | undefined;
     let jumpAnimation: AnimationPlaybackControls | undefined;
@@ -515,7 +485,7 @@ export class EducationSheepJumpScreen extends Container {
       prepAnimation = animate([
         [
           this.sheep,
-          { rotation: getSheepFacingRotation(this.sheep, tile) },
+          { rotation: facingRotation },
           { duration: SHEEP_TURN_DURATION, ease: 'easeOut', at: 0 },
         ],
         [
@@ -601,19 +571,6 @@ export class EducationSheepJumpScreen extends Container {
     this.resizeSheep();
   }
 
-  private getCurrentAnswerLetter() {
-    const round = this.map[this.step];
-    if (!round) return undefined;
-    return round.letters[round.answer];
-  }
-
-  private playCurrentAnswerAudio() {
-    const letter = this.getCurrentAnswerLetter();
-    if (!letter) return;
-
-    engine().audio.sfx.play(`education-audio/letters/${letter}.mp3`);
-  }
-
   private getSheepBaseScale() {
     const { width, height } = engine().navigation;
     return Math.min(
@@ -628,14 +585,6 @@ export class EducationSheepJumpScreen extends Container {
     this.sheep.scale.set(sheepScale);
   }
 
-  private getFinalTile() {
-    const finalRowIndex = this.map.length - 1;
-    const finalAnswerIndex = this.map[finalRowIndex]?.answer;
-    return finalAnswerIndex === undefined
-      ? this.initialTile
-      : this.tileRows[finalRowIndex][finalAnswerIndex];
-  }
-
   private positionStonePath() {
     const { width, height } = engine().navigation;
     const pathScale = Math.min(
@@ -645,21 +594,15 @@ export class EducationSheepJumpScreen extends Container {
     );
     this.stonePath.scale.set(pathScale);
 
-    const finalTile = this.getFinalTile();
+    const finalRowIndex = this.map.length - 1;
+    const finalAnswerIndex = this.map[finalRowIndex]?.answer;
+    const finalTile =
+      finalAnswerIndex === undefined
+        ? this.initialTile
+        : this.tileRows[finalRowIndex][finalAnswerIndex];
     this.stonePath.position.set(
       finalTile.x,
       finalTile.y - finalTile.height / 2 + STONE_PATH_TILE_OVERLAP,
     );
-  }
-
-  private resizeBackground(width: number, height: number) {
-    this.background.width = width;
-    this.background.height = height;
-
-    const coverScale = Math.max(
-      width / this.background.texture.width,
-      height / this.background.texture.height,
-    );
-    this.background.tileScale.set(coverScale);
   }
 }
