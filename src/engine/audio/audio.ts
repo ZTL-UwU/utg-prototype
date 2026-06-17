@@ -63,7 +63,7 @@ export class SFX {
   /** Play an one-shot sound effect */
   public play(alias: string, options?: PlayOptions) {
     const volume = this.volume * (options?.volume ?? 1);
-    void sound.play(alias, { ...options, volume });
+    return sound.play(alias, { ...options, volume });
   }
 
   /** Stop playing an SFX */

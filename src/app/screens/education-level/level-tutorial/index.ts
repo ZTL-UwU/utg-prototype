@@ -1,6 +1,7 @@
+import { sound, type IMediaInstance } from '@pixi/sound';
 import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
-import { Container, Graphics, Sprite, Texture } from 'pixi.js';
+import { Container, Graphics, Sprite, Texture, Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { EDUCATION_LETTERS } from '../../../../utils/example-words';
@@ -46,9 +47,12 @@ export class EducationTutorialScreen extends Container {
   private playButton: FancyButton;
   private stopButton: FancyButton;
   private songPlaying = false;
-  private bounceTimeouts: ReturnType<typeof setTimeout>[] = [];
   private videoButton: VideoButton;
+  private songInstance?: IMediaInstance;
 
+  private timings: { char: string; time: number }[] = [];
+  private nextBounceIndex: number = 0;
+  private songEndTime?: number;
   constructor(mapUnit: TMapUnit) {
     super();
 
@@ -147,45 +151,48 @@ export class EducationTutorialScreen extends Container {
       animate(this.letterGrid.scale, { x: 0.4, y: 0.4 }, { duration: 0.2, ease: 'easeIn' }),
     ]);
   }
-
-  private onPlay() {
+  private async onPlay() {
     if (this.songPlaying) return;
     this.songPlaying = true;
 
     this.playButton.visible = false;
     this.stopButton.visible = true;
-    // this.videoButton.visible = false;
-    this.videoButton.eventMode = 'none'; // MUST BE RESET onSTOP!!
-    void animate([this.hud, this.videoButton], { alpha: 0 }, { duration: 0.3, ease: 'easeIn' });
+    void animate(this.hud, { alpha: 0 }, { duration: 0.3, ease: 'easeIn' });
     this.hud.eventMode = 'none';
 
-    engine().audio.sfx.play(ALPHABET_SONG_ALIAS);
+    this.songInstance = await engine().audio.sfx.play(ALPHABET_SONG_ALIAS);
     this.letterGrid.setSongMode(true);
-    const timings = this.letterGrid.getLetterTimingOffsets();
-    const songEndMs = timings[timings.length - 1].time * 1000 + 4000;
-    this.bounceTimeouts = [
-      ...timings.map(({ char, time }) =>
-        setTimeout(() => this.letterGrid.bounceKey(char), time * 1000),
-      ),
-      setTimeout(() => this.onStop(), songEndMs),
-    ];
+
+    this.timings = this.letterGrid.getLetterTimingOffsets();
+    this.songEndTime = this.timings[this.timings.length - 1].time + 4;
+  }
+
+  public update(_ticker: Ticker) {
+    if (!this.songPlaying || !this.songInstance || !this.songEndTime) return;
+
+    const duration = sound.find(ALPHABET_SONG_ALIAS)?.duration ?? 0;
+    const t = this.songInstance.progress * duration;
+
+    while (
+      this.nextBounceIndex < this.timings.length &&
+      this.timings[this.nextBounceIndex].time <= t
+    ) {
+      this.letterGrid.bounceKey(this.timings[this.nextBounceIndex].char);
+      this.nextBounceIndex++;
+    }
+
+    if (t >= this.songEndTime!) this.onStop();
   }
 
   private onStop() {
     this.songPlaying = false;
-
     engine().audio.sfx.stop(ALPHABET_SONG_ALIAS);
-    this.bounceTimeouts.forEach(clearTimeout);
-    this.bounceTimeouts = [];
-
+    this.nextBounceIndex = 0;
+    this.songInstance = undefined;
     this.letterGrid.setSongMode(false);
-
-    void animate([this.hud, this.videoButton], { alpha: 1 }, { duration: 0.3, ease: 'easeOut' });
+    void animate(this.hud, { alpha: 1 }, { duration: 0.3, ease: 'easeOut' });
     this.hud.eventMode = 'static';
-
     this.stopButton.visible = false;
     this.playButton.visible = true;
-
-    this.videoButton.eventMode = 'static';
   }
 }
