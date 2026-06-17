@@ -7,8 +7,10 @@ import { EDUCATION_LETTERS } from '../../../../utils/example-words';
 import { TutorialPopup } from '../../../popups/tutorial';
 import { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
+import { VideoButton } from '../../../ui/video-button';
 import { LevelMapScreen } from '../../level-map';
 import type { TMapUnit } from '../../level-map/units';
+import { EducationYoutubeScreen } from '../youtube-videos';
 import { LetterGrid } from './letter-grid';
 
 const ALPHABET_SONG_ALIAS = 'education-audio/uyghur-alphabet-song.mp3';
@@ -46,6 +48,7 @@ export class EducationTutorialScreen extends Container {
   private stopButton: FancyButton;
   private songPlaying = false;
   private bounceTimeouts: ReturnType<typeof setTimeout>[] = [];
+  private videoButton: VideoButton;
 
   constructor(mapUnit: TMapUnit) {
     super();
@@ -94,6 +97,11 @@ export class EducationTutorialScreen extends Container {
     this.stopButton.onPress.connect(() => this.onStop());
 
     this.addChild(this.background, this.letterGrid, this.playButton, this.stopButton, this.hud);
+    this.videoButton = new VideoButton(
+      () => void engine().navigation.showScreen(EducationYoutubeScreen, mapUnit),
+    );
+
+    this.addChild(this.background, this.letterGrid, this.videoButton, this.hud);
   }
 
   public resize(width: number, height: number) {

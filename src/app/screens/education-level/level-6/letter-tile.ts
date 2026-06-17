@@ -1,12 +1,16 @@
 import { FancyButton } from '@pixi/ui';
 import { Text, Texture } from 'pixi.js';
 
+const WRONG_TILE_TINT = 0x888888;
+
 export class LetterTile extends FancyButton {
-  constructor(letter: string) {
+  private wrong = false;
+
+  constructor({ letter, onClick }: { letter?: string; onClick?: () => void }) {
     super({
       defaultView: Texture.from(`education-level-6/tile.png`),
       text: new Text({
-        text: letter,
+        text: letter ?? '',
         style: {
           fontFamily: 'Noto Naskh Arabic Bold',
           fontWeight: '700',
@@ -27,5 +31,19 @@ export class LetterTile extends FancyButton {
       },
       anchor: 0.5,
     });
+
+    if (onClick) {
+      this.onPress.connect(onClick);
+    }
+  }
+
+  public get isWrong() {
+    return this.wrong;
+  }
+
+  public markWrong() {
+    this.wrong = true;
+    this.enabled = false;
+    this.tint = WRONG_TILE_TINT;
   }
 }

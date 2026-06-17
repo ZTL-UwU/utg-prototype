@@ -3,7 +3,9 @@ import '@pixi/layout';
 
 import './index.css';
 import { HomeScreen } from './app/screens/home';
+import { mapUnitStore } from './app/screens/level-map/units';
 import { MobileBlockerBanner } from './components/MobileBlockerBanner';
+import { ScreenOverlay } from './components/ScreenOverlay';
 import { CreationEngine } from './engine/engine';
 import { setEngine } from './engine/getEngine';
 
@@ -25,8 +27,15 @@ export default function App() {
         antialias: true,
       });
 
-      // Show the main screen once the load screen is dismissed
-      await engine.navigation.showScreen(HomeScreen);
+      // TODO: remove — temporary debug shortcut to level 6 via ?debug-level=6
+      const debugLevel = new URLSearchParams(window.location.search).get('debug-level');
+      if (debugLevel === '6') {
+        const mapUnit = mapUnitStore['education-map-2'];
+        const level = mapUnit.levels.find((candidate) => candidate.id === 6);
+        await engine.navigation.showScreen(level!.screen!, mapUnit);
+      } else {
+        await engine.navigation.showScreen(HomeScreen);
+      }
     };
 
     void init();
@@ -36,6 +45,7 @@ export default function App() {
     <>
       <MobileBlockerBanner />
       <div id="pixi-container" />
+      <ScreenOverlay />
     </>
   );
 }

@@ -83,8 +83,7 @@ const educationMap2: TMapUnit = {
       miniMapImage: 'education-level-map/button-preview.svg',
       screen: EducationSheepJumpScreen,
       background: 'education-level/background.png',
-      // TODO: missing tutorial asset
-      helpAsset: 'tutorial-popups/education-tutorial.png',
+      helpAsset: 'tutorial-popups/education-level-6.png',
       backdropColor: 0x4a90e2,
     },
     {

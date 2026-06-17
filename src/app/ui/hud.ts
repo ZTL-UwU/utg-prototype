@@ -11,10 +11,18 @@ interface HUDProps {
   toTutorial?: boolean;
   helpAsset?: string;
   backdropColor?: number;
+  noHelpButton?: boolean;
 }
 
 export class HUD extends Container {
-  constructor({ onBack, onHelp, toTutorial, helpAsset, backdropColor = 0 }: HUDProps) {
+  constructor({
+    onBack,
+    onHelp,
+    toTutorial,
+    helpAsset,
+    backdropColor = 0,
+    noHelpButton = false,
+  }: HUDProps) {
     super({
       layout: {
         position: 'absolute',
@@ -34,6 +42,10 @@ export class HUD extends Container {
             })
         : undefined);
 
-    this.addChild(new BackButton(onBack), new HelpButton({ onHelp: helpCallback, toTutorial }));
+    if (!noHelpButton) {
+      this.addChild(new BackButton(onBack), new HelpButton({ onHelp: helpCallback, toTutorial }));
+    } else {
+      this.addChild(new BackButton(onBack));
+    }
   }
 }

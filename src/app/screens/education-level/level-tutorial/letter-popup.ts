@@ -38,7 +38,7 @@ export class LetterPopup extends Container {
     this.soundButton = new SoundButton({
       onClick: () => {},
       size: 300,
-      isLarge: true,
+      variant: 'large',
     });
     this.soundButton.anchor.set(0.5);
     this.soundButton.layout = { position: 'absolute', bottom: '25%', left: '50%' };

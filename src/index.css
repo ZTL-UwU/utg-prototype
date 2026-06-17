@@ -25,4 +25,12 @@
   #root {
     @apply relative;
   }
+
+  #pixi-container {
+    @apply absolute inset-0;
+  }
+
+  #pixi-container canvas {
+    @apply block size-full;
+  }
 }
