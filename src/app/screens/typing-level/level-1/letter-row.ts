@@ -1,11 +1,11 @@
 import { Container } from 'pixi.js';
 
-import { engine } from '../../../engine/getEngine';
-import { getAlphabet, getMappedFromKeyboardEvent } from '../../../utils/keymap';
-import { useScoreManager } from '../../../zustandStores/scoreManager';
-import useSessionStore from '../../../zustandStores/sessionStore';
-import { EndScreenPopup } from '../../popups/end-screen';
-import type { KeyboardLayout } from '../../ui/keyboard-layout';
+import { engine } from '../../../../engine/getEngine';
+import { getAlphabet, getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { useScoreManager } from '../../../../zustandStores/scoreManager';
+import useSessionStore from '../../../../zustandStores/sessionStore';
+import { EndScreenPopup } from '../../../popups/end-screen';
+import type { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { Letter } from './letter';
 
 const CARD_SIZE = 140;

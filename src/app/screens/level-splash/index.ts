@@ -13,13 +13,7 @@ import type { TLevel } from '../level-map/level-button';
 import type { TMapUnit } from '../level-map/units';
 
 export class LevelSplashScreen extends Container {
-  public static assetBundles = [
-    'level-splash',
-    'typing-level-1',
-    'education-level',
-    'mascots',
-    'ui',
-  ];
+  public static assetBundles = ['level-splash', 'typing-level', 'education-level', 'mascots', 'ui'];
 
   private background: Sprite;
   private levelNumber: SplitText;
