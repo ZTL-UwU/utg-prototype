@@ -1,5 +1,7 @@
+import { animate } from 'motion';
 import { Container, Graphics } from 'pixi.js';
 
+import alphabetTimings from './alphabet-timings.json';
 import { LetterKey } from './letter-key';
 
 const KEY_SIZE = 120;
@@ -13,6 +15,10 @@ export class LetterGrid extends Container {
   private readonly panel = new Container();
   private readonly panelWidth: number;
   private readonly panelHeight: number;
+  private readonly keyMap = new Map<string, LetterKey>();
+  private songMode = false;
+  private currentWidth = 0;
+  private currentHeight = 0;
 
   constructor(letters: string[][]) {
     super({
@@ -44,6 +50,7 @@ export class LetterGrid extends Container {
           PANEL_PADDING + rowIndex * (KEY_SIZE + KEY_GAP) + KEY_SIZE / 2,
         );
         this.panel.addChild(key);
+        this.keyMap.set(letter, key);
       });
     });
 
@@ -51,11 +58,41 @@ export class LetterGrid extends Container {
   }
 
   public resize(width: number, height: number) {
-    const scale = Math.min(1, (width * 0.9) / this.panelWidth, (height * 0.85) / this.panelHeight);
-    this.panel.scale.set(scale);
-    this.panel.position.set(
-      Math.round((width - this.panelWidth * scale) / 2),
-      Math.round((height - this.panelHeight * scale) / 2),
+    this.currentWidth = width;
+    this.currentHeight = height;
+    this.applyResize(false);
+  }
+
+  public setSongMode(enabled: boolean) {
+    this.songMode = enabled;
+    this.applyResize(true);
+  }
+
+  public getLetterTimingOffsets(): { char: string; time: number }[] {
+    return alphabetTimings.letters;
+  }
+
+  public bounceKey(char: string): void {
+    this.keyMap.get(char)?.bounce();
+  }
+
+  private applyResize(animated: boolean) {
+    const wFactor = this.songMode ? 0.97 : 0.9;
+    const hFactor = this.songMode ? 0.96 : 0.78;
+    const scale = Math.min(
+      1,
+      (this.currentWidth * wFactor) / this.panelWidth,
+      (this.currentHeight * hFactor) / this.panelHeight,
     );
+    const x = Math.round((this.currentWidth - this.panelWidth * scale) / 2);
+    const y = Math.round((this.currentHeight - this.panelHeight * scale) / 2);
+
+    if (animated) {
+      void animate(this.panel.scale, { x: scale, y: scale }, { duration: 0.4, ease: 'backOut' });
+      void animate(this.panel.position, { x, y }, { duration: 0.4, ease: 'backOut' });
+    } else {
+      this.panel.scale.set(scale);
+      this.panel.position.set(x, y);
+    }
   }
 }

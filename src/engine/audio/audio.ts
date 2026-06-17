@@ -66,6 +66,11 @@ export class SFX {
     void sound.play(alias, { ...options, volume });
   }
 
+  /** Stop playing an SFX */
+  public stop(alias: string) {
+    sound.stop(alias);
+  }
+
   /** Set sound effects volume */
   public getVolume() {
     return this.volume;
