@@ -6,7 +6,6 @@ import { engine } from '../../../../engine/getEngine';
 import { EDUCATION_LETTERS } from '../../../../utils/example-words';
 import { TutorialPopup } from '../../../popups/tutorial';
 import { HUD } from '../../../ui/hud';
-import { SoundButton } from '../../../ui/sound-button';
 import { VideoButton } from '../../../ui/video-button';
 import { LevelMapScreen } from '../../level-map';
 import type { TMapUnit } from '../../level-map/units';
@@ -22,7 +21,7 @@ const letters = [
   EDUCATION_LETTERS.slice(24, 32),
 ];
 
-const STOP_BUTTON_SIZE = 80;
+const STOP_BUTTON_SIZE = 115;
 
 function drawStopButton(size: number, state: 'default' | 'hover') {
   const sq = size * 0.38;
@@ -39,12 +38,12 @@ function drawStopButton(size: number, state: 'default' | 'hover') {
 }
 
 export class EducationTutorialScreen extends Container {
-  public static assetBundles = ['education-level', 'ui', 'education-audio'];
+  public static assetBundles = ['education-level', 'ui', 'education-audio', 'education-tutorial'];
 
   private background: Sprite;
   private hud: HUD;
   private letterGrid: LetterGrid;
-  private playButton: SoundButton;
+  private playButton: FancyButton;
   private stopButton: FancyButton;
   private songPlaying = false;
   private bounceTimeouts: ReturnType<typeof setTimeout>[] = [];
@@ -77,12 +76,25 @@ export class EducationTutorialScreen extends Container {
 
     this.letterGrid = new LetterGrid(letters);
 
-    this.playButton = new SoundButton({
-      onClick: () => this.onPlay(),
-      size: STOP_BUTTON_SIZE,
+    this.playButton = new FancyButton({
+      defaultView: 'education-tutorial/song-icon.png',
+      animations: {
+        hover: {
+          props: { scale: { x: 1.03, y: 1.03 } },
+          duration: 100,
+        },
+        pressed: {
+          props: { scale: { x: 0.97, y: 0.97 } },
+          duration: 100,
+        },
+      },
+      anchor: 0.5,
     });
-    this.playButton.anchor.set(0.5);
-
+    this.playButton.onPress.connect(() => this.onPlay());
+    this.playButton.once('added', () => {
+      this.playButton.scale.set(STOP_BUTTON_SIZE / this.playButton.width);
+      console.log(this.playButton.width, this.playButton.scale.x);
+    });
     this.stopButton = new FancyButton({
       defaultView: drawStopButton(STOP_BUTTON_SIZE, 'default'),
       hoverView: drawStopButton(STOP_BUTTON_SIZE, 'hover'),
@@ -96,20 +108,27 @@ export class EducationTutorialScreen extends Container {
     this.stopButton.visible = false;
     this.stopButton.onPress.connect(() => this.onStop());
 
-    this.addChild(this.background, this.letterGrid, this.playButton, this.stopButton, this.hud);
     this.videoButton = new VideoButton(
       () => void engine().navigation.showScreen(EducationYoutubeScreen, mapUnit),
     );
 
-    this.addChild(this.background, this.letterGrid, this.videoButton, this.hud);
+    this.addChild(
+      this.background,
+      this.letterGrid,
+      this.stopButton,
+      this.videoButton,
+      this.hud,
+      this.playButton,
+    );
   }
 
   public resize(width: number, height: number) {
     this.layout = { width, height };
     this.letterGrid.resize(width, height);
-    const buttonY = height * 0.91;
-    this.playButton.position.set(width / 2, buttonY);
-    this.stopButton.position.set(width / 2, buttonY);
+    const buttonY = height * 0.36;
+    const buttonX = width * 0.958;
+    this.playButton.position.set(buttonX, buttonY);
+    this.stopButton.position.set(buttonX, buttonY);
   }
 
   public async show() {
@@ -135,8 +154,9 @@ export class EducationTutorialScreen extends Container {
 
     this.playButton.visible = false;
     this.stopButton.visible = true;
-
-    void animate(this.hud, { alpha: 0 }, { duration: 0.3, ease: 'easeIn' });
+    // this.videoButton.visible = false;
+    this.videoButton.eventMode = 'none'; // MUST BE RESET onSTOP!!
+    void animate([this.hud, this.videoButton], { alpha: 0 }, { duration: 0.3, ease: 'easeIn' });
     this.hud.eventMode = 'none';
 
     engine().audio.sfx.play(ALPHABET_SONG_ALIAS);
@@ -160,10 +180,12 @@ export class EducationTutorialScreen extends Container {
 
     this.letterGrid.setSongMode(false);
 
-    void animate(this.hud, { alpha: 1 }, { duration: 0.3, ease: 'easeOut' });
+    void animate([this.hud, this.videoButton], { alpha: 1 }, { duration: 0.3, ease: 'easeOut' });
     this.hud.eventMode = 'static';
 
     this.stopButton.visible = false;
     this.playButton.visible = true;
+
+    this.videoButton.eventMode = 'static';
   }
 }
