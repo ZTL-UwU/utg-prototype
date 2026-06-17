@@ -2,8 +2,13 @@ import { animate, type AnimationPlaybackControls, type AnimationSequence } from 
 import { Container, Sprite, Texture, TilingSprite } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { waitFor } from '../../../../engine/utils/waitFor';
 import { EDUCATION_LETTERS } from '../../../../utils/example-words';
-import { useScoreManager } from '../../../../zustandStores/scoreManager';
+import {
+  getAccuracyPercent,
+  getStarCount,
+  useScoreManager,
+} from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
@@ -58,6 +63,12 @@ const STONE_PATH_TILE_OVERLAP = 8;
 const STONE_PATH_FADE_DURATION = 0.25;
 const SHEEP_WALKAWAY_DURATION = 1.7;
 const SHEEP_WALK_SOUND = 'education-level-6/sheep.mp3';
+const THANK_YOU_YURT_TEXTURE = 'education-level-6/kazakh-yurt.png';
+const THANK_YOU_SHEEP_TEXTURE = 'mascots/sheep/dialog/thank-you.png';
+const THANK_YOU_YURT_MAX_WIDTH_RATIO = 0.48;
+const THANK_YOU_YURT_MAX_HEIGHT_RATIO = 0.5;
+const THANK_YOU_SHEEP_MAX_WIDTH_RATIO = 0.24;
+const THANK_YOU_SHEEP_MAX_HEIGHT_RATIO = 0.46;
 
 type TileTarget = {
   tile: LetterTile;
@@ -91,10 +102,14 @@ function getClosestRotation(currentRotation: number, targetRotation: number) {
 }
 
 export class EducationSheepJumpScreen extends Container {
-  public static assetBundles = ['education-level-6', 'ui', 'education-audio'];
+  public static assetBundles = ['education-level-6', 'mascots', 'ui', 'education-audio'];
 
   private readonly background: TilingSprite;
   private readonly stonePath: Sprite;
+  private readonly thankYouScene: Container;
+  private readonly thankYouBackground: TilingSprite;
+  private readonly thankYouYurt: Sprite;
+  private readonly thankYouSheep: Sprite;
   private readonly hud: HUD;
   private readonly soundButton: SoundButton;
   private readonly initialTile: LetterTile;
@@ -104,6 +119,7 @@ export class EducationSheepJumpScreen extends Container {
   private tileRows: LetterTile[][] = [];
   private repositionAnimation?: AnimationPlaybackControls;
   private sheepAnimation?: AnimationPlaybackControls;
+  private thankYouAnimation?: AnimationPlaybackControls;
   private sheepLocation: SheepLocation = { type: 'origin' };
   private readonly mapUnit: TMapUnit;
 
@@ -143,6 +159,20 @@ export class EducationSheepJumpScreen extends Container {
     this.stonePath.anchor.set(0.5, 1);
     this.stonePath.visible = false;
     this.stonePath.alpha = 0;
+
+    this.thankYouScene = new Container();
+    this.thankYouScene.visible = false;
+    this.thankYouScene.alpha = 0;
+    this.thankYouBackground = new TilingSprite({
+      texture: Texture.from('education-level-6/background.png'),
+      width: engine().navigation.width,
+      height: engine().navigation.height,
+    });
+    this.thankYouYurt = new Sprite(Texture.from(THANK_YOU_YURT_TEXTURE));
+    this.thankYouYurt.anchor.set(0.5, 1);
+    this.thankYouSheep = new Sprite(Texture.from(THANK_YOU_SHEEP_TEXTURE));
+    this.thankYouSheep.anchor.set(0.5, 1);
+    this.thankYouScene.addChild(this.thankYouBackground, this.thankYouYurt, this.thankYouSheep);
 
     this.hud = new HUD({
       onBack: () =>
@@ -204,6 +234,7 @@ export class EducationSheepJumpScreen extends Container {
       ...this.tileRows.flat(),
       this.sheep,
       this.soundButton,
+      this.thankYouScene,
     );
     this.playCurrentAnswerAudio();
   }
@@ -222,6 +253,7 @@ export class EducationSheepJumpScreen extends Container {
     this.resizeSheep();
     void this.repositionTiles();
     this.positionStonePath();
+    this.positionThankYouScene(width, height);
   }
 
   public async handleTileClick(rowIndex: number, tileIndex: number) {
@@ -246,7 +278,11 @@ export class EducationSheepJumpScreen extends Container {
     if (this.step >= this.map.length) {
       await this.playFinalWalkAnimation();
       const { correct, mistakes } = useSessionStore.getState();
+      const starCount = getStarCount(getAccuracyPercent(correct, mistakes));
       useScoreManager.getState().addSession(correct, mistakes);
+      if (starCount >= 2) {
+        await this.playThankYouScene();
+      }
       void engine().navigation.showPopup(EndScreenPopup, 'education');
       return;
     }
@@ -367,6 +403,7 @@ export class EducationSheepJumpScreen extends Container {
   override destroy(options?: Parameters<Container['destroy']>[0]) {
     this.stopRepositionAnimations();
     this.stopSheepAnimation();
+    this.stopThankYouAnimation();
     super.destroy(options);
   }
 
@@ -385,6 +422,43 @@ export class EducationSheepJumpScreen extends Container {
     this.sheepAnimation = undefined;
     this.setSheepAirborne(false);
     this.resizeSheep();
+  }
+
+  private stopThankYouAnimation() {
+    if (!this.thankYouAnimation) return;
+
+    this.thankYouAnimation.stop();
+    this.thankYouAnimation = undefined;
+  }
+
+  private async playThankYouScene() {
+    this.positionThankYouScene(engine().navigation.width, engine().navigation.height);
+    this.thankYouScene.visible = true;
+    this.thankYouScene.alpha = 0;
+
+    engine().audio.sfx.play(SHEEP_WALK_SOUND);
+    await this.fadeThankYouScene(1);
+    await waitFor(Math.max(0, 1.5));
+  }
+
+  private async fadeThankYouScene(alpha: number) {
+    const animation = animate(
+      this.thankYouScene,
+      { alpha },
+      {
+        duration: 0.3,
+        ease: 'easeOut',
+      },
+    );
+    this.thankYouAnimation = animation;
+
+    try {
+      await animation.finished;
+    } finally {
+      if (this.thankYouAnimation === animation) {
+        this.thankYouAnimation = undefined;
+      }
+    }
   }
 
   private async playFinalWalkAnimation() {
@@ -413,8 +487,6 @@ export class EducationSheepJumpScreen extends Container {
       walkYKeyframes.push(baseY - bob);
     }
     walkYKeyframes.push(walkTarget.y);
-
-    engine().audio.sfx.play(SHEEP_WALK_SOUND);
 
     const walkAnimation = animate([
       [
@@ -604,5 +676,31 @@ export class EducationSheepJumpScreen extends Container {
       finalTile.x,
       finalTile.y - finalTile.height / 2 + STONE_PATH_TILE_OVERLAP,
     );
+  }
+
+  private positionThankYouScene(width: number, height: number) {
+    this.thankYouBackground.width = width;
+    this.thankYouBackground.height = height;
+    const coverScale = Math.max(
+      width / this.thankYouBackground.texture.width,
+      height / this.thankYouBackground.texture.height,
+    );
+    this.thankYouBackground.tileScale.set(coverScale);
+
+    const yurtScale = Math.min(
+      1,
+      (width * THANK_YOU_YURT_MAX_WIDTH_RATIO) / this.thankYouYurt.texture.width,
+      (height * THANK_YOU_YURT_MAX_HEIGHT_RATIO) / this.thankYouYurt.texture.height,
+    );
+    this.thankYouYurt.scale.set(yurtScale);
+    this.thankYouYurt.position.set(width * 0.56, height * 0.76);
+
+    const sheepScale = Math.min(
+      1,
+      (width * THANK_YOU_SHEEP_MAX_WIDTH_RATIO) / this.thankYouSheep.texture.width,
+      (height * THANK_YOU_SHEEP_MAX_HEIGHT_RATIO) / this.thankYouSheep.texture.height,
+    );
+    this.thankYouSheep.scale.set(sheepScale);
+    this.thankYouSheep.position.set(width * 0.34, height * 0.98);
   }
 }
