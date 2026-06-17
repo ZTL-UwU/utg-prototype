@@ -206,6 +206,7 @@ export class EducationSheepJumpScreen extends Container {
             void engine().navigation.showScreen(LevelMapScreen, this.mapUnit);
           },
         }),
+      helpAsset: 'tutorial-popups/education-level-6.png',
       toTutorial: false,
       backdropColor: 0x4a90e2,
     });
