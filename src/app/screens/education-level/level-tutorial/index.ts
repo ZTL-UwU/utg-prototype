@@ -86,6 +86,7 @@ export class EducationTutorialScreen extends Container {
       },
       anchor: 0.5,
     });
+
     this.songButton.onPress.connect(() => {
       if (this.songPlaying) void this.onStop();
       else void this.onPlay();

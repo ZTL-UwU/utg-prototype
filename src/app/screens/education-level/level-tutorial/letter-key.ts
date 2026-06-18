@@ -1,6 +1,6 @@
 import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
-import { Assets, Graphics, Text } from 'pixi.js';
+import { Graphics, Text } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { LetterPopup } from './letter-popup';
@@ -86,9 +86,6 @@ export class LetterKey extends FancyButton {
   }
 
   private readonly handlePress = () => {
-    if (Assets.resolver.hasKey(`${this.letter}.mp3`)) {
-      void engine().audio.sfx.play(`education-audio/letters/${this.letter}.mp3`);
-    }
     void engine().navigation.showPopup(LetterPopup, this.letter);
   };
 }

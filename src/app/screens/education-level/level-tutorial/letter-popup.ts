@@ -1,6 +1,7 @@
+import { sound } from '@pixi/sound';
 import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
-import { Container, Graphics, HTMLText, Sprite, Texture } from 'pixi.js';
+import { Assets, Container, Graphics, HTMLText, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import {
@@ -19,7 +20,7 @@ const WORD_STYLE = createExampleWordStyle(180);
 
 export class LetterPopup extends Container {
   public static assetBundles = ['education-tutorial', 'education-letter-images'];
-
+  private isPlaying: boolean = false;
   private letter: string;
   private exampleWord: string | undefined;
   private background: Graphics;
@@ -36,7 +37,12 @@ export class LetterPopup extends Container {
 
     this.closeButton = this.createCloseButton();
     this.soundButton = new SoundButton({
-      onClick: () => {},
+      onClick: () => {
+        const option = Assets.resolver.hasKey(`education-audio/words/${this.letter}.mp3`)
+          ? 'words'
+          : 'letters';
+        this.playSound(`education-audio/${option}/${this.letter}.mp3`);
+      },
       size: 300,
       variant: 'large',
     });
@@ -61,6 +67,10 @@ export class LetterPopup extends Container {
   async show() {
     this.y = screen.height + 10;
     await animate(this.position, { y: 0 }, { duration: 0.6, ease: 'easeOut' });
+    const option: string = Assets.resolver.hasKey(`education-audio/words/${this.letter}.mp3`)
+      ? 'words'
+      : 'letters';
+    this.playSound(`education-audio/${option}/${this.letter}.mp3`);
   }
 
   async hide() {
@@ -98,5 +108,20 @@ export class LetterPopup extends Container {
       anchor: 0.5,
       layout: { position: 'absolute', left: '20%', top: '25%' },
     });
+  }
+
+  // spam safe playSound method
+  private async playSound(alias: string) {
+    if (this.isPlaying) return;
+    if (!Assets.resolver.hasKey(alias)) return;
+
+    this.isPlaying = true;
+    const duration = sound.find(alias)?.duration ?? 0;
+    engine().audio.sfx.play(alias);
+
+    // Re-enable after the sound's own duration
+    setTimeout(() => {
+      this.isPlaying = false;
+    }, duration * 1000);
   }
 }
