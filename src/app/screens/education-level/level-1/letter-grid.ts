@@ -1,9 +1,9 @@
-import { Container, Graphics, Assets } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 
 import { EducationLevelScreen } from '.';
 import { engine } from '../../../../engine/getEngine';
 import { waitFor } from '../../../../engine/utils/waitFor';
-import { getAlphabet } from '../../../../utils/keymap';
+import { pickRandomEducationLetters } from '../../../../utils/example-words';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -22,23 +22,12 @@ const HPADDING = HGAP / 2;
 const VPADDING = VGAP / 2;
 const BUTTON_DIM = 150;
 
-function getLetterStrings() {
-  const entries = [...getAlphabet()];
-  const result: string[] = [];
-  while (result.length < NUM_CHOICES) {
-    const i = Math.floor(Math.random() * entries.length);
-    const pick = entries.splice(i, 1)[0]; // remove so it can't be picked again
-    if (pick) result.push(pick.text);
-  }
-  return result;
-}
-
 export class LetterGrid extends Container {
   // Pixi Scene Objects
   private backgroundTint: Graphics;
   private soundButton: SoundButton;
   private panel: Container;
-  private letterStrings: string[] = getLetterStrings();
+  private letterStrings: string[] = pickRandomEducationLetters(NUM_CHOICES);
   private topPanel: Container;
   private bottomPanel: Container;
 
@@ -86,10 +75,6 @@ export class LetterGrid extends Container {
   // ACCESSSES letterStrings
   private initLetterAttributes() {
     this.correctLetterString = this.letterStrings[Math.floor(Math.random() * NUM_CHOICES)];
-    while (!Assets.resolver.hasKey(`${this.correctLetterString}.mp3`)) {
-      console.log('changed to safe letter');
-      this.correctLetterString = this.letterStrings[Math.floor(Math.random() * NUM_CHOICES)];
-    }
     this.letterStrings.forEach((letterString) => {
       this.letterMap.set(
         letterString,

@@ -99,10 +99,34 @@ export function getMissingWordMarkup(letter: string, word: string): string {
   return `_${word.slice(letter.length)}`;
 }
 
+export function hasEducationLetterAudio(letter: string): boolean {
+  return (
+    Assets.resolver.hasKey(`education-letters-audio/${letter}.mp3`) ||
+    Assets.resolver.hasKey(`${letter}.mp3`)
+  );
+}
+
+export function hasEducationLetterImage(letter: string): boolean {
+  return Assets.resolver.hasKey(`education-letter-images/${letter}.png`);
+}
+
+export function getEducationLettersWithAudio(): string[] {
+  return EDUCATION_LETTERS.filter(hasEducationLetterAudio);
+}
+
+export function pickRandomEducationLetters(count: number): string[] {
+  const pool = [...getEducationLettersWithAudio()].sort(() => Math.random() - 0.5);
+  return pool.slice(0, count);
+}
+
+export function getPlayableEducationLetters(): string[] {
+  return EDUCATION_LETTERS.filter(
+    (letter) => hasEducationLetterAudio(letter) && hasEducationLetterImage(letter),
+  );
+}
+
 export function getPlayableWords(): [string, string][] {
   return [...EXAMPLE_WORDS.entries()].filter(
-    ([letter]) =>
-      Assets.resolver.hasKey(`${letter}.mp3`) &&
-      Assets.resolver.hasKey(`education-letter-images/${letter}.png`),
+    ([letter]) => hasEducationLetterAudio(letter) && hasEducationLetterImage(letter),
   );
 }

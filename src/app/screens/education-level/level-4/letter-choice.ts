@@ -35,6 +35,7 @@ export class LetterChoice extends FancyButton {
 
     this.once('added', () => {
       const texture = Texture.from(`education-letter-images/${letter}.png`);
+      if (!texture?.width || !texture?.height) return;
       const naturalWidth = texture.width;
       const naturalHeight = texture.height;
       if (naturalWidth <= 0 || naturalHeight <= 0) return;

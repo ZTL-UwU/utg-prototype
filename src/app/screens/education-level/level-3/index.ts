@@ -1,8 +1,8 @@
 import { animate, type AnimationPlaybackControls } from 'motion';
-import { Assets, Container, ObservablePoint, Sprite, Texture } from 'pixi.js';
+import { Container, ObservablePoint, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { getAlphabet } from '../../../../utils/keymap';
+import { pickRandomEducationLetters } from '../../../../utils/example-words';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -18,8 +18,8 @@ const FLOWER_SIZE = 100;
 const X_SLOTS = [0.2, 0.5, 0.8];
 
 function getThreeUniqueLetters(): [string, string, string] {
-  const entries = [...getAlphabet()].sort(() => Math.random() - 0.5);
-  return [entries[0].text, entries[1].text, entries[2].text];
+  const [a, b, c] = pickRandomEducationLetters(3);
+  return [a, b, c];
 }
 
 export class EducationSheepScreen extends Container {
@@ -62,22 +62,9 @@ export class EducationSheepScreen extends Container {
         }),
     });
 
-    let letters: string[] = [];
-    let correctLetter: string = '';
-
-    while (true) {
-      letters = getThreeUniqueLetters();
-      correctLetter = letters[Math.floor(Math.random() * letters.length)];
-
-      if (Assets.resolver.hasKey(`${correctLetter}.mp3`)) {
-        break;
-      }
-      console.log(`Audio for "${correctLetter}.mp3" is missing. Re-rolling letters...`);
-    }
-
+    const letters = getThreeUniqueLetters();
     letters.sort(() => Math.random() - 0.5);
-
-    this.correctLetter = correctLetter;
+    this.correctLetter = letters[Math.floor(Math.random() * letters.length)];
     this.soundButton = new SoundButton({
       onClick: () => {
         this.soundButtonClick();

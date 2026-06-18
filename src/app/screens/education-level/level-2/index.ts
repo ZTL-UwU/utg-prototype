@@ -1,7 +1,7 @@
-import { Assets, Container, Sprite, Texture } from 'pixi.js';
+import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { getAlphabet } from '../../../../utils/keymap';
+import { pickRandomEducationLetters } from '../../../../utils/example-words';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -12,11 +12,6 @@ import { SoundButton } from '../../../ui/sound-button';
 import { LevelMapScreen } from '../../level-map';
 import type { TMapUnit } from '../../level-map/units';
 import { LetterBubble } from './letter-bubble';
-
-function getThreeUniqueLetters(): [string, string, string] {
-  const entries = [...getAlphabet()].sort(() => Math.random() - 0.5);
-  return [entries[0].text, entries[1].text, entries[2].text];
-}
 
 export class EducationBubbleScreen extends Container {
   public static assetBundles = [
@@ -80,14 +75,7 @@ export class EducationBubbleScreen extends Container {
         }),
     });
 
-    let [correctLetter, wrong1, wrong2]: string[] = getThreeUniqueLetters();
-
-    while (!Assets.resolver.hasKey(`${correctLetter}.mp3`)) {
-      console.log(`Audio file "${correctLetter}.mp3" missing. Rolling a new set`);
-
-      [correctLetter, wrong1, wrong2] = getThreeUniqueLetters();
-    }
-
+    const [correctLetter, wrong1, wrong2] = pickRandomEducationLetters(3);
     const letters = [correctLetter, wrong1, wrong2].sort(() => Math.random() - 0.5);
     this.soundButton = new SoundButton({
       onClick: () => {

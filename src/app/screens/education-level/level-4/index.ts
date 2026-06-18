@@ -1,8 +1,8 @@
 import { animate } from 'motion';
-import { Assets, Container, Graphics } from 'pixi.js';
+import { Container, Graphics } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { getAlphabet } from '../../../../utils/keymap';
+import { pickRandomEducationLetters } from '../../../../utils/example-words';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -16,21 +16,6 @@ import { LetterChoice } from './letter-choice';
 
 const X_SLOTS = [0.2, 0.5, 0.8];
 const CHOICE_Y_RATIO = 0.38;
-
-function getPlayableLetters(): string[] {
-  return getAlphabet()
-    .map((entry) => entry.text)
-    .filter(
-      (letter) =>
-        Assets.resolver.hasKey(`${letter}.mp3`) &&
-        Assets.resolver.hasKey(`education-letter-images/${letter}.png`),
-    );
-}
-
-function getThreeUniqueLetters(): [string, string, string] {
-  const entries = [...getPlayableLetters()].sort(() => Math.random() - 0.5);
-  return [entries[0], entries[1], entries[2]];
-}
 
 function endGame(mapUnit: TMapUnit) {
   if (++EducationImageScreen.rounds < EducationImageScreen.MAX_ROUNDS) {
@@ -85,21 +70,9 @@ export class EducationImageScreen extends Container {
         }),
     });
 
-    let letters: string[] = [];
-    let correctLetter = '';
-
-    while (true) {
-      letters = getThreeUniqueLetters();
-      correctLetter = letters[Math.floor(Math.random() * letters.length)];
-
-      if (Assets.resolver.hasKey(`${correctLetter}.mp3`)) {
-        break;
-      }
-      console.log(`Audio for "${correctLetter}.mp3" is missing. Re-rolling letters...`);
-    }
-
+    const letters = pickRandomEducationLetters(3);
     letters.sort(() => Math.random() - 0.5);
-    this.correctLetter = correctLetter;
+    this.correctLetter = letters[Math.floor(Math.random() * letters.length)];
 
     this.soundButton = new SoundButton({
       onClick: () => this.soundButtonClick(),
@@ -113,8 +86,8 @@ export class EducationImageScreen extends Container {
       (letter) =>
         new LetterChoice(
           letter,
-          correctLetter,
-          letter === correctLetter ? () => endGame(mapUnit) : undefined,
+          this.correctLetter,
+          letter === this.correctLetter ? () => endGame(mapUnit) : undefined,
         ),
     );
     for (const choice of this.choices) this.choiceContainer.addChild(choice);
