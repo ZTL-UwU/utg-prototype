@@ -1,3 +1,4 @@
+import type { IMediaInstance } from '@pixi/sound';
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, ObservablePoint, Sprite, Texture } from 'pixi.js';
 
@@ -97,7 +98,6 @@ export class EducationSheepScreen extends Container {
     this.sheep.anchor.set(0.5);
 
     this.addChild(this.background, this.flowerContainer, this.sheep, this.hud, this.soundButton);
-    this.soundButtonClick();
   }
 
   resize(width: number, height: number) {
@@ -111,8 +111,28 @@ export class EducationSheepScreen extends Container {
 
   async show() {
     // resize() runs before show() in the navigation lifecycle, so flowers[0].x is already set
-    this.sheep.position.set(this.flowers[0].x - 2 * this.flowers[0].width, 0.6 * this.height);
+    const startingSheepPosX = this.flowers[0].x - 2 * this.flowers[0].width;
+    const startingSheepPosY = 0.6 * this.height;
+    this.sheep.position.set(-startingSheepPosX, startingSheepPosY);
+
+    await Promise.all([
+      animate(
+        this.sheep.position,
+        { x: startingSheepPosX, y: startingSheepPosY },
+        { duration: 0.8, ease: 'easeOut' },
+      ),
+      (async () => {
+        const sfxInstance: IMediaInstance = await engine().audio.sfx.play(
+          'education-level-3/sheep.mp3',
+          { volume: 0.5 },
+        );
+        sfxInstance.on('end', () => {
+          this.soundButtonClick();
+        });
+      })(),
+    ]);
   }
+
   private soundButtonClick() {
     void engine().audio.sfx.play(`education-letters-audio/${this.correctLetter}.mp3`);
   }
@@ -135,8 +155,11 @@ export class EducationSheepScreen extends Container {
     useSessionStore.getState().recordCorrect();
     await this.moveSheepToFlower(flower)
       .then(async () => {
-        await Promise.all([this.sheepBounceHappy(this.sheep.scale), flower.correctAnimation()]);
-        void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
+        await Promise.all([
+          this.sheepBounceHappy(this.sheep.scale),
+          flower.correctAnimation(),
+          engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3'),
+        ]);
       })
       .then(() => this.endGame());
   }
@@ -146,10 +169,9 @@ export class EducationSheepScreen extends Container {
       .then(async () => {
         await Promise.all([
           this.sheepFlashGraze(this.sheep.scale), // CURRENT SCALE PASSED TO PRESERVE DIMENSION
-          flower.incorrectAnimation(),
+          flower.incorrectAnimation().then(() => flower.wilt()),
+          void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3'),
         ]);
-        flower.wilt();
-        void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
       })
       .then(() => this.sheepFlashSad(this.sheep.scale))
       .then(() => {
@@ -217,7 +239,6 @@ export class EducationSheepScreen extends Container {
     ]).then(() => (this.sheep.texture = defaultTex));
   }
   private async moveSheepToFlower(flower: LetterFlower) {
-    void engine().audio.sfx.play('education-level-3/sheep.mp3');
     if (this.sheep.x > flower.x) {
       await Promise.all([
         animate(this.sheep.scale, { x: -1 }, { duration: 0.2, ease: 'linear' }), //mirror to face the flower
