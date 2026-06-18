@@ -20,16 +20,17 @@ export class BackButton extends FancyButton {
           duration: 100,
         },
       },
+      anchor: 0.5,
     });
 
     this.layout = {
       position: 'absolute',
-      top: 30,
-      left: 30,
+      top: 90,
+      left: 90,
     };
 
     this.onPress.connect(() => {
-      engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
       onPress();
     });
   }

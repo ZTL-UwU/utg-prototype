@@ -181,6 +181,6 @@ export class EducationImageScreen extends Container {
   }
 
   private soundButtonClick() {
-    engine().audio.sfx.play(`education-audio/letters/${this.correctLetter}.mp3`);
+    void engine().audio.sfx.play(`education-audio/letters/${this.correctLetter}.mp3`);
   }
 }

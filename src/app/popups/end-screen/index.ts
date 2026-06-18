@@ -204,9 +204,9 @@ export class EndScreenPopup extends Container {
     if (!currentEngine.navigation.currentScreen) return;
     currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 0 })];
     if (this.starCount <= 1) {
-      engine().audio.sfx.play('end-screen/level-failed.mp3');
+      void engine().audio.sfx.play('end-screen/level-failed.mp3');
     } else {
-      engine().audio.sfx.play('end-screen/level-complete.mp3');
+      void engine().audio.sfx.play('end-screen/level-complete.mp3');
     }
     this.innerContainer.alpha = 0;
     this.innerContainer.scale.set(0.7);

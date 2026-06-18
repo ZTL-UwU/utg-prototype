@@ -153,7 +153,7 @@ export class LetterGrid extends Container {
   }
 
   private readonly soundButtonClick = () => {
-    engine().audio.sfx.play(`education-audio/letters/${this.correctLetterString}.mp3`);
+    void engine().audio.sfx.play(`education-audio/letters/${this.correctLetterString}.mp3`);
     console.log(`Now playing: education-audio/letters/${this.correctLetterString}.mp3`);
   };
 
@@ -175,14 +175,14 @@ export class LetterGrid extends Container {
     this.isResolving = true;
 
     if (choice.letter !== this.correctLetterString) {
-      engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
+      void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
       useSessionStore.getState().recordMistake();
       await choice.showIncorrect();
       this.isResolving = false;
       return;
     }
 
-    engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
+    void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
     useSessionStore.getState().recordCorrect();
     this.letters.forEach((letter) => letter.setInteractive(false));
     await Promise.all([choice.showCorrect(), waitFor(1)]);

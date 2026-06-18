@@ -143,7 +143,7 @@ export class LevelSplashScreen extends Container {
     };
 
     this.startButton.onPress.connect(() => {
-      engine().audio.sfx.play('level-splash/game-start.mp3');
+      void engine().audio.sfx.play('level-splash/game-start.mp3');
       useSessionStore.getState().reset();
       useSessionStore.getState().startSession(mapUnit.type);
 

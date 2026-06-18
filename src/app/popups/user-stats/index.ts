@@ -196,7 +196,7 @@ export class UserStatsPopup extends Container {
   public async show() {
     const currentEngine = engine();
     if (!currentEngine.navigation.currentScreen) return;
-    currentEngine.audio.sfx.play('preload-audio/sfx/popup.mp3');
+    void currentEngine.audio.sfx.play('preload-audio/sfx/popup.mp3');
     currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 0 })];
     currentEngine.navigation.currentScreen.tint = 0x666666;
 

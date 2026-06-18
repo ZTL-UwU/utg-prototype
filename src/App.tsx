@@ -3,7 +3,6 @@ import '@pixi/layout';
 
 import './index.css';
 import { HomeScreen } from './app/screens/home';
-import { mapUnitStore } from './app/screens/level-map/units';
 import { MobileBlockerBanner } from './components/MobileBlockerBanner';
 import { ScreenOverlay } from './components/ScreenOverlay';
 import { CreationEngine } from './engine/engine';
@@ -27,15 +26,7 @@ export default function App() {
         antialias: true,
       });
 
-      // TODO: remove — temporary debug shortcut to level 6 via ?debug-level=6
-      const debugLevel = new URLSearchParams(window.location.search).get('debug-level');
-      if (debugLevel === '6') {
-        const mapUnit = mapUnitStore['education-map-2'];
-        const level = mapUnit.levels.find((candidate) => candidate.id === 6);
-        await engine.navigation.showScreen(level!.screen!, mapUnit);
-      } else {
-        await engine.navigation.showScreen(HomeScreen);
-      }
+      await engine.navigation.showScreen(HomeScreen);
     };
 
     void init();

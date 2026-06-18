@@ -124,7 +124,7 @@ export class HomeScreen extends Container {
     };
 
     this.startButton.onPress.connect(() => {
-      engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
       void engine().navigation.showScreen(LayerSelectScreen);
     });
 
