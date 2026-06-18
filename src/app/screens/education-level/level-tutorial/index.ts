@@ -11,7 +11,7 @@ import type { TMapUnit } from '../../level-map/units';
 import { EducationYoutubeScreen } from '../youtube-videos';
 import { LetterGrid } from './letter-grid';
 
-const ALPHABET_SONG_ALIAS = 'education-audio/uyghur-alphabet-song.mp3';
+const ALPHABET_SONG_ALIAS = 'education-tutorial/uyghur-alphabet-song.mp3';
 
 const letters = [
   EDUCATION_LETTERS.slice(0, 8),
@@ -37,7 +37,13 @@ function drawStopButton(size: number, state: 'default' | 'hover') {
 }
 
 export class EducationTutorialScreen extends Container {
-  public static assetBundles = ['education-level', 'ui', 'education-audio', 'education-tutorial'];
+  public static assetBundles = [
+    'education-level',
+    'ui',
+    'education-letters-audio',
+    'education-words-audio',
+    'education-tutorial',
+  ];
 
   private background: Sprite;
   private hud: HUD;

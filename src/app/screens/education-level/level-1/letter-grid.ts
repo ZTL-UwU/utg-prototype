@@ -153,8 +153,8 @@ export class LetterGrid extends Container {
   }
 
   private readonly soundButtonClick = () => {
-    void engine().audio.sfx.play(`education-audio/letters/${this.correctLetterString}.mp3`);
-    console.log(`Now playing: education-audio/letters/${this.correctLetterString}.mp3`);
+    void engine().audio.sfx.play(`education-letters-audio/${this.correctLetterString}.mp3`);
+    console.log(`Now playing: education-letters-audio/${this.correctLetterString}.mp3`);
   };
 
   private createChoiceSlot(choice: LetterChoice) {

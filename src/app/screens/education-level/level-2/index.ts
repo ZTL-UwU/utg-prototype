@@ -19,7 +19,12 @@ function getThreeUniqueLetters(): [string, string, string] {
 }
 
 export class EducationBubbleScreen extends Container {
-  public static assetBundles = ['education-level-2', 'education-level', 'ui', 'education-audio'];
+  public static assetBundles = [
+    'education-level-2',
+    'education-level',
+    'ui',
+    'education-letters-audio',
+  ];
   public static rounds = 0;
   public static readonly MAX_ROUNDS = 5;
 
@@ -42,7 +47,7 @@ export class EducationBubbleScreen extends Container {
     }
   };
   private soundButtonClick() {
-    void engine().audio.sfx.play(`education-audio/letters/${this.correctLetter}.mp3`);
+    void engine().audio.sfx.play(`education-letters-audio/${this.correctLetter}.mp3`);
   }
   private mapUnit: TMapUnit;
   constructor(mapUnit: TMapUnit) {

@@ -102,7 +102,7 @@ function getClosestRotation(currentRotation: number, targetRotation: number) {
 }
 
 export class EducationSheepJumpScreen extends Container {
-  public static assetBundles = ['education-level-6', 'mascots', 'ui', 'education-audio'];
+  public static assetBundles = ['education-level-6', 'mascots', 'ui', 'education-letters-audio'];
 
   private readonly background: TilingSprite;
   private readonly stonePath: Sprite;
@@ -524,7 +524,7 @@ export class EducationSheepJumpScreen extends Container {
     const round = this.map[this.step];
     if (!round) return;
 
-    void engine().audio.sfx.play(`education-audio/letters/${round.letters[round.answer]}.mp3`);
+    void engine().audio.sfx.play(`education-letters-audio/${round.letters[round.answer]}.mp3`);
   }
 
   private async moveSheepToTile(rowIndex: number, tileIndex: number, tile: LetterTile) {

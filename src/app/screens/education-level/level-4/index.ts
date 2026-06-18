@@ -48,7 +48,7 @@ export class EducationImageScreen extends Container {
     'education-level',
     'education-letter-images',
     'ui',
-    'education-audio',
+    'education-letters-audio',
   ];
   public static rounds = 0;
   public static readonly MAX_ROUNDS = 5;
@@ -181,6 +181,6 @@ export class EducationImageScreen extends Container {
   }
 
   private soundButtonClick() {
-    void engine().audio.sfx.play(`education-audio/letters/${this.correctLetter}.mp3`);
+    void engine().audio.sfx.play(`education-letters-audio/${this.correctLetter}.mp3`);
   }
 }

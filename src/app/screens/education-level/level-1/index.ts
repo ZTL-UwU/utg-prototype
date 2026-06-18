@@ -11,7 +11,7 @@ import { LetterGrid } from './letter-grid';
 import { MessageContainer } from './message-container';
 
 export class EducationLevelScreen extends Container {
-  public static assetBundles = ['education-level', 'ui', 'education-audio'];
+  public static assetBundles = ['education-level', 'ui', 'education-letters-audio'];
   private background: Sprite;
   private hud: HUD;
   private letterGrid: LetterGrid;

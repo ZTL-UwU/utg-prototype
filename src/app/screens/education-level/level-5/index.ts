@@ -49,7 +49,7 @@ export class EducationWordScreen extends Container {
     'education-level',
     'education-letter-images',
     'ui',
-    'education-audio',
+    'education-letters-audio',
   ];
   public static rounds = 0;
   public static readonly MAX_ROUNDS = 5;
@@ -193,7 +193,7 @@ export class EducationWordScreen extends Container {
   }
 
   private playAudio() {
-    void engine().audio.sfx.play(`education-audio/letters/${this.correctLetter}.mp3`);
+    void engine().audio.sfx.play(`education-letters-audio/${this.correctLetter}.mp3`);
   }
 
   private async handleChoice(choice: LetterChoice) {

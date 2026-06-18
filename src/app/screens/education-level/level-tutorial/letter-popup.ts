@@ -62,11 +62,10 @@ export class LetterPopup extends Container {
   }
 
   private getSoundAlias(): string {
-    const option = Assets.resolver.hasKey(`education-audio/words/${this.letter}.mp3`)
-      ? 'words'
-      : 'letters';
+    const wordsAlias = `education-words-audio/${this.letter}.mp3`;
+    if (Assets.resolver.hasKey(wordsAlias)) return wordsAlias;
 
-    return `education-audio/${option}/${this.letter}.mp3`;
+    return `education-letters-audio/${this.letter}.mp3`;
   }
 
   async show() {
