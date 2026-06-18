@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { getAlphabet, getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { getAllKeys, getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -15,7 +15,7 @@ const ROW_SIZE = 6;
 const ROW_WIDTH = ROW_SIZE * CARD_SIZE + (ROW_SIZE - 1) * CARD_GAP;
 
 function makeRow(): string[] {
-  const entries = getAlphabet();
+  const entries = getAllKeys();
 
   return Array.from({ length: ROW_SIZE }, () => {
     const pick = entries[Math.floor(Math.random() * entries.length)];

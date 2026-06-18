@@ -1,6 +1,6 @@
 import keymap from './keymap.json';
 
-export type AlphabetEntry = { text: string; layerId: string };
+export type KeyEntry = { text: string; layerId: string };
 
 export function getMappedFromKeyCode(code: string, shift: boolean): string {
   const layer = keymap.tablet.layer.find((layer) => layer.id === (shift ? 'shift' : 'default'));
@@ -57,7 +57,7 @@ export function getKeyFromChar(char: string): string {
   return key?.id ?? '';
 }
 
-export function getAlphabet(): AlphabetEntry[] {
+export function getAllKeys(): KeyEntry[] {
   return keymap.tablet.layer.flatMap((layer) =>
     layer.row.flatMap((row) =>
       row.key

@@ -2,7 +2,7 @@ import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { getAlphabet, getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { getAllKeys, getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -38,7 +38,7 @@ type FallingLetter = {
 };
 
 function makeRandomLetter() {
-  const entries = getAlphabet();
+  const entries = getAllKeys();
   const pick = entries[Math.floor(Math.random() * entries.length)];
   return pick?.text ?? '';
 }
