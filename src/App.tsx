@@ -3,8 +3,6 @@ import '@pixi/layout';
 
 import './index.css';
 import { HomeScreen } from './app/screens/home';
-import { mapUnitStore } from './app/screens/level-map/units';
-import { TypingSandstormScreen } from './app/screens/typing-level/level-2';
 import { MobileBlockerBanner } from './components/MobileBlockerBanner';
 import { ScreenOverlay } from './components/ScreenOverlay';
 import { CreationEngine } from './engine/engine';
@@ -28,13 +26,7 @@ export default function App() {
         antialias: true,
       });
 
-      // TODO: remove — temporary debug shortcut to level 6 via ?debug-level=6
-      const debug = new URLSearchParams(window.location.search).get('debug');
-      if (debug) {
-        await engine.navigation.showScreen(TypingSandstormScreen, mapUnitStore['typing-map-1']);
-      } else {
-        await engine.navigation.showScreen(HomeScreen);
-      }
+      await engine.navigation.showScreen(HomeScreen);
     };
 
     void init();
