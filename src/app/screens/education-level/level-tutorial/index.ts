@@ -97,7 +97,6 @@ export class EducationTutorialScreen extends Container {
     this.playButton.onPress.connect(() => this.onPlay());
     this.playButton.once('added', () => {
       this.playButton.scale.set(STOP_BUTTON_SIZE / this.playButton.width);
-      console.log(this.playButton.width, this.playButton.scale.x);
     });
     this.stopButton = new FancyButton({
       defaultView: drawStopButton(STOP_BUTTON_SIZE, 'default'),
