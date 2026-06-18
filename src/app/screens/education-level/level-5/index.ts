@@ -1,3 +1,4 @@
+import { sound } from '@pixi/sound';
 import { animate } from 'motion';
 import { Container, Graphics, HTMLText, Sprite, Text, Texture } from 'pixi.js';
 
@@ -65,6 +66,7 @@ export class EducationWordScreen extends Container {
   private readonly word: string;
   private isResolving = false;
   private readonly mapUnit: TMapUnit;
+  private isPlaying: boolean = false;
 
   constructor(mapUnit: TMapUnit) {
     super({ layout: { position: 'relative', width: '100%', height: '100%' } });
@@ -193,7 +195,12 @@ export class EducationWordScreen extends Container {
   }
 
   private playAudio() {
-    void engine().audio.sfx.play(`education-letters-audio/${this.correctLetter}.mp3`);
+    if (this.isPlaying) return;
+    this.isPlaying = true;
+    const aliasString: string = `education-letters-audio/${this.correctLetter}.mp3`;
+    const durationMs = (sound.find(aliasString)?.duration ?? 0) * 1000;
+    void engine().audio.sfx.play(aliasString);
+    setTimeout(() => (this.isPlaying = false), durationMs);
   }
 
   private async handleChoice(choice: LetterChoice) {

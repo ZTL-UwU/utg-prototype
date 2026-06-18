@@ -1,3 +1,4 @@
+import { sound } from '@pixi/sound';
 import { animate } from 'motion';
 import { Container, Graphics } from 'pixi.js';
 
@@ -44,6 +45,7 @@ export class EducationImageScreen extends Container {
   private choices: LetterChoice[] = [];
   private choiceContainer = new Container();
   private correctLetter: string;
+  private isPlaying: boolean = false;
 
   constructor(mapUnit: TMapUnit) {
     super({
@@ -154,6 +156,13 @@ export class EducationImageScreen extends Container {
   }
 
   private soundButtonClick() {
-    void engine().audio.sfx.play(`education-letters-audio/${this.correctLetter}.mp3`);
+    if (this.isPlaying) return;
+    this.isPlaying = true;
+    const aliasString: string = `education-letters-audio/${this.correctLetter}.mp3`;
+    const durationMs = (sound.find(aliasString)?.duration ?? 0) * 1000;
+    void engine().audio.sfx.play(aliasString);
+    setTimeout(() => {
+      this.isPlaying = false;
+    }, durationMs);
   }
 }

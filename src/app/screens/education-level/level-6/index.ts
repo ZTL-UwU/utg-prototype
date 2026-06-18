@@ -1,3 +1,4 @@
+import { sound } from '@pixi/sound';
 import { animate, type AnimationPlaybackControls, type AnimationSequence } from 'motion';
 import { Container, Sprite, Texture, TilingSprite } from 'pixi.js';
 
@@ -103,6 +104,7 @@ function getClosestRotation(currentRotation: number, targetRotation: number) {
 
 export class EducationSheepJumpScreen extends Container {
   public static assetBundles = ['education-level-6', 'mascots', 'ui', 'education-letters-audio'];
+  private isPlaying: boolean = false;
 
   private readonly background: TilingSprite;
   private readonly stonePath: Sprite;
@@ -522,9 +524,12 @@ export class EducationSheepJumpScreen extends Container {
 
   private playCurrentAnswerAudio() {
     const round = this.map[this.step];
-    if (!round) return;
-
-    void engine().audio.sfx.play(`education-letters-audio/${round.letters[round.answer]}.mp3`);
+    if (!round || this.isPlaying) return;
+    this.isPlaying = true;
+    const aliasString = `education-letters-audio/${round.letters[round.answer]}.mp3`;
+    const durationMs = (sound.find(aliasString)?.duration ?? 0) * 1000;
+    void engine().audio.sfx.play(aliasString);
+    setTimeout(() => (this.isPlaying = false), durationMs);
   }
 
   private async moveSheepToTile(rowIndex: number, tileIndex: number, tile: LetterTile) {

@@ -1,3 +1,4 @@
+import { sound } from '@pixi/sound';
 import { Container, Graphics } from 'pixi.js';
 
 import { EducationLevelScreen } from '.';
@@ -41,6 +42,8 @@ export class LetterGrid extends Container {
   public static rounds = 0;
   public static readonly MAX_ROUNDS = 5;
   private mapUnit: TMapUnit;
+  private isPlaying: boolean = false;
+
   constructor(mapUnit: TMapUnit) {
     super({
       layout: {
@@ -68,7 +71,6 @@ export class LetterGrid extends Container {
     this.initLayouts();
     this.populatePanel();
     this.addChild(this.panel);
-    this.soundButtonClick();
   }
 
   // init letters, letterMap, correctLetterString
@@ -138,8 +140,14 @@ export class LetterGrid extends Container {
   }
 
   private readonly soundButtonClick = () => {
-    void engine().audio.sfx.play(`education-letters-audio/${this.correctLetterString}.mp3`);
-    console.log(`Now playing: education-letters-audio/${this.correctLetterString}.mp3`);
+    if (this.isPlaying) return;
+    this.isPlaying = true;
+    const aliasString: string = `education-letters-audio/${this.correctLetterString}.mp3`;
+    const durationMs = (sound.find(aliasString)?.duration ?? 0) * 1000;
+    void engine().audio.sfx.play(aliasString);
+    setTimeout(() => {
+      this.isPlaying = false;
+    }, durationMs);
   };
 
   private createChoiceSlot(choice: LetterChoice) {
@@ -178,7 +186,9 @@ export class LetterGrid extends Container {
       LetterGrid.endGame();
     }
   }
-
+  async show() {
+    this.soundButtonClick();
+  }
   override destroy(options?: Parameters<Container['destroy']>[0]) {
     super.destroy(options);
   }

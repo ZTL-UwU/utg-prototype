@@ -1,3 +1,4 @@
+import { sound } from '@pixi/sound';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
@@ -31,6 +32,7 @@ export class EducationBubbleScreen extends Container {
   private screenHeight = 0;
   private correctBubbleIndex = 0;
   private correctLetter: string;
+  private isPlaying: boolean = false;
   readonly endGame = () => {
     if (++EducationBubbleScreen.rounds < EducationBubbleScreen.MAX_ROUNDS) {
       void engine().navigation.showScreen(EducationBubbleScreen, this.mapUnit);
@@ -42,7 +44,12 @@ export class EducationBubbleScreen extends Container {
     }
   };
   private soundButtonClick() {
-    void engine().audio.sfx.play(`education-letters-audio/${this.correctLetter}.mp3`);
+    if (this.isPlaying) return;
+    this.isPlaying = true;
+    const aliasString = `education-letters-audio/${this.correctLetter}.mp3`;
+    const durationMs = (sound.find(aliasString)?.duration ?? 0) * 1000;
+    void engine().audio.sfx.play(aliasString);
+    setTimeout(() => (this.isPlaying = false), durationMs);
   }
   private mapUnit: TMapUnit;
   constructor(mapUnit: TMapUnit) {

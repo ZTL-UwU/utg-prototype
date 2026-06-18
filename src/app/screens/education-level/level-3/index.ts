@@ -1,4 +1,4 @@
-import type { IMediaInstance } from '@pixi/sound';
+import { sound, type IMediaInstance } from '@pixi/sound';
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, ObservablePoint, Sprite, Texture } from 'pixi.js';
 
@@ -39,7 +39,7 @@ export class EducationSheepScreen extends Container {
   private correctLetter: string;
   private isAnimating = false;
   private mapUnit: TMapUnit;
-
+  private isPlaying: boolean = false;
   constructor(mapUnit: TMapUnit) {
     super({ layout: { position: 'relative', width: '100%', height: '100%' } });
     engine().audio.bgm.setVolume(0);
@@ -134,7 +134,14 @@ export class EducationSheepScreen extends Container {
   }
 
   private soundButtonClick() {
-    void engine().audio.sfx.play(`education-letters-audio/${this.correctLetter}.mp3`);
+    if (this.isPlaying) return;
+    this.isPlaying = true;
+    const aliasString: string = `education-letters-audio/${this.correctLetter}.mp3`;
+    const durationMs = (sound.find(aliasString)?.duration ?? 0) * 1000;
+    void engine().audio.sfx.play(aliasString);
+    setTimeout(() => {
+      this.isPlaying = false;
+    }, durationMs);
   }
 
   /**
