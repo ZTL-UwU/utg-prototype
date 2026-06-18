@@ -114,15 +114,15 @@ export function getEducationLettersWithAudio(): string[] {
   return EDUCATION_LETTERS.filter(hasEducationLetterAudio);
 }
 
-export function pickRandomEducationLetters(count: number): string[] {
-  const pool = [...getEducationLettersWithAudio()].sort(() => Math.random() - 0.5);
-  return pool.slice(0, count);
-}
-
 export function getPlayableEducationLetters(): string[] {
   return EDUCATION_LETTERS.filter(
     (letter) => hasEducationLetterAudio(letter) && hasEducationLetterImage(letter),
   );
+}
+
+export function pickRandomEducationLetters(count: number): string[] {
+  const pool = [...getPlayableEducationLetters()].sort(() => Math.random() - 0.5);
+  return pool.slice(0, count);
 }
 
 export function getPlayableWords(): [string, string][] {

@@ -1,20 +1,34 @@
 import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
-import { Texture } from 'pixi.js';
+import { Container, HTMLText, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import {
+  createExampleWordStyle,
+  EXAMPLE_WORDS,
+  getCompletedWordMarkup,
+} from '../../../../utils/example-words';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 
 const DISPLAY_SIZE = 280;
+const WORD_FONT_SIZE = 72;
+const WORD_GAP = 20;
 
-export class LetterChoice extends FancyButton {
+export class LetterChoice extends Container {
   public readonly letter: string;
+  private readonly imageButton: FancyButton;
   private readonly isCorrect: boolean;
   private readonly onCorrect?: () => void;
   private clicked = false;
 
   constructor(letter: string, correctLetter: string, onCorrect?: () => void) {
-    super({
+    super();
+
+    this.letter = letter;
+    this.isCorrect = letter === correctLetter;
+    this.onCorrect = onCorrect;
+
+    this.imageButton = new FancyButton({
       defaultView: Texture.from(`education-letter-images/${letter}.png`),
       anchor: 0.5,
       animations: {
@@ -29,25 +43,35 @@ export class LetterChoice extends FancyButton {
       },
     });
 
-    this.letter = letter;
-    this.isCorrect = letter === correctLetter;
-    this.onCorrect = onCorrect;
+    const word = EXAMPLE_WORDS.get(letter)?.trim() ?? '';
+    const wordLabel = new HTMLText({
+      text: getCompletedWordMarkup(letter, word),
+      style: createExampleWordStyle(WORD_FONT_SIZE),
+    });
+    wordLabel.anchor.set(0.5, 0);
+    wordLabel.anchor.set(0.5, 0);
 
+    this.addChild(this.imageButton, wordLabel);
+
+    // Scale the image
     this.once('added', () => {
       const texture = Texture.from(`education-letter-images/${letter}.png`);
       if (!texture?.width || !texture?.height) return;
+
       const naturalWidth = texture.width;
       const naturalHeight = texture.height;
       if (naturalWidth <= 0 || naturalHeight <= 0) return;
+
       const scale = DISPLAY_SIZE / Math.max(naturalWidth, naturalHeight);
-      this.scale.set(scale);
+      this.imageButton.scale.set(scale);
+      wordLabel.y = (naturalHeight * scale) / 2 + WORD_GAP;
     });
 
-    this.eventMode = 'static';
-    this.onPress.connect(() => {
+    this.imageButton.eventMode = 'static';
+    this.imageButton.onPress.connect(() => {
       if (this.clicked) return;
       this.clicked = true;
-      this.eventMode = 'none';
+      this.imageButton.eventMode = 'none';
 
       if (this.isCorrect) void this.handleCorrect();
       else void this.handleIncorrect();
@@ -57,15 +81,15 @@ export class LetterChoice extends FancyButton {
   private async handleCorrect() {
     void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
     useSessionStore.getState().recordCorrect();
-    const sx = this.scale.x;
-    const sy = this.scale.y;
-    this.tint = 0x8ec24d;
+    const sx = this.imageButton.scale.x;
+    const sy = this.imageButton.scale.y;
+    this.imageButton.tint = 0x8ec24d;
     await animate(
-      this.scale,
+      this.imageButton.scale,
       { x: [sx, sx * 1.15, sx], y: [sy, sy * 1.15, sy] },
       { duration: 0.4, ease: 'easeOut' },
     );
-    this.tint = 0xffffff;
+    this.imageButton.tint = 0xffffff;
     this.onCorrect?.();
   }
 
@@ -74,14 +98,14 @@ export class LetterChoice extends FancyButton {
     useSessionStore.getState().recordMistake();
     const baseX = this.x;
     const amp = DISPLAY_SIZE * 0.06;
-    this.tint = 0xef5a42;
+    this.imageButton.tint = 0xef5a42;
     await animate(
       this,
       { x: [baseX, baseX + amp, baseX - amp, baseX + amp, baseX - amp, baseX] },
       { duration: 0.4, ease: 'linear' },
     );
-    this.tint = 0xffffff;
+    this.imageButton.tint = 0xffffff;
     this.clicked = false;
-    this.eventMode = 'static';
+    this.imageButton.eventMode = 'static';
   }
 }
