@@ -55,7 +55,7 @@ export class LetterRow extends Container {
         left: index * STEP,
       };
       card.alpha = 0;
-      card.setActive(index === 0, false);
+      card.setActive(index === this.letters.length - 1, false);
       this.lettersContainer.addChild(card);
       return card;
     });
@@ -72,10 +72,11 @@ export class LetterRow extends Container {
 
     if (event.repeat) return;
 
-    const current = this.letterCards[0];
-    if (!current) return;
+    const current = this.currentLetterCard;
+    const currentLetter = this.currentLetter;
+    if (!current || currentLetter === undefined) return;
 
-    const isCorrect = getMappedFromKeyboardEvent(event) === this.letters[0];
+    const isCorrect = getMappedFromKeyboardEvent(event) === currentLetter;
 
     if (isCorrect) {
       useSessionStore.getState().recordCorrect();
@@ -107,12 +108,24 @@ export class LetterRow extends Container {
     window.addEventListener('keydown', this.handleKeyDown);
   }
 
+  private get currentLetter() {
+    return this.letters[this.letters.length - 1];
+  }
+
+  private get currentLetterCard() {
+    return this.letterCards[this.letterCards.length - 1];
+  }
+
+  private getRightToLeftDelay(index: number, delayStep: number) {
+    return (this.letterCards.length - 1 - index) * delayStep;
+  }
+
   private removeCurrentLetter() {
-    const card = this.letterCards.shift();
-    this.letters.shift();
+    const card = this.letterCards.pop();
+    this.letters.pop();
 
     if (card) {
-      this.removeChild(card);
+      this.lettersContainer.removeChild(card);
       card.destroy({ children: true });
     }
 
@@ -123,7 +136,7 @@ export class LetterRow extends Container {
       return;
     }
 
-    this.letterCards[0]?.setActive(true);
+    this.currentLetterCard?.setActive(true);
   }
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {
@@ -132,11 +145,17 @@ export class LetterRow extends Container {
   }
 
   public async playEnterAnimation() {
-    await Promise.all(this.letterCards.map((card, index) => card.playAppear(index * 0.08)));
+    await Promise.all(
+      this.letterCards.map((card, index) => card.playAppear(this.getRightToLeftDelay(index, 0.08))),
+    );
   }
 
   public async playExitAnimation() {
-    await Promise.all(this.letterCards.map((card, index) => card.playDisappear(index * 0.02)));
+    await Promise.all(
+      this.letterCards.map((card, index) =>
+        card.playDisappear(this.getRightToLeftDelay(index, 0.02)),
+      ),
+    );
   }
 
   private endGame() {
