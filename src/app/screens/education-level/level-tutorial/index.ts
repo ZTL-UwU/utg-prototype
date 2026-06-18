@@ -6,7 +6,6 @@ import { Container, Graphics, Sprite, Texture, Ticker } from 'pixi.js';
 import { engine } from '../../../../engine/getEngine';
 import { EDUCATION_LETTERS } from '../../../../utils/example-words';
 import { HUD } from '../../../ui/hud';
-import { VideoButton } from '../../../ui/video-button';
 import { LevelMapScreen } from '../../level-map';
 import type { TMapUnit } from '../../level-map/units';
 import { EducationYoutubeScreen } from '../youtube-videos';
@@ -45,7 +44,7 @@ export class EducationTutorialScreen extends Container {
   private letterGrid: LetterGrid;
   private songButton: FancyButton;
   private songPlaying = false;
-  private videoButton: VideoButton;
+  private videoButton: FancyButton;
   private songInstance?: IMediaInstance;
 
   private timings: { char: string; time: number }[] = [];
@@ -85,8 +84,7 @@ export class EducationTutorialScreen extends Container {
           duration: 100,
         },
       },
-      anchorX: 1,
-      anchorY: 0,
+      anchor: 0.5,
     });
     this.songButton.onPress.connect(() => {
       if (this.songPlaying) void this.onStop();
@@ -95,13 +93,33 @@ export class EducationTutorialScreen extends Container {
 
     this.songButton.layout = {
       position: 'absolute',
-      top: 30,
-      right: 30,
+      top: 90,
+      right: 90,
     };
 
-    this.videoButton = new VideoButton(
-      () => void engine().navigation.showScreen(EducationYoutubeScreen, mapUnit),
-    );
+    this.videoButton = new FancyButton({
+      defaultView: 'ui/video-button.png',
+      animations: {
+        hover: {
+          props: { scale: { x: 1.1, y: 1.1 } },
+          duration: 100,
+        },
+        pressed: {
+          props: { scale: { x: 0.97, y: 0.97 } },
+          duration: 100,
+        },
+      },
+      anchor: 0.5,
+    });
+    this.videoButton.onPress.connect(() => {
+      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+      void engine().navigation.showScreen(EducationYoutubeScreen, mapUnit);
+    });
+    this.videoButton.layout = {
+      position: 'absolute',
+      top: 230,
+      right: 90,
+    };
 
     this.addChild(this.background, this.letterGrid, this.videoButton, this.hud, this.songButton);
   }

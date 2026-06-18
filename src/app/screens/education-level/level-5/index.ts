@@ -193,7 +193,7 @@ export class EducationWordScreen extends Container {
   }
 
   private playAudio() {
-    engine().audio.sfx.play(`education-audio/letters/${this.correctLetter}.mp3`);
+    void engine().audio.sfx.play(`education-audio/letters/${this.correctLetter}.mp3`);
   }
 
   private async handleChoice(choice: LetterChoice) {
@@ -201,14 +201,14 @@ export class EducationWordScreen extends Container {
     this.isResolving = true;
 
     if (choice.letter !== this.correctLetter) {
-      engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
+      void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
       useSessionStore.getState().recordMistake();
       await choice.showIncorrect();
       this.isResolving = false;
       return;
     }
 
-    engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
+    void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
     useSessionStore.getState().recordCorrect();
     this.choices.forEach((item) => item.setInteractive(false));
     this.wordText.text = getCompletedWordMarkup(this.correctLetter, this.word);

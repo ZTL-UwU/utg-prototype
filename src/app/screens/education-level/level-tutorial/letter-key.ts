@@ -87,7 +87,7 @@ export class LetterKey extends FancyButton {
 
   private readonly handlePress = () => {
     if (Assets.resolver.hasKey(`${this.letter}.mp3`)) {
-      engine().audio.sfx.play(`education-audio/letters/${this.letter}.mp3`);
+      void engine().audio.sfx.play(`education-audio/letters/${this.letter}.mp3`);
     }
     void engine().navigation.showPopup(LetterPopup, this.letter);
   };

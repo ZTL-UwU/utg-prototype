@@ -262,14 +262,14 @@ export class EducationSheepJumpScreen extends Container {
     if (rowIndex !== this.step || !currentRound || !tile || tile.isWrong) return;
 
     if (tileIndex !== currentRound.answer) {
-      engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
+      void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
       useSessionStore.getState().recordMistake();
       tile.markWrong();
       await this.moveSheepToTile(rowIndex, tileIndex, tile);
       return;
     }
 
-    engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
+    void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
     useSessionStore.getState().recordCorrect();
     await this.moveSheepToTile(rowIndex, tileIndex, tile);
     this.step++;
@@ -436,7 +436,7 @@ export class EducationSheepJumpScreen extends Container {
     this.thankYouScene.visible = true;
     this.thankYouScene.alpha = 0;
 
-    engine().audio.sfx.play(SHEEP_WALK_SOUND);
+    void engine().audio.sfx.play(SHEEP_WALK_SOUND);
     await this.fadeThankYouScene(1);
     await waitFor(Math.max(0, 1.5));
   }
@@ -524,7 +524,7 @@ export class EducationSheepJumpScreen extends Container {
     const round = this.map[this.step];
     if (!round) return;
 
-    engine().audio.sfx.play(`education-audio/letters/${round.letters[round.answer]}.mp3`);
+    void engine().audio.sfx.play(`education-audio/letters/${round.letters[round.answer]}.mp3`);
   }
 
   private async moveSheepToTile(rowIndex: number, tileIndex: number, tile: LetterTile) {

@@ -79,7 +79,7 @@ export class LetterRow extends Container {
 
     if (isCorrect) {
       useSessionStore.getState().recordCorrect();
-      engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
+      void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
       this.isRemoving = true;
       current.setFeedback('success', true);
       this.keyboard.setKeyFeedback(event.code, 'success');
@@ -91,7 +91,7 @@ export class LetterRow extends Container {
     }
 
     useSessionStore.getState().recordMistake();
-    engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
+    void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
     current.setFeedback('error', true);
     if (event.code) {
       this.keyboard.setKeyFeedback(event.code, 'error');

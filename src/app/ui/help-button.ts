@@ -20,14 +20,13 @@ export class HelpButton extends FancyButton {
           duration: 100,
         },
       },
-      anchorX: 1,
-      anchorY: 0,
+      anchor: 0.5,
     });
 
     this.layout = {
       position: 'absolute',
-      top: 30,
-      right: 30,
+      top: 90,
+      right: 90,
     };
 
     this.onPress.connect(() => {

@@ -31,7 +31,7 @@ export class ContinueButton extends FancyButton {
     };
 
     this.onPress.connect(() => {
-      engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
       onPress();
     });
   }

@@ -69,7 +69,7 @@ export class LayerSelectScreen extends Container {
       left: 100,
     };
     this.closeButton.onPress.connect(() => {
-      engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
       void engine().navigation.showScreen(HomeScreen);
     });
 
@@ -113,7 +113,7 @@ export class LayerSelectScreen extends Container {
       };
       if (data.screenType) {
         button.onPress.connect(() => {
-          engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+          void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
           void engine().navigation.showScreen(
             LevelMapScreen,
             mapUnitStore[data.screenType === 'education' ? 'education-map-1' : 'typing-map-1'],
@@ -141,7 +141,7 @@ export class LayerSelectScreen extends Container {
       right: 120,
     };
     this.userStatsButton.onPress.connect(() => {
-      engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
       void engine().navigation.showPopup(UserStatsPopup);
     });
 
@@ -162,7 +162,7 @@ export class LayerSelectScreen extends Container {
     if (this.skipShowAnimation) return;
 
     const currentEngine = engine();
-    currentEngine.audio.sfx.play('preload-audio/sfx/popup.mp3');
+    void currentEngine.audio.sfx.play('preload-audio/sfx/popup.mp3');
 
     this.innerContainer.alpha = 0;
     this.innerContainer.scale.set(0.7);

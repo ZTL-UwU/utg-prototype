@@ -93,7 +93,7 @@ export class LevelMapScreen extends Container {
       const prevMap = mapUnit.prevMap;
       this.prevMapButton = createMapNavButton('<<');
       this.prevMapButton.onPress.connect(() => {
-        engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+        void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
         void engine().navigation.showScreen(LevelMapScreen, prevMap);
       });
     }
@@ -102,7 +102,7 @@ export class LevelMapScreen extends Container {
       const nextMap = mapUnit.nextMap;
       this.nextMapButton = createMapNavButton('>>');
       this.nextMapButton.onPress.connect(() => {
-        engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+        void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
         void engine().navigation.showScreen(LevelMapScreen, nextMap);
       });
     }

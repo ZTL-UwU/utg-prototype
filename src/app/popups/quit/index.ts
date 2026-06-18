@@ -155,7 +155,7 @@ export class QuitPopup extends Container {
   /** Present the popup, animated */
   public async show() {
     const currentEngine = engine();
-    currentEngine.audio.sfx.play('preload-audio/sfx/popup.mp3');
+    void currentEngine.audio.sfx.play('preload-audio/sfx/popup.mp3');
     if (currentEngine.navigation.currentScreen) {
       currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 5 })];
     }

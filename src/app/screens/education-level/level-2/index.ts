@@ -42,7 +42,7 @@ export class EducationBubbleScreen extends Container {
     }
   };
   private soundButtonClick() {
-    engine().audio.sfx.play(`education-audio/letters/${this.correctLetter}.mp3`);
+    void engine().audio.sfx.play(`education-audio/letters/${this.correctLetter}.mp3`);
   }
   private mapUnit: TMapUnit;
   constructor(mapUnit: TMapUnit) {

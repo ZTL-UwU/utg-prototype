@@ -54,7 +54,7 @@ export class LetterChoice extends FancyButton {
   }
 
   private async handleCorrect() {
-    engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
+    void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
     useSessionStore.getState().recordCorrect();
     const sx = this.scale.x;
     const sy = this.scale.y;
@@ -69,7 +69,7 @@ export class LetterChoice extends FancyButton {
   }
 
   private async handleIncorrect() {
-    engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
+    void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
     useSessionStore.getState().recordMistake();
     const baseX = this.x;
     const amp = DISPLAY_SIZE * 0.06;

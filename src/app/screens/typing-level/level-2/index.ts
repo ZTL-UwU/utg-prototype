@@ -298,7 +298,7 @@ export class TypingSandstormScreen extends Container {
     }
 
     useSessionStore.getState().recordMistake();
-    engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
+    void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
     this.keyboard.setKeyFeedback(event.code, 'error');
     this.feedbackTimeouts.push(
       window.setTimeout(() => this.keyboard.clearKeyFeedback(event.code), 350),
@@ -324,7 +324,7 @@ export class TypingSandstormScreen extends Container {
 
     this.resolvedLetters += 1;
     useSessionStore.getState().recordCorrect();
-    engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
+    void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
     this.keyboard.setKeyFeedback(code, 'success');
     this.feedbackTimeouts.push(window.setTimeout(() => this.keyboard.clearKeyFeedback(code), 350));
 
@@ -348,7 +348,7 @@ export class TypingSandstormScreen extends Container {
 
     this.resolvedLetters += 1;
     useSessionStore.getState().recordMistake();
-    engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
+    void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
 
     const dustX = falling.card.x + CARD_SIZE / 2;
     const dustY = this.viewHeight - DUST_SIZE * 0.42;
