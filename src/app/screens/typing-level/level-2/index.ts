@@ -17,7 +17,7 @@ import { Letter } from '../level-1/letter';
 const CARD_SIZE = 118;
 const LETTER_GOAL = 18;
 const MAX_ACTIVE_LETTERS = 3;
-const FIRST_SPAWN_DELAY_MS = 800;
+const FIRST_SPAWN_DELAY_MS = 200;
 const MIN_SPAWN_DELAY_MS = 1400;
 const MAX_SPAWN_DELAY_MS = 2200;
 const SPAWN_WIDTH_RATIO = 0.5;

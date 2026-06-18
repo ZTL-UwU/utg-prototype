@@ -60,7 +60,7 @@ export class HomeScreen extends Container {
     };
 
     this.title = new Text({
-      text: 'SOZLAR SAYAHATI',
+      text: 'SOZLAR SAYAHITI',
       style: {
         fill: 0x284937,
         fontFamily: 'Concert One',
@@ -72,7 +72,7 @@ export class HomeScreen extends Container {
     });
 
     this.subtitle = new Text({
-      text: "LET'S LEARN UYGHUR",
+      text: "LET'S LEARN UYGHUR!",
       style: {
         fill: 0xffffff,
         fontFamily: 'Concert One',

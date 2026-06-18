@@ -128,6 +128,7 @@ const typingMap1: TMapUnit = {
     },
     {
       id: 2,
+      title: 'TAKLAMAKAN SANDSTORM',
       unlocked: true,
       miniMapImage: 'typing-level-map/button-preview.svg',
       screen: TypingSandstormScreen,
