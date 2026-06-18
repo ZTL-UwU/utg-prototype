@@ -38,10 +38,7 @@ export class LetterPopup extends Container {
     this.closeButton = this.createCloseButton();
     this.soundButton = new SoundButton({
       onClick: () => {
-        const option = Assets.resolver.hasKey(`education-audio/words/${this.letter}.mp3`)
-          ? 'words'
-          : 'letters';
-        void this.playSound(`education-audio/${option}/${this.letter}.mp3`);
+        void this.playSound(this.getSoundAlias());
       },
       size: 300,
       variant: 'large',
@@ -64,13 +61,18 @@ export class LetterPopup extends Container {
     this.background.clear().rect(0, 0, width, height).fill(COLORS.BACKGROUND);
   }
 
+  private getSoundAlias(): string {
+    const option = Assets.resolver.hasKey(`education-audio/words/${this.letter}.mp3`)
+      ? 'words'
+      : 'letters';
+
+    return `education-audio/${option}/${this.letter}.mp3`;
+  }
+
   async show() {
     this.y = screen.height + 10;
     await animate(this.position, { y: 0 }, { duration: 0.6, ease: 'easeOut' });
-    const option: string = Assets.resolver.hasKey(`education-audio/words/${this.letter}.mp3`)
-      ? 'words'
-      : 'letters';
-    void this.playSound(`education-audio/${option}/${this.letter}.mp3`);
+    void this.playSound(this.getSoundAlias());
   }
 
   async hide() {
@@ -87,7 +89,10 @@ export class LetterPopup extends Container {
     });
     button.anchor.set(0.5);
     button.layout = { position: 'absolute', top: '10%', left: '5%' };
-    button.onPress.connect(() => engine().navigation.hidePopup());
+    button.onPress.connect(() => {
+      engine().audio.sfx.stop(this.getSoundAlias());
+      void engine().navigation.hidePopup();
+    });
     return button;
   }
 
