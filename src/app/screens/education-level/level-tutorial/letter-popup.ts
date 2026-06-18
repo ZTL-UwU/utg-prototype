@@ -41,7 +41,7 @@ export class LetterPopup extends Container {
         const option = Assets.resolver.hasKey(`education-audio/words/${this.letter}.mp3`)
           ? 'words'
           : 'letters';
-        this.playSound(`education-audio/${option}/${this.letter}.mp3`);
+        void this.playSound(`education-audio/${option}/${this.letter}.mp3`);
       },
       size: 300,
       variant: 'large',
@@ -70,7 +70,7 @@ export class LetterPopup extends Container {
     const option: string = Assets.resolver.hasKey(`education-audio/words/${this.letter}.mp3`)
       ? 'words'
       : 'letters';
-    this.playSound(`education-audio/${option}/${this.letter}.mp3`);
+    void this.playSound(`education-audio/${option}/${this.letter}.mp3`);
   }
 
   async hide() {
@@ -117,7 +117,7 @@ export class LetterPopup extends Container {
 
     this.isPlaying = true;
     const duration = sound.find(alias)?.duration ?? 0;
-    engine().audio.sfx.play(alias);
+    void engine().audio.sfx.play(alias);
 
     // Re-enable after the sound's own duration
     setTimeout(() => {
