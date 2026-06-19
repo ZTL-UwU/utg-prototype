@@ -8,7 +8,7 @@ export class LetterTile extends FancyButton {
 
   constructor({ letter, onClick }: { letter?: string; onClick?: () => void }) {
     super({
-      defaultView: Texture.from(`education-level-6/tile.png`),
+      defaultView: Texture.from(`education-levels/education-level-6/tile.png`),
       text: new Text({
         text: letter ?? '',
         style: {

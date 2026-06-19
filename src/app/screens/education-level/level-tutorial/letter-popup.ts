@@ -62,10 +62,10 @@ export class LetterPopup extends Container {
   }
 
   private getSoundAlias(): string {
-    const wordsAlias = `education-words-audio/${this.letter}.mp3`;
+    const wordsAlias = `education-levels/education-words-audio/${this.letter}.mp3`;
     if (Assets.resolver.hasKey(wordsAlias)) return wordsAlias;
 
-    return `education-letters-audio/${this.letter}.mp3`;
+    return `education-levels/education-letters-audio/${this.letter}.mp3`;
   }
 
   async show() {
@@ -80,7 +80,7 @@ export class LetterPopup extends Container {
 
   private createCloseButton(): FancyButton {
     const button = new FancyButton({
-      defaultView: 'education-tutorial/x.svg',
+      defaultView: 'education-levels/education-tutorial/x.svg',
       animations: {
         hover: { props: { scale: { x: 1.03, y: 1.03 } }, duration: 100 },
         pressed: { props: { scale: { x: 0.97, y: 0.97 } }, duration: 100 },
@@ -96,7 +96,7 @@ export class LetterPopup extends Container {
   }
 
   private createExampleImage(): Sprite {
-    const texture = Texture.from(`education-letter-images/${this.letter}.png`);
+    const texture = Texture.from(`education-levels/education-letter-images/${this.letter}.png`);
     if (!texture) return new Sprite();
     const image = new Sprite({ texture });
     image.scale = Math.min(400 / texture.width, 400 / texture.height);

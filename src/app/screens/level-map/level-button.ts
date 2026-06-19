@@ -49,8 +49,8 @@ export class LevelButton extends FancyButton {
     super({
       defaultView: Texture.from(
         level.unlocked
-          ? 'typing-level-map/button-unlocked.png'
-          : 'typing-level-map/button-locked.svg',
+          ? 'typing-levels/typing-level-map/button-unlocked.png'
+          : 'typing-levels/typing-level-map/button-locked.svg',
       ),
       anchor: 0.5,
       animations: {

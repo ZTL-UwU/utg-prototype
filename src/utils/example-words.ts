@@ -120,13 +120,13 @@ export function getHighlightedWordMarkup(activeLetter: string, word: string): st
 
 export function hasEducationLetterAudio(letter: string): boolean {
   return (
-    Assets.resolver.hasKey(`education-letters-audio/${letter}.mp3`) ||
+    Assets.resolver.hasKey(`education-levels/education-letters-audio/${letter}.mp3`) ||
     Assets.resolver.hasKey(`${letter}.mp3`)
   );
 }
 
 export function hasEducationLetterImage(letter: string): boolean {
-  return Assets.resolver.hasKey(`education-letter-images/${letter}.png`);
+  return Assets.resolver.hasKey(`education-levels/education-letter-images/${letter}.png`);
 }
 
 export function getEducationLettersWithAudio(): string[] {

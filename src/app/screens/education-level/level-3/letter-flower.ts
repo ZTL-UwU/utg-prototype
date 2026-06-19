@@ -6,7 +6,10 @@ export class LetterFlower extends Sprite {
   private letterLabel: Text;
   private readonly onClick: () => void;
   constructor(letter: string, onClick: () => void, size = 50) {
-    super({ texture: Texture.from('education-level-3/flower-bloom.svg'), anchor: 0.5 });
+    super({
+      texture: Texture.from('education-levels/education-level-3/flower-bloom.svg'),
+      anchor: 0.5,
+    });
     this.letter = letter;
     this.onClick = onClick;
     this.letterLabel = new Text({
@@ -35,7 +38,7 @@ export class LetterFlower extends Sprite {
   }
 
   public wilt() {
-    this.texture = Texture.from('education-level-3/flower-wilted.svg');
+    this.texture = Texture.from('education-levels/education-level-3/flower-wilted.svg');
     this.letterLabel.visible = false;
   }
   public async correctAnimation() {

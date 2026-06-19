@@ -10,7 +10,9 @@ export class Camel extends Container {
 
     this.sprite = new AnimatedSprite(
       Array.from({ length: 25 }, (_, i) =>
-        Texture.from(`typing-level-1/camel-frames/frame_${String(i).padStart(3, '0')}.png`),
+        Texture.from(
+          `typing-levels/typing-level-1/camel-frames/frame_${String(i).padStart(3, '0')}.png`,
+        ),
       ),
     );
     this.sprite.anchor.set(0.5);

@@ -11,7 +11,7 @@ import type { TMapUnit } from '../../level-map/units';
 import { EducationYoutubeScreen } from '../youtube-videos';
 import { LetterGrid } from './letter-grid';
 
-const ALPHABET_SONG_ALIAS = 'education-tutorial/uyghur-alphabet-song.mp3';
+const ALPHABET_SONG_ALIAS = 'education-levels/education-tutorial/uyghur-alphabet-song.mp3';
 
 const letters = [
   EDUCATION_LETTERS.slice(0, 8),
@@ -60,7 +60,7 @@ export class EducationTutorialScreen extends Container {
     super();
 
     this.background = new Sprite({
-      texture: Texture.from('education-level/background.png'),
+      texture: Texture.from('education-levels/education-level/background.png'),
       layout: {
         position: 'absolute',
         width: '100%',
@@ -79,7 +79,7 @@ export class EducationTutorialScreen extends Container {
     this.letterGrid = new LetterGrid(letters);
 
     this.songButton = new FancyButton({
-      defaultView: 'education-tutorial/song-icon.png',
+      defaultView: 'education-levels/education-tutorial/song-icon.png',
       animations: {
         hover: {
           props: { scale: { x: 1.1, y: 1.1 } },
@@ -207,7 +207,7 @@ export class EducationTutorialScreen extends Container {
       this.songButton.hoverView = drawStopButton(STOP_BUTTON_SIZE, 'hover');
       this.songButton.pressedView = drawStopButton(STOP_BUTTON_SIZE, 'hover');
     } else {
-      this.songButton.defaultView = 'education-tutorial/song-icon.png';
+      this.songButton.defaultView = 'education-levels/education-tutorial/song-icon.png';
       this.songButton.removeView('hoverView');
       this.songButton.removeView('pressedView');
     }

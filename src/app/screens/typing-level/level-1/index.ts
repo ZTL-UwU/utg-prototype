@@ -36,7 +36,7 @@ export class TypingLevelScreen extends Container {
     });
 
     this.background = new Sprite({
-      texture: Texture.from('typing-level/background.png'),
+      texture: Texture.from('typing-levels/typing-level/background.png'),
       layout: {
         width: '100%',
         height: '100%',

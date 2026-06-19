@@ -78,17 +78,17 @@ export class TypingSandstormScreen extends Container {
     });
 
     this.background = new Sprite({
-      texture: Texture.from('typing-level/background.png'),
+      texture: Texture.from('typing-levels/typing-level/background.png'),
       layout: { width: '100%', height: '100%', position: 'absolute', objectFit: 'cover' },
     });
 
     this.cloud = new Sprite({
-      texture: Texture.from('typing-level-2/cloud.png'),
+      texture: Texture.from('typing-levels/typing-level-2/cloud.png'),
       layout: { width: '100%', height: '100%', position: 'absolute', objectFit: 'cover' },
     });
 
     this.sun = new Sprite({
-      texture: Texture.from('typing-level-2/sun.png'),
+      texture: Texture.from('typing-levels/typing-level-2/sun.png'),
       layout: { width: '100%', height: '100%', position: 'absolute', objectFit: 'cover' },
     });
 
@@ -358,7 +358,7 @@ export class TypingSandstormScreen extends Container {
   }
 
   private showDustBall(x: number, y: number) {
-    const dust = new Sprite(Texture.from('typing-level-2/dust-ball.png'));
+    const dust = new Sprite(Texture.from('typing-levels/typing-level-2/dust-ball.png'));
     dust.anchor.set(0.5);
     dust.width = DUST_SIZE;
     dust.height = (DUST_SIZE / dust.texture.width) * dust.texture.height;

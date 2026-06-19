@@ -29,7 +29,7 @@ export class LetterChoice extends Container {
     this.onCorrect = onCorrect;
 
     this.imageButton = new FancyButton({
-      defaultView: Texture.from(`education-letter-images/${letter}.png`),
+      defaultView: Texture.from(`education-levels/education-letter-images/${letter}.png`),
       anchor: 0.5,
       animations: {
         hover: {
@@ -55,7 +55,7 @@ export class LetterChoice extends Container {
 
     // Scale the image
     this.once('added', () => {
-      const texture = Texture.from(`education-letter-images/${letter}.png`);
+      const texture = Texture.from(`education-levels/education-letter-images/${letter}.png`);
       if (!texture?.width || !texture?.height) return;
 
       const naturalWidth = texture.width;
