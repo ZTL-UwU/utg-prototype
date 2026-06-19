@@ -72,21 +72,36 @@ export const EXAMPLE_WORDS = new Map<string, string>([
 ]);
 
 const WORD_COLORS = {
-  BASE: 0x1b427a,
-  HIGHLIGHT: 0x86bd65,
+  BASE_BLUE: 0x1b427a,
+  BASE_WHITE: 0xffffff,
+  CORRECT: 0x86bd65,
+  ACTIVE: 0xffde59,
 } as const;
 
 export function createExampleWordStyle(fontSize: number): HTMLTextStyle {
   return new HTMLTextStyle({
     fontSize,
-    fill: WORD_COLORS.BASE,
+    fill: WORD_COLORS.BASE_BLUE,
     fontFamily: 'Noto Naskh Arabic Bold',
     padding: 40,
     cssOverrides: ['direction: rtl'],
     tagStyles: {
       span: {
-        fill: WORD_COLORS.HIGHLIGHT,
+        fill: WORD_COLORS.CORRECT,
       },
+    },
+  });
+}
+export function createTypingWordStyle(fontSize: number): HTMLTextStyle {
+  return new HTMLTextStyle({
+    fontSize,
+    fill: WORD_COLORS.BASE_WHITE,
+    fontFamily: 'Noto Naskh Arabic Bold',
+    padding: 40,
+    cssOverrides: ['direction: rtl'],
+    tagStyles: {
+      completed: { fill: WORD_COLORS.CORRECT },
+      active: { fill: WORD_COLORS.ACTIVE },
     },
   });
 }
@@ -97,6 +112,10 @@ export function getCompletedWordMarkup(letter: string, word: string): string {
 
 export function getMissingWordMarkup(letter: string, word: string): string {
   return `_${word.slice(letter.length)}`;
+}
+export function getHighlightedWordMarkup(activeLetter: string, word: string): string {
+  const completedIdx = word.indexOf(activeLetter);
+  return `<completed>${word.slice(0, completedIdx)}</completed><active>${activeLetter}</active>${word.slice(completedIdx + activeLetter.length)}`;
 }
 
 export function hasEducationLetterAudio(letter: string): boolean {
