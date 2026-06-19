@@ -22,7 +22,7 @@ export class LetterBubble extends FancyButton {
 
   constructor(letter: string, correctLetter: string, onCorrect?: () => void) {
     super({
-      defaultView: 'education-level-2/bubble.svg',
+      defaultView: 'education-levels/education-level-2/bubble.svg',
       animations: {
         hover: {
           props: { scale: { x: 1.5, y: 1.5 } },
@@ -152,9 +152,9 @@ export class LetterBubble extends FancyButton {
       [this, { rotation: 0 }, { duration: 0.06, ease: 'easeOut' }],
     ]);
     void this.animation.finished.then(() => {
-      void engine().audio.sfx.play('education-level-2/bubble-pop.mp3');
+      void engine().audio.sfx.play('education-levels/education-level-2/bubble-pop.mp3');
       this.tint = 0xffffff;
-      this.defaultView = Sprite.from('education-level-2/bubble_popped.svg');
+      this.defaultView = Sprite.from('education-levels/education-level-2/bubble_popped.svg');
       this.eventMode = 'none';
     });
   }

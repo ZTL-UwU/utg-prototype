@@ -46,7 +46,7 @@ export class EducationBubbleScreen extends Container {
   private soundButtonClick() {
     if (this.isPlaying) return;
     this.isPlaying = true;
-    const aliasString = `education-letters-audio/${this.correctLetter}.mp3`;
+    const aliasString = `education-levels/education-letters-audio/${this.correctLetter}.mp3`;
     const durationMs = (sound.find(aliasString)?.duration ?? 0) * 1000;
     void engine().audio.sfx.play(aliasString);
     setTimeout(() => (this.isPlaying = false), durationMs);
@@ -65,7 +65,7 @@ export class EducationBubbleScreen extends Container {
     engine().audio.bgm.setVolume(0);
     this.mapUnit = mapUnit;
     this.background = new Sprite({
-      texture: Texture.from('education-level-2/background.png'),
+      texture: Texture.from('education-levels/education-level-2/background.png'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
     this.hud = new HUD({

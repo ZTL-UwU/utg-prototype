@@ -78,7 +78,7 @@ export class EducationWordScreen extends Container {
     this.word = round.word;
 
     this.background = new Sprite({
-      texture: Texture.from('education-level/background.png'),
+      texture: Texture.from('education-levels/education-level/background.png'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
 
@@ -92,7 +92,9 @@ export class EducationWordScreen extends Container {
         .fill(0xd1dcf0),
     );
 
-    const imageTexture = Texture.from(`education-letter-images/${this.correctLetter}.png`);
+    const imageTexture = Texture.from(
+      `education-levels/education-letter-images/${this.correctLetter}.png`,
+    );
     const image = new Sprite({ texture: imageTexture, anchor: 0.5 });
     image.scale.set(300 / Math.max(imageTexture.width, imageTexture.height));
     image.position.set(IMAGE_X, 220);
@@ -197,7 +199,7 @@ export class EducationWordScreen extends Container {
   private playAudio() {
     if (this.isPlaying) return;
     this.isPlaying = true;
-    const aliasString: string = `education-letters-audio/${this.correctLetter}.mp3`;
+    const aliasString: string = `education-levels/education-letters-audio/${this.correctLetter}.mp3`;
     const durationMs = (sound.find(aliasString)?.duration ?? 0) * 1000;
     void engine().audio.sfx.play(aliasString);
     setTimeout(() => (this.isPlaying = false), durationMs);

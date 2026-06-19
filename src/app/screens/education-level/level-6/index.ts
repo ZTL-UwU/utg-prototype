@@ -55,16 +55,16 @@ const SHEEP_LAND_RECOVER_DURATION = 0.14;
 const SHEEP_JUMP_HEIGHT_RATIO = 0.2;
 const SHEEP_MIN_JUMP_HEIGHT_RATIO = 0.25;
 const SHEEP_FRONT_ROTATION = 0;
-const SHEEP_GROUND_TEXTURE = 'education-level-6/sheep-top-down.png';
-const SHEEP_AERIAL_TEXTURE = 'education-level-6/sheep-top-down-aerial.png';
-const STONE_PATH_TEXTURE = 'education-level-6/stone-path.png';
+const SHEEP_GROUND_TEXTURE = 'education-levels/education-level-6/sheep-top-down.png';
+const SHEEP_AERIAL_TEXTURE = 'education-levels/education-level-6/sheep-top-down-aerial.png';
+const STONE_PATH_TEXTURE = 'education-levels/education-level-6/stone-path.png';
 const STONE_PATH_MAX_WIDTH_RATIO = 0.24;
 const STONE_PATH_MAX_HEIGHT_RATIO = 0.76;
 const STONE_PATH_TILE_OVERLAP = 8;
 const STONE_PATH_FADE_DURATION = 0.25;
 const SHEEP_WALKAWAY_DURATION = 1.7;
-const SHEEP_WALK_SOUND = 'education-level-6/sheep.mp3';
-const THANK_YOU_YURT_TEXTURE = 'education-level-6/kazakh-yurt.png';
+const SHEEP_WALK_SOUND = 'education-levels/education-level-6/sheep.mp3';
+const THANK_YOU_YURT_TEXTURE = 'education-levels/education-level-6/kazakh-yurt.png';
 const THANK_YOU_SHEEP_TEXTURE = 'mascots/sheep/dialog/thank-you.png';
 const THANK_YOU_YURT_MAX_WIDTH_RATIO = 0.48;
 const THANK_YOU_YURT_MAX_HEIGHT_RATIO = 0.5;
@@ -151,7 +151,7 @@ export class EducationSheepJumpScreen extends Container {
     });
 
     this.background = new TilingSprite({
-      texture: Texture.from('education-level-6/background-grass.png'),
+      texture: Texture.from('education-levels/education-level-6/background-grass.png'),
       width: engine().navigation.width,
       height: engine().navigation.height,
       layout: { position: 'absolute', width: '100%', height: '100%' },
@@ -166,7 +166,7 @@ export class EducationSheepJumpScreen extends Container {
     this.thankYouScene.visible = false;
     this.thankYouScene.alpha = 0;
     this.thankYouBackground = new TilingSprite({
-      texture: Texture.from('education-level-6/background.png'),
+      texture: Texture.from('education-levels/education-level-6/background.png'),
       width: engine().navigation.width,
       height: engine().navigation.height,
     });
@@ -526,7 +526,7 @@ export class EducationSheepJumpScreen extends Container {
     const round = this.map[this.step];
     if (!round || this.isPlaying) return;
     this.isPlaying = true;
-    const aliasString = `education-letters-audio/${round.letters[round.answer]}.mp3`;
+    const aliasString = `education-levels/education-letters-audio/${round.letters[round.answer]}.mp3`;
     const durationMs = (sound.find(aliasString)?.duration ?? 0) * 1000;
     void engine().audio.sfx.play(aliasString);
     setTimeout(() => (this.isPlaying = false), durationMs);

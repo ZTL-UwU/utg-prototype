@@ -46,7 +46,7 @@ export class EducationSheepScreen extends Container {
     this.mapUnit = mapUnit;
 
     this.background = new Sprite({
-      texture: Texture.from('education-level-3/background.png'),
+      texture: Texture.from('education-levels/education-level-3/background.png'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
     this.hud = new HUD({
@@ -123,7 +123,7 @@ export class EducationSheepScreen extends Container {
       ),
       (async () => {
         const sfxInstance: IMediaInstance = await engine().audio.sfx.play(
-          'education-level-3/sheep.mp3',
+          'education-levels/education-level-3/sheep.mp3',
           { volume: 0.5 },
         );
         sfxInstance.on('end', () => {
@@ -136,7 +136,7 @@ export class EducationSheepScreen extends Container {
   private soundButtonClick() {
     if (this.isPlaying) return;
     this.isPlaying = true;
-    const aliasString: string = `education-letters-audio/${this.correctLetter}.mp3`;
+    const aliasString: string = `education-levels/education-letters-audio/${this.correctLetter}.mp3`;
     const durationMs = (sound.find(aliasString)?.duration ?? 0) * 1000;
     void engine().audio.sfx.play(aliasString);
     setTimeout(() => {

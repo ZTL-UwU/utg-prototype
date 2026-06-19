@@ -18,7 +18,7 @@ export class EducationYoutubeScreen extends Container {
     this.mapUnit = mapUnit;
 
     this.background = new Sprite({
-      texture: Texture.from('education-level/background.png'),
+      texture: Texture.from('education-levels/education-level/background.png'),
       layout: {
         position: 'absolute',
         width: '100%',
