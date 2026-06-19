@@ -138,7 +138,7 @@ const typingMap1: TMapUnit = {
     },
     {
       id: 3,
-      unlocked: false,
+      unlocked: true,
       miniMapImage: 'typing-levels/typing-level-map/button-preview.svg',
       background: 'typing-levels/typing-level/background.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
