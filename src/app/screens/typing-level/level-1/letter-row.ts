@@ -6,6 +6,7 @@ import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import type { KeyboardLayout } from '../../../ui/keyboard-layout';
+import type { TMapUnit } from '../../level-map/units';
 import { Letter } from './letter';
 
 const CARD_SIZE = 140;
@@ -27,6 +28,7 @@ export class LetterRow extends Container {
   private letters = makeRow();
   private letterCards: Letter[] = [];
   private readonly keyboard: KeyboardLayout;
+  private readonly mapUnit: TMapUnit;
 
   private isRemoving = false;
   private lettersContainer = new Container({
@@ -36,7 +38,7 @@ export class LetterRow extends Container {
     },
   });
 
-  constructor(keyboard: KeyboardLayout) {
+  constructor(keyboard: KeyboardLayout, mapUnit: TMapUnit) {
     super({
       layout: {
         width: ROW_WIDTH,
@@ -47,6 +49,7 @@ export class LetterRow extends Container {
     });
 
     this.keyboard = keyboard;
+    this.mapUnit = mapUnit;
 
     this.letterCards = this.letters.map((letter, index) => {
       const card = new Letter({ letter, cardSize: CARD_SIZE });
@@ -161,7 +164,7 @@ export class LetterRow extends Container {
   private endGame() {
     const { correct, mistakes } = useSessionStore.getState();
     useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, 'typing');
+    void engine().navigation.showPopup(EndScreenPopup, { mapUnit: this.mapUnit });
     return;
   }
 }

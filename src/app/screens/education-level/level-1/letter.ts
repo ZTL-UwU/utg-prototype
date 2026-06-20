@@ -172,7 +172,7 @@ export class Letter extends Container {
         if (++LetterGrid.rounds < LetterGrid.MAX_ROUNDS) {
           void engine().navigation.showScreen(EducationLevelScreen, this.mapUnit);
         } else {
-          LetterGrid.endGame();
+          LetterGrid.endGame(this.mapUnit);
         }
       }, 1000);
     } else {

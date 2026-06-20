@@ -25,7 +25,7 @@ function endGame(mapUnit: TMapUnit) {
     EducationImageScreen.rounds = 0;
     const { correct, mistakes } = useSessionStore.getState();
     useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, 'education');
+    void engine().navigation.showPopup(EndScreenPopup, { mapUnit });
   }
 }
 

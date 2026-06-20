@@ -285,7 +285,7 @@ export class EducationSheepJumpScreen extends Container {
       if (starCount >= 2) {
         await this.playThankYouScene();
       }
-      void engine().navigation.showPopup(EndScreenPopup, 'education');
+      void engine().navigation.showPopup(EndScreenPopup, { mapUnit: this.mapUnit });
       return;
     }
 

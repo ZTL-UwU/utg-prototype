@@ -2,7 +2,7 @@ import { FancyButton } from '@pixi/ui';
 
 import { engine } from '../../engine/getEngine';
 
-export class ContinueButton extends FancyButton {
+export class NextButton extends FancyButton {
   constructor(onPress: () => void) {
     super({
       defaultView: 'ui/end-game-button.svg',

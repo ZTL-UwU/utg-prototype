@@ -67,6 +67,7 @@ export class TypingSandstormScreen extends Container {
   private resolvedLetters = 0;
   private paused = true;
   private completed = false;
+  private readonly mapUnit: TMapUnit;
 
   constructor(mapUnit: TMapUnit) {
     super({
@@ -76,6 +77,7 @@ export class TypingSandstormScreen extends Container {
         justifyContent: 'center',
       },
     });
+    this.mapUnit = mapUnit;
 
     this.background = new Sprite({
       texture: Texture.from('typing-levels/typing-level/background.png'),
@@ -394,7 +396,7 @@ export class TypingSandstormScreen extends Container {
     window.removeEventListener('keydown', this.handleKeyDown);
     const { correct, mistakes } = useSessionStore.getState();
     useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, 'typing');
+    void engine().navigation.showPopup(EndScreenPopup, { mapUnit: this.mapUnit });
   }
 
   private removeEffectAnimation(animation: AnimationPlaybackControls) {

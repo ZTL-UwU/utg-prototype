@@ -183,7 +183,7 @@ export class LetterGrid extends Container {
     if (++LetterGrid.rounds < LetterGrid.MAX_ROUNDS) {
       void engine().navigation.showScreen(EducationLevelScreen, this.mapUnit);
     } else {
-      LetterGrid.endGame();
+      LetterGrid.endGame(this.mapUnit);
     }
   }
   async show() {
@@ -193,11 +193,11 @@ export class LetterGrid extends Container {
     super.destroy(options);
   }
 
-  public static endGame() {
+  public static endGame(mapUnit: TMapUnit) {
     LetterGrid.rounds = 0;
     const { correct, mistakes } = useSessionStore.getState();
 
     useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, 'education');
+    void engine().navigation.showPopup(EndScreenPopup, { mapUnit });
   }
 }

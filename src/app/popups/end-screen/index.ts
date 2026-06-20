@@ -5,8 +5,10 @@ import { engine } from '../../../engine/getEngine';
 import { getStarCount } from '../../../zustandStores/scoreManager';
 import useSessionStore from '../../../zustandStores/sessionStore';
 import { LevelMapScreen } from '../../screens/level-map';
-import { mapUnitStore } from '../../screens/level-map/units';
-import { ContinueButton } from '../../ui/continue-button';
+import type { TMapUnit } from '../../screens/level-map/units';
+import { LevelSplashScreen } from '../../screens/level-splash';
+import { BackButton } from '../../ui/back-button';
+import { NextButton } from '../../ui/next-button';
 import { Stars } from './stars';
 
 const POPUP_WIDTH = 940;
@@ -77,9 +79,49 @@ function readSessionResults() {
   };
 }
 
-function goToLevelMap(type: 'education' | 'typing') {
-  void engine().navigation.hidePopup();
-  void engine().navigation.showScreen(LevelMapScreen, mapUnitStore[`${type}-map-1`]);
+type EndScreenPopupProps = {
+  mapUnit: TMapUnit;
+};
+
+function getNextLevel(mapUnit: TMapUnit) {
+  const currentScreen = engine().navigation.currentScreen;
+  const currentLevelIndex = mapUnit.levels.findIndex(
+    (level) => level.screen === currentScreen?.constructor,
+  );
+
+  if (currentLevelIndex === -1) return;
+
+  let nextMapUnit: TMapUnit | undefined = mapUnit;
+  let nextLevelIndex = currentLevelIndex + 1;
+
+  while (nextMapUnit) {
+    const nextLevel = nextMapUnit.levels
+      .slice(nextLevelIndex)
+      .find((level) => level.unlocked && level.screen);
+    if (nextLevel?.screen) {
+      return { mapUnit: nextMapUnit, level: nextLevel };
+    }
+
+    nextMapUnit = nextMapUnit.nextMap;
+    nextLevelIndex = 0;
+  }
+}
+
+function goToLevelMap(mapUnit: TMapUnit) {
+  void engine()
+    .navigation.hidePopup()
+    .then(() => engine().navigation.showScreen(LevelMapScreen, mapUnit));
+}
+
+function goToNextLevel(nextLevel: NonNullable<ReturnType<typeof getNextLevel>>) {
+  void engine()
+    .navigation.hidePopup()
+    .then(() =>
+      engine().navigation.showScreen(LevelSplashScreen, {
+        level: nextLevel.level,
+        mapUnit: nextLevel.mapUnit,
+      }),
+    );
 }
 
 export class EndScreenPopup extends Container {
@@ -90,7 +132,8 @@ export class EndScreenPopup extends Container {
   private contentContainer: Container;
   private stars: Stars;
   private starCount: number;
-  constructor(type: 'education' | 'typing') {
+
+  constructor({ mapUnit }: EndScreenPopupProps) {
     super({
       layout: {
         flexDirection: 'column',
@@ -99,6 +142,7 @@ export class EndScreenPopup extends Container {
       },
     });
 
+    const { type } = mapUnit;
     const { correct, mistakes, accuracy, starCount } = readSessionResults();
     this.starCount = starCount;
     this.background = createPopupBackground(POPUP_WIDTH, POPUP_HEIGHT, type);
@@ -190,11 +234,32 @@ export class EndScreenPopup extends Container {
       },
     });
 
-    const continueButton = new ContinueButton(() => goToLevelMap(type));
-    continueButton.scale.set(0.7);
+    const backButton = new BackButton(() => goToLevelMap(mapUnit));
+    backButton.anchor.set(0, 1);
+    backButton.layout = {
+      position: 'absolute',
+      left: 28,
+      top: 28,
+    };
+    backButton.anchor.set(0, 0);
+    backButton.scale.set(0.7);
+
+    const nextLevel = getNextLevel(mapUnit);
+    const nextButton = new NextButton(() => {
+      if (nextLevel) goToNextLevel(nextLevel);
+    });
+    nextButton.alpha = nextLevel ? 1 : 0.45;
+    if (!nextLevel) nextButton.eventMode = 'none';
+    nextButton.scale.set(0.7);
 
     this.innerContainer = new Container({ layout: true });
-    this.innerContainer.addChild(this.background, this.contentContainer, mascot, continueButton);
+    this.innerContainer.addChild(
+      this.background,
+      this.contentContainer,
+      mascot,
+      backButton,
+      nextButton,
+    );
 
     this.addChild(this.innerContainer);
   }
