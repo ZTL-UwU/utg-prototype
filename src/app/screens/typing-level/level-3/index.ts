@@ -45,6 +45,16 @@ type Round = {
   word: string;
   activeLetterIdx: number;
 };
+
+/**
+ *
+ * rounds vector to test particular edge cases in dev - uncomment and register in ctor when testing
+ *
+ */
+const DEV_TEST_ROUNDS: Round[] = [
+  { letter: 'ئا', word: 'ئايروپىلان', activeLetterIdx: 0 },
+  { letter: 'ت', word: 'تاۋۇز', activeLetterIdx: 0 },
+];
 function generateRoundsDictionary(): Round[] {
   return getPlayableWords()
     .sort(() => Math.random() - 0.5)
@@ -93,6 +103,7 @@ export class TypingWordScreen extends Container {
     });
     this.keyboard = new KeyboardLayout(KEYBOARD_COLOR_SCHEME);
     this.rounds = generateRoundsDictionary();
+    this.rounds = DEV_TEST_ROUNDS; // uncomment to assign rounds to selected test set
     this.mapUnit = mapUnit;
     this.card = new Graphics();
     this.cardShadow = new Graphics();
@@ -120,7 +131,9 @@ export class TypingWordScreen extends Container {
     this.layout = { width, height };
     this.background.layout = { width, height };
     this.keyboard.resize(width, height);
-    this.contentContainer.position.set((width - this.contentContainer.width) / 2, height * 0.15);
+    // this.contentContainer.pivot.set(this.contentContainer.width/2, this.contentContainer.height/2)
+    // this.contentContainer.position.set((width - this.contentContainer.width) / 2, height * 0.15);
+    this.centerContent();
   }
 
   async show() {
@@ -177,7 +190,14 @@ export class TypingWordScreen extends Container {
 
   private centerContent() {
     const groupW = IMAGE_SIZE + CONTENT_GAP + this._cardW + SHADOW_OFFSET;
-    this.contentContainer.position.set((this._sw - groupW) / 2, this._sh * 0.15);
+    this.contentContainer.layout = {
+      position: 'absolute',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: CONTENT_GAP,
+      left: (this._sw - groupW) / 2,
+      top: this._sh * 0.15,
+    };
   }
 
   private updateContentContainer(image: Sprite, word: string, activeLetterIdx: number) {
