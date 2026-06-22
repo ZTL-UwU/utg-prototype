@@ -113,9 +113,13 @@ export function getCompletedWordMarkup(letter: string, word: string): string {
 export function getMissingWordMarkup(letter: string, word: string): string {
   return `_${word.slice(letter.length)}`;
 }
-export function getHighlightedWordMarkup(activeLetter: string, word: string): string {
-  const completedIdx = word.indexOf(activeLetter);
-  return `<completed>${word.slice(0, completedIdx)}</completed><active>${activeLetter}</active>${word.slice(completedIdx + activeLetter.length)}`;
+
+export function getHighlightedWordMarkup(word: string, offset: number, length: number): string {
+  return (
+    `<completed>${word.slice(0, offset)}</completed>` +
+    `<active>${word.slice(offset, offset + length)}</active>` +
+    word.slice(offset + length)
+  );
 }
 
 export function hasEducationLetterAudio(letter: string): boolean {

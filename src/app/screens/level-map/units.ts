@@ -6,6 +6,7 @@ import { EducationWordScreen } from '../education-level/level-5';
 import { EducationSheepJumpScreen } from '../education-level/level-6';
 import { TypingLevelScreen } from '../typing-level/level-1';
 import { TypingSandstormScreen } from '../typing-level/level-2';
+import { TypingWordScreen } from '../typing-level/level-3';
 import type { TLevel } from './level-button';
 
 export type TMapUnit = {
@@ -121,7 +122,7 @@ const typingMap1: TMapUnit = {
       unlocked: true,
       miniMapImage: 'typing-levels/typing-level-map/button-preview.svg',
       screen: TypingLevelScreen,
-      background: 'typing-levels/typing-level/background.png',
+      background: 'typing-levels/typing-level/background-taklamakan.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
       backdropColor: 0x7d5600,
     },
@@ -131,23 +132,25 @@ const typingMap1: TMapUnit = {
       unlocked: true,
       miniMapImage: 'typing-levels/typing-level-map/button-preview.svg',
       screen: TypingSandstormScreen,
-      background: 'typing-levels/typing-level/background.png',
+      background: 'typing-levels/typing-level/background-taklamakan.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
       backdropColor: 0x7d5600,
     },
     {
       id: 3,
       unlocked: true,
+      title: 'TANGRI TAH',
       miniMapImage: 'typing-levels/typing-level-map/button-preview.svg',
-      background: 'typing-levels/typing-level/background.png',
+      screen: TypingWordScreen,
+      background: 'typing-levels/typing-level/background-tangri-tah.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
-      backdropColor: 0x7d5600,
+      backdropColor: 0x8ec24d,
     },
     {
       id: 4,
       unlocked: false,
       miniMapImage: 'typing-levels/typing-level-map/button-preview.svg',
-      background: 'typing-levels/typing-level/background.png',
+      background: 'typing-levels/typing-level/background-taklamakan.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
       backdropColor: 0x7d5600,
     },
