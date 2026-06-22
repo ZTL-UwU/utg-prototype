@@ -73,6 +73,7 @@ export class TypingWordScreen extends Container {
 
   constructor(mapUnit: TMapUnit) {
     super();
+    this.mapUnit = mapUnit;
     this.background = new Sprite({
       texture: Texture.from('typing-levels/typing-level/background-tangri-tah.png'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
