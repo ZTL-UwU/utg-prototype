@@ -11,6 +11,14 @@ type Key = {
   auxiliary?: boolean;
 };
 
+export type KeyboardColorOptions = {
+  PANEL_COLOR: number;
+  PANEL_SHADOW_COLOR: number;
+  KEY_COLOR: number;
+  KEY_PRESSED_COLOR: number;
+  TEXT_COLOR: number;
+};
+
 const keyboardLayout: Key[][] = [
   [
     { code: 'Backquote', auxiliary: true },
@@ -101,9 +109,18 @@ const PANEL_COLOR = 0xf3ca8a;
 const PANEL_SHADOW_COLOR = 0xc98144;
 const KEY_COLOR = 0xc98144;
 const KEY_PRESSED_COLOR = 0x8d6241;
+const TEXT_COLOR = 0xffffff;
+
+const DEFAULT_COLOR_OPTIONS: KeyboardColorOptions = {
+  PANEL_COLOR,
+  PANEL_SHADOW_COLOR,
+  KEY_COLOR,
+  KEY_PRESSED_COLOR,
+  TEXT_COLOR,
+};
+
 const KEY_SUCCESS_COLOR = 0x8ec24d;
 const KEY_ERROR_COLOR = 0xef5a42;
-const TEXT_COLOR = 0xffffff;
 
 class KeyCap extends Container {
   public readonly code: string;
@@ -112,10 +129,19 @@ class KeyCap extends Container {
   private readonly background = new Graphics();
   private readonly keyContent = new Container();
   private readonly keyLabel: Text;
+  private readonly keyColor: number;
+  private readonly keyPressedColor: number;
   private pressed = false;
   private feedback: KeyFeedback = 'none';
 
-  constructor(code: string, widthMultiplier = 1, isAuxiliary = false) {
+  constructor(
+    code: string,
+    widthMultiplier = 1,
+    isAuxiliary = false,
+    textColor = TEXT_COLOR,
+    keyColor = KEY_COLOR,
+    keyPressedColor = KEY_PRESSED_COLOR,
+  ) {
     super();
     this.code = code;
     this.keyWidth = UNIT * widthMultiplier;
@@ -125,7 +151,7 @@ class KeyCap extends Container {
       resolution: 2,
       style: {
         align: 'center',
-        fill: TEXT_COLOR,
+        fill: textColor,
         fontFamily: isAuxiliary ? 'Concert One' : 'Noto Naskh Arabic Bold',
         fontSize: isAuxiliary ? 26 : 30,
         fontWeight: '700',
@@ -135,6 +161,10 @@ class KeyCap extends Container {
       anchor: 0.5,
     });
     this.keyLabel.position.set(this.keyWidth / 2, UNIT / 2);
+
+    // REFACTORED COLOR ASSIGNMENTS
+    this.keyColor = keyColor;
+    this.keyPressedColor = keyPressedColor;
 
     this.keyContent.addChild(this.keyLabel);
     this.drawBackground();
@@ -166,8 +196,8 @@ class KeyCap extends Container {
         : this.feedback === 'error'
           ? KEY_ERROR_COLOR
           : this.pressed
-            ? KEY_PRESSED_COLOR
-            : KEY_COLOR;
+            ? this.keyPressedColor
+            : this.keyColor;
 
     this.background
       .clear()
@@ -181,8 +211,9 @@ export class KeyboardLayout extends Container {
   private readonly panelBackground = new Graphics();
   private readonly keys: KeyCap[] = [];
   private readonly keyByCode = new Map<string, KeyCap>();
-
   private readonly pressedCodes = new Set<string>();
+  private readonly keyboardColorOptions;
+
   private listening = false;
 
   private panelWidth = 0;
@@ -194,9 +225,9 @@ export class KeyboardLayout extends Container {
   private hidden = true;
   private enterExitAnimation?: AnimationPlaybackControls;
 
-  constructor() {
+  constructor(keyboardColorOptions: KeyboardColorOptions = DEFAULT_COLOR_OPTIONS) {
     super();
-
+    this.keyboardColorOptions = keyboardColorOptions;
     this.buildPanel();
     this.panel.alpha = 0;
     this.addChild(this.panel);
@@ -261,7 +292,14 @@ export class KeyboardLayout extends Container {
 
     const rows = keyboardLayout.map((row) => {
       const caps = row.map(({ code, width, auxiliary }) => {
-        const cap = new KeyCap(code, width, auxiliary);
+        const cap = new KeyCap(
+          code,
+          width,
+          auxiliary,
+          this.keyboardColorOptions.TEXT_COLOR,
+          this.keyboardColorOptions.KEY_COLOR,
+          this.keyboardColorOptions.KEY_PRESSED_COLOR,
+        );
         cap.setLabel(getKeyboardLabel(code, shiftPressed));
         this.keys.push(cap);
         if (code) {
@@ -300,9 +338,9 @@ export class KeyboardLayout extends Container {
     this.panelBackground
       .clear()
       .roundRect(0, 12, this.panelWidth, this.panelHeight, PANEL_RADIUS)
-      .fill({ color: PANEL_SHADOW_COLOR })
+      .fill({ color: this.keyboardColorOptions.PANEL_SHADOW_COLOR })
       .roundRect(0, 0, this.panelWidth, this.panelHeight, PANEL_RADIUS)
-      .fill({ color: PANEL_COLOR });
+      .fill({ color: this.keyboardColorOptions.PANEL_COLOR });
   }
 
   private layoutPanel() {
