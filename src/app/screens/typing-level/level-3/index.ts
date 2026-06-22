@@ -48,18 +48,18 @@ type Round = {
 
 /**
  *
- * rounds vector to test particular edge cases in dev - uncomment and register in ctor when testing
+ * Round[] to test particular edge cases in dev - uncomment and register in ctor when testing
  *
  */
-const DEV_TEST_ROUNDS: Round[] = [
-  { letter: 'ئا', word: 'ئايروپىلان', activeLetterIdx: 0 },
-  { letter: 'ت', word: 'تاۋۇز', activeLetterIdx: 0 },
-];
+// const DEV_TEST_ROUNDS: Round[] = [
+//   { letter: 'ئا', word: 'ئايروپىلان', activeLetterIdx: 0 },
+//   { letter: 'ت', word: 'تاۋۇز', activeLetterIdx: 0 },
+// ];
 function generateRoundsDictionary(): Round[] {
   return getPlayableWords()
     .sort(() => Math.random() - 0.5)
     .slice(0, NUM_ROUNDS)
-    .map(([letter, word]) => ({ letter, word, activeLetterIdx: 0 }));
+    .map(([letter, word]) => ({ letter, word: word.trim(), activeLetterIdx: 0 }));
 }
 
 export class TypingWordScreen extends Container {
@@ -103,7 +103,7 @@ export class TypingWordScreen extends Container {
     });
     this.keyboard = new KeyboardLayout(KEYBOARD_COLOR_SCHEME);
     this.rounds = generateRoundsDictionary();
-    this.rounds = DEV_TEST_ROUNDS; // uncomment to assign rounds to selected test set
+    // this.rounds = DEV_TEST_ROUNDS; // uncomment to assign rounds to selected test set
     this.mapUnit = mapUnit;
     this.card = new Graphics();
     this.cardShadow = new Graphics();
