@@ -92,6 +92,7 @@ export function createExampleWordStyle(fontSize: number): HTMLTextStyle {
     },
   });
 }
+
 export function createTypingWordStyle(fontSize: number): HTMLTextStyle {
   return new HTMLTextStyle({
     fontSize,

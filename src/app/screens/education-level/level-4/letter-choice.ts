@@ -49,7 +49,6 @@ export class LetterChoice extends Container {
       style: createExampleWordStyle(WORD_FONT_SIZE),
     });
     wordLabel.anchor.set(0.5, 0);
-    wordLabel.anchor.set(0.5, 0);
 
     this.addChild(this.imageButton, wordLabel);
 
