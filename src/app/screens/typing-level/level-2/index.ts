@@ -78,7 +78,7 @@ export class TypingSandstormScreen extends Container {
     });
 
     this.background = new Sprite({
-      texture: Texture.from('typing-levels/typing-level/background.png'),
+      texture: Texture.from('typing-levels/typing-level/background-taklamakan.png'),
       layout: { width: '100%', height: '100%', position: 'absolute', objectFit: 'cover' },
     });
 
