@@ -57,7 +57,7 @@ export class EducationLevelScreen extends Container {
   public async show() {
     this.letterGrid.alpha = 0;
     this.letterGrid.scale.set(0.5);
-    this.letterGrid.show();
+    void this.letterGrid.show();
     await Promise.all([
       animate(this.letterGrid, { alpha: 1 }, { duration: 0.5, ease: 'backOut' }),
       animate(this.letterGrid.scale, { x: 1, y: 1 }, { duration: 0.5, ease: 'backOut' }),

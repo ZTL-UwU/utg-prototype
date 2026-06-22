@@ -62,9 +62,11 @@ export class TypingWordScreen extends Container {
   private _sw: number = 0;
   private _sh: number = 0;
   private paused: boolean;
+  private readonly mapUnit: TMapUnit;
 
   constructor(mapUnit: TMapUnit) {
     super();
+    this.mapUnit = mapUnit;
     this.background = new Sprite({
       texture: Texture.from('typing-levels/typing-level/background-tangri-tah.png'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
@@ -259,6 +261,6 @@ export class TypingWordScreen extends Container {
     window.removeEventListener('keydown', this.handleKeyDown);
     const { correct, mistakes } = useSessionStore.getState();
     useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, 'typing');
+    void engine().navigation.showPopup(EndScreenPopup, { mapUnit: this.mapUnit });
   }
 }

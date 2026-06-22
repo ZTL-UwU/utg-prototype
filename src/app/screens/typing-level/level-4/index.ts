@@ -1,0 +1,317 @@
+import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
+
+import { engine } from '../../../../engine/getEngine';
+import { getAllKeys, getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { useScoreManager } from '../../../../zustandStores/scoreManager';
+import useSessionStore from '../../../../zustandStores/sessionStore';
+import { EndScreenPopup } from '../../../popups/end-screen';
+import { QuitPopup } from '../../../popups/quit';
+import { TutorialPopup } from '../../../popups/tutorial';
+import { HUD } from '../../../ui/hud';
+import { KeyboardLayout } from '../../../ui/keyboard-layout';
+import { LevelMapScreen } from '../../level-map';
+import type { TMapUnit } from '../../level-map/units';
+import { Letter } from '../level-1/letter';
+
+const NOTE_COUNT = 20;
+const QUEUE_SIZE = 4;
+const SLOT_WIDTH = 250;
+const SLOT_HEIGHT = 100;
+const SLOT_GAP = 80;
+const SLOT_RADIUS = 16;
+const TARGET_SIZE = 150;
+const SHADOW_OFFSET = 10;
+const FEEDBACK_DURATION_MS = 350;
+
+const COLORS = {
+  queue: 0xa6bbd2,
+  success: 0x8ec24d,
+  error: 0xef151c,
+  shadow: 0x332722,
+  white: 0xffffff,
+};
+
+type NoteCardState = 'default' | 'success' | 'error';
+
+class NoteCard extends Container {
+  private readonly shadow = new Graphics();
+  private readonly face = new Graphics();
+  private readonly noteLabel = new Text({
+    text: '',
+    resolution: 2,
+    style: {
+      fill: COLORS.white,
+      fontFamily: 'Noto Naskh Arabic Bold',
+      fontSize: 42,
+      fontWeight: '700',
+      padding: 20,
+    },
+    anchor: 0.5,
+  });
+
+  private readonly cardWidth: number;
+  private readonly cardHeight: number;
+  private readonly defaultColor: number;
+
+  constructor(width: number, height: number, defaultColor: number) {
+    super({
+      layout: {
+        width,
+        height,
+        flexShrink: 0,
+      },
+    });
+    this.cardWidth = width;
+    this.cardHeight = height;
+    this.defaultColor = defaultColor;
+    this.noteLabel.position.set(width / 2, height / 2);
+    this.noteLabel.visible = false;
+    this.addChild(this.shadow, this.face, this.noteLabel);
+    this.setState('default');
+  }
+
+  public setState(state: NoteCardState, letter = '') {
+    const color =
+      state === 'success' ? COLORS.success : state === 'error' ? COLORS.error : this.defaultColor;
+
+    this.shadow
+      .clear()
+      .roundRect(SHADOW_OFFSET, SHADOW_OFFSET, this.cardWidth, this.cardHeight, SLOT_RADIUS)
+      .fill(COLORS.shadow);
+    this.shadow.alpha = 0.72;
+    this.face.clear().roundRect(0, 0, this.cardWidth, this.cardHeight, SLOT_RADIUS).fill(color);
+
+    this.noteLabel.text = letter;
+    this.noteLabel.visible = state === 'success' && letter !== '';
+  }
+}
+
+function shuffledNotes() {
+  const notes = getAllKeys().map((entry) => entry.text);
+  const result: string[] = [];
+
+  while (result.length < NOTE_COUNT) {
+    const shuffled = [...notes].sort(() => Math.random() - 0.5);
+    result.push(...shuffled);
+  }
+
+  return result.slice(0, NOTE_COUNT);
+}
+
+export class TypingInstrumentScreen extends Container {
+  public static assetBundles = ['typing-level', 'typing-level-4', 'ui'];
+
+  private readonly background: Sprite;
+  private readonly instrument: Sprite;
+  private readonly hud: HUD;
+  private readonly keyboard = new KeyboardLayout();
+  private readonly queue = new Container({
+    layout: {
+      position: 'absolute',
+      top: 36,
+      width: '100%',
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: SLOT_GAP,
+    },
+  });
+  private readonly targetLabel = new Text({
+    text: 'NEXT NOTE',
+    resolution: 2,
+    style: {
+      fill: 0xffffff,
+      fontFamily: 'Concert One',
+      fontSize: 34,
+      fontWeight: '800',
+      letterSpacing: 1,
+    },
+    anchor: 0.5,
+  });
+  private target!: Letter;
+  private readonly queueCards = Array.from(
+    { length: QUEUE_SIZE },
+    () => new NoteCard(SLOT_WIDTH, SLOT_HEIGHT, COLORS.queue),
+  );
+  private readonly notes = shuffledNotes();
+  private feedbackTimer?: number;
+  private noteIndex = 0;
+  private paused = true;
+  private completed = false;
+  private awaitingFeedback = false;
+  private targetPosition = { x: 0, y: 0 };
+
+  private readonly mapUnit: TMapUnit;
+
+  constructor(mapUnit: TMapUnit) {
+    super();
+    this.mapUnit = mapUnit;
+
+    this.background = new Sprite({
+      texture: Texture.from('typing-levels/typing-level/background-taklamakan.png'),
+      layout: { width: '100%', height: '100%', position: 'absolute', objectFit: 'cover' },
+    });
+    this.instrument = new Sprite({
+      texture: Texture.from('typing-levels/typing-level-4/instrument.png'),
+    });
+    this.instrument.anchor.set(0.5);
+
+    this.hud = new HUD({
+      onBack: () =>
+        void engine().navigation.showPopup(QuitPopup, {
+          type: mapUnit.type,
+          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
+        }),
+      onHelp: () =>
+        void engine().navigation.showPopup(TutorialPopup, {
+          asset: 'tutorial-popups/typing-tutorial.png',
+          backdropColor: 0x7d5600,
+          exitable: true,
+        }),
+    });
+
+    this.queueCards.forEach((card) => this.queue.addChild(card));
+    this.addChild(
+      this.background,
+      this.queue,
+      this.instrument,
+      this.targetLabel,
+      this.keyboard,
+      this.hud,
+    );
+    this.renderNotes();
+  }
+
+  public resize(width: number, height: number) {
+    this.layout = { width, height };
+    this.background.layout = { width, height };
+    this.keyboard.resize(width, height);
+
+    this.instrument.position.set(width / 2 - 300, height * 0.35);
+    this.targetLabel.position.set(width / 2 + 10, height * 0.25);
+    this.targetPosition = { x: width / 2 - 66, y: height * 0.3 };
+    this.target?.position.set(this.targetPosition.x, this.targetPosition.y);
+  }
+
+  public async show() {
+    this.paused = false;
+    window.addEventListener('keydown', this.handleKeyDown);
+    void this.keyboard.resume();
+    await this.keyboard.playEnterAnimation();
+  }
+
+  public async hide() {
+    await this.pause();
+    await this.keyboard.playExitAnimation();
+  }
+
+  public async pause() {
+    this.paused = true;
+    window.removeEventListener('keydown', this.handleKeyDown);
+    await this.keyboard.pause();
+  }
+
+  public async resume() {
+    if (this.completed) return;
+    this.paused = false;
+    window.addEventListener('keydown', this.handleKeyDown);
+    await this.keyboard.resume();
+  }
+
+  public reset() {
+    window.removeEventListener('keydown', this.handleKeyDown);
+    if (this.feedbackTimer) window.clearTimeout(this.feedbackTimer);
+  }
+
+  private renderNotes() {
+    const batchStart = Math.floor(this.noteIndex / QUEUE_SIZE) * QUEUE_SIZE;
+    const completedInBatch = this.noteIndex - batchStart;
+    this.queueCards.forEach((card, index) => {
+      const isSuccess = index < completedInBatch;
+      const letter = this.notes[batchStart + index] ?? '';
+      card.setState(isSuccess ? 'success' : 'default', isSuccess ? letter : '');
+    });
+    this.setTargetLetter(this.notes[this.noteIndex] ?? '');
+  }
+
+  private setTargetLetter(letter: string) {
+    if (this.target) {
+      this.removeChild(this.target);
+      this.target.destroy({ children: true });
+    }
+    this.target = new Letter({ letter, cardSize: TARGET_SIZE, cornerRadius: SLOT_RADIUS });
+    this.target.setActive(true, false);
+    this.target.position.set(this.targetPosition.x, this.targetPosition.y);
+    this.addChildAt(this.target, this.getChildIndex(this.keyboard));
+  }
+
+  private readonly handleKeyDown = (event: KeyboardEvent) => {
+    if (
+      this.paused ||
+      this.completed ||
+      this.awaitingFeedback ||
+      event.repeat ||
+      event.key === 'Shift' ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey
+    ) {
+      return;
+    }
+
+    const typed = getMappedFromKeyboardEvent(event);
+    if (!typed) return;
+
+    if (typed === this.notes[this.noteIndex]) {
+      this.handleCorrectNote(event.code);
+    } else {
+      this.handleIncorrectNote(event.code);
+    }
+  };
+
+  private handleCorrectNote(code: string) {
+    this.awaitingFeedback = true;
+    useSessionStore.getState().recordCorrect();
+    void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
+    this.keyboard.setKeyFeedback(code, 'success');
+    this.target.setFeedback('success');
+    this.queueCards[this.noteIndex % QUEUE_SIZE]?.setState(
+      'success',
+      this.notes[this.noteIndex] ?? '',
+    );
+
+    this.feedbackTimer = window.setTimeout(() => {
+      this.keyboard.clearKeyFeedback(code);
+      this.noteIndex += 1;
+      if (this.noteIndex >= this.notes.length) {
+        this.endGame();
+        return;
+      }
+      this.renderNotes();
+      this.awaitingFeedback = false;
+    }, FEEDBACK_DURATION_MS);
+  }
+
+  private handleIncorrectNote(code: string) {
+    this.awaitingFeedback = true;
+    useSessionStore.getState().recordMistake();
+    void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
+    this.keyboard.setKeyFeedback(code, 'error');
+    this.target.setFeedback('error');
+
+    this.feedbackTimer = window.setTimeout(() => {
+      this.keyboard.clearKeyFeedback(code);
+      this.target.setFeedback('none', false);
+      this.awaitingFeedback = false;
+    }, FEEDBACK_DURATION_MS);
+  }
+
+  private endGame() {
+    this.completed = true;
+    this.paused = true;
+    window.removeEventListener('keydown', this.handleKeyDown);
+    const { correct, mistakes } = useSessionStore.getState();
+    useScoreManager.getState().addSession(correct, mistakes);
+    void engine().navigation.showPopup(EndScreenPopup, { mapUnit: this.mapUnit });
+  }
+}
