@@ -1,3 +1,4 @@
+import { animate } from 'motion';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
@@ -22,6 +23,8 @@ const SLOT_RADIUS = 16;
 const TARGET_SIZE = 150;
 const SHADOW_OFFSET = 10;
 const FEEDBACK_DURATION_MS = 350;
+const ENTER_STAGGER_MS = 0.08;
+const EXIT_STAGGER_MS = 0.02;
 
 const COLORS = {
   queue: 0xa6bbd2,
@@ -140,6 +143,8 @@ export class TypingInstrumentScreen extends Container {
   private completed = false;
   private awaitingFeedback = false;
   private targetPosition = { x: 0, y: 0 };
+  private instrumentRestY = 0;
+  private targetLabelRestY = 0;
 
   private readonly mapUnit: TMapUnit;
 
@@ -187,8 +192,10 @@ export class TypingInstrumentScreen extends Container {
     this.background.layout = { width, height };
     this.keyboard.resize(width, height);
 
-    this.instrument.position.set(width / 2 - 300, height * 0.35);
-    this.targetLabel.position.set(width / 2 + 10, height * 0.25);
+    this.instrumentRestY = height * 0.35;
+    this.targetLabelRestY = height * 0.25;
+    this.instrument.position.set(width / 2 - 300, this.instrumentRestY);
+    this.targetLabel.position.set(width / 2 + 10, this.targetLabelRestY);
     this.targetPosition = { x: width / 2 - 66, y: height * 0.3 };
     this.target?.position.set(this.targetPosition.x, this.targetPosition.y);
   }
@@ -197,12 +204,62 @@ export class TypingInstrumentScreen extends Container {
     this.paused = false;
     window.addEventListener('keydown', this.handleKeyDown);
     void this.keyboard.resume();
-    await this.keyboard.playEnterAnimation();
+
+    this.instrument.alpha = 0;
+    this.instrument.y = this.instrumentRestY + 80;
+    this.targetLabel.alpha = 0;
+    this.targetLabel.y = this.targetLabelRestY - 60;
+    this.queueCards.forEach((card) => {
+      card.alpha = 0;
+      card.scale.set(0.85);
+    });
+
+    await Promise.all([
+      this.keyboard.playEnterAnimation(),
+      animate(
+        this.instrument,
+        { alpha: 1, y: this.instrumentRestY },
+        { duration: 0.6, ease: 'easeOut' },
+      ),
+      animate(
+        this.targetLabel,
+        { alpha: 1, y: this.targetLabelRestY },
+        { duration: 0.4, ease: 'backOut' },
+      ),
+      ...this.queueCards.flatMap((card, index) => {
+        const delay = (QUEUE_SIZE - 1 - index) * ENTER_STAGGER_MS;
+        return [
+          animate(card, { alpha: 1 }, { duration: 0.35, ease: 'backOut', delay }),
+          animate(card.scale, { x: 1, y: 1 }, { duration: 0.35, ease: 'backOut', delay }),
+        ];
+      }),
+      this.target?.playAppear(0.15) ?? Promise.resolve(),
+    ]);
   }
 
   public async hide() {
     await this.pause();
-    await this.keyboard.playExitAnimation();
+    await Promise.all([
+      this.keyboard.playExitAnimation(),
+      animate(
+        this.instrument,
+        { alpha: 0, y: this.instrumentRestY + 60 },
+        { duration: 0.2, ease: 'easeIn' },
+      ),
+      animate(
+        this.targetLabel,
+        { alpha: 0, y: this.targetLabelRestY - 40 },
+        { duration: 0.2, ease: 'backIn' },
+      ),
+      ...this.queueCards.flatMap((card, index) => {
+        const delay = (QUEUE_SIZE - 1 - index) * EXIT_STAGGER_MS;
+        return [
+          animate(card, { alpha: 0 }, { duration: 0.2, ease: 'backIn', delay }),
+          animate(card.scale, { x: 0.85, y: 0.85 }, { duration: 0.2, ease: 'backIn', delay }),
+        ];
+      }),
+      this.target?.playDisappear(0) ?? Promise.resolve(),
+    ]);
   }
 
   public async pause() {
