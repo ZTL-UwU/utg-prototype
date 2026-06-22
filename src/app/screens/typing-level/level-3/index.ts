@@ -1,7 +1,16 @@
+import { animate } from 'motion';
 import { Container, Graphics, HTMLText, HTMLTextStyle, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { createTypingWordStyle, getPlayableWords } from '../../../../utils/example-words';
+import {
+  createTypingWordStyle,
+  getHighlightedWordMarkup,
+  getPlayableWords,
+} from '../../../../utils/example-words';
+import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { useScoreManager } from '../../../../zustandStores/scoreManager';
+import useSessionStore from '../../../../zustandStores/sessionStore';
+import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
 import { TutorialPopup } from '../../../popups/tutorial';
 import { HUD } from '../../../ui/hud';
@@ -17,6 +26,7 @@ const PAD_X = 48;
 const SHADOW_OFFSET = 8;
 const CONTENT_GAP = 72;
 const IMAGE_SIZE = 300;
+const FEEDBACK_DURATION_MS = 350;
 const CARD_COLORS = {
   default: 0x6080ab,
   error: 0xff3131,
@@ -26,13 +36,13 @@ const CARD_COLORS = {
 type Round = {
   letter: string;
   word: string;
-  letterIdx: number;
+  activeLetterIdx: number;
 };
 function generateRoundsDictionary(): Round[] {
   return getPlayableWords()
     .sort(() => Math.random() - 0.5)
     .slice(0, NUM_ROUNDS)
-    .map(([letter, word]) => ({ letter, word, letterIdx: 0 }));
+    .map(([letter, word]) => ({ letter, word, activeLetterIdx: 0 }));
 }
 
 export class TypingWordScreen extends Container {
@@ -51,6 +61,7 @@ export class TypingWordScreen extends Container {
   private _cardW: number = CARD_WIDTH;
   private _sw: number = 0;
   private _sh: number = 0;
+  private paused: boolean;
 
   constructor(mapUnit: TMapUnit) {
     super();
@@ -91,6 +102,7 @@ export class TypingWordScreen extends Container {
     });
     this.addChild(this.background, this.hud, this.keyboard, this.contentContainer);
     this.popAndStartRound();
+    this.paused = false;
   }
 
   resize(width: number, height: number) {
@@ -104,15 +116,28 @@ export class TypingWordScreen extends Container {
 
   async show() {
     void this.keyboard.resume();
+    this.paused = false;
+    window.addEventListener('keydown', this.handleKeyDown);
     await this.keyboard.playEnterAnimation();
   }
 
   async hide() {
-    void this.keyboard.pause();
+    await this.pause();
     await this.keyboard.playExitAnimation();
   }
+  async pause() {
+    this.paused = true;
+    window.removeEventListener('keydown', this.handleKeyDown);
+    await this.keyboard.pause();
+  }
 
-  /**===== GAME LOGIC HELPERS ======= */
+  async resume() {
+    this.paused = false;
+    window.addEventListener('keydown', this.handleKeyDown);
+    await this.keyboard.resume();
+  }
+
+  /**===== COMPONENT RENDERING HELPERS ======= */
 
   private drawCard() {
     // measure the rendered word
@@ -146,10 +171,11 @@ export class TypingWordScreen extends Container {
     this.contentContainer.position.set((this._sw - groupW) / 2, this._sh * 0.15);
   }
 
-  private updateContentContainer(image: Sprite, word: string) {
+  private updateContentContainer(image: Sprite, word: string, activeLetterIdx: number) {
     this.contentContainer.removeChildren();
     image.layout = { width: IMAGE_SIZE, height: IMAGE_SIZE, flexShrink: 0 };
-    this.wordText.text = word;
+    const len = word[activeLetterIdx].length;
+    this.wordText.text = getHighlightedWordMarkup(word, activeLetterIdx, len);
     this.contentContainer.addChild(image, this.wordContainer);
     this.drawCard();
   }
@@ -159,11 +185,80 @@ export class TypingWordScreen extends Container {
     if (this.rounds.length === 0) this.endGame();
     this.currentRound = this.rounds.pop() ?? undefined;
     if (!this.currentRound) return;
-    const { letter, word } = this.currentRound!;
+    const { letter, word, activeLetterIdx } = this.currentRound!;
     const image: Sprite = new Sprite(
       Texture.from(`education-levels/education-letter-images/${letter}.png`),
     );
-    this.updateContentContainer(image, word);
+    this.updateContentContainer(image, word, activeLetterIdx); // always highlights first letter, letterIdx for new round always at 0
   }
-  private endGame() {}
+  /**
+   * ======= GAME LOGIC HELPERS =======
+   */
+
+  private readonly handleKeyDown = async (event: KeyboardEvent) => {
+    if (
+      this.paused ||
+      event.repeat ||
+      event.key == 'Shift' ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.altKey ||
+      !this.currentRound
+    )
+      return;
+    const typedLetter = getMappedFromKeyboardEvent(event);
+    if (!typedLetter) return;
+
+    const { word, activeLetterIdx } = this.currentRound!;
+    if (typedLetter === word[activeLetterIdx]) {
+      this.keyboard.setKeyFeedback(event.code, 'success');
+      void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
+      setTimeout(() => this.keyboard.clearKeyFeedback(event.code), FEEDBACK_DURATION_MS);
+      useSessionStore.getState().recordCorrect();
+      await this.advanceHighlightedLetter();
+    } else {
+      this.keyboard.setKeyFeedback(event.code, 'error');
+      this.card.tint = CARD_COLORS['error'];
+      void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
+
+      setTimeout(() => {
+        this.keyboard.clearKeyFeedback(event.code);
+        this.card.tint = CARD_COLORS['default'];
+      }, FEEDBACK_DURATION_MS);
+      useSessionStore.getState().recordMistake();
+    }
+  };
+  private advanceHighlightedLetter = async () => {
+    const r = this.currentRound!;
+    r.activeLetterIdx += r.word[r.activeLetterIdx].length;
+
+    if (r.activeLetterIdx >= r.word.length) {
+      await this.playSuccessFlash(); // wait for it to finish
+      this.popAndStartRound(); // drawCard resets tint to default here
+    } else {
+      this.wordText.text = getHighlightedWordMarkup(
+        r.word,
+        r.activeLetterIdx,
+        r.word[r.activeLetterIdx].length,
+      );
+    }
+  };
+
+  private async playSuccessFlash(): Promise<void> {
+    this.card.tint = CARD_COLORS.success;
+
+    const controls = animate(
+      this.wordContainer.scale,
+      { x: 1.12, y: 1.12 },
+      { duration: 0.15, ease: 'easeOut', repeat: 1, repeatType: 'reverse' },
+    );
+    await controls.finished;
+  }
+  private endGame() {
+    this.paused = true;
+    window.removeEventListener('keydown', this.handleKeyDown);
+    const { correct, mistakes } = useSessionStore.getState();
+    useScoreManager.getState().addSession(correct, mistakes);
+    void engine().navigation.showPopup(EndScreenPopup, 'typing');
+  }
 }
