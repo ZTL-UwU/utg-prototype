@@ -15,9 +15,9 @@ import { QuitPopup } from '../../../popups/quit';
 import { TutorialPopup } from '../../../popups/tutorial';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
+import type { KeyboardColorOptions } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
 import type { TMapUnit } from '../../level-map/units';
-
 const FONT_SIZE = 100;
 const NUM_ROUNDS = 5;
 const CARD_WIDTH = 200;
@@ -31,6 +31,13 @@ const CARD_COLORS = {
   default: 0x6080ab,
   error: 0xff3131,
   success: 0x8ec24d,
+};
+const KEYBOARD_COLOR_SCHEME: KeyboardColorOptions = {
+  PANEL_COLOR: 0x6080ab,
+  PANEL_SHADOW_COLOR: 0xffffff,
+  KEY_COLOR: 0xffffff,
+  KEY_PRESSED_COLOR: 0xafafaf,
+  TEXT_COLOR: 0x495669,
 };
 
 type Round = {
@@ -62,7 +69,7 @@ export class TypingWordScreen extends Container {
   private _sw: number = 0;
   private _sh: number = 0;
   private paused: boolean;
-  private readonly mapUnit: TMapUnit;
+  private mapUnit: TMapUnit;
 
   constructor(mapUnit: TMapUnit) {
     super();
@@ -84,9 +91,9 @@ export class TypingWordScreen extends Container {
           exitable: true,
         }),
     });
-    this.keyboard = new KeyboardLayout();
+    this.keyboard = new KeyboardLayout(KEYBOARD_COLOR_SCHEME);
     this.rounds = generateRoundsDictionary();
-
+    this.mapUnit = mapUnit;
     this.card = new Graphics();
     this.cardShadow = new Graphics();
     this.wordText = new HTMLText({ style: this.wordStyle });
