@@ -143,7 +143,7 @@ const typingMap1: TMapUnit = {
       unlocked: true,
       miniMapImage: 'typing-levels/typing-level-map/button-preview.svg',
       screen: TypingSandstormScreen,
-      background: 'typing-levels/typing-level/background-taklamakan.png',
+      background: 'typing-levels/typing-level/background-sandstorm.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
       backdropColor: 0x7d5600,
     },
