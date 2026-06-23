@@ -40,7 +40,7 @@ export class LeafLetter extends Container {
         fontFamily: 'Noto Naskh Arabic Bold',
         fontSize: size * 0.3,
         fontWeight: '700',
-        padding: 20,
+        padding: 30,
       },
     });
 

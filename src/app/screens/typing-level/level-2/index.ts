@@ -12,14 +12,15 @@ import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
 import type { TMapUnit } from '../../level-map/units';
+import { DustOverlays } from './dust-overlays';
 import { LeafLetter } from './leaf-letter';
 
 const CARD_SIZE = 300;
 const LETTER_GOAL = 18;
 const MAX_ACTIVE_LETTERS = 3;
-const FIRST_SPAWN_DELAY_MS = 200;
-const MIN_SPAWN_DELAY_MS = 1400;
-const MAX_SPAWN_DELAY_MS = 2200;
+const FIRST_SPAWN_DELAY_MS = 0;
+const MIN_SPAWN_DELAY_MS = 1000;
+const MAX_SPAWN_DELAY_MS = 1800;
 const SPAWN_WIDTH_RATIO = 0.5;
 const MIN_SPAWN_SEPARATION = CARD_SIZE * 1.35;
 const DUST_SIZE = 104;
@@ -60,6 +61,7 @@ export class TypingSandstormScreen extends Container {
   private hud: HUD;
   private cloud: Sprite;
   private sun: Sprite;
+  private dustOverlays: DustOverlays;
   private letterLayer: Container;
   private dustLayer: Container;
   private fallingLetters: FallingLetter[] = [];
@@ -85,7 +87,7 @@ export class TypingSandstormScreen extends Container {
     this.mapUnit = mapUnit;
 
     this.background = new Sprite({
-      texture: Texture.from('typing-levels/typing-level/background-taklamakan.png'),
+      texture: Texture.from('typing-levels/typing-level-2/background.png'),
       layout: { width: '100%', height: '100%', position: 'absolute', objectFit: 'cover' },
     });
 
@@ -99,6 +101,7 @@ export class TypingSandstormScreen extends Container {
       layout: { width: '100%', height: '100%', position: 'absolute', objectFit: 'cover' },
     });
 
+    this.dustOverlays = new DustOverlays();
     this.letterLayer = new Container();
     this.dustLayer = new Container();
 
@@ -122,6 +125,7 @@ export class TypingSandstormScreen extends Container {
       this.background,
       this.sun,
       this.cloud,
+      this.dustOverlays,
       this.keyboard,
       this.hud,
       this.letterLayer,
@@ -133,11 +137,13 @@ export class TypingSandstormScreen extends Container {
     this.layout = { width, height };
     this.viewWidth = width;
     this.viewHeight = height;
+    this.dustOverlays.resize(width, height);
     this.keyboard.resize(width, height);
   }
 
   public async pause() {
     this.paused = true;
+    this.dustOverlays.pause();
     window.removeEventListener('keydown', this.handleKeyDown);
     await this.keyboard.pause();
   }
@@ -145,6 +151,7 @@ export class TypingSandstormScreen extends Container {
   public async resume() {
     if (this.completed) return;
     this.paused = false;
+    this.dustOverlays.resume();
     window.addEventListener('keydown', this.handleKeyDown);
     await this.keyboard.resume();
   }
@@ -153,6 +160,7 @@ export class TypingSandstormScreen extends Container {
     if (this.paused || this.completed) return;
 
     const deltaMs = Math.min(ticker.deltaMS, 50);
+    this.dustOverlays.update(deltaMs);
     this.updateSpawning(deltaMs);
     this.updateFallingLetters(deltaMs);
   }
