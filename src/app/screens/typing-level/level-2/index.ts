@@ -12,9 +12,9 @@ import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
 import type { TMapUnit } from '../../level-map/units';
-import { Letter } from '../level-1/letter';
+import { LeafLetter } from './leaf-letter';
 
-const CARD_SIZE = 118;
+const CARD_SIZE = 300;
 const LETTER_GOAL = 18;
 const MAX_ACTIVE_LETTERS = 3;
 const FIRST_SPAWN_DELAY_MS = 200;
@@ -23,10 +23,15 @@ const MAX_SPAWN_DELAY_MS = 2200;
 const SPAWN_WIDTH_RATIO = 0.5;
 const MIN_SPAWN_SEPARATION = CARD_SIZE * 1.35;
 const DUST_SIZE = 104;
+const LEAF_ASSETS = [
+  'typing-levels/typing-level-2/leaf-1.svg',
+  'typing-levels/typing-level-2/leaf-2.svg',
+  'typing-levels/typing-level-2/leaf-3.svg',
+];
 
 type FallingLetter = {
   letter: string;
-  card: Letter;
+  card: LeafLetter;
   spawnX: number;
   elapsedMs: number;
   fallSpeed: number;
@@ -226,7 +231,8 @@ export class TypingSandstormScreen extends Container {
     const spawnLeft = (this.viewWidth - spawnWidth) / 2;
     const spawnRight = spawnLeft + spawnWidth;
     const letter = makeRandomLetter();
-    const card = new Letter({ letter, cardSize: CARD_SIZE });
+    const leafAsset = LEAF_ASSETS[Math.floor(Math.random() * LEAF_ASSETS.length)];
+    const card = new LeafLetter({ letter, size: CARD_SIZE, leafAsset });
     const spawnX = this.pickSpawnX(spawnLeft, spawnRight - CARD_SIZE);
 
     card.alpha = 0;
@@ -330,7 +336,7 @@ export class TypingSandstormScreen extends Container {
     this.keyboard.setKeyFeedback(code, 'success');
     this.feedbackTimeouts.push(window.setTimeout(() => this.keyboard.clearKeyFeedback(code), 350));
 
-    falling.card.setFeedback('success', true);
+    falling.card.setFeedback('success');
     const animation = animate(
       falling.card,
       { alpha: 0, y: falling.card.y - 48 },
@@ -381,7 +387,7 @@ export class TypingSandstormScreen extends Container {
     });
   }
 
-  private destroyLetterCard(card: Letter) {
+  private destroyLetterCard(card: LeafLetter) {
     card.parent?.removeChild(card);
     card.destroy({ children: true });
   }
