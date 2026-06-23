@@ -19,7 +19,6 @@ const GRASS_SIZE = 320;
 const SHEEP_GRASS_OFFSET = 200;
 const GRASS_X_RATIOS = [0.2, 0.5, 0.8] as const;
 const GRASS_Y_RATIO = 0.75;
-const SHEEP_Y_ABOVE_GRASS_RATIO = 0.15;
 const SHEEP_TEXTURES = {
   default: 'mascots/sheep/default.png',
   crying: 'mascots/sheep/crying.png',
@@ -32,8 +31,8 @@ function getGrassPositions(width: number, height: number) {
   return GRASS_X_RATIOS.map((xRatio) => ({ x: width * xRatio, y: grassY }));
 }
 
-function getSheepY(grassY: number, height: number) {
-  return grassY - height * SHEEP_Y_ABOVE_GRASS_RATIO;
+function getSheepY(grassY: number) {
+  return grassY - 100;
 }
 
 function getSheepFacingScale(currentScaleX: number, sheepX: number, targetX: number) {
@@ -125,7 +124,7 @@ export class EducationSheepScreen extends Container {
   async show() {
     const firstGrass = this.grassPositions[0];
     const startingSheepPosX = firstGrass.x - SHEEP_GRASS_OFFSET;
-    const startingSheepPosY = getSheepY(firstGrass.y, this.height);
+    const startingSheepPosY = getSheepY(firstGrass.y);
     this.sheep.position.set(-startingSheepPosX, startingSheepPosY);
 
     await Promise.all([
@@ -264,7 +263,7 @@ export class EducationSheepScreen extends Container {
   private async moveSheepToGrass(grass: LetterGrass) {
     const grassIndex = this.grasses.indexOf(grass);
     const grassPosition = this.grassPositions[grassIndex];
-    const sheepY = getSheepY(grassPosition.y, this.height);
+    const sheepY = getSheepY(grassPosition.y);
     const targetX =
       this.sheep.x > grassPosition.x
         ? grassPosition.x + SHEEP_GRASS_OFFSET
