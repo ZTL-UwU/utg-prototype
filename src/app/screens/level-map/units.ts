@@ -29,6 +29,7 @@ const educationMap1: TMapUnit = {
     {
       id: 1,
       unlocked: true,
+      mascot: 'sheep',
       miniMapImage: 'education-levels/education-level-map/button-preview.svg',
       screen: EducationLevelScreen,
       background: 'education-levels/education-level/background.png',
@@ -38,6 +39,7 @@ const educationMap1: TMapUnit = {
     {
       id: 2,
       unlocked: true,
+      mascot: 'sheep',
       miniMapImage: 'education-levels/education-level-map/button-preview.svg',
       screen: EducationBubbleScreen,
       background: 'education-levels/education-level/background.png',
@@ -47,6 +49,7 @@ const educationMap1: TMapUnit = {
     {
       id: 3,
       unlocked: true,
+      mascot: 'sheep',
       miniMapImage: 'education-levels/education-level-map/button-preview.svg',
       screen: EducationSheepScreen,
       background: 'education-levels/education-level/background.png',
@@ -56,6 +59,7 @@ const educationMap1: TMapUnit = {
     {
       id: 4,
       unlocked: true,
+      mascot: 'sheep',
       miniMapImage: 'education-levels/education-level-map/button-preview.svg',
       screen: EducationImageScreen,
       background: 'education-levels/education-level/background.png',
@@ -73,6 +77,7 @@ const educationMap2: TMapUnit = {
     {
       id: 5,
       unlocked: true,
+      mascot: 'sheep',
       miniMapImage: 'education-levels/education-level-map/button-preview.svg',
       screen: EducationWordScreen,
       background: 'education-levels/education-level/background.png',
@@ -82,6 +87,7 @@ const educationMap2: TMapUnit = {
     {
       id: 6,
       unlocked: true,
+      mascot: 'sheep',
       miniMapImage: 'education-levels/education-level-map/button-preview.svg',
       screen: EducationSheepJumpScreen,
       background: 'education-levels/education-level/background.png',
@@ -91,6 +97,7 @@ const educationMap2: TMapUnit = {
     {
       id: 7,
       unlocked: false,
+      mascot: 'sheep',
       miniMapImage: 'education-levels/education-level-map/button-preview.svg',
       screen: EducationSheepScreen,
       background: 'education-levels/education-level/background.png',
@@ -101,6 +108,7 @@ const educationMap2: TMapUnit = {
     {
       id: 8,
       unlocked: false,
+      mascot: 'sheep',
       miniMapImage: 'education-levels/education-level-map/button-preview.svg',
       screen: EducationImageScreen,
       background: 'education-levels/education-level/background.png',
@@ -120,6 +128,7 @@ const typingMap1: TMapUnit = {
     {
       id: 1,
       title: 'TAKLAMAKAN DESERT',
+      mascot: 'camel',
       unlocked: true,
       miniMapImage: 'typing-levels/typing-level-map/button-preview.svg',
       screen: TypingLevelScreen,
@@ -130,6 +139,7 @@ const typingMap1: TMapUnit = {
     {
       id: 2,
       title: 'TAKLAMAKAN SANDSTORM',
+      mascot: 'camel',
       unlocked: true,
       miniMapImage: 'typing-levels/typing-level-map/button-preview.svg',
       screen: TypingSandstormScreen,
@@ -141,6 +151,7 @@ const typingMap1: TMapUnit = {
       id: 3,
       unlocked: true,
       title: 'TANGRI TAH',
+      mascot: 'goat',
       miniMapImage: 'typing-levels/typing-level-map/button-preview.svg',
       screen: TypingWordScreen,
       background: 'typing-levels/typing-level/background-tangri-tah.png',
@@ -151,6 +162,7 @@ const typingMap1: TMapUnit = {
       id: 4,
       unlocked: true,
       title: 'FARMERS HARVEST',
+      mascot: 'camel',
       miniMapImage: 'typing-levels/typing-level-map/button-preview.svg',
       screen: TypingInstrumentScreen,
       background: 'typing-levels/typing-level/background-taklamakan.png',

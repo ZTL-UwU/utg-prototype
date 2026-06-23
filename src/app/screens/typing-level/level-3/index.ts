@@ -131,8 +131,6 @@ export class TypingWordScreen extends Container {
     this.layout = { width, height };
     this.background.layout = { width, height };
     this.keyboard.resize(width, height);
-    // this.contentContainer.pivot.set(this.contentContainer.width/2, this.contentContainer.height/2)
-    // this.contentContainer.position.set((width - this.contentContainer.width) / 2, height * 0.15);
     this.centerContent();
   }
 
@@ -239,6 +237,7 @@ export class TypingWordScreen extends Container {
     if (!typedLetter) return;
 
     const { word, activeLetterIdx } = this.currentRound!;
+    console.log(event.key);
     if (typedLetter === word[activeLetterIdx]) {
       this.keyboard.setKeyFeedback(event.code, 'success');
       void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
