@@ -17,7 +17,29 @@ import { LetterGrass } from './letter-grass';
 
 const GRASS_SIZE = 320;
 const SHEEP_GRASS_OFFSET = 200;
-const X_SLOTS = [0.2, 0.5, 0.8];
+const GRASS_X_RATIOS = [0.2, 0.5, 0.8] as const;
+const GRASS_Y_RATIO = 0.75;
+const SHEEP_Y_ABOVE_GRASS_RATIO = 0.15;
+const SHEEP_TEXTURES = {
+  default: 'mascots/sheep/default.png',
+  crying: 'mascots/sheep/crying.png',
+  grazing: 'mascots/sheep/grazing.png',
+  happy: 'mascots/sheep/happy.png',
+} as const;
+
+function getGrassPositions(width: number, height: number) {
+  const grassY = height * GRASS_Y_RATIO;
+  return GRASS_X_RATIOS.map((xRatio) => ({ x: width * xRatio, y: grassY }));
+}
+
+function getSheepY(grassY: number, height: number) {
+  return grassY - height * SHEEP_Y_ABOVE_GRASS_RATIO;
+}
+
+function getSheepFacingScale(currentScaleX: number, sheepX: number, targetX: number) {
+  const magnitude = Math.abs(currentScaleX) || 1;
+  return (sheepX > targetX ? -1 : 1) * magnitude;
+}
 
 function getThreeUniqueLetters(): [string, string, string] {
   const [a, b, c] = pickRandomEducationLetters(3);
@@ -32,7 +54,7 @@ export class EducationSheepScreen extends Container {
   private background: Sprite;
   private hud: HUD;
   private grasses: LetterGrass[];
-  private grassContainer = new Container();
+  private grassPositions: { x: number; y: number }[] = [];
   private sheep: Sprite;
   private flashSadAnimation?: AnimationPlaybackControls;
   private soundButton: SoundButton;
@@ -86,33 +108,24 @@ export class EducationSheepScreen extends Container {
           GRASS_SIZE,
         ),
     );
-    for (const grass of this.grasses) this.grassContainer.addChild(grass);
-    this.grassContainer.layout = {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100%',
-    };
-
-    this.sheep = new Sprite(Texture.from('mascots/sheep/default.png'));
+    this.sheep = new Sprite(Texture.from(SHEEP_TEXTURES.default));
     this.sheep.anchor.set(0.5);
 
-    this.addChild(this.background, this.grassContainer, this.sheep, this.hud, this.soundButton);
+    this.addChild(this.background, ...this.grasses, this.sheep, this.hud, this.soundButton);
   }
 
   resize(width: number, height: number) {
     this.layout = { width, height };
+    this.grassPositions = getGrassPositions(width, height);
     for (let i = 0; i < this.grasses.length; i++) {
-      this.grasses[i].x = width * X_SLOTS[i];
-      this.grasses[i].y = height * 0.75;
+      this.grasses[i].position.set(this.grassPositions[i].x, this.grassPositions[i].y);
     }
   }
 
   async show() {
-    // resize() runs before show() in the navigation lifecycle, so grasses[0].x is already set
-    const startingSheepPosX = this.grasses[0].x - SHEEP_GRASS_OFFSET;
-    const startingSheepPosY = 0.6 * this.height;
+    const firstGrass = this.grassPositions[0];
+    const startingSheepPosX = firstGrass.x - SHEEP_GRASS_OFFSET;
+    const startingSheepPosY = getSheepY(firstGrass.y, this.height);
     this.sheep.position.set(-startingSheepPosX, startingSheepPosY);
 
     await Promise.all([
@@ -193,7 +206,7 @@ export class EducationSheepScreen extends Container {
    */
   async sheepFlashSad(signedScale: ObservablePoint) {
     const defaultTex = this.sheep.texture;
-    this.sheep.texture = Texture.from('mascots/sheep/sheep-crying.png');
+    this.sheep.texture = Texture.from(SHEEP_TEXTURES.crying);
     this.flashSadAnimation = animate(
       [
         [this.sheep.scale, { x: 1.1 * signedScale.x, y: 0.9 * signedScale.y }, { duration: 0.12 }],
@@ -201,16 +214,18 @@ export class EducationSheepScreen extends Container {
       ],
       { defaultTransition: { ease: 'easeInOut' } },
     );
-    void this.flashSadAnimation.finished.then(() =>
+    await this.flashSadAnimation.finished;
+    await new Promise<void>((resolve) => {
       setTimeout(() => {
         this.sheep.texture = defaultTex;
-      }, 400),
-    );
+        resolve();
+      }, 400);
+    });
   }
 
   private async sheepFlashGraze(signedScale: ObservablePoint) {
     const defaultTex = this.sheep.texture;
-    this.sheep.texture = Texture.from('mascots/sheep/sheep-grazing.png');
+    this.sheep.texture = Texture.from(SHEEP_TEXTURES.grazing);
     await animate(
       [
         [this.sheep.scale, { x: 0.9 * signedScale.x, y: 0.9 * signedScale.y }, { duration: 0.12 }],
@@ -223,7 +238,7 @@ export class EducationSheepScreen extends Container {
 
   private async sheepBounceHappy(signedScale: ObservablePoint) {
     const defaultTex = this.sheep.texture;
-    this.sheep.texture = Texture.from('mascots/sheep/sheep-happy.png');
+    this.sheep.texture = Texture.from(SHEEP_TEXTURES.happy);
     const baseY = this.sheep.y;
     await Promise.all([
       animate(
@@ -247,25 +262,18 @@ export class EducationSheepScreen extends Container {
   }
 
   private async moveSheepToGrass(grass: LetterGrass) {
-    if (this.sheep.x > grass.x) {
-      await Promise.all([
-        animate(this.sheep.scale, { x: -1 }, { duration: 0.2, ease: 'linear' }), // mirror to face the grass
-        animate(
-          this.sheep,
-          { x: grass.x + SHEEP_GRASS_OFFSET },
-          { duration: 0.4, ease: 'easeOut' },
-        ), // send the sheep right
-      ]);
-    } else {
-      await Promise.all([
-        animate(this.sheep.scale, { x: 1 }, { duration: 0.2, ease: 'linear' }),
-        animate(
-          this.sheep,
-          { x: grass.x - SHEEP_GRASS_OFFSET },
-          { duration: 0.4, ease: 'easeOut' },
-        ),
-      ]);
-    }
+    const grassIndex = this.grasses.indexOf(grass);
+    const grassPosition = this.grassPositions[grassIndex];
+    const sheepY = getSheepY(grassPosition.y, this.height);
+    const targetX =
+      this.sheep.x > grassPosition.x
+        ? grassPosition.x + SHEEP_GRASS_OFFSET
+        : grassPosition.x - SHEEP_GRASS_OFFSET;
+
+    this.sheep.scale.x = getSheepFacingScale(this.sheep.scale.x, this.sheep.x, grassPosition.x);
+
+    await animate(this.sheep, { x: targetX, y: sheepY }, { duration: 0.4, ease: 'easeOut' })
+      .finished;
   }
 
   /**
