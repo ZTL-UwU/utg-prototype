@@ -15,38 +15,41 @@ const POPUP_WIDTH = 940;
 const POPUP_HEIGHT = 600;
 const POPUP_RADIUS = 32;
 
-const POPUP_BACKGROUND_COLORS = {
-  typing: 0x7e5433,
-  education: 0x5a8cd4,
+// New mascot driven color selections, replace old type driven selection
+const MASCOT_BACKGROUND_COLORS = {
+  camel: 0x7e5433,
+  sheep: 0x5a8cd4,
+  goat: 0x5a8cd4,
 } as const;
 
-function createPopupBackground(width: number, height: number, type: 'education' | 'typing') {
+const MASCOT_TEXT_COLORS = {
+  camel: 0xfad68a,
+  sheep: 0xfdf7e7,
+  goat: 0xfdf7e7,
+} as const;
+
+function createPopupBackground(width: number, height: number, mascot: 'sheep' | 'goat' | 'camel') {
   return new Graphics()
     .roundRect(0, 0, width, height, POPUP_RADIUS)
-    .fill(POPUP_BACKGROUND_COLORS[type]);
+    .fill(MASCOT_BACKGROUND_COLORS[mascot]);
 }
 
-const POPUP_TEXT_COLORS = {
-  typing: 0xfad68a,
-  education: 0xfdf7e7,
-} as const;
-
-function createScoreTitleStyle(type: 'education' | 'typing') {
+function createScoreTitleStyle(mascot: 'sheep' | 'goat' | 'camel') {
   return new TextStyle({
     fontFamily: 'Concert One',
     fontSize: 48,
     fontWeight: '700',
-    fill: POPUP_TEXT_COLORS[type],
+    fill: MASCOT_TEXT_COLORS[mascot],
     letterSpacing: 4,
   });
 }
 
-function createStatStyle(type: 'education' | 'typing') {
+function createStatStyle(mascot: 'sheep' | 'goat' | 'camel') {
   return new TextStyle({
     fontFamily: 'Concert One',
     fontSize: 32,
     fontWeight: '700',
-    fill: POPUP_TEXT_COLORS[type],
+    fill: MASCOT_TEXT_COLORS[mascot],
   });
 }
 
@@ -150,12 +153,10 @@ export class EndScreenPopup extends Container {
         justifyContent: 'center',
       },
     });
-
-    const { type } = mapUnit;
     this.currentMascot = getCurrentMascot(mapUnit);
     const { correct, mistakes, accuracy, starCount } = readSessionResults();
     this.starCount = starCount;
-    this.background = createPopupBackground(POPUP_WIDTH, POPUP_HEIGHT, type);
+    this.background = createPopupBackground(POPUP_WIDTH, POPUP_HEIGHT, this.currentMascot);
     this.background.layout = {
       width: POPUP_WIDTH,
       height: POPUP_HEIGHT,
@@ -164,11 +165,11 @@ export class EndScreenPopup extends Container {
     this.stars = new Stars(starCount, POPUP_WIDTH);
     const scoreTitle = new Text({
       text: 'SCORE',
-      style: createScoreTitleStyle(type),
+      style: createScoreTitleStyle(this.currentMascot),
       layout: true,
     });
 
-    const statStyle = createStatStyle(type);
+    const statStyle = createStatStyle(this.currentMascot);
     const correctText = new Text({
       text: `Correct : ${correct}`,
       style: statStyle,
