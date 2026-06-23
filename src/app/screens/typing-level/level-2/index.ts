@@ -171,11 +171,13 @@ export class TypingSandstormScreen extends Container {
     this.cloud.y = 300;
     this.cloud.alpha = 0;
     this.paused = false;
+    this.dustOverlays.alpha = 0;
 
     await Promise.all([
       this.keyboard.playEnterAnimation(),
       animate(this.cloud, { y: 0 }, { duration: 1, ease: 'easeOut' }),
       animate(this.cloud, { alpha: 1 }, { duration: 1.4, ease: 'easeOut' }),
+      animate(this.dustOverlays, { alpha: 1 }, { duration: 1, ease: 'easeOut' }),
     ]);
   }
 
@@ -185,6 +187,7 @@ export class TypingSandstormScreen extends Container {
       this.keyboard.playExitAnimation(),
       animate(this.cloud, { alpha: 0 }, { duration: 0.2, ease: 'easeIn' }),
       animate(this.cloud, { y: 300 }, { duration: 0.2, ease: 'easeIn' }),
+      animate(this.dustOverlays, { alpha: 0 }, { duration: 0.2, ease: 'easeIn' }),
     ]);
   }
 
