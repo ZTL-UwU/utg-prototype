@@ -59,9 +59,8 @@ function getMascotVariant(starCount: number): MascotVariant {
   return 'try-again';
 }
 
-function getMascotTexture(type: 'education' | 'typing', variant: MascotVariant) {
-  const animal = type === 'typing' ? 'camel' : 'sheep';
-  return `mascots/${animal}/dialog/${variant}.png`;
+function getMascotTexture(mascot: 'sheep' | 'camel' | 'goat', variant: MascotVariant) {
+  return `mascots/${mascot}/dialog/${variant}.png`;
 }
 
 function readSessionResults() {
@@ -82,6 +81,15 @@ function readSessionResults() {
 type EndScreenPopupProps = {
   mapUnit: TMapUnit;
 };
+
+function getCurrentMascot(mapUnit: TMapUnit): 'sheep' | 'goat' | 'camel' {
+  const currentScreen = engine().navigation.currentScreen;
+  const currentLevelIndex = mapUnit.levels.findIndex(
+    (level) => level.screen === currentScreen?.constructor,
+  );
+  const currentLevel = mapUnit.levels[currentLevelIndex];
+  return currentLevel.mascot;
+}
 
 function getNextLevel(mapUnit: TMapUnit) {
   const currentScreen = engine().navigation.currentScreen;
@@ -126,6 +134,7 @@ function goToNextLevel(nextLevel: NonNullable<ReturnType<typeof getNextLevel>>) 
 
 export class EndScreenPopup extends Container {
   public static assetBundles = ['end-screen', 'mascots', 'ui'];
+  private currentMascot: 'sheep' | 'camel' | 'goat';
 
   private innerContainer: Container;
   private background: Graphics;
@@ -143,6 +152,7 @@ export class EndScreenPopup extends Container {
     });
 
     const { type } = mapUnit;
+    this.currentMascot = getCurrentMascot(mapUnit);
     const { correct, mistakes, accuracy, starCount } = readSessionResults();
     this.starCount = starCount;
     this.background = createPopupBackground(POPUP_WIDTH, POPUP_HEIGHT, type);
@@ -224,7 +234,7 @@ export class EndScreenPopup extends Container {
     this.contentContainer.addChild(headerSection, bodySection);
 
     const mascot = new Sprite({
-      texture: Texture.from(getMascotTexture(type, getMascotVariant(starCount))),
+      texture: Texture.from(getMascotTexture(this.currentMascot, getMascotVariant(starCount))),
       layout: {
         position: 'absolute',
         right: 20,
