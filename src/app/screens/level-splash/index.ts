@@ -47,7 +47,7 @@ export class LevelSplashScreen extends Container {
         fontFamily: 'Concert One',
         fontSize: 250,
         fontWeight: '800',
-        fill: mapUnit.type == 'typing' ? 0xc98144 : 0xffffff,
+        fill: this.getColorThemeFromMascot(level.mascot),
       },
       charAnchor: 0.5,
       filters: [
@@ -71,7 +71,7 @@ export class LevelSplashScreen extends Container {
         fontFamily: 'Concert One',
         fontSize: 90,
         fontWeight: '800',
-        fill: 0x6b3f1f,
+        fill: this.getColorThemeFromMascot(level.mascot),
       },
       filters: [
         new DropShadowFilter({
@@ -87,9 +87,7 @@ export class LevelSplashScreen extends Container {
     });
 
     this.mascot = new Sprite({
-      texture: Texture.from(
-        mapUnit.type == 'typing' ? 'mascots/camel/default.png' : 'mascots/sheep/default.png',
-      ),
+      texture: Texture.from(this.getTexturePathForMascot(level.mascot)),
       scale: 0.8,
       layout: {
         position: 'absolute',
@@ -115,7 +113,7 @@ export class LevelSplashScreen extends Container {
         .roundRect(0, 10, 300, 150, 40)
         .fill(0xffe2bc)
         .roundRect(0, 0, 300, 150, 40)
-        .fill(mapUnit.type == 'typing' ? 0xc45a14 : 0x2d6b6a),
+        .fill(this.getColorThemeFromMascot(level.mascot)),
       text: new Text({
         text: 'START',
         style: {
@@ -198,5 +196,11 @@ export class LevelSplashScreen extends Container {
         { duration: 0.2, ease: 'backIn' },
       ),
     ]);
+  }
+  private getTexturePathForMascot(mascot: 'sheep' | 'camel' | 'goat') {
+    return `mascots/${mascot}/default.png`;
+  }
+  private getColorThemeFromMascot(mascot: 'sheep' | 'camel' | 'goat') {
+    return mascot === 'camel' ? 0xc45a14 : mascot === 'sheep' ? 0x2d6b6a : 0x6e8539;
   }
 }

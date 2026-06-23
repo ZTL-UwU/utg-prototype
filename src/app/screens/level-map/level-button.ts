@@ -13,6 +13,7 @@ export type TLevel = {
   title?: string;
   unlocked: boolean;
   miniMapImage: string;
+  mascot: 'sheep' | 'goat' | 'camel';
   screen?: AppScreenConstructor<any[]>;
   background: string;
   helpAsset: string;
