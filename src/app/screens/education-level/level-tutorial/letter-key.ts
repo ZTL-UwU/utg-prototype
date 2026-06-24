@@ -26,8 +26,9 @@ function drawButton(size: number, state: 'default' | 'hover' | 'pressed') {
 
 export class LetterKey extends FancyButton {
   public readonly letter: string;
+  private readonly onBeforePress?: () => void;
 
-  constructor(letter: string, size: number) {
+  constructor(letter: string, size: number, onBeforePress?: () => void) {
     super({
       defaultView: drawButton(size, 'default'),
       pressedView: drawButton(size, 'pressed'),
@@ -58,6 +59,7 @@ export class LetterKey extends FancyButton {
     });
 
     this.letter = letter;
+    this.onBeforePress = onBeforePress;
     this.eventMode = 'static';
     this.onPress.connect(this.handlePress);
   }
@@ -86,6 +88,7 @@ export class LetterKey extends FancyButton {
   }
 
   private readonly handlePress = () => {
+    this.onBeforePress?.();
     void engine().navigation.showPopup(LetterPopup, this.letter);
   };
 }

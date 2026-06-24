@@ -76,7 +76,7 @@ export class EducationTutorialScreen extends Container {
 
     engine().audio.bgm.setVolume(0);
 
-    this.letterGrid = new LetterGrid(letters);
+    this.letterGrid = new LetterGrid(letters, () => void this.onStop());
 
     this.songButton = new FancyButton({
       defaultView: 'education-levels/education-tutorial/song-icon.png',
@@ -163,11 +163,11 @@ export class EducationTutorialScreen extends Container {
     ]);
     this.hud.eventMode = 'none';
 
-    this.songInstance = await engine().audio.sfx.play(ALPHABET_SONG_ALIAS);
+    this.songInstance = await engine().audio.sfx.play(ALPHABET_SONG_ALIAS, { start: 1.15 });
     this.letterGrid.setSongMode(true);
 
     this.timings = this.letterGrid.getLetterTimingOffsets();
-    this.songEndTime = this.timings[this.timings.length - 1].time + 4;
+    this.songEndTime = this.timings[this.timings.length - 1].time + 2;
   }
 
   public update(_ticker: Ticker) {
@@ -184,7 +184,7 @@ export class EducationTutorialScreen extends Container {
       this.nextBounceIndex++;
     }
 
-    if (t >= this.songEndTime!) void this.onStop();
+    if (t >= duration) void this.onStop();
   }
 
   private async onStop() {
