@@ -167,7 +167,7 @@ export class EducationTutorialScreen extends Container {
     this.letterGrid.setSongMode(true);
 
     this.timings = this.letterGrid.getLetterTimingOffsets();
-    this.songEndTime = this.timings[this.timings.length - 1].time + 4;
+    this.songEndTime = this.timings[this.timings.length - 1].time + 2;
   }
 
   public update(_ticker: Ticker) {
@@ -184,7 +184,7 @@ export class EducationTutorialScreen extends Container {
       this.nextBounceIndex++;
     }
 
-    if (t >= this.songEndTime!) void this.onStop();
+    if (t >= duration) void this.onStop();
   }
 
   private async onStop() {
