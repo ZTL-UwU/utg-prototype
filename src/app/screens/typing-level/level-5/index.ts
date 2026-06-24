@@ -2,7 +2,11 @@ import { animate } from 'motion';
 import { Container, HTMLText, HTMLTextStyle, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { createTypingWordStyle, getHighlightedWordMarkup } from '../../../../utils/example-words';
+import {
+  createTypingWordStyle,
+  getAdvancedWordMarkup,
+  getHighlightedWordMarkup,
+} from '../../../../utils/example-words';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
@@ -16,10 +20,10 @@ import type { TMapUnit } from '../../level-map/units';
 import { generateRoundsDictionary, type Round } from '../level-4';
 
 const FONT_SIZE = 100;
-const PAD_Y = 32;
-const PAD_X = 48;
-const CONTENT_GAP = 72;
-const IMAGE_SIZE = 300;
+const PAD_Y = 75;
+const PAD_X = 100;
+const CONTENT_GAP = 78;
+const IMAGE_SIZE = 225;
 const FEEDBACK_DURATION_MS = 350;
 const CARD_COLORS = {
   default: 0xffffff,
@@ -40,7 +44,7 @@ export class TypingMarketScreen extends Container {
   private keyboard: KeyboardLayout;
   private wordStyle: HTMLTextStyle = createTypingWordStyle(FONT_SIZE);
   private card: Sprite;
-  private spacer: Container = new Container({ layout: { flex: 1 } });
+  private wordContainer: Container = new Container();
   private wordText: HTMLText;
   private contentContainer: Container;
   private rounds: Round[];
@@ -89,6 +93,7 @@ export class TypingMarketScreen extends Container {
     });
     this.wordText = new HTMLText({ style: this.wordStyle });
     this.wordStyle.align = 'right';
+    this.wordContainer.addChild(this.wordText);
 
     this.contentContainer = new Container({
       layout: {
@@ -120,11 +125,7 @@ export class TypingMarketScreen extends Container {
     void this.keyboard.resume();
     this.paused = false;
     window.addEventListener('keydown', this.handleKeyDown);
-    this.tourist.position.x = -100;
-    await Promise.all([
-      this.keyboard.playEnterAnimation(),
-      animate(this.tourist.position, { x: 0 }, { duration: 0.4, ease: 'easeOut' }).finished,
-    ]);
+    await this.keyboard.playEnterAnimation();
   }
 
   async hide() {
@@ -146,14 +147,29 @@ export class TypingMarketScreen extends Container {
 
   /** ===== COMPONENT RENDERING HELPERS ===== */
 
-  private drawCard() {
-    const b = this.wordText.getLocalBounds();
-    if (b.width === 0) {
-      requestAnimationFrame(() => this.drawCard());
-      return;
-    }
-    this._cardW = PAD_X * 2 + IMAGE_SIZE + CONTENT_GAP + b.width;
-    this.centerContent();
+  private drawCard(): Promise<void> {
+    return new Promise((resolve) => {
+      const attempt = () => {
+        const b = this.wordText.getLocalBounds();
+        if (b.width === 0) {
+          requestAnimationFrame(attempt);
+          return;
+        }
+        const textH = FONT_SIZE + PAD_Y * 2;
+        this.wordText.anchor.set(0.5);
+        this.wordText.position.set(b.width / 2, textH / 2);
+        this.wordContainer.layout = {
+          width: b.width,
+          height: textH,
+          flexShrink: 0,
+          marginTop: -38,
+        };
+        this._cardW = PAD_X * 2 + IMAGE_SIZE + CONTENT_GAP + b.width;
+        this.centerContent();
+        resolve();
+      };
+      attempt();
+    });
   }
 
   private centerContent() {
@@ -161,6 +177,7 @@ export class TypingMarketScreen extends Container {
       position: 'absolute',
       flexDirection: 'row',
       alignItems: 'center',
+      gap: CONTENT_GAP,
       paddingTop: PAD_Y,
       paddingBottom: PAD_Y,
       paddingLeft: PAD_X,
@@ -171,25 +188,29 @@ export class TypingMarketScreen extends Container {
     };
   }
 
-  private updateContentContainer(image: Sprite, word: string, activeLetterIdx: number) {
+  private async updateContentContainer(
+    image: Sprite,
+    word: string,
+    activeLetterIdx: number,
+  ): Promise<void> {
     this.contentContainer.removeChildren();
-    image.layout = { width: IMAGE_SIZE, height: IMAGE_SIZE, flexShrink: 0 };
+    image.layout = { width: IMAGE_SIZE, height: IMAGE_SIZE, flexShrink: 0, marginTop: -20 };
     const len = word[activeLetterIdx].length;
     this.wordText.text = getHighlightedWordMarkup(word, activeLetterIdx, len);
-    this.contentContainer.addChild(this.card, image, this.spacer, this.wordText);
-    // requestAnimationFrame(() => this.drawCard());
-    this.drawCard();
+    this.contentContainer.addChild(this.card, image, this.wordContainer);
+    await this.drawCard();
   }
 
-  private popAndStartRound() {
+  private popAndStartRound(): Promise<void> {
+    this.card.tint = CARD_COLORS['default'];
     if (this.rounds.length === 0) this.endGame();
     this.currentRound = this.rounds.pop() ?? undefined;
-    if (!this.currentRound) return;
+    if (!this.currentRound) return Promise.resolve();
     const { letter, word, activeLetterIdx } = this.currentRound;
     const image = new Sprite(
       Texture.from(`education-levels/education-letter-images/${letter}.png`),
     );
-    this.updateContentContainer(image, word, activeLetterIdx);
+    return this.updateContentContainer(image, word, activeLetterIdx);
   }
 
   /** ===== GAME LOGIC ===== */
@@ -209,7 +230,8 @@ export class TypingMarketScreen extends Container {
     if (!typedLetter) return;
 
     const { word, activeLetterIdx } = this.currentRound;
-    if (typedLetter === word[activeLetterIdx]) {
+    console.log(event.key);
+    if (typedLetter === word[activeLetterIdx] || event.key === 'Enter') {
       this.keyboard.setKeyFeedback(event.code, 'success');
       void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
       setTimeout(() => this.keyboard.clearKeyFeedback(event.code), FEEDBACK_DURATION_MS);
@@ -217,11 +239,11 @@ export class TypingMarketScreen extends Container {
       await this.advanceHighlightedLetter();
     } else {
       this.keyboard.setKeyFeedback(event.code, 'error');
-      this.card.tint = CARD_COLORS.error;
+      //   this.card.tint = CARD_COLORS.error;
       void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
       setTimeout(() => {
         this.keyboard.clearKeyFeedback(event.code);
-        this.card.tint = CARD_COLORS.default;
+        // this.card.tint = CARD_COLORS.default;
       }, FEEDBACK_DURATION_MS);
       useSessionStore.getState().recordMistake();
     }
@@ -233,9 +255,10 @@ export class TypingMarketScreen extends Container {
 
     if (r.activeLetterIdx >= r.word.length) {
       await this.playSuccessFlash();
+      this.tourist.texture = randomTouristTexture();
       this.popAndStartRound();
     } else {
-      this.wordText.text = getHighlightedWordMarkup(
+      this.wordText.text = getAdvancedWordMarkup(
         r.word,
         r.activeLetterIdx,
         r.word[r.activeLetterIdx].length,
