@@ -17,7 +17,7 @@ import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
 import type { TMapUnit } from '../../level-map/units';
-import { generateRoundsDictionary, type Round } from '../level-3';
+import { generateRoundsDictionary, type Round } from '../level-4';
 
 const FONT_SIZE = 100;
 const PAD_Y = 75;
