@@ -6,8 +6,8 @@ import { EducationWordScreen } from '../education-level/level-5';
 import { EducationSheepJumpScreen } from '../education-level/level-6';
 import { TypingLevelScreen } from '../typing-level/level-1';
 import { TypingSandstormScreen } from '../typing-level/level-2';
-import { TypingWordScreen } from '../typing-level/level-3';
-import { TypingInstrumentScreen } from '../typing-level/level-4';
+import { TypingInstrumentScreen } from '../typing-level/level-3';
+import { TypingWordScreen } from '../typing-level/level-4';
 import type { TLevel } from './level-button';
 
 export type TMapUnit = {
@@ -153,10 +153,10 @@ const typingMap1: TMapUnit = {
       title: 'TANGRI TAH',
       mascot: 'goat',
       miniMapImage: 'typing-levels/typing-level-map/button-preview.svg',
-      screen: TypingWordScreen,
+      screen: TypingInstrumentScreen,
       background: 'typing-levels/typing-level/background-tangri-tah.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
-      backdropColor: 0x8ec24d,
+      backdropColor: 0x7d5600,
     },
     {
       id: 4,
@@ -164,10 +164,10 @@ const typingMap1: TMapUnit = {
       title: 'FARMERS HARVEST',
       mascot: 'camel',
       miniMapImage: 'typing-levels/typing-level-map/button-preview.svg',
-      screen: TypingInstrumentScreen,
-      background: 'typing-levels/typing-level/background-taklamakan.png',
+      screen: TypingWordScreen,
+      background: 'typing-levels/typing-level/background-farmers-harvest.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
-      backdropColor: 0x7d5600,
+      backdropColor: 0x8ec24d,
     },
   ],
 };
