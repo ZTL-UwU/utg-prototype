@@ -1,11 +1,11 @@
 import { animate } from 'motion';
-import { Container, Graphics, HTMLText, HTMLTextStyle, Sprite, Texture } from 'pixi.js';
+import { Container, HTMLText, HTMLTextStyle, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import {
-  createAdvancedTypingWordStyle,
+  createTypingWordStyle,
+  getAdvancedWordMarkup,
   getHighlightedWordMarkup,
-  getPlayableWords,
 } from '../../../../utils/example-words';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
@@ -15,67 +15,41 @@ import { QuitPopup } from '../../../popups/quit';
 import { TutorialPopup } from '../../../popups/tutorial';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
-import type { KeyboardColorOptions } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
 import type { TMapUnit } from '../../level-map/units';
+import { generateRoundsDictionary, type Round } from '../level-3';
+
 const FONT_SIZE = 100;
-const NUM_ROUNDS = 5;
-const CARD_WIDTH = 200;
-const PAD_Y = 32;
-const PAD_X = 48;
-const SHADOW_OFFSET = 8;
-const CONTENT_GAP = 72;
-const IMAGE_SIZE = 250;
+const PAD_Y = 75;
+const PAD_X = 100;
+const CONTENT_GAP = 78;
+const IMAGE_SIZE = 225;
 const FEEDBACK_DURATION_MS = 350;
 const CARD_COLORS = {
-  default: 0x6080ab,
+  default: 0xffffff,
   error: 0xff3131,
   success: 0x8ec24d,
 };
-const KEYBOARD_COLOR_SCHEME: KeyboardColorOptions = {
-  PANEL_COLOR: 0x6080ab,
-  PANEL_SHADOW_COLOR: 0xffffff,
-  KEY_COLOR: 0xffffff,
-  KEY_PRESSED_COLOR: 0xafafaf,
-  TEXT_COLOR: 0x495669,
-};
 
-export type Round = {
-  letter: string;
-  word: string;
-  activeLetterIdx: number;
-};
-
-/**
- *
- * Round[] to test particular edge cases in dev - uncomment and register in ctor when testing
- *
- */
-// const DEV_TEST_ROUNDS: Round[] = [
-//   { letter: 'ئا', word: 'ئايروپىلان', activeLetterIdx: 0 },
-//   { letter: 'ت', word: 'تاۋۇز', activeLetterIdx: 0 },
-// ];
-export function generateRoundsDictionary(): Round[] {
-  return getPlayableWords()
-    .sort(() => Math.random() - 0.5)
-    .slice(0, NUM_ROUNDS)
-    .map(([letter, word]) => ({ letter, word: word.trim(), activeLetterIdx: 0 }));
+function randomTouristTexture() {
+  return Texture.from(`typing-levels/typing-level-5/tourist-${Math.ceil(Math.random() * 2)}.png`);
 }
 
-export class TypingWordScreen extends Container {
-  public static assetBundles = ['typing-level-3', 'typing-level', 'education-letter-images'];
+export class TypingMarketScreen extends Container {
+  public static assetBundles = ['typing-level', 'typing-level-5', 'education-letter-images'];
+
   private background: Sprite;
+  private tourist: Sprite;
   private hud: HUD;
-  private wordStyle: HTMLTextStyle = createAdvancedTypingWordStyle(FONT_SIZE);
-  private contentContainer: Container;
-  private card: Graphics;
-  private cardShadow: Graphics;
-  private wordContainer: Container;
-  private wordText: HTMLText;
   private keyboard: KeyboardLayout;
+  private wordStyle: HTMLTextStyle = createTypingWordStyle(FONT_SIZE);
+  private card: Sprite;
+  private wordContainer: Container = new Container();
+  private wordText: HTMLText;
+  private contentContainer: Container;
   private rounds: Round[];
   private currentRound?: Round;
-  private _cardW: number = CARD_WIDTH;
+  private _cardW: number = 0;
   private _sw: number = 0;
   private _sh: number = 0;
   private paused: boolean;
@@ -84,10 +58,18 @@ export class TypingWordScreen extends Container {
   constructor(mapUnit: TMapUnit) {
     super();
     this.mapUnit = mapUnit;
+
     this.background = new Sprite({
-      texture: Texture.from('typing-levels/typing-level/background-tangri-tah.png'),
+      texture: Texture.from('typing-levels/typing-level-5/background.png'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
+
+    this.tourist = new Sprite({
+      texture: randomTouristTexture(),
+      layout: { position: 'absolute', left: '5%', bottom: '5%' },
+    });
+    this.tourist.anchor.set(0.5);
+
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
@@ -101,26 +83,31 @@ export class TypingWordScreen extends Container {
           exitable: true,
         }),
     });
-    this.keyboard = new KeyboardLayout(KEYBOARD_COLOR_SCHEME);
-    this.rounds = generateRoundsDictionary();
-    // this.rounds = DEV_TEST_ROUNDS; // uncomment to assign rounds to selected test set
-    this.mapUnit = mapUnit;
-    this.card = new Graphics();
-    this.cardShadow = new Graphics();
-    this.wordText = new HTMLText({ style: this.wordStyle });
 
-    this.wordContainer = new Container();
-    this.wordContainer.addChild(this.cardShadow, this.card, this.wordText);
+    this.keyboard = new KeyboardLayout();
+    this.rounds = generateRoundsDictionary();
+
+    this.card = new Sprite({
+      texture: Texture.from('typing-levels/typing-level-5/card-background.png'),
+      layout: { position: 'absolute', width: '100%', height: '100%' },
+    });
+    this.wordText = new HTMLText({ style: this.wordStyle });
+    this.wordStyle.align = 'right';
+    this.wordContainer.addChild(this.wordText);
 
     this.contentContainer = new Container({
       layout: {
         position: 'absolute',
         flexDirection: 'row',
         alignItems: 'center',
-        gap: CONTENT_GAP,
+        paddingTop: PAD_Y,
+        paddingBottom: PAD_Y,
+        paddingLeft: PAD_X,
+        paddingRight: PAD_X,
       },
     });
-    this.addChild(this.background, this.hud, this.keyboard, this.contentContainer);
+
+    this.addChild(this.background, this.tourist, this.hud, this.keyboard, this.contentContainer);
     this.popAndStartRound();
     this.paused = false;
   }
@@ -145,6 +132,7 @@ export class TypingWordScreen extends Container {
     await this.pause();
     await this.keyboard.playExitAnimation();
   }
+
   async pause() {
     this.paused = true;
     window.removeEventListener('keydown', this.handleKeyDown);
@@ -157,76 +145,81 @@ export class TypingWordScreen extends Container {
     await this.keyboard.resume();
   }
 
-  /**===== COMPONENT RENDERING HELPERS ======= */
+  /** ===== COMPONENT RENDERING HELPERS ===== */
 
-  private drawCard() {
-    // measure the rendered word
-    const b = this.wordText.getLocalBounds();
-    const cardW = Math.max(CARD_WIDTH, b.width + PAD_X * 2); // fit, with a floor
-    const cardH = FONT_SIZE + PAD_Y * 2;
-
-    this.cardShadow
-      .clear()
-      .roundRect(SHADOW_OFFSET, SHADOW_OFFSET, cardW, cardH, 20)
-      .fill(0x000000);
-    this.cardShadow.alpha = 0.5;
-
-    this.card.clear().roundRect(0, 0, cardW, cardH, 20).fill(0xffffff);
-    this.card.tint = CARD_COLORS.default;
-
-    this.wordText.anchor.set(0.5);
-    this.wordText.position.set(cardW / 2, cardH / 2);
-
-    this.wordContainer.layout = {
-      width: cardW + SHADOW_OFFSET,
-      height: cardH + SHADOW_OFFSET,
-      flexShrink: 0,
-    };
-    this._cardW = cardW; // for centering
-    this.centerContent();
+  private drawCard(): Promise<void> {
+    return new Promise((resolve) => {
+      const attempt = () => {
+        const b = this.wordText.getLocalBounds();
+        if (b.width === 0) {
+          requestAnimationFrame(attempt);
+          return;
+        }
+        const textH = FONT_SIZE + PAD_Y * 2;
+        this.wordText.anchor.set(0.5);
+        this.wordText.position.set(b.width / 2, textH / 2);
+        this.wordContainer.layout = {
+          width: b.width,
+          height: textH,
+          flexShrink: 0,
+          marginTop: -38,
+        };
+        this._cardW = PAD_X * 2 + IMAGE_SIZE + CONTENT_GAP + b.width;
+        this.centerContent();
+        resolve();
+      };
+      attempt();
+    });
   }
 
   private centerContent() {
-    const groupW = IMAGE_SIZE + CONTENT_GAP + this._cardW + SHADOW_OFFSET;
     this.contentContainer.layout = {
       position: 'absolute',
       flexDirection: 'row',
       alignItems: 'center',
       gap: CONTENT_GAP,
-      left: (this._sw - groupW) / 2,
+      paddingTop: PAD_Y,
+      paddingBottom: PAD_Y,
+      paddingLeft: PAD_X,
+      paddingRight: PAD_X,
+      width: this._cardW,
+      left: (this._sw - this._cardW) / 2,
       top: this._sh * 0.15,
     };
   }
 
-  private updateContentContainer(image: Sprite, word: string, activeLetterIdx: number) {
+  private async updateContentContainer(
+    image: Sprite,
+    word: string,
+    activeLetterIdx: number,
+  ): Promise<void> {
     this.contentContainer.removeChildren();
-    image.layout = { width: IMAGE_SIZE, height: IMAGE_SIZE, flexShrink: 0 };
+    image.layout = { width: IMAGE_SIZE, height: IMAGE_SIZE, flexShrink: 0, marginTop: -20 };
     const len = word[activeLetterIdx].length;
     this.wordText.text = getHighlightedWordMarkup(word, activeLetterIdx, len);
-    this.contentContainer.addChild(image, this.wordContainer);
-    this.drawCard();
+    this.contentContainer.addChild(this.card, image, this.wordContainer);
+    await this.drawCard();
   }
 
-  // pops the next round from this.rounds and assigns it to currentRound, calls endRound if rounds is empty
-  private popAndStartRound() {
+  private popAndStartRound(): Promise<void> {
+    this.card.tint = CARD_COLORS['default'];
     if (this.rounds.length === 0) this.endGame();
     this.currentRound = this.rounds.pop() ?? undefined;
-    if (!this.currentRound) return;
-    const { letter, word, activeLetterIdx } = this.currentRound!;
-    const image: Sprite = new Sprite(
+    if (!this.currentRound) return Promise.resolve();
+    const { letter, word, activeLetterIdx } = this.currentRound;
+    const image = new Sprite(
       Texture.from(`education-levels/education-letter-images/${letter}.png`),
     );
-    this.updateContentContainer(image, word, activeLetterIdx); // always highlights first letter, letterIdx for new round always at 0
+    return this.updateContentContainer(image, word, activeLetterIdx);
   }
-  /**
-   * ======= GAME LOGIC HELPERS =======
-   */
+
+  /** ===== GAME LOGIC ===== */
 
   private readonly handleKeyDown = async (event: KeyboardEvent) => {
     if (
       this.paused ||
       event.repeat ||
-      event.key == 'Shift' ||
+      event.key === 'Shift' ||
       event.ctrlKey ||
       event.metaKey ||
       event.altKey ||
@@ -236,8 +229,9 @@ export class TypingWordScreen extends Container {
     const typedLetter = getMappedFromKeyboardEvent(event);
     if (!typedLetter) return;
 
-    const { word, activeLetterIdx } = this.currentRound!;
-    if (typedLetter === word[activeLetterIdx]) {
+    const { word, activeLetterIdx } = this.currentRound;
+    console.log(event.key);
+    if (typedLetter === word[activeLetterIdx] || event.key === 'Enter') {
       this.keyboard.setKeyFeedback(event.code, 'success');
       void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
       setTimeout(() => this.keyboard.clearKeyFeedback(event.code), FEEDBACK_DURATION_MS);
@@ -245,25 +239,26 @@ export class TypingWordScreen extends Container {
       await this.advanceHighlightedLetter();
     } else {
       this.keyboard.setKeyFeedback(event.code, 'error');
-      this.card.tint = CARD_COLORS['error'];
+      //   this.card.tint = CARD_COLORS.error;
       void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
-
       setTimeout(() => {
         this.keyboard.clearKeyFeedback(event.code);
-        this.card.tint = CARD_COLORS['default'];
+        // this.card.tint = CARD_COLORS.default;
       }, FEEDBACK_DURATION_MS);
       useSessionStore.getState().recordMistake();
     }
   };
+
   private advanceHighlightedLetter = async () => {
     const r = this.currentRound!;
     r.activeLetterIdx += r.word[r.activeLetterIdx].length;
 
     if (r.activeLetterIdx >= r.word.length) {
-      await this.playSuccessFlash(); // wait for it to finish
-      this.popAndStartRound(); // drawCard resets tint to default here
+      await this.playSuccessFlash();
+      this.tourist.texture = randomTouristTexture();
+      this.popAndStartRound();
     } else {
-      this.wordText.text = getHighlightedWordMarkup(
+      this.wordText.text = getAdvancedWordMarkup(
         r.word,
         r.activeLetterIdx,
         r.word[r.activeLetterIdx].length,
@@ -273,14 +268,14 @@ export class TypingWordScreen extends Container {
 
   private async playSuccessFlash(): Promise<void> {
     this.card.tint = CARD_COLORS.success;
-
     const controls = animate(
-      this.wordContainer.scale,
+      this.contentContainer.scale,
       { x: 1.12, y: 1.12 },
       { duration: 0.15, ease: 'easeOut', repeat: 1, repeatType: 'reverse' },
     );
     await controls.finished;
   }
+
   private endGame() {
     this.paused = true;
     window.removeEventListener('keydown', this.handleKeyDown);

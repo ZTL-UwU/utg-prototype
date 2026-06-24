@@ -8,6 +8,7 @@ import { TypingLevelScreen } from '../typing-level/level-1';
 import { TypingSandstormScreen } from '../typing-level/level-2';
 import { TypingWordScreen } from '../typing-level/level-3';
 import { TypingInstrumentScreen } from '../typing-level/level-4';
+import { TypingMarketScreen } from '../typing-level/level-5';
 import type { TLevel } from './level-button';
 
 export type TMapUnit = {
@@ -171,12 +172,66 @@ const typingMap1: TMapUnit = {
     },
   ],
 };
+const typingMap2: TMapUnit = {
+  type: 'typing',
+  background: 'typing-levels/typing-level-map/background.png',
+  title: { text: 'TYPING JOURNEY', fontSize: 150 },
+  helpAsset: 'tutorial-popups/typing-tutorial.png',
+  backdropColor: 0x7d5600,
+  levels: [
+    {
+      id: 5,
+      title: 'KASHGAR BAZAAR',
+      mascot: 'camel',
+      unlocked: true,
+      miniMapImage: 'typing-levels/typing-level-map/button-preview.svg',
+      screen: TypingMarketScreen,
+      background: 'typing-levels/typing-level/background-kashgar.png',
+      helpAsset: 'tutorial-popups/typing-tutorial.png',
+      backdropColor: 0x7d5600,
+    },
+    {
+      id: 6,
+      title: 'TAKLAMAKAN SANDSTORM',
+      mascot: 'camel',
+      unlocked: false,
+      miniMapImage: 'typing-levels/typing-level-map/button-preview.svg',
+      screen: TypingSandstormScreen,
+      background: 'typing-levels/typing-level/background-sandstorm.png',
+      helpAsset: 'tutorial-popups/typing-tutorial.png',
+      backdropColor: 0x7d5600,
+    },
+    {
+      id: 7,
+      unlocked: false,
+      title: 'TANGRI TAH',
+      mascot: 'goat',
+      miniMapImage: 'typing-levels/typing-level-map/button-preview.svg',
+      screen: TypingWordScreen,
+      background: 'typing-levels/typing-level/background-tangri-tah.png',
+      helpAsset: 'tutorial-popups/typing-tutorial.png',
+      backdropColor: 0x8ec24d,
+    },
+    {
+      id: 8,
+      unlocked: false,
+      title: 'FARMERS HARVEST',
+      mascot: 'camel',
+      miniMapImage: 'typing-levels/typing-level-map/button-preview.svg',
+      screen: TypingInstrumentScreen,
+      background: 'typing-levels/typing-level/background-taklamakan.png',
+      helpAsset: 'tutorial-popups/typing-tutorial.png',
+      backdropColor: 0x7d5600,
+    },
+  ],
+};
 
 educationMap1.nextMap = educationMap2;
 educationMap2.prevMap = educationMap1;
-
+typingMap1.nextMap = typingMap2;
 export const mapUnitStore: Record<string, TMapUnit> = {
   'education-map-1': educationMap1,
   'education-map-2': educationMap2,
   'typing-map-1': typingMap1,
+  'typing-map-2': typingMap2,
 };
