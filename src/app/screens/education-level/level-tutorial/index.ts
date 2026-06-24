@@ -76,7 +76,7 @@ export class EducationTutorialScreen extends Container {
 
     engine().audio.bgm.setVolume(0);
 
-    this.letterGrid = new LetterGrid(letters);
+    this.letterGrid = new LetterGrid(letters, () => void this.onStop());
 
     this.songButton = new FancyButton({
       defaultView: 'education-levels/education-tutorial/song-icon.png',

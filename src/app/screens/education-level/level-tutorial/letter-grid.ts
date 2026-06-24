@@ -20,7 +20,7 @@ export class LetterGrid extends Container {
   private currentWidth = 0;
   private currentHeight = 0;
 
-  constructor(letters: string[][]) {
+  constructor(letters: string[][], onKeyPress?: () => void) {
     super({
       layout: {
         position: 'absolute',
@@ -44,7 +44,7 @@ export class LetterGrid extends Container {
 
     letters.forEach((row, rowIndex) => {
       row.forEach((letter, columnIndex) => {
-        const key = new LetterKey(letter, KEY_SIZE);
+        const key = new LetterKey(letter, KEY_SIZE, onKeyPress);
         key.position.set(
           PANEL_PADDING + columnIndex * (KEY_SIZE + KEY_GAP) + KEY_SIZE / 2,
           PANEL_PADDING + rowIndex * (KEY_SIZE + KEY_GAP) + KEY_SIZE / 2,
