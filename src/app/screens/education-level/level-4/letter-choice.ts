@@ -53,18 +53,15 @@ export class LetterChoice extends Container {
     this.addChild(this.imageButton, wordLabel);
 
     // Scale the image
-    this.once('added', () => {
-      const texture = Texture.from(`education-levels/education-letter-images/${letter}.png`);
-      if (!texture?.width || !texture?.height) return;
+    const texture = Texture.from(`education-levels/education-letter-images/${letter}.png`);
+    if (!texture?.width || !texture?.height) return;
 
-      const naturalWidth = texture.width;
-      const naturalHeight = texture.height;
-      if (naturalWidth <= 0 || naturalHeight <= 0) return;
+    const naturalHeight = texture.height;
+    if (naturalHeight <= 0) return;
 
-      const scale = DISPLAY_SIZE / Math.max(naturalWidth, naturalHeight);
-      this.imageButton.scale.set(scale);
-      wordLabel.y = (naturalHeight * scale) / 2 + WORD_GAP;
-    });
+    const scale = 0.75;
+    this.imageButton.scale.set(scale);
+    wordLabel.y = (naturalHeight * scale) / 2 + WORD_GAP;
 
     this.imageButton.eventMode = 'static';
     this.imageButton.onPress.connect(() => {

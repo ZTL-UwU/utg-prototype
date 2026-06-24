@@ -4,21 +4,14 @@ import { animate } from 'motion';
 import { Container, Graphics, Sprite, Texture, Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { EDUCATION_LETTERS } from '../../../../utils/example-words';
+import { AlphabetGrid } from '../../../ui/alphabet-grid';
 import { HUD } from '../../../ui/hud';
 import { LevelMapScreen } from '../../level-map';
 import type { TMapUnit } from '../../level-map/units';
 import { EducationYoutubeScreen } from '../youtube-videos';
-import { LetterGrid } from './letter-grid';
+import { LetterPopup } from './letter-popup';
 
 const ALPHABET_SONG_ALIAS = 'education-levels/education-tutorial/uyghur-alphabet-song.mp3';
-
-const letters = [
-  EDUCATION_LETTERS.slice(0, 8),
-  EDUCATION_LETTERS.slice(8, 16),
-  EDUCATION_LETTERS.slice(16, 24),
-  EDUCATION_LETTERS.slice(24, 32),
-];
 
 const STOP_BUTTON_SIZE = 115;
 
@@ -47,7 +40,7 @@ export class EducationTutorialScreen extends Container {
 
   private background: Sprite;
   private hud: HUD;
-  private letterGrid: LetterGrid;
+  private letterGrid: AlphabetGrid;
   private songButton: FancyButton;
   private songPlaying = false;
   private videoButton: FancyButton;
@@ -76,7 +69,10 @@ export class EducationTutorialScreen extends Container {
 
     engine().audio.bgm.setVolume(0);
 
-    this.letterGrid = new LetterGrid(letters);
+    this.letterGrid = new AlphabetGrid((letter) => {
+      void this.onStop();
+      void engine().navigation.showPopup(LetterPopup, letter);
+    });
 
     this.songButton = new FancyButton({
       defaultView: 'education-levels/education-tutorial/song-icon.png',
@@ -163,11 +159,11 @@ export class EducationTutorialScreen extends Container {
     ]);
     this.hud.eventMode = 'none';
 
-    this.songInstance = await engine().audio.sfx.play(ALPHABET_SONG_ALIAS);
+    this.songInstance = await engine().audio.sfx.play(ALPHABET_SONG_ALIAS, { start: 1.15 });
     this.letterGrid.setSongMode(true);
 
     this.timings = this.letterGrid.getLetterTimingOffsets();
-    this.songEndTime = this.timings[this.timings.length - 1].time + 4;
+    this.songEndTime = this.timings[this.timings.length - 1].time + 2;
   }
 
   public update(_ticker: Ticker) {
@@ -184,7 +180,7 @@ export class EducationTutorialScreen extends Container {
       this.nextBounceIndex++;
     }
 
-    if (t >= this.songEndTime!) void this.onStop();
+    if (t >= duration) void this.onStop();
   }
 
   private async onStop() {

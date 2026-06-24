@@ -23,6 +23,8 @@ export class LetterPopup extends Container {
   private isPlaying: boolean = false;
   private letter: string;
   private exampleWord: string | undefined;
+  private wordText?: HTMLText;
+  private exampleImage?: Sprite;
   private background: Graphics;
   private closeButton: FancyButton;
   private soundButton: SoundButton;
@@ -49,7 +51,20 @@ export class LetterPopup extends Container {
     this.addChild(this.background, this.closeButton, this.soundButton);
 
     if (this.exampleWord) {
-      this.addChild(this.buildWordContainer(this.exampleWord), this.createExampleImage());
+      this.wordText = new HTMLText({
+        text: getCompletedWordMarkup(this.letter, this.exampleWord),
+        style: WORD_STYLE,
+        anchor: 0.5,
+        layout: { position: 'absolute', left: '20%', top: '25%' },
+      });
+      this.exampleImage = new Sprite({
+        texture: Texture.from(`education-levels/education-letter-images/${this.letter}.png`),
+        anchor: 0.5,
+        scale: 0.8,
+        layout: { position: 'absolute', left: '65%', top: '20%' },
+      });
+
+      this.addChild(this.wordText, this.exampleImage);
     } else {
       this.removeChild(this.soundButton);
       this.addChild(new MissingWordNotice());
@@ -93,25 +108,6 @@ export class LetterPopup extends Container {
       void engine().navigation.hidePopup();
     });
     return button;
-  }
-
-  private createExampleImage(): Sprite {
-    const texture = Texture.from(`education-levels/education-letter-images/${this.letter}.png`);
-    if (!texture) return new Sprite();
-    const image = new Sprite({ texture });
-    image.scale = Math.min(400 / texture.width, 400 / texture.height);
-    image.anchor.set(0.5);
-    image.layout = { position: 'absolute', left: '65%', top: '20%' };
-    return image;
-  }
-
-  private buildWordContainer(word: string): HTMLText {
-    return new HTMLText({
-      text: getCompletedWordMarkup(this.letter, word),
-      style: WORD_STYLE,
-      anchor: 0.5,
-      layout: { position: 'absolute', left: '20%', top: '25%' },
-    });
   }
 
   // spam safe playSound method

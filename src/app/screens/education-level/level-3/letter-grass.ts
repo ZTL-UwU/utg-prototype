@@ -58,17 +58,8 @@ export class LetterGrass extends Container {
   }
 
   public async incorrectAnimation() {
-    const baseX = this.x;
-    const amp = this.width * 0.18;
     this.grass.tint = 0xe57373;
-    await Promise.all([
-      animate(
-        this,
-        { x: [baseX, baseX + amp, baseX - amp, baseX + amp, baseX - amp, baseX] },
-        { duration: 0.4, ease: 'linear' },
-      ).finished,
-      this.letterBox.showIncorrect(),
-    ]);
+    await this.letterBox.showIncorrect();
     this.grass.tint = 0xffffff;
   }
 }

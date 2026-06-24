@@ -1,8 +1,13 @@
 import { animate } from 'motion';
-import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
+import { Container, Graphics, HTMLText, HTMLTextStyle, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { getAllKeys, getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import {
+  createTypingWordStyle,
+  getHighlightedWordMarkup,
+  getPlayableWords,
+} from '../../../../utils/example-words';
+import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -12,155 +17,70 @@ import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
 import type { TMapUnit } from '../../level-map/units';
-import { Letter } from '../level-1/letter';
 
-const NOTE_COUNT = 20;
-const QUEUE_SIZE = 4;
-const SLOT_WIDTH = 250;
-const SLOT_HEIGHT = 100;
-const SLOT_GAP = 80;
-const SLOT_RADIUS = 16;
-const TARGET_SIZE = 150;
-const SHADOW_OFFSET = 10;
+const FONT_SIZE = 100;
+const NUM_ROUNDS = 5;
+const CARD_WIDTH = 200;
+const PAD_Y = 32;
+const PAD_X = 48;
+const SHADOW_OFFSET = 8;
+const CONTENT_GAP = 72;
+const IMAGE_SIZE = 300;
 const FEEDBACK_DURATION_MS = 350;
-const ENTER_STAGGER_MS = 0.08;
-const EXIT_STAGGER_MS = 0.02;
-
-const COLORS = {
-  queue: 0xa6bbd2,
+const CARD_COLORS = {
+  default: 0x6080ab,
+  error: 0xff3131,
   success: 0x8ec24d,
-  error: 0xef151c,
-  shadow: 0x332722,
-  white: 0xffffff,
 };
 
-type NoteCardState = 'default' | 'success' | 'error';
+export type Round = {
+  letter: string;
+  word: string;
+  activeLetterIdx: number;
+};
 
-class NoteCard extends Container {
-  private readonly shadow = new Graphics();
-  private readonly face = new Graphics();
-  private readonly noteLabel = new Text({
-    text: '',
-    resolution: 2,
-    style: {
-      fill: COLORS.white,
-      fontFamily: 'Noto Naskh Arabic Bold',
-      fontSize: 42,
-      fontWeight: '700',
-      padding: 20,
-    },
-    anchor: 0.5,
-  });
-
-  private readonly cardWidth: number;
-  private readonly cardHeight: number;
-  private readonly defaultColor: number;
-
-  constructor(width: number, height: number, defaultColor: number) {
-    super({
-      layout: {
-        width,
-        height,
-        flexShrink: 0,
-      },
-    });
-    this.cardWidth = width;
-    this.cardHeight = height;
-    this.defaultColor = defaultColor;
-    this.noteLabel.position.set(width / 2, height / 2);
-    this.noteLabel.visible = false;
-    this.addChild(this.shadow, this.face, this.noteLabel);
-    this.setState('default');
-  }
-
-  public setState(state: NoteCardState, letter = '') {
-    const color =
-      state === 'success' ? COLORS.success : state === 'error' ? COLORS.error : this.defaultColor;
-
-    this.shadow
-      .clear()
-      .roundRect(SHADOW_OFFSET, SHADOW_OFFSET, this.cardWidth, this.cardHeight, SLOT_RADIUS)
-      .fill(COLORS.shadow);
-    this.shadow.alpha = 0.72;
-    this.face.clear().roundRect(0, 0, this.cardWidth, this.cardHeight, SLOT_RADIUS).fill(color);
-
-    this.noteLabel.text = letter;
-    this.noteLabel.visible = state === 'success' && letter !== '';
-  }
+/**
+ *
+ * Round[] to test particular edge cases in dev - uncomment and register in ctor when testing
+ *
+ */
+// const DEV_TEST_ROUNDS: Round[] = [
+//   { letter: 'ئا', word: 'ئايروپىلان', activeLetterIdx: 0 },
+//   { letter: 'ت', word: 'تاۋۇز', activeLetterIdx: 0 },
+// ];
+export function generateRoundsDictionary(): Round[] {
+  return getPlayableWords()
+    .sort(() => Math.random() - 0.5)
+    .slice(0, NUM_ROUNDS)
+    .map(([letter, word]) => ({ letter, word: word.trim(), activeLetterIdx: 0 }));
 }
 
-function shuffledNotes() {
-  const notes = getAllKeys().map((entry) => entry.text);
-  const result: string[] = [];
-
-  while (result.length < NOTE_COUNT) {
-    const shuffled = [...notes].sort(() => Math.random() - 0.5);
-    result.push(...shuffled);
-  }
-
-  return result.slice(0, NOTE_COUNT);
-}
-
-export class TypingInstrumentScreen extends Container {
-  public static assetBundles = ['typing-level', 'typing-level-4', 'ui'];
-
-  private readonly background: Sprite;
-  private readonly instrument: Sprite;
-  private readonly hud: HUD;
-  private readonly keyboard = new KeyboardLayout();
-  private readonly queue = new Container({
-    layout: {
-      position: 'absolute',
-      top: 36,
-      width: '100%',
-      flexDirection: 'row',
-      justifyContent: 'center',
-      alignItems: 'center',
-      gap: SLOT_GAP,
-    },
-  });
-  private readonly targetLabel = new Text({
-    text: 'NEXT NOTE',
-    resolution: 2,
-    style: {
-      fill: 0xffffff,
-      fontFamily: 'Concert One',
-      fontSize: 34,
-      fontWeight: '800',
-      letterSpacing: 1,
-    },
-    anchor: 0.5,
-  });
-  private target!: Letter;
-  private readonly queueCards = Array.from(
-    { length: QUEUE_SIZE },
-    () => new NoteCard(SLOT_WIDTH, SLOT_HEIGHT, COLORS.queue),
-  );
-  private readonly notes = shuffledNotes();
-  private feedbackTimer?: number;
-  private noteIndex = 0;
-  private paused = true;
-  private completed = false;
-  private awaitingFeedback = false;
-  private targetPosition = { x: 0, y: 0 };
-  private instrumentRestY = 0;
-  private targetLabelRestY = 0;
-
-  private readonly mapUnit: TMapUnit;
+export class TypingWordScreen extends Container {
+  public static assetBundles = ['typing-level-4', 'typing-level', 'education-letter-images'];
+  private background: Sprite;
+  private hud: HUD;
+  private wordStyle: HTMLTextStyle = createTypingWordStyle(FONT_SIZE);
+  private contentContainer: Container;
+  private card: Graphics;
+  private cardShadow: Graphics;
+  private wordContainer: Container;
+  private wordText: HTMLText;
+  private keyboard: KeyboardLayout;
+  private rounds: Round[];
+  private currentRound?: Round;
+  private _cardW: number = CARD_WIDTH;
+  private _sw: number = 0;
+  private _sh: number = 0;
+  private paused: boolean;
+  private mapUnit: TMapUnit;
 
   constructor(mapUnit: TMapUnit) {
     super();
     this.mapUnit = mapUnit;
-
     this.background = new Sprite({
-      texture: Texture.from('typing-levels/typing-level/background-taklamakan.png'),
-      layout: { width: '100%', height: '100%', position: 'absolute', objectFit: 'cover' },
+      texture: Texture.from('typing-levels/typing-level/background-farmers-harvest.png'),
+      layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
-    this.instrument = new Sprite({
-      texture: Texture.from('typing-levels/typing-level-4/instrument.png'),
-    });
-    this.instrument.anchor.set(0.5);
-
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
@@ -174,197 +94,188 @@ export class TypingInstrumentScreen extends Container {
           exitable: true,
         }),
     });
+    this.keyboard = new KeyboardLayout();
+    this.rounds = generateRoundsDictionary();
+    // this.rounds = DEV_TEST_ROUNDS; // uncomment to assign rounds to selected test set
+    this.mapUnit = mapUnit;
+    this.card = new Graphics();
+    this.cardShadow = new Graphics();
+    this.wordText = new HTMLText({ style: this.wordStyle });
 
-    this.queueCards.forEach((card) => this.queue.addChild(card));
-    this.addChild(
-      this.background,
-      this.queue,
-      this.instrument,
-      this.targetLabel,
-      this.keyboard,
-      this.hud,
-    );
-    this.renderNotes();
+    this.wordContainer = new Container();
+    this.wordContainer.addChild(this.cardShadow, this.card, this.wordText);
+
+    this.contentContainer = new Container({
+      layout: {
+        position: 'absolute',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: CONTENT_GAP,
+      },
+    });
+    this.addChild(this.background, this.hud, this.keyboard, this.contentContainer);
+    this.popAndStartRound();
+    this.paused = false;
   }
 
-  public resize(width: number, height: number) {
+  resize(width: number, height: number) {
+    this._sw = width;
+    this._sh = height;
     this.layout = { width, height };
     this.background.layout = { width, height };
     this.keyboard.resize(width, height);
-
-    this.instrumentRestY = height * 0.35;
-    this.targetLabelRestY = height * 0.25;
-    this.instrument.position.set(width / 2 - 300, this.instrumentRestY);
-    this.targetLabel.position.set(width / 2 + 10, this.targetLabelRestY);
-    this.targetPosition = { x: width / 2 - 66, y: height * 0.3 };
-    this.target?.position.set(this.targetPosition.x, this.targetPosition.y);
+    this.centerContent();
   }
 
-  public async show() {
+  async show() {
+    void this.keyboard.resume();
     this.paused = false;
     window.addEventListener('keydown', this.handleKeyDown);
-    void this.keyboard.resume();
-
-    this.instrument.alpha = 0;
-    this.instrument.y = this.instrumentRestY + 80;
-    this.targetLabel.alpha = 0;
-    this.targetLabel.y = this.targetLabelRestY - 60;
-    this.queueCards.forEach((card) => {
-      card.alpha = 0;
-      card.scale.set(0.85);
-    });
-
-    await Promise.all([
-      this.keyboard.playEnterAnimation(),
-      animate(
-        this.instrument,
-        { alpha: 1, y: this.instrumentRestY },
-        { duration: 0.6, ease: 'easeOut' },
-      ),
-      animate(
-        this.targetLabel,
-        { alpha: 1, y: this.targetLabelRestY },
-        { duration: 0.4, ease: 'backOut' },
-      ),
-      ...this.queueCards.flatMap((card, index) => {
-        const delay = (QUEUE_SIZE - 1 - index) * ENTER_STAGGER_MS;
-        return [
-          animate(card, { alpha: 1 }, { duration: 0.35, ease: 'backOut', delay }),
-          animate(card.scale, { x: 1, y: 1 }, { duration: 0.35, ease: 'backOut', delay }),
-        ];
-      }),
-      this.target?.playAppear(0.15) ?? Promise.resolve(),
-    ]);
+    await this.keyboard.playEnterAnimation();
   }
 
-  public async hide() {
+  async hide() {
     await this.pause();
-    await Promise.all([
-      this.keyboard.playExitAnimation(),
-      animate(
-        this.instrument,
-        { alpha: 0, y: this.instrumentRestY + 60 },
-        { duration: 0.2, ease: 'easeIn' },
-      ),
-      animate(
-        this.targetLabel,
-        { alpha: 0, y: this.targetLabelRestY - 40 },
-        { duration: 0.2, ease: 'backIn' },
-      ),
-      ...this.queueCards.flatMap((card, index) => {
-        const delay = (QUEUE_SIZE - 1 - index) * EXIT_STAGGER_MS;
-        return [
-          animate(card, { alpha: 0 }, { duration: 0.2, ease: 'backIn', delay }),
-          animate(card.scale, { x: 0.85, y: 0.85 }, { duration: 0.2, ease: 'backIn', delay }),
-        ];
-      }),
-      this.target?.playDisappear(0) ?? Promise.resolve(),
-    ]);
+    await this.keyboard.playExitAnimation();
   }
-
-  public async pause() {
+  async pause() {
     this.paused = true;
     window.removeEventListener('keydown', this.handleKeyDown);
     await this.keyboard.pause();
   }
 
-  public async resume() {
-    if (this.completed) return;
+  async resume() {
     this.paused = false;
     window.addEventListener('keydown', this.handleKeyDown);
     await this.keyboard.resume();
   }
 
-  public reset() {
-    window.removeEventListener('keydown', this.handleKeyDown);
-    if (this.feedbackTimer) window.clearTimeout(this.feedbackTimer);
+  /**===== COMPONENT RENDERING HELPERS ======= */
+
+  private drawCard() {
+    // measure the rendered word
+    const b = this.wordText.getLocalBounds();
+    const cardW = Math.max(CARD_WIDTH, b.width + PAD_X * 2); // fit, with a floor
+    const cardH = FONT_SIZE + PAD_Y * 2;
+
+    this.cardShadow
+      .clear()
+      .roundRect(SHADOW_OFFSET, SHADOW_OFFSET, cardW, cardH, 20)
+      .fill(0x000000);
+    this.cardShadow.alpha = 0.5;
+
+    this.card.clear().roundRect(0, 0, cardW, cardH, 20).fill(0xffffff);
+    this.card.tint = CARD_COLORS.default;
+
+    this.wordText.anchor.set(0.5);
+    this.wordText.position.set(cardW / 2, cardH / 2);
+
+    this.wordContainer.layout = {
+      width: cardW + SHADOW_OFFSET,
+      height: cardH + SHADOW_OFFSET,
+      flexShrink: 0,
+    };
+    this._cardW = cardW; // for centering
+    this.centerContent();
   }
 
-  private renderNotes() {
-    const batchStart = Math.floor(this.noteIndex / QUEUE_SIZE) * QUEUE_SIZE;
-    const completedInBatch = this.noteIndex - batchStart;
-    this.queueCards.forEach((card, index) => {
-      const isSuccess = index < completedInBatch;
-      const letter = this.notes[batchStart + index] ?? '';
-      card.setState(isSuccess ? 'success' : 'default', isSuccess ? letter : '');
-    });
-    this.setTargetLetter(this.notes[this.noteIndex] ?? '');
+  private centerContent() {
+    const groupW = IMAGE_SIZE + CONTENT_GAP + this._cardW + SHADOW_OFFSET;
+    this.contentContainer.layout = {
+      position: 'absolute',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: CONTENT_GAP,
+      left: (this._sw - groupW) / 2,
+      top: this._sh * 0.15,
+    };
   }
 
-  private setTargetLetter(letter: string) {
-    if (this.target) {
-      this.removeChild(this.target);
-      this.target.destroy({ children: true });
-    }
-    this.target = new Letter({ letter, cardSize: TARGET_SIZE, cornerRadius: SLOT_RADIUS });
-    this.target.setActive(true, false);
-    this.target.position.set(this.targetPosition.x, this.targetPosition.y);
-    this.addChildAt(this.target, this.getChildIndex(this.keyboard));
+  private updateContentContainer(image: Sprite, word: string, activeLetterIdx: number) {
+    this.contentContainer.removeChildren();
+    image.layout = { width: IMAGE_SIZE, height: IMAGE_SIZE, flexShrink: 0 };
+    const len = word[activeLetterIdx].length;
+    this.wordText.text = getHighlightedWordMarkup(word, activeLetterIdx, len);
+    this.contentContainer.addChild(image, this.wordContainer);
+    this.drawCard();
   }
 
-  private readonly handleKeyDown = (event: KeyboardEvent) => {
+  // pops the next round from this.rounds and assigns it to currentRound, calls endRound if rounds is empty
+  private popAndStartRound() {
+    if (this.rounds.length === 0) this.endGame();
+    this.currentRound = this.rounds.pop() ?? undefined;
+    if (!this.currentRound) return;
+    const { letter, word, activeLetterIdx } = this.currentRound!;
+    const image: Sprite = new Sprite(
+      Texture.from(`education-levels/education-letter-images/${letter}.png`),
+    );
+    this.updateContentContainer(image, word, activeLetterIdx); // always highlights first letter, letterIdx for new round always at 0
+  }
+  /**
+   * ======= GAME LOGIC HELPERS =======
+   */
+
+  private readonly handleKeyDown = async (event: KeyboardEvent) => {
     if (
       this.paused ||
-      this.completed ||
-      this.awaitingFeedback ||
       event.repeat ||
-      event.key === 'Shift' ||
+      event.key == 'Shift' ||
       event.ctrlKey ||
       event.metaKey ||
-      event.altKey
-    ) {
+      event.altKey ||
+      !this.currentRound
+    )
       return;
-    }
+    const typedLetter = getMappedFromKeyboardEvent(event);
+    if (!typedLetter) return;
 
-    const typed = getMappedFromKeyboardEvent(event);
-    if (!typed) return;
-
-    if (typed === this.notes[this.noteIndex]) {
-      this.handleCorrectNote(event.code);
+    const { word, activeLetterIdx } = this.currentRound!;
+    console.log(event.key);
+    if (typedLetter === word[activeLetterIdx]) {
+      this.keyboard.setKeyFeedback(event.code, 'success');
+      void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
+      setTimeout(() => this.keyboard.clearKeyFeedback(event.code), FEEDBACK_DURATION_MS);
+      useSessionStore.getState().recordCorrect();
+      await this.advanceHighlightedLetter();
     } else {
-      this.handleIncorrectNote(event.code);
+      this.keyboard.setKeyFeedback(event.code, 'error');
+      this.card.tint = CARD_COLORS['error'];
+      void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
+
+      setTimeout(() => {
+        this.keyboard.clearKeyFeedback(event.code);
+        this.card.tint = CARD_COLORS['default'];
+      }, FEEDBACK_DURATION_MS);
+      useSessionStore.getState().recordMistake();
+    }
+  };
+  private advanceHighlightedLetter = async () => {
+    const r = this.currentRound!;
+    r.activeLetterIdx += r.word[r.activeLetterIdx].length;
+
+    if (r.activeLetterIdx >= r.word.length) {
+      await this.playSuccessFlash(); // wait for it to finish
+      this.popAndStartRound(); // drawCard resets tint to default here
+    } else {
+      this.wordText.text = getHighlightedWordMarkup(
+        r.word,
+        r.activeLetterIdx,
+        r.word[r.activeLetterIdx].length,
+      );
     }
   };
 
-  private handleCorrectNote(code: string) {
-    this.awaitingFeedback = true;
-    useSessionStore.getState().recordCorrect();
-    void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
-    this.keyboard.setKeyFeedback(code, 'success');
-    this.target.setFeedback('success');
-    this.queueCards[this.noteIndex % QUEUE_SIZE]?.setState(
-      'success',
-      this.notes[this.noteIndex] ?? '',
+  private async playSuccessFlash(): Promise<void> {
+    this.card.tint = CARD_COLORS.success;
+
+    const controls = animate(
+      this.wordContainer.scale,
+      { x: 1.12, y: 1.12 },
+      { duration: 0.15, ease: 'easeOut', repeat: 1, repeatType: 'reverse' },
     );
-
-    this.feedbackTimer = window.setTimeout(() => {
-      this.keyboard.clearKeyFeedback(code);
-      this.noteIndex += 1;
-      if (this.noteIndex >= this.notes.length) {
-        this.endGame();
-        return;
-      }
-      this.renderNotes();
-      this.awaitingFeedback = false;
-    }, FEEDBACK_DURATION_MS);
+    await controls.finished;
   }
-
-  private handleIncorrectNote(code: string) {
-    this.awaitingFeedback = true;
-    useSessionStore.getState().recordMistake();
-    void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
-    this.keyboard.setKeyFeedback(code, 'error');
-    this.target.setFeedback('error');
-
-    this.feedbackTimer = window.setTimeout(() => {
-      this.keyboard.clearKeyFeedback(code);
-      this.target.setFeedback('none', false);
-      this.awaitingFeedback = false;
-    }, FEEDBACK_DURATION_MS);
-  }
-
   private endGame() {
-    this.completed = true;
     this.paused = true;
     window.removeEventListener('keydown', this.handleKeyDown);
     const { correct, mistakes } = useSessionStore.getState();
