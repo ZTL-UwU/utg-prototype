@@ -156,10 +156,6 @@ export class EducationSheepScreen extends Container {
     }, durationMs);
   }
 
-  /**
-   * ==================EVENT HANDLERS=======================
-   *
-   */
   private readonly handleGrassClick = (clickedGrassIdx: number) => {
     if (this.isAnimating) return;
 
@@ -199,17 +195,21 @@ export class EducationSheepScreen extends Container {
       });
   }
 
-  /**
-   * ==================SHEEP ANIMATIONS=======================
-   *
-   */
   async sheepFlashSad(signedScale: ObservablePoint) {
     const defaultTex = this.sheep.texture;
     this.sheep.texture = Texture.from(SHEEP_TEXTURES.crying);
     this.flashSadAnimation = animate(
       [
-        [this.sheep.scale, { x: 1.1 * signedScale.x, y: 0.9 * signedScale.y }, { duration: 0.12 }],
-        [this.sheep.scale, { x: 1 * signedScale.x, y: 1 * signedScale.y }, { duration: 0.18 }],
+        [
+          this.sheep.scale,
+          { x: [signedScale.x, 1.1 * signedScale.x], y: [signedScale.y, 0.9 * signedScale.y] },
+          { duration: 0.12 },
+        ],
+        [
+          this.sheep.scale,
+          { x: [1.1 * signedScale.x, signedScale.x], y: [0.9 * signedScale.y, signedScale.y] },
+          { duration: 0.18 },
+        ],
       ],
       { defaultTransition: { ease: 'easeInOut' } },
     );
@@ -227,8 +227,16 @@ export class EducationSheepScreen extends Container {
     this.sheep.texture = Texture.from(SHEEP_TEXTURES.grazing);
     await animate(
       [
-        [this.sheep.scale, { x: 0.9 * signedScale.x, y: 0.9 * signedScale.y }, { duration: 0.12 }],
-        [this.sheep.scale, { x: 1 * signedScale.x, y: 1 * signedScale.y }, { duration: 0.18 }],
+        [
+          this.sheep.scale,
+          { x: [signedScale.x, 0.9 * signedScale.x], y: [signedScale.y, 0.9 * signedScale.y] },
+          { duration: 0.12 },
+        ],
+        [
+          this.sheep.scale,
+          { x: [0.9 * signedScale.x, signedScale.x], y: [0.9 * signedScale.y, signedScale.y] },
+          { duration: 0.18 },
+        ],
       ],
       { defaultTransition: { ease: 'easeInOut' } },
     ).finished;
@@ -248,12 +256,12 @@ export class EducationSheepScreen extends Container {
       animate([
         [
           this.sheep.scale,
-          { x: 1.5 * signedScale.x, y: 1.5 * signedScale.y },
+          { x: [signedScale.x, 1.5 * signedScale.x], y: [signedScale.y, 1.5 * signedScale.y] },
           { duration: 0.2, ease: 'linear' },
         ],
         [
           this.sheep.scale,
-          { x: signedScale.x, y: signedScale.y },
+          { x: [1.5 * signedScale.x, signedScale.x], y: [1.5 * signedScale.y, signedScale.y] },
           { duration: 0.2, ease: 'linear' },
         ],
       ]),
@@ -275,10 +283,6 @@ export class EducationSheepScreen extends Container {
       .finished;
   }
 
-  /**
-   *
-   * =====END GAME LOGIC========
-   */
   private endGame() {
     this.isAnimating = false;
     if (++EducationSheepScreen.rounds < EducationSheepScreen.MAX_ROUNDS) {
