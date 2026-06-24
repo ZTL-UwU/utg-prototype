@@ -163,7 +163,7 @@ export class EducationTutorialScreen extends Container {
     ]);
     this.hud.eventMode = 'none';
 
-    this.songInstance = await engine().audio.sfx.play(ALPHABET_SONG_ALIAS);
+    this.songInstance = await engine().audio.sfx.play(ALPHABET_SONG_ALIAS, { start: 1.15 });
     this.letterGrid.setSongMode(true);
 
     this.timings = this.letterGrid.getLetterTimingOffsets();
