@@ -4,7 +4,6 @@ import { animate } from 'motion';
 import { Container, Graphics, Sprite, Texture, Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { EDUCATION_LETTERS } from '../../../../utils/example-words';
 import { AlphabetGrid } from '../../../ui/alphabet-grid';
 import { HUD } from '../../../ui/hud';
 import { LevelMapScreen } from '../../level-map';
@@ -13,13 +12,6 @@ import { EducationYoutubeScreen } from '../youtube-videos';
 import { LetterPopup } from './letter-popup';
 
 const ALPHABET_SONG_ALIAS = 'education-levels/education-tutorial/uyghur-alphabet-song.mp3';
-
-const letters = [
-  EDUCATION_LETTERS.slice(0, 8),
-  EDUCATION_LETTERS.slice(8, 16),
-  EDUCATION_LETTERS.slice(16, 24),
-  EDUCATION_LETTERS.slice(24, 32),
-];
 
 const STOP_BUTTON_SIZE = 115;
 
@@ -77,7 +69,7 @@ export class EducationTutorialScreen extends Container {
 
     engine().audio.bgm.setVolume(0);
 
-    this.letterGrid = new AlphabetGrid(letters, (letter) => {
+    this.letterGrid = new AlphabetGrid((letter) => {
       void this.onStop();
       void engine().navigation.showPopup(LetterPopup, letter);
     });

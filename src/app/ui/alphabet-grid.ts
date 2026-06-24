@@ -2,6 +2,7 @@ import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
 import { Container, Graphics, Text } from 'pixi.js';
 
+import { EDUCATION_LETTERS } from '../../utils/example-words';
 import alphabetTimings from './alphabet-timings.json';
 
 export type AlphabetGridColorOptions = {
@@ -30,6 +31,13 @@ const DEFAULT_COLOR_OPTIONS: AlphabetGridColorOptions = {
   keyPressedShadowColor: 0x1b427a,
   textColor: 0xffffff,
 };
+
+const letters = [
+  EDUCATION_LETTERS.slice(0, 8),
+  EDUCATION_LETTERS.slice(8, 16),
+  EDUCATION_LETTERS.slice(16, 24),
+  EDUCATION_LETTERS.slice(24, 32),
+];
 
 function drawButton(
   size: number,
@@ -137,7 +145,6 @@ export class AlphabetGrid extends Container {
   private readonly colorOptions: AlphabetGridColorOptions;
 
   constructor(
-    letters: string[][],
     onClick: (letter: string) => void,
     colorOptions: AlphabetGridColorOptions = DEFAULT_COLOR_OPTIONS,
   ) {
