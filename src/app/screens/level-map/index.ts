@@ -3,10 +3,10 @@ import { animate } from 'motion';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { TutorialPopup } from '../../popups/tutorial';
 import { HUD } from '../../ui/hud';
 import { EducationTutorialScreen } from '../education-level/level-tutorial';
 import { LayerSelectScreen } from '../layer-select';
+import { TypingTutorialScreen } from '../typing-level/level-tutorial';
 import { LevelRow } from './level-row';
 import type { TMapUnit } from './units';
 
@@ -41,17 +41,11 @@ export class LevelMapScreen extends Container {
 
     this.hud = new HUD({
       onBack: () => void engine().navigation.showScreen(LayerSelectScreen),
-      onHelp:
-        mapUnit.type === 'education'
-          ? () => void engine().navigation.showScreen(EducationTutorialScreen, mapUnit)
-          : mapUnit.helpAsset
-            ? () =>
-                void engine().navigation.showPopup(TutorialPopup, {
-                  asset: mapUnit.helpAsset!,
-                  backdropColor: mapUnit.backdropColor!,
-                  exitable: true,
-                })
-            : undefined,
+      onHelp: () =>
+        void engine().navigation.showScreen(
+          mapUnit.type === 'education' ? EducationTutorialScreen : TypingTutorialScreen,
+          mapUnit,
+        ),
     });
 
     this.title = new Text({

@@ -3,7 +3,7 @@ import { Container, Graphics, Text } from 'pixi.js';
 
 import { getKeyboardLabel } from '../../utils/keymap';
 
-export type KeyFeedback = 'none' | 'error' | 'success';
+export type KeyFeedback = 'none' | 'hint' | 'error' | 'success';
 
 type Key = {
   code: string;
@@ -195,9 +195,11 @@ class KeyCap extends Container {
         ? KEY_SUCCESS_COLOR
         : this.feedback === 'error'
           ? KEY_ERROR_COLOR
-          : this.pressed
+          : this.feedback === 'hint'
             ? this.keyPressedColor
-            : this.keyColor;
+            : this.pressed
+              ? this.keyPressedColor
+              : this.keyColor;
 
     this.background
       .clear()
@@ -378,7 +380,7 @@ export class KeyboardLayout extends Container {
     }
   }
 
-  private clearAllKeyFeedback() {
+  public clearAllKeyFeedback() {
     for (const cap of this.keys) {
       cap.setFeedback('none');
     }
