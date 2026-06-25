@@ -16,8 +16,6 @@ const COLORS = {
   badge: 0xfff1de,
 } as const;
 
-const DESIGN_WIDTH = 1920;
-const DESIGN_HEIGHT = 1080;
 const GUIDE_KEY_WIDTH = 130;
 const GUIDE_KEY_HEIGHT = 136;
 const GUIDE_GAP = 64;
@@ -240,9 +238,7 @@ export class LetterPopup extends Container {
   }
 
   private layoutGuide(width: number, height: number) {
-    const scale = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT, 1);
-    this.guide.scale.set(scale);
-    this.guide.position.set(width / 2, Math.max(150 * scale, height * 0.19));
+    this.guide.position.set(width / 2, Math.max(150, height * 0.2));
   }
 
   private createStepBadge(step: number) {
@@ -309,7 +305,7 @@ export class LetterPopup extends Container {
 
     if (!isExpectedShift && (!isExpectedKey || (shiftIsRequired && !event.shiftKey))) {
       this.keyboard.setKeyFeedback(event.code, 'error');
-      void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
+      void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3', { volume: 0.5 });
       window.setTimeout(() => this.refreshGuideState(), FEEDBACK_DURATION_MS);
       return;
     }
