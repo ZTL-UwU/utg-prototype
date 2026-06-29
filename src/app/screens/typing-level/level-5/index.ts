@@ -108,7 +108,7 @@ export class TypingMarketScreen extends Container {
     });
 
     this.addChild(this.background, this.tourist, this.hud, this.keyboard, this.contentContainer);
-    this.popAndStartRound();
+    void this.popAndStartRound();
     this.paused = false;
   }
 
@@ -256,7 +256,7 @@ export class TypingMarketScreen extends Container {
     if (r.activeLetterIdx >= r.word.length) {
       await this.playSuccessFlash();
       this.tourist.texture = randomTouristTexture();
-      this.popAndStartRound();
+      await this.popAndStartRound();
     } else {
       this.wordText.text = getAdvancedWordMarkup(
         r.word,

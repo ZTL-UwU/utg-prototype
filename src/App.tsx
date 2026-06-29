@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import '@pixi/layout';
 
 import './index.css';
-import { HomeScreen } from './app/screens/home';
 import { MobileBlockerBanner } from './components/MobileBlockerBanner';
 import { ScreenOverlay } from './components/ScreenOverlay';
 import { CreationEngine } from './engine/engine';
@@ -26,10 +25,24 @@ export default function App() {
         antialias: true,
       });
 
-      await engine.navigation.showScreen(HomeScreen);
+      if (import.meta.env.DEV) {
+        const { debugScreenRouter } = await import('./debug/screen-router');
+        await debugScreenRouter.start(engine.navigation);
+      } else {
+        const { HomeScreen } = await import('./app/screens/home');
+        await engine.navigation.showScreen(HomeScreen);
+      }
     };
 
     void init();
+
+    return () => {
+      if (import.meta.env.DEV) {
+        void import('./debug/screen-router').then(({ debugScreenRouter }) => {
+          debugScreenRouter.stop();
+        });
+      }
+    };
   }, []);
 
   return (

@@ -41,6 +41,9 @@ export class Navigation {
   public app!: CreationEngine;
 
   private readonly screenTickerHandlers = new WeakMap<AppScreen, (time: Ticker) => void>();
+  private readonly screenChangeListeners = new Set<
+    (ctor: AppScreenConstructor<any[]>, props?: unknown) => void
+  >();
 
   /** Container for screens */
   public container = new Container();
@@ -62,6 +65,12 @@ export class Navigation {
 
   public init(app: CreationEngine) {
     this.app = app;
+  }
+
+  /** Subscribe to completed screen changes. */
+  public onScreenChange(listener: (ctor: AppScreenConstructor<any[]>, props?: unknown) => void) {
+    this.screenChangeListeners.add(listener);
+    return () => this.screenChangeListeners.delete(listener);
   }
 
   /** Set the  default load screen */
@@ -171,6 +180,9 @@ export class Navigation {
         ? new (ctor as AppScreenConstructor<[unknown]>)(props)
         : BigPool.get(ctor);
     await this.addAndShowScreen(this.currentScreen);
+    for (const listener of this.screenChangeListeners) {
+      listener(ctor, props);
+    }
   }
 
   /**
