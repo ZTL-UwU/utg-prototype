@@ -7,7 +7,6 @@ import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
-import { TutorialPopup } from '../../../popups/tutorial';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
@@ -111,12 +110,8 @@ export class TypingSandstormScreen extends Container {
           type: mapUnit.type,
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      onHelp: () =>
-        void engine().navigation.showPopup(TutorialPopup, {
-          asset: 'tutorial-popups/typing-tutorial.png',
-          backdropColor: 0x7d5600,
-          isFullscreen: false,
-        }),
+      helpAsset: 'tutorial-popups/typing-tutorial.png',
+      backdropColor: 0x7d5600,
     });
 
     this.keyboard = new KeyboardLayout();

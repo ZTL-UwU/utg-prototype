@@ -8,7 +8,6 @@ import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
-import { TutorialPopup } from '../../../popups/tutorial';
 import { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
 import { LevelMapScreen } from '../../level-map';
@@ -77,12 +76,8 @@ export class EducationSheepScreen extends Container {
           type: mapUnit.type,
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      onHelp: () =>
-        void engine().navigation.showPopup(TutorialPopup, {
-          asset: 'tutorial-popups/education-level-3.png',
-          backdropColor: 0x4a90e2,
-          isFullscreen: false,
-        }),
+      helpAsset: 'tutorial-popups/education-level-3.png',
+      backdropColor: 0x4a90e2,
     });
 
     const letters = getThreeUniqueLetters();
