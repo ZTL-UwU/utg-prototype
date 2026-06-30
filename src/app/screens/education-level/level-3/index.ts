@@ -81,7 +81,7 @@ export class EducationSheepScreen extends Container {
         void engine().navigation.showPopup(TutorialPopup, {
           asset: 'tutorial-popups/education-level-3.png',
           backdropColor: 0x4a90e2,
-          exitable: true,
+          isFullscreen: false,
         }),
     });
 

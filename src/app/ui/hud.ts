@@ -38,7 +38,7 @@ export class HUD extends Container {
             void engine().navigation.showPopup(TutorialPopup, {
               asset: helpAsset,
               backdropColor,
-              exitable: true,
+              isFullscreen: false,
             })
         : undefined);
 

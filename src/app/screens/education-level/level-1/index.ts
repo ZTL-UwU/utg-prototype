@@ -40,7 +40,7 @@ export class EducationLevelScreen extends Container {
         void engine().navigation.showPopup(TutorialPopup, {
           asset: 'tutorial-popups/education-level-1.png',
           backdropColor: 0x4a90e2,
-          exitable: true,
+          isFullscreen: false,
         }),
     });
     this.letterGrid = new LetterGrid(mapUnit);

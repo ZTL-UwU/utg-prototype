@@ -68,7 +68,7 @@ export class EducationImageScreen extends Container {
         void engine().navigation.showPopup(TutorialPopup, {
           asset: 'tutorial-popups/education-level-4.png',
           backdropColor: 0x4a90e2,
-          exitable: true,
+          isFullscreen: false,
         }),
     });
 

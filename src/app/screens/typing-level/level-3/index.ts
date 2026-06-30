@@ -179,7 +179,7 @@ export class TypingInstrumentScreen extends Container {
         void engine().navigation.showPopup(TutorialPopup, {
           asset: 'tutorial-popups/typing-tutorial.png',
           backdropColor: 0x7d5600,
-          exitable: true,
+          isFullscreen: false,
         }),
     });
 

@@ -102,7 +102,7 @@ export class LevelSplashScreen extends Container {
         void engine().navigation.showPopup(TutorialPopup, {
           asset: level.helpAsset,
           backdropColor: level.backdropColor,
-          exitable: true,
+          isFullscreen: false,
         }),
     });
 

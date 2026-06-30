@@ -8,7 +8,7 @@ import { RoundedProgressBar } from '../../ui/rounded-progress-bar';
 type TutorialProps = {
   asset: string;
   backdropColor: number;
-  exitable?: boolean;
+  isFullscreen?: boolean;
   onNext?: () => void;
 };
 
@@ -25,13 +25,13 @@ export class TutorialPopup extends Container {
 
   private backdrop: Graphics;
   private backdropColor: number;
-  private exitable: boolean;
+  private isFullscreen: boolean;
 
-  constructor({ asset, backdropColor, exitable = false, onNext }: TutorialProps) {
+  constructor({ asset, backdropColor, isFullscreen = true, onNext }: TutorialProps) {
     super({ layout: { position: 'absolute', width: '100%', height: '100%' } });
     this.onNext = onNext;
     this.backdropColor = backdropColor;
-    this.exitable = exitable;
+    this.isFullscreen = isFullscreen;
     this.backdrop = new Graphics();
     this.backdrop.layout = {
       position: 'absolute',
@@ -64,14 +64,22 @@ export class TutorialPopup extends Container {
       height: 80,
     };
     this.exitButton.onPress.connect(() => {
-      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      void engine().navigation.hidePopup();
+      if (!isFullscreen) {
+        void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+        void engine().navigation.hidePopup();
+      } else {
+        void engine()
+          .navigation.hidePopup()
+          .then(() => {
+            this.onNext?.();
+          });
+      }
     });
 
-    if (exitable) {
-      this.addChild(this.backdrop, this.exitButton); // behind the SVG
+    if (!isFullscreen) {
+      this.addChild(this.backdrop); // behind the SVG
     }
-    this.addChild(this.background);
+    this.addChild(this.background, this.exitButton);
 
     if (onNext) {
       this.progressBar = new RoundedProgressBar();
@@ -93,7 +101,7 @@ export class TutorialPopup extends Container {
 
     this.layoutProgressBar(width, height);
 
-    if (this.exitable) {
+    if (!this.isFullscreen) {
       const w = width * 0.9;
       const h = height * 0.9;
       const radius = Math.min(w, h) * 0.05;
@@ -104,7 +112,7 @@ export class TutorialPopup extends Container {
   async show() {
     this.background.alpha = 0;
     this.background.scale.set(0.5, 0.5);
-    if (this.exitable) {
+    if (!this.isFullscreen) {
       this.backdrop.alpha = 0;
       this.backdrop.scale.set(0.5, 0.5);
       void engine().audio.sfx.play('preload-audio/sfx/popup.mp3');
@@ -126,7 +134,7 @@ export class TutorialPopup extends Container {
       ...(this.progressBar
         ? [animate(this.progressBar, { alpha: 1 }, { duration: 0.8, ease: 'backOut' })]
         : []),
-      ...(this.exitable
+      ...(!this.isFullscreen
         ? [
             animate(this.backdrop, { alpha: 1 }, { duration: 0.8, ease: 'backOut' }),
             animate(this.backdrop.scale, { x: 1, y: 1 }, { duration: 0.8, ease: 'backOut' }),
@@ -146,9 +154,8 @@ export class TutorialPopup extends Container {
     }
 
     if (this.autoAdvanceElapsedMs >= AUTO_ADVANCE_MS) {
-      const onNext = this.onNext;
       void currentEngine.navigation.hidePopup().then(() => {
-        onNext();
+        this.onNext?.();
       });
     }
   }
@@ -166,7 +173,7 @@ export class TutorialPopup extends Container {
       ...(this.progressBar
         ? [animate(this.progressBar, { alpha: 0 }, { duration: 0.5, ease: 'easeOut' })]
         : []),
-      ...(this.exitable
+      ...(!this.isFullscreen
         ? [
             animate(this.backdrop.scale, { x: 0.1, y: 0.1 }, { duration: 0.6, ease: 'backIn' }),
             animate(this.backdrop, { alpha: 0 }, { duration: 0.5, ease: 'easeOut' }),
