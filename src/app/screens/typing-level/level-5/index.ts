@@ -41,7 +41,7 @@ export class TypingMarketScreen extends Container {
   private tourist: Sprite;
   private hud: HUD;
   private keyboard: KeyboardLayout;
-  private wordStyle: HTMLTextStyle = createTypingWordStyle(FONT_SIZE);
+  private wordStyle: HTMLTextStyle = createTypingWordStyle(FONT_SIZE, 0x6b411e);
   private card: Sprite;
   private wordContainer: Container = new Container();
   private wordText: HTMLText;
