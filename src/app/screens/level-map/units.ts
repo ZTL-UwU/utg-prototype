@@ -1,3 +1,4 @@
+import type { AppScreenConstructor } from '../../../engine/navigation/navigation';
 import { EducationLevelScreen } from '../education-level/level-1';
 import { EducationBubbleScreen } from '../education-level/level-2';
 import { EducationSheepScreen } from '../education-level/level-3';
@@ -9,8 +10,26 @@ import { TypingSandstormScreen } from '../typing-level/level-2';
 import { TypingInstrumentScreen } from '../typing-level/level-3';
 import { TypingWordScreen } from '../typing-level/level-4';
 import { TypingMarketScreen } from '../typing-level/level-5';
-import type { TLevel } from './level-button';
+export type TLevel = {
+  id: number;
+  title?: string;
+  unlocked: boolean;
+  miniMapImage: string;
+  mascot: 'sheep' | 'goat' | 'camel';
+  screen?: AppScreenConstructor<any[]>;
+  background: string;
+  helpAsset: string;
+  backdropColor: number;
+  splashColorScheme?: SplashColorScheme;
+  mascotOnSplash: boolean;
+};
 
+export type SplashColorScheme = {
+  BUTTON_FILL: number;
+  BUTTON_TEXT_FILL: number;
+  LEVEL_FONT_FILL: number;
+  LEVEL_TITLE_FILL: number;
+};
 export type TMapUnit = {
   type: 'typing' | 'education';
   background: string;
@@ -36,6 +55,7 @@ const educationMap1: TMapUnit = {
       background: 'education-levels/education-level/background.png',
       helpAsset: 'tutorial-popups/education-level-1.png',
       backdropColor: 0x4a90e2,
+      mascotOnSplash: true,
     },
     {
       id: 2,
@@ -46,6 +66,7 @@ const educationMap1: TMapUnit = {
       background: 'education-levels/education-level/background.png',
       helpAsset: 'tutorial-popups/education-level-2.png',
       backdropColor: 0x4a90e2,
+      mascotOnSplash: true,
     },
     {
       id: 3,
@@ -56,6 +77,7 @@ const educationMap1: TMapUnit = {
       background: 'education-levels/education-level/background.png',
       helpAsset: 'tutorial-popups/education-level-3.png',
       backdropColor: 0x4a90e2,
+      mascotOnSplash: true,
     },
     {
       id: 4,
@@ -66,6 +88,7 @@ const educationMap1: TMapUnit = {
       background: 'education-levels/education-level/background.png',
       helpAsset: 'tutorial-popups/education-level-4.png',
       backdropColor: 0x4a90e2,
+      mascotOnSplash: true,
     },
   ],
 };
@@ -84,6 +107,7 @@ const educationMap2: TMapUnit = {
       background: 'education-levels/education-level/background.png',
       helpAsset: 'tutorial-popups/education-level-5.png',
       backdropColor: 0x4a90e2,
+      mascotOnSplash: true,
     },
     {
       id: 6,
@@ -94,6 +118,7 @@ const educationMap2: TMapUnit = {
       background: 'education-levels/education-level/background.png',
       helpAsset: 'tutorial-popups/education-level-6.png',
       backdropColor: 0x4a90e2,
+      mascotOnSplash: true,
     },
     {
       id: 7,
@@ -105,6 +130,7 @@ const educationMap2: TMapUnit = {
       // TODO: missing tutorial asset
       helpAsset: 'tutorial-popups/education-tutorial.png',
       backdropColor: 0x4a90e2,
+      mascotOnSplash: true,
     },
     {
       id: 8,
@@ -115,6 +141,7 @@ const educationMap2: TMapUnit = {
       background: 'education-levels/education-level/background.png',
       helpAsset: 'tutorial-popups/education-level-4.png',
       backdropColor: 0x4a90e2,
+      mascotOnSplash: true,
     },
   ],
 };
@@ -136,6 +163,7 @@ const typingMap1: TMapUnit = {
       background: 'typing-levels/typing-level/background-taklamakan.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
       backdropColor: 0x7d5600,
+      mascotOnSplash: true,
     },
     {
       id: 2,
@@ -147,6 +175,13 @@ const typingMap1: TMapUnit = {
       background: 'typing-levels/typing-level/background-sandstorm.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
       backdropColor: 0x7d5600,
+      splashColorScheme: {
+        BUTTON_FILL: 0xc45a14,
+        BUTTON_TEXT_FILL: 0xffe2bc,
+        LEVEL_FONT_FILL: 0xc45a14,
+        LEVEL_TITLE_FILL: 0x6b411e,
+      },
+      mascotOnSplash: false,
     },
     {
       id: 3,
@@ -158,6 +193,13 @@ const typingMap1: TMapUnit = {
       background: 'typing-levels/typing-level/background-tangri-tah.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
       backdropColor: 0x7d5600,
+      splashColorScheme: {
+        BUTTON_FILL: 0x6e8539,
+        BUTTON_TEXT_FILL: 0xf5f3ef,
+        LEVEL_FONT_FILL: 0x6e8539,
+        LEVEL_TITLE_FILL: 0x6e8539,
+      },
+      mascotOnSplash: true,
     },
     {
       id: 4,
@@ -169,6 +211,13 @@ const typingMap1: TMapUnit = {
       background: 'typing-levels/typing-level/background-farmers-harvest.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
       backdropColor: 0x8ec24d,
+      splashColorScheme: {
+        BUTTON_FILL: 0xc98144,
+        BUTTON_TEXT_FILL: 0xffe2bc,
+        LEVEL_FONT_FILL: 0xc98144,
+        LEVEL_TITLE_FILL: 0xffe2bc,
+      },
+      mascotOnSplash: false,
     },
   ],
 };
@@ -189,6 +238,13 @@ const typingMap2: TMapUnit = {
       background: 'typing-levels/typing-level/background-kashgar.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
       backdropColor: 0x7d5600,
+      splashColorScheme: {
+        BUTTON_FILL: 0x6b411e,
+        BUTTON_TEXT_FILL: 0xfbf0de,
+        LEVEL_FONT_FILL: 0x6b411e,
+        LEVEL_TITLE_FILL: 0xfbf0de,
+      },
+      mascotOnSplash: false,
     },
     {
       id: 6,
@@ -200,6 +256,7 @@ const typingMap2: TMapUnit = {
       background: 'typing-levels/typing-level/background-sandstorm.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
       backdropColor: 0x7d5600,
+      mascotOnSplash: true,
     },
     {
       id: 7,
@@ -211,6 +268,7 @@ const typingMap2: TMapUnit = {
       background: 'typing-levels/typing-level/background-tangri-tah.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
       backdropColor: 0x8ec24d,
+      mascotOnSplash: true,
     },
     {
       id: 8,
@@ -222,6 +280,7 @@ const typingMap2: TMapUnit = {
       background: 'typing-levels/typing-level/background-taklamakan.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
       backdropColor: 0x7d5600,
+      mascotOnSplash: true,
     },
   ],
 };

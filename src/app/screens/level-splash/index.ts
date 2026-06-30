@@ -9,9 +9,18 @@ import useSessionStore from '../../../zustandStores/sessionStore';
 import { TutorialPopup } from '../../popups/tutorial';
 import { HUD } from '../../ui/hud';
 import { LevelMapScreen } from '../level-map';
-import type { TLevel } from '../level-map/level-button';
-import type { TMapUnit } from '../level-map/units';
-
+import type { SplashColorScheme, TLevel, TMapUnit } from '../level-map/units';
+function getDefaultColorScheme(mascot: 'sheep' | 'goat' | 'camel'): SplashColorScheme {
+  return {
+    BUTTON_FILL: getColorThemeFromMascot(mascot),
+    BUTTON_TEXT_FILL: 0xffffff,
+    LEVEL_FONT_FILL: getColorThemeFromMascot(mascot),
+    LEVEL_TITLE_FILL: getColorThemeFromMascot(mascot),
+  };
+}
+function getColorThemeFromMascot(mascot: 'sheep' | 'camel' | 'goat') {
+  return mascot === 'camel' ? 0xc45a14 : mascot === 'sheep' ? 0x2d6b6a : 0x6e8539;
+}
 export class LevelSplashScreen extends Container {
   public static assetBundles = ['level-splash', 'typing-level', 'education-level', 'mascots', 'ui'];
 
@@ -20,8 +29,8 @@ export class LevelSplashScreen extends Container {
   private levelTitle: Text;
   private hud: HUD;
   private startButton: FancyButton;
-  private mascot: Sprite;
-
+  private mascot: Sprite | null;
+  private colorScheme: SplashColorScheme;
   constructor({ level, mapUnit }: { level: TLevel; mapUnit: TMapUnit }) {
     super({
       layout: {
@@ -40,14 +49,14 @@ export class LevelSplashScreen extends Container {
         objectFit: 'cover',
       },
     });
-
+    this.colorScheme = level.splashColorScheme ?? getDefaultColorScheme(level.mascot);
     this.levelNumber = new SplitText({
       text: `LEVEL ${level.id}`,
       style: {
         fontFamily: 'Concert One',
         fontSize: 250,
         fontWeight: '800',
-        fill: this.getColorThemeFromMascot(level.mascot),
+        fill: this.colorScheme.LEVEL_FONT_FILL,
       },
       charAnchor: 0.5,
       filters: [
@@ -71,7 +80,7 @@ export class LevelSplashScreen extends Container {
         fontFamily: 'Concert One',
         fontSize: 90,
         fontWeight: '800',
-        fill: this.getColorThemeFromMascot(level.mascot),
+        fill: this.colorScheme.LEVEL_TITLE_FILL,
       },
       filters: [
         new DropShadowFilter({
@@ -86,15 +95,18 @@ export class LevelSplashScreen extends Container {
       },
     });
 
-    this.mascot = new Sprite({
-      texture: Texture.from(this.getTexturePathForMascot(level.mascot)),
-      scale: 0.8,
-      layout: {
-        position: 'absolute',
-        top: 660,
-        left: 480,
-      },
-    });
+    this.mascot = null;
+    if (level.mascotOnSplash) {
+      this.mascot = new Sprite({
+        texture: Texture.from(this.getTexturePathForMascot(level.mascot)),
+        scale: 0.8,
+        layout: {
+          position: 'absolute',
+          top: 660,
+          left: 480,
+        },
+      });
+    }
 
     this.hud = new HUD({
       onBack: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
@@ -109,11 +121,11 @@ export class LevelSplashScreen extends Container {
         .roundRect(0, 10, 300, 150, 40)
         .fill(0xffe2bc)
         .roundRect(0, 0, 300, 150, 40)
-        .fill(this.getColorThemeFromMascot(level.mascot)),
+        .fill(this.colorScheme.BUTTON_FILL),
       text: new Text({
         text: 'START',
         style: {
-          fill: 0xffe2bc,
+          fill: this.colorScheme.BUTTON_TEXT_FILL,
           fontFamily: 'Concert One',
           fontSize: 80,
         },
@@ -154,7 +166,7 @@ export class LevelSplashScreen extends Container {
       this.background,
       this.levelNumber,
       this.levelTitle,
-      this.mascot,
+      ...(this.mascot ? [this.mascot] : []),
       this.startButton,
       this.hud,
     );
@@ -170,11 +182,13 @@ export class LevelSplashScreen extends Container {
   public async show() {
     this.levelNumber.y = -(300 + 120);
     this.levelTitle.y = -(200 + 450);
-    this.mascot.alpha = 0;
+    if (this.mascot) this.mascot.alpha = 0;
     this.startButton.y = engine().navigation.height - 660;
 
     await Promise.all([
-      animate(this.mascot, { alpha: 1 }, { duration: 0.4, ease: 'backOut' }),
+      ...(this.mascot
+        ? [animate(this.mascot, { alpha: 1 }, { duration: 0.4, ease: 'backOut' })]
+        : []),
       animate(this.levelNumber, { y: 0 }, { duration: 0.4, ease: 'backOut' }),
       animate(this.levelTitle, { y: 0 }, { duration: 0.4, ease: 'backOut', delay: 0.1 }),
       animate(this.startButton, { y: 0 }, { duration: 0.4, ease: 'backOut' }),
@@ -183,7 +197,9 @@ export class LevelSplashScreen extends Container {
 
   public async hide() {
     await Promise.all([
-      animate(this.mascot, { alpha: 0 }, { duration: 0.2, ease: 'backIn' }),
+      ...(this.mascot
+        ? [animate(this.mascot, { alpha: 0 }, { duration: 0.2, ease: 'backIn' })]
+        : []),
       animate(this.levelNumber, { y: -(300 + 120) }, { duration: 0.2, ease: 'backIn' }),
       animate(this.levelTitle, { y: -(200 + 450) }, { duration: 0.2, ease: 'backIn', delay: 0.1 }),
       animate(
@@ -195,8 +211,5 @@ export class LevelSplashScreen extends Container {
   }
   private getTexturePathForMascot(mascot: 'sheep' | 'camel' | 'goat') {
     return `mascots/${mascot}/default.png`;
-  }
-  private getColorThemeFromMascot(mascot: 'sheep' | 'camel' | 'goat') {
-    return mascot === 'camel' ? 0xc45a14 : mascot === 'sheep' ? 0x2d6b6a : 0x6e8539;
   }
 }

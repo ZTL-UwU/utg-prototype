@@ -225,7 +225,7 @@ export class TypingMarketScreen extends Container {
 
     const { word, activeLetterIdx } = this.currentRound;
     console.log(event.key);
-    if (typedLetter === word[activeLetterIdx] || event.key === 'Enter') {
+    if (typedLetter === word[activeLetterIdx]) {
       this.keyboard.setKeyFeedback(event.code, 'success');
       void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
       setTimeout(() => this.keyboard.clearKeyFeedback(event.code), FEEDBACK_DURATION_MS);
