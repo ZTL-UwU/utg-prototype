@@ -35,8 +35,7 @@ export class EducationLevelScreen extends Container {
           type: mapUnit.type,
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      helpAsset: 'tutorial-popups/education-level-1.png',
-      backdropColor: 0x4a90e2,
+      mapUnit,
     });
     this.letterGrid = new LetterGrid(mapUnit);
     this.messageContainer = new MessageContainer();

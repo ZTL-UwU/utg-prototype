@@ -63,6 +63,9 @@ export class Navigation {
   /** Current popup being displayed */
   public currentPopup?: AppScreen;
 
+  /** Popups suspended underneath the current popup */
+  private readonly popupStack: AppScreen[] = [];
+
   public init(app: CreationEngine) {
     this.app = app;
   }
@@ -226,6 +229,32 @@ export class Navigation {
   }
 
   /**
+   * Show a popup over the current popup.
+   * Dismissing it restores the popup underneath instead of resuming the screen.
+   */
+  public async showNestedPopup(ctor: AppScreenConstructor): Promise<void>;
+  public async showNestedPopup<P>(ctor: AppScreenConstructor<[P]>, props: P): Promise<void>;
+  public async showNestedPopup(ctor: AppScreenConstructor, props?: unknown) {
+    if (!this.currentPopup) {
+      await this.showPopup(ctor, props);
+      return;
+    }
+
+    const parentPopup = this.currentPopup;
+    parentPopup.interactiveChildren = false;
+    await parentPopup.pause?.();
+
+    if (ctor.assetBundles) {
+      await Assets.loadBundle(ctor.assetBundles);
+    }
+
+    this.popupStack.push(parentPopup);
+    this.currentPopup =
+      props !== undefined ? new (ctor as AppScreenConstructor<[unknown]>)(props) : new ctor();
+    await this.addAndShowScreen(this.currentPopup);
+  }
+
+  /**
    * Dismiss current popup, if there is one
    */
   public async hidePopup() {
@@ -233,6 +262,15 @@ export class Navigation {
     const popup = this.currentPopup;
     this.currentPopup = undefined;
     await this.hideAndRemoveScreen(popup);
+
+    const parentPopup = this.popupStack.pop();
+    if (parentPopup) {
+      this.currentPopup = parentPopup;
+      parentPopup.interactiveChildren = true;
+      await parentPopup.resume?.();
+      return;
+    }
+
     if (this.currentScreen) {
       this.currentScreen.interactiveChildren = true;
       void this.currentScreen.resume?.();

@@ -76,8 +76,7 @@ export class EducationSheepScreen extends Container {
           type: mapUnit.type,
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      helpAsset: 'tutorial-popups/education-level-3.png',
-      backdropColor: 0x4a90e2,
+      mapUnit,
     });
 
     const letters = getThreeUniqueLetters();

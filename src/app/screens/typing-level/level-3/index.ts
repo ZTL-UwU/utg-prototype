@@ -174,8 +174,7 @@ export class TypingInstrumentScreen extends Container {
           type: mapUnit.type,
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      helpAsset: 'tutorial-popups/typing-tutorial.png',
-      backdropColor: 0x7d5600,
+      mapUnit,
     });
 
     this.queueCards.forEach((card) => this.queue.addChild(card));

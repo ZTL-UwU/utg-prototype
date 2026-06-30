@@ -149,9 +149,7 @@ export class EducationWordScreen extends Container {
             void engine().navigation.showScreen(LevelMapScreen, this.mapUnit);
           },
         }),
-      toTutorial: false,
-      helpAsset: 'tutorial-popups/education-level-5.png',
-      backdropColor: 0x4a90e2,
+      mapUnit,
     });
 
     this.addChild(this.background, this.panel, this.feedback, this.hud);

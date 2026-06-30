@@ -73,8 +73,7 @@ export class EducationBubbleScreen extends Container {
           type: mapUnit.type,
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      helpAsset: 'tutorial-popups/education-level-2.png',
-      backdropColor: 0x4a90e2,
+      mapUnit,
     });
 
     const [correctLetter, wrong1, wrong2] = pickRandomEducationLetters(3);

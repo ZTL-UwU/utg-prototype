@@ -2,9 +2,12 @@ import { Container } from 'pixi.js';
 
 import { engine } from '../../engine/getEngine';
 import { TutorialPopup } from '../popups/tutorial';
-import { EducationTutorialScreen } from '../screens/education-level/level-tutorial';
+import {
+  EducationTutorialPopup,
+  EducationTutorialScreen,
+} from '../screens/education-level/level-tutorial';
 import type { TMapUnit } from '../screens/level-map/units';
-import { TypingTutorialScreen } from '../screens/typing-level/level-tutorial';
+import { TypingTutorialPopup, TypingTutorialScreen } from '../screens/typing-level/level-tutorial';
 import { BackButton } from './back-button';
 import { HelpButton } from './help-button';
 
@@ -41,17 +44,26 @@ export class HUD extends Container {
               mapUnit.type === 'education' ? EducationTutorialScreen : TypingTutorialScreen,
               mapUnit,
             )
-        : helpAsset
+        : mapUnit
           ? () =>
-              void engine().navigation.showPopup(TutorialPopup, {
-                asset: helpAsset,
-                backdropColor,
-                isFullscreen: false,
-              })
-          : undefined;
+              void engine().navigation.showPopup(
+                mapUnit.type === 'education' ? EducationTutorialPopup : TypingTutorialPopup,
+                mapUnit,
+              )
+          : helpAsset
+            ? () =>
+                void engine().navigation.showPopup(TutorialPopup, {
+                  asset: helpAsset,
+                  backdropColor,
+                  isFullscreen: false,
+                })
+            : undefined;
 
     if (!noHelpButton) {
-      this.addChild(new BackButton(onBack), new HelpButton({ onPress: helpCallback, toTutorial }));
+      this.addChild(
+        new BackButton(onBack),
+        new HelpButton({ onPress: helpCallback, toTutorial: toTutorial || !!mapUnit }),
+      );
     } else {
       this.addChild(new BackButton(onBack));
     }
