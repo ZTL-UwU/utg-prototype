@@ -4,21 +4,8 @@ import { DropShadowFilter } from 'pixi-filters';
 import { Graphics, Texture, Text } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import type { AppScreenConstructor } from '../../../engine/navigation/navigation';
 import { LevelSplashScreen } from '../level-splash';
-import type { TMapUnit } from './units';
-
-export type TLevel = {
-  id: number;
-  title?: string;
-  unlocked: boolean;
-  miniMapImage: string;
-  mascot: 'sheep' | 'goat' | 'camel';
-  screen?: AppScreenConstructor<any[]>;
-  background: string;
-  helpAsset: string;
-  backdropColor: number;
-};
+import type { TLevel, TMapUnit } from './units';
 
 const SIZE = 221;
 const BUTTON_RADIUS = SIZE / 2;
