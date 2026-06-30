@@ -1,6 +1,4 @@
 import { EducationTutorialScreen } from '../app/screens/education-level/level-tutorial';
-import { EducationYoutubeScreen } from '../app/screens/education-level/youtube-videos';
-import { EndScreen } from '../app/screens/end-screen';
 import { HomeScreen } from '../app/screens/home';
 import { LayerSelectScreen } from '../app/screens/layer-select';
 import { LevelMapScreen } from '../app/screens/level-map';
@@ -42,59 +40,32 @@ function mapNumber(mapKey: string) {
   return mapKey.endsWith('-2') ? 2 : 1;
 }
 
-function createScreenRoutes() {
-  const routes: ScreenRoute[] = [route('/home', HomeScreen), route('/layers', LayerSelectScreen)];
-
-  for (const [mapKey, mapUnit] of Object.entries(mapUnitStore)) {
+const screenRoutes: ScreenRoute[] = [
+  route('/home', HomeScreen),
+  route('/layers', LayerSelectScreen),
+  ...Object.entries(mapUnitStore).flatMap(([mapKey, mapUnit]) => {
+    // NOTE: hacky way. will get better once we refactor the map unit structure.
     const mapPath = `/${mapUnit.type}/maps/${mapNumber(mapKey)}`;
 
-    routes.push(route(mapPath, LevelMapScreen, mapUnit));
-    routes.push(
+    return [
+      route(mapPath, LevelMapScreen, mapUnit),
       route(
         `${mapPath}/tutorial`,
         mapUnit.type === 'education' ? EducationTutorialScreen : TypingTutorialScreen,
         mapUnit,
       ),
-    );
-    if (mapUnit.type === 'education') {
-      routes.push(route(`${mapPath}/videos`, EducationYoutubeScreen, mapUnit));
-    }
-
-    for (const level of mapUnit.levels) {
-      if (!level.screen) continue;
-      const levelPath = `/${mapUnit.type}/levels/${level.id}`;
-      routes.push(route(levelPath, level.screen, mapUnit));
-      routes.push(
-        route(
-          `${levelPath}/splash`,
-          LevelSplashScreen,
-          { level, mapUnit },
-          (candidateCtor, candidateProps) =>
-            candidateCtor === LevelSplashScreen &&
-            typeof candidateProps === 'object' &&
-            candidateProps !== null &&
-            'level' in candidateProps &&
-            candidateProps.level === level,
-        ),
-      );
-    }
-  }
-
-  routes.push(
-    route(
-      '/end-screen',
-      EndScreen,
-      {
-        correct: 8,
-        mistakes: 2,
-        type: 'typing',
-      },
-      (candidateCtor) => candidateCtor === EndScreen,
-    ),
-  );
-
-  return routes;
-}
+      // Level & level splash
+      ...mapUnit.levels.flatMap((level) => {
+        if (!level.screen) return [];
+        const levelPath = `/${mapUnit.type}/levels/${level.id}`;
+        return [
+          route(levelPath, level.screen, mapUnit),
+          route(`${levelPath}/splash`, LevelSplashScreen, { level, mapUnit }),
+        ];
+      }),
+    ];
+  }),
+];
 
 function normalizePath(path: string) {
   const withLeadingSlash = path.startsWith('/') ? path : `/${path}`;
@@ -102,7 +73,6 @@ function normalizePath(path: string) {
 }
 
 class DebugScreenRouter {
-  private readonly routes = createScreenRoutes();
   private navigation?: Navigation;
   private pendingPath?: string;
   private replaceNextUrl = true;
@@ -138,7 +108,7 @@ class DebugScreenRouter {
     const path = this.currentPath();
     if (this.pendingPath === path) return;
 
-    const target = this.routes.find((candidate) => candidate.path === path);
+    const target = screenRoutes.find((candidate) => candidate.path === path);
     this.pendingPath = path;
 
     try {
@@ -157,7 +127,7 @@ class DebugScreenRouter {
   }
 
   private updateUrl(ctor: ScreenConstructor, props?: unknown) {
-    const screenRoute = this.routes.find((candidate) => candidate.matches(ctor, props));
+    const screenRoute = screenRoutes.find((candidate) => candidate.matches(ctor, props));
     if (!screenRoute || this.currentPath() === screenRoute.path) return;
 
     const url = new URL(window.location.href);
