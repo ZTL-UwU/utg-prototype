@@ -12,7 +12,6 @@ import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
-import { TutorialPopup } from '../../../popups/tutorial';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
@@ -28,8 +27,8 @@ const CONTENT_GAP = 72;
 const IMAGE_SIZE = 300;
 const FEEDBACK_DURATION_MS = 350;
 const CARD_COLORS = {
-  default: 0x6080ab,
-  error: 0xff3131,
+  default: 0x7e5433,
+  error: 0xef5a42,
   success: 0x8ec24d,
 };
 
@@ -59,7 +58,7 @@ export class TypingWordScreen extends Container {
   public static assetBundles = ['typing-level-4', 'typing-level', 'education-letter-images'];
   private background: Sprite;
   private hud: HUD;
-  private wordStyle: HTMLTextStyle = createTypingWordStyle(FONT_SIZE);
+  private wordStyle: HTMLTextStyle = createTypingWordStyle(FONT_SIZE, 0xffffff);
   private contentContainer: Container;
   private card: Graphics;
   private cardShadow: Graphics;
@@ -87,12 +86,7 @@ export class TypingWordScreen extends Container {
           type: mapUnit.type,
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      onHelp: () =>
-        void engine().navigation.showPopup(TutorialPopup, {
-          asset: 'tutorial-popups/typing-tutorial.png',
-          backdropColor: 0x7d5600,
-          exitable: true,
-        }),
+      mapUnit,
     });
     this.keyboard = new KeyboardLayout();
     this.rounds = generateRoundsDictionary();
@@ -226,6 +220,7 @@ export class TypingWordScreen extends Container {
       !this.currentRound
     )
       return;
+
     const typedLetter = getMappedFromKeyboardEvent(event);
     if (!typedLetter) return;
 
@@ -249,6 +244,7 @@ export class TypingWordScreen extends Container {
       useSessionStore.getState().recordMistake();
     }
   };
+
   private advanceHighlightedLetter = async () => {
     const r = this.currentRound!;
     r.activeLetterIdx += r.word[r.activeLetterIdx].length;
@@ -275,6 +271,7 @@ export class TypingWordScreen extends Container {
     );
     await controls.finished;
   }
+
   private endGame() {
     this.paused = true;
     window.removeEventListener('keydown', this.handleKeyDown);

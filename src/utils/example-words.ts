@@ -66,8 +66,7 @@ export const EXAMPLE_WORDS = new Map<string, string>([
   ['ۋ', 'ۋېلوسىپېد'],
   ['ئۈ', 'ئۈزۈم'],
   ['ئۆ', 'ئۆي'],
-  // Wrong example?
-  // ['ئۇ', 'تۇخۇم'],
+  ['ئۇ', 'ئۇۋا'],
   ['ئو', 'ئورغاق'],
 ]);
 
@@ -112,7 +111,7 @@ const WORD_COLORS = {
   BASE_BROWN: 0x6b411e,
   CORRECT: 0x86bd65,
   ACTIVE: 0xffde59,
-  ACTIVE_BROWN: 0xdc7e2f,
+  ACTIVE_BROWN: 0xffde59,
 } as const;
 
 export function createExampleWordStyle(fontSize: number): HTMLTextStyle {
@@ -130,10 +129,10 @@ export function createExampleWordStyle(fontSize: number): HTMLTextStyle {
   });
 }
 
-export function createTypingWordStyle(fontSize: number): HTMLTextStyle {
+export function createTypingWordStyle(fontSize: number, color: number): HTMLTextStyle {
   return new HTMLTextStyle({
     fontSize,
-    fill: WORD_COLORS.BASE_BROWN,
+    fill: color,
     fontFamily: 'Noto Naskh Arabic Bold',
     padding: 40,
     cssOverrides: ['direction: rtl'],
@@ -143,6 +142,7 @@ export function createTypingWordStyle(fontSize: number): HTMLTextStyle {
     },
   });
 }
+
 export function createAdvancedTypingWordStyle(fontSize: number): HTMLTextStyle {
   return new HTMLTextStyle({
     fontSize,

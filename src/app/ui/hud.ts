@@ -2,13 +2,19 @@ import { Container } from 'pixi.js';
 
 import { engine } from '../../engine/getEngine';
 import { TutorialPopup } from '../popups/tutorial';
+import {
+  EducationTutorialPopup,
+  EducationTutorialScreen,
+} from '../screens/education-level/level-tutorial';
+import type { TMapUnit } from '../screens/level-map/units';
+import { TypingTutorialPopup, TypingTutorialScreen } from '../screens/typing-level/level-tutorial';
 import { BackButton } from './back-button';
 import { HelpButton } from './help-button';
 
 interface HUDProps {
   onBack: () => void;
-  onHelp?: () => void;
   toTutorial?: boolean;
+  mapUnit?: TMapUnit;
   helpAsset?: string;
   backdropColor?: number;
   noHelpButton?: boolean;
@@ -17,8 +23,8 @@ interface HUDProps {
 export class HUD extends Container {
   constructor({
     onBack,
-    onHelp,
     toTutorial,
+    mapUnit,
     helpAsset,
     backdropColor = 0,
     noHelpButton = false,
@@ -32,18 +38,32 @@ export class HUD extends Container {
     });
 
     const helpCallback =
-      onHelp ??
-      (helpAsset
+      toTutorial && mapUnit
         ? () =>
-            void engine().navigation.showPopup(TutorialPopup, {
-              asset: helpAsset,
-              backdropColor,
-              exitable: true,
-            })
-        : undefined);
+            void engine().navigation.showScreen(
+              mapUnit.type === 'education' ? EducationTutorialScreen : TypingTutorialScreen,
+              mapUnit,
+            )
+        : mapUnit
+          ? () =>
+              void engine().navigation.showPopup(
+                mapUnit.type === 'education' ? EducationTutorialPopup : TypingTutorialPopup,
+                mapUnit,
+              )
+          : helpAsset
+            ? () =>
+                void engine().navigation.showPopup(TutorialPopup, {
+                  asset: helpAsset,
+                  backdropColor,
+                  isFullscreen: false,
+                })
+            : undefined;
 
     if (!noHelpButton) {
-      this.addChild(new BackButton(onBack), new HelpButton({ onHelp: helpCallback, toTutorial }));
+      this.addChild(
+        new BackButton(onBack),
+        new HelpButton({ onPress: helpCallback, toTutorial: toTutorial || !!mapUnit }),
+      );
     } else {
       this.addChild(new BackButton(onBack));
     }

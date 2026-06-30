@@ -7,7 +7,6 @@ import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
-import { TutorialPopup } from '../../../popups/tutorial';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout, type KeyboardColorOptions } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
@@ -36,8 +35,8 @@ const COLORS = {
 
 const KEYBOARD_COLOR_SCHEME: KeyboardColorOptions = {
   PANEL_COLOR: 0x6080ab,
-  PANEL_SHADOW_COLOR: 0xffffff,
-  KEY_COLOR: 0xffffff,
+  PANEL_SHADOW_COLOR: 0xe9ddc8,
+  KEY_COLOR: 0xf5f3ef,
   KEY_PRESSED_COLOR: 0xafafaf,
   TEXT_COLOR: 0x495669,
 };
@@ -175,12 +174,7 @@ export class TypingInstrumentScreen extends Container {
           type: mapUnit.type,
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      onHelp: () =>
-        void engine().navigation.showPopup(TutorialPopup, {
-          asset: 'tutorial-popups/typing-tutorial.png',
-          backdropColor: 0x7d5600,
-          exitable: true,
-        }),
+      mapUnit,
     });
 
     this.queueCards.forEach((card) => this.queue.addChild(card));

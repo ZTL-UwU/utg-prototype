@@ -4,9 +4,7 @@ import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { HUD } from '../../ui/hud';
-import { EducationTutorialScreen } from '../education-level/level-tutorial';
 import { LayerSelectScreen } from '../layer-select';
-import { TypingTutorialScreen } from '../typing-level/level-tutorial';
 import { LevelRow } from './level-row';
 import type { TMapUnit } from './units';
 
@@ -41,11 +39,8 @@ export class LevelMapScreen extends Container {
 
     this.hud = new HUD({
       onBack: () => void engine().navigation.showScreen(LayerSelectScreen),
-      onHelp: () =>
-        void engine().navigation.showScreen(
-          mapUnit.type === 'education' ? EducationTutorialScreen : TypingTutorialScreen,
-          mapUnit,
-        ),
+      toTutorial: true,
+      mapUnit,
     });
 
     this.title = new Text({

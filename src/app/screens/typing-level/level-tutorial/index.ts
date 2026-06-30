@@ -8,34 +8,31 @@ import { LevelMapScreen } from '../../level-map';
 import type { TMapUnit } from '../../level-map/units';
 import { LetterPopup } from './letter-popup';
 
+type TutorialPresentation = 'popup' | 'screen';
+
 export class TypingTutorialScreen extends Container {
   public static assetBundles = ['typing-level', 'ui'];
 
-  private background: Sprite;
+  private background?: Sprite;
   private hud: HUD;
   private letterGrid: AlphabetGrid;
 
-  constructor(mapUnit: TMapUnit) {
+  constructor(mapUnit: TMapUnit, presentation: TutorialPresentation = 'screen') {
     super();
 
-    this.background = new Sprite({
-      texture: Texture.from('typing-levels/typing-level/background-taklamakan.png'),
-      layout: {
-        position: 'absolute',
-        width: '100%',
-        height: '100%',
-        objectFit: 'cover',
-      },
-    });
-
     this.hud = new HUD({
-      onBack: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
+      onBack: () =>
+        void (presentation === 'popup'
+          ? engine().navigation.hidePopup()
+          : engine().navigation.showScreen(LevelMapScreen, mapUnit)),
       noHelpButton: true,
     });
 
     this.letterGrid = new AlphabetGrid(
       (letter) => {
-        void engine().navigation.showPopup(LetterPopup, letter);
+        void (presentation === 'popup'
+          ? engine().navigation.showNestedPopup(LetterPopup, letter)
+          : engine().navigation.showPopup(LetterPopup, letter));
       },
       {
         panelColor: 0xf3ca8a,
@@ -49,7 +46,24 @@ export class TypingTutorialScreen extends Container {
       },
     );
 
-    this.addChild(this.background, this.letterGrid, this.hud);
+    if (presentation === 'popup') {
+      const currentScreen = engine().navigation.currentScreen;
+      if (currentScreen) currentScreen.tint = 0x666666;
+    }
+
+    if (presentation === 'screen') {
+      this.background = new Sprite({
+        texture: Texture.from('typing-levels/typing-level/background-taklamakan.png'),
+        layout: {
+          position: 'absolute',
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+        },
+      });
+    }
+
+    this.addChild(...(this.background ? [this.background] : []), this.letterGrid, this.hud);
   }
 
   public resize(width: number, height: number) {
@@ -67,9 +81,17 @@ export class TypingTutorialScreen extends Container {
   }
 
   public async hide() {
+    const currentScreen = engine().navigation.currentScreen;
+    if (currentScreen) currentScreen.tint = 0xffffff;
     await Promise.all([
       animate(this.letterGrid, { alpha: 0 }, { duration: 0.2, ease: 'easeIn' }),
       animate(this.letterGrid.scale, { x: 0.4, y: 0.4 }, { duration: 0.2, ease: 'easeIn' }),
     ]);
+  }
+}
+
+export class TypingTutorialPopup extends TypingTutorialScreen {
+  constructor(mapUnit: TMapUnit) {
+    super(mapUnit, 'popup');
   }
 }

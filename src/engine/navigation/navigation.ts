@@ -41,6 +41,9 @@ export class Navigation {
   public app!: CreationEngine;
 
   private readonly screenTickerHandlers = new WeakMap<AppScreen, (time: Ticker) => void>();
+  private readonly screenChangeListeners = new Set<
+    (ctor: AppScreenConstructor<any[]>, props?: unknown) => void
+  >();
 
   /** Container for screens */
   public container = new Container();
@@ -60,8 +63,17 @@ export class Navigation {
   /** Current popup being displayed */
   public currentPopup?: AppScreen;
 
+  /** Popups suspended underneath the current popup */
+  private readonly popupStack: AppScreen[] = [];
+
   public init(app: CreationEngine) {
     this.app = app;
+  }
+
+  /** Subscribe to completed screen changes. */
+  public onScreenChange(listener: (ctor: AppScreenConstructor<any[]>, props?: unknown) => void) {
+    this.screenChangeListeners.add(listener);
+    return () => this.screenChangeListeners.delete(listener);
   }
 
   /** Set the  default load screen */
@@ -171,6 +183,9 @@ export class Navigation {
         ? new (ctor as AppScreenConstructor<[unknown]>)(props)
         : BigPool.get(ctor);
     await this.addAndShowScreen(this.currentScreen);
+    for (const listener of this.screenChangeListeners) {
+      listener(ctor, props);
+    }
   }
 
   /**
@@ -214,6 +229,32 @@ export class Navigation {
   }
 
   /**
+   * Show a popup over the current popup.
+   * Dismissing it restores the popup underneath instead of resuming the screen.
+   */
+  public async showNestedPopup(ctor: AppScreenConstructor): Promise<void>;
+  public async showNestedPopup<P>(ctor: AppScreenConstructor<[P]>, props: P): Promise<void>;
+  public async showNestedPopup(ctor: AppScreenConstructor, props?: unknown) {
+    if (!this.currentPopup) {
+      await this.showPopup(ctor, props);
+      return;
+    }
+
+    const parentPopup = this.currentPopup;
+    parentPopup.interactiveChildren = false;
+    await parentPopup.pause?.();
+
+    if (ctor.assetBundles) {
+      await Assets.loadBundle(ctor.assetBundles);
+    }
+
+    this.popupStack.push(parentPopup);
+    this.currentPopup =
+      props !== undefined ? new (ctor as AppScreenConstructor<[unknown]>)(props) : new ctor();
+    await this.addAndShowScreen(this.currentPopup);
+  }
+
+  /**
    * Dismiss current popup, if there is one
    */
   public async hidePopup() {
@@ -221,6 +262,15 @@ export class Navigation {
     const popup = this.currentPopup;
     this.currentPopup = undefined;
     await this.hideAndRemoveScreen(popup);
+
+    const parentPopup = this.popupStack.pop();
+    if (parentPopup) {
+      this.currentPopup = parentPopup;
+      parentPopup.interactiveChildren = true;
+      await parentPopup.resume?.();
+      return;
+    }
+
     if (this.currentScreen) {
       this.currentScreen.interactiveChildren = true;
       void this.currentScreen.resume?.();

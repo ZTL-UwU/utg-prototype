@@ -12,7 +12,6 @@ import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
-import { TutorialPopup } from '../../../popups/tutorial';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
@@ -42,7 +41,7 @@ export class TypingMarketScreen extends Container {
   private tourist: Sprite;
   private hud: HUD;
   private keyboard: KeyboardLayout;
-  private wordStyle: HTMLTextStyle = createTypingWordStyle(FONT_SIZE);
+  private wordStyle: HTMLTextStyle = createTypingWordStyle(FONT_SIZE, 0x6b411e);
   private card: Sprite;
   private wordContainer: Container = new Container();
   private wordText: HTMLText;
@@ -76,12 +75,7 @@ export class TypingMarketScreen extends Container {
           type: mapUnit.type,
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      onHelp: () =>
-        void engine().navigation.showPopup(TutorialPopup, {
-          asset: 'tutorial-popups/typing-tutorial.png',
-          backdropColor: 0x7d5600,
-          exitable: true,
-        }),
+      mapUnit,
     });
 
     this.keyboard = new KeyboardLayout();
@@ -108,7 +102,7 @@ export class TypingMarketScreen extends Container {
     });
 
     this.addChild(this.background, this.tourist, this.hud, this.keyboard, this.contentContainer);
-    this.popAndStartRound();
+    void this.popAndStartRound();
     this.paused = false;
   }
 
@@ -256,7 +250,7 @@ export class TypingMarketScreen extends Container {
     if (r.activeLetterIdx >= r.word.length) {
       await this.playSuccessFlash();
       this.tourist.texture = randomTouristTexture();
-      this.popAndStartRound();
+      await this.popAndStartRound();
     } else {
       this.wordText.text = getAdvancedWordMarkup(
         r.word,

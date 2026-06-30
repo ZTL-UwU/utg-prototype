@@ -3,7 +3,6 @@ import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { QuitPopup } from '../../../popups/quit';
-import { TutorialPopup } from '../../../popups/tutorial';
 import { HUD } from '../../../ui/hud';
 import { LevelMapScreen } from '../../level-map';
 import type { TMapUnit } from '../../level-map/units';
@@ -36,12 +35,7 @@ export class EducationLevelScreen extends Container {
           type: mapUnit.type,
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      onHelp: () =>
-        void engine().navigation.showPopup(TutorialPopup, {
-          asset: 'tutorial-popups/education-level-1.png',
-          backdropColor: 0x4a90e2,
-          exitable: true,
-        }),
+      mapUnit,
     });
     this.letterGrid = new LetterGrid(mapUnit);
     this.messageContainer = new MessageContainer();

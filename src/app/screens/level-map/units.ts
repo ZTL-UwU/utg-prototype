@@ -149,7 +149,7 @@ const educationMap2: TMapUnit = {
 const typingMap1: TMapUnit = {
   type: 'typing',
   background: 'typing-levels/typing-level-map/background.png',
-  title: { text: 'TYPING JOURNEY', fontSize: 150 },
+  title: { text: 'TYPING IN UYGHUR', fontSize: 150 },
   helpAsset: 'tutorial-popups/typing-tutorial.png',
   backdropColor: 0x7d5600,
   levels: [

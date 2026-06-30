@@ -3,7 +3,7 @@ import { FancyButton } from '@pixi/ui';
 import { engine } from '../../engine/getEngine';
 
 export class HelpButton extends FancyButton {
-  constructor({ onHelp, toTutorial }: { onHelp?: () => void; toTutorial?: boolean }) {
+  constructor({ onPress, toTutorial }: { onPress?: () => void; toTutorial?: boolean }) {
     super({
       defaultView: toTutorial ? 'ui/tutorial-button.svg' : 'ui/help-button.svg',
       animations: {
@@ -31,7 +31,7 @@ export class HelpButton extends FancyButton {
 
     this.onPress.connect(() => {
       void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      onHelp?.();
+      onPress?.();
     });
   }
 }
