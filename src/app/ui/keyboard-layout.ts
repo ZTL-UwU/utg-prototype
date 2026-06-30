@@ -340,7 +340,7 @@ export class KeyboardLayout extends Container {
     this.panelBackground
       .clear()
       .roundRect(0, 12, this.panelWidth, this.panelHeight, PANEL_RADIUS)
-      .fill({ color: this.keyboardColorOptions.PANEL_SHADOW_COLOR })
+      .fill({ color: this.keyboardColorOptions.PANEL_SHADOW_COLOR, alpha: 0.7 })
       .roundRect(0, 0, this.panelWidth, this.panelHeight, PANEL_RADIUS)
       .fill({ color: this.keyboardColorOptions.PANEL_COLOR });
   }

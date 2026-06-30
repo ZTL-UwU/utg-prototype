@@ -35,8 +35,8 @@ const COLORS = {
 
 const KEYBOARD_COLOR_SCHEME: KeyboardColorOptions = {
   PANEL_COLOR: 0x6080ab,
-  PANEL_SHADOW_COLOR: 0xffffff,
-  KEY_COLOR: 0xffffff,
+  PANEL_SHADOW_COLOR: 0xe9ddc8,
+  KEY_COLOR: 0xf5f3ef,
   KEY_PRESSED_COLOR: 0xafafaf,
   TEXT_COLOR: 0x495669,
 };
