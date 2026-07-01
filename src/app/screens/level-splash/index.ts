@@ -61,8 +61,8 @@ export class LevelSplashScreen extends Container {
       charAnchor: 0.5,
       filters: [
         new DropShadowFilter({
-          color: 0x000000,
-          alpha: 0.3,
+          color: 0xfbf0de,
+          alpha: 0.7,
           blur: 10,
         }),
       ],
@@ -118,8 +118,8 @@ export class LevelSplashScreen extends Container {
     const buttonHeight = 150;
     this.startButton = new FancyButton({
       defaultView: new Graphics()
-        .roundRect(0, 10, 300, 150, 40)
-        .fill(0xffe2bc)
+        .roundRect(0, 14, 300, 150, 40)
+        .fill({ color: 0xffe2bc, alpha: 0.8 })
         .roundRect(0, 0, 300, 150, 40)
         .fill(this.colorScheme.BUTTON_FILL),
       text: new Text({

@@ -163,6 +163,12 @@ const typingMap1: TMapUnit = {
       background: 'typing-levels/typing-level/background-taklamakan.png',
       helpAsset: 'tutorial-popups/typing-tutorial.png',
       backdropColor: 0x7d5600,
+      splashColorScheme: {
+        BUTTON_FILL: 0xc45a14,
+        BUTTON_TEXT_FILL: 0xffe2bc,
+        LEVEL_FONT_FILL: 0xc98144,
+        LEVEL_TITLE_FILL: 0x6b411e,
+      },
       mascotOnSplash: true,
     },
     {
@@ -221,6 +227,7 @@ const typingMap1: TMapUnit = {
     },
   ],
 };
+
 const typingMap2: TMapUnit = {
   type: 'typing',
   background: 'typing-levels/typing-level-map/background.png',
@@ -239,7 +246,7 @@ const typingMap2: TMapUnit = {
       helpAsset: 'tutorial-popups/typing-tutorial.png',
       backdropColor: 0x7d5600,
       splashColorScheme: {
-        BUTTON_FILL: 0x6b411e,
+        BUTTON_FILL: 0x7e5433,
         BUTTON_TEXT_FILL: 0xfbf0de,
         LEVEL_FONT_FILL: 0x6b411e,
         LEVEL_TITLE_FILL: 0xfbf0de,
