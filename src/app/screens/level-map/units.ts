@@ -5,6 +5,7 @@ import { EducationSheepScreen } from '../education-level/level-3';
 import { EducationImageScreen } from '../education-level/level-4';
 import { EducationWordScreen } from '../education-level/level-5';
 import { EducationSheepJumpScreen } from '../education-level/level-6';
+import { EducationWhackAMoleScreen } from '../education-level/level-7';
 import { TypingLevelScreen } from '../typing-level/level-1';
 import { TypingSandstormScreen } from '../typing-level/level-2';
 import { TypingInstrumentScreen } from '../typing-level/level-3';
@@ -122,15 +123,15 @@ const educationMap2: TMapUnit = {
     },
     {
       id: 7,
-      unlocked: false,
+      unlocked: true,
       mascot: 'sheep',
       miniMapImage: 'education-levels/education-level-map/button-preview.svg',
-      screen: EducationSheepScreen,
+      screen: EducationWhackAMoleScreen,
       background: 'education-levels/education-level/background.png',
       // TODO: missing tutorial asset
-      helpAsset: 'tutorial-popups/education-tutorial.png',
+      helpAsset: 'tutorial-popups/education-level-7.png',
       backdropColor: 0x4a90e2,
-      mascotOnSplash: true,
+      mascotOnSplash: false,
     },
     {
       id: 8,
