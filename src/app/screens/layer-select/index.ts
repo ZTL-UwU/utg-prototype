@@ -89,7 +89,7 @@ export class LayerSelectScreen extends Container {
         screenType: 'typing',
       },
       {
-        icon: Texture.from('layer-select/locked-icon.png'),
+        icon: Texture.from('layer-select/game-icon.png'),
         layout: { left: 1028, top: 604 },
       },
     ];
