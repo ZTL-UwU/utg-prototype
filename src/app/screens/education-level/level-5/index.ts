@@ -19,7 +19,7 @@ import { HUD } from '../../../ui/hud';
 import { LetterChoice } from '../../../ui/letter-choice';
 import { SoundButton } from '../../../ui/sound-button';
 import { LevelMapScreen } from '../../level-map';
-import type { TMapUnit } from '../../level-map/units';
+import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
 
 const PANEL_WIDTH = 1500;
 const PANEL_HEIGHT = 760;
@@ -65,13 +65,14 @@ export class EducationWordScreen extends Container {
   private readonly correctLetter: string;
   private readonly word: string;
   private isResolving = false;
-  private readonly mapUnit: TMapUnit;
+  private readonly level: TLevel;
   private isPlaying: boolean = false;
 
-  constructor(mapUnit: TMapUnit) {
+  constructor(level: TLevel) {
+    const mapUnit = findMapUnitForLevel(level);
     super({ layout: { position: 'relative', width: '100%', height: '100%' } });
     engine().audio.bgm.setVolume(0);
-    this.mapUnit = mapUnit;
+    this.level = level;
 
     const round = getRound();
     this.correctLetter = round.letter;
@@ -143,13 +144,13 @@ export class EducationWordScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: mapUnit.type,
+          type: getLevelType(level),
           onQuit: () => {
             EducationWordScreen.rounds = 0;
-            void engine().navigation.showScreen(LevelMapScreen, this.mapUnit);
+            void engine().navigation.showScreen(LevelMapScreen, mapUnit);
           },
         }),
-      mapUnit,
+      level,
     });
 
     this.addChild(this.background, this.panel, this.feedback, this.hud);
@@ -235,14 +236,14 @@ export class EducationWordScreen extends Container {
 
   private endRound() {
     if (++EducationWordScreen.rounds < EducationWordScreen.MAX_ROUNDS) {
-      void engine().navigation.showScreen(EducationWordScreen, this.mapUnit);
+      void engine().navigation.showScreen(EducationWordScreen, this.level);
       return;
     }
 
     EducationWordScreen.rounds = 0;
     const { correct, mistakes } = useSessionStore.getState();
     useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { mapUnit: this.mapUnit });
+    void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
   }
 
   private fitWordText() {

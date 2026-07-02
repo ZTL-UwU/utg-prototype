@@ -10,7 +10,7 @@ import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
 import { LevelMapScreen } from '../../level-map';
-import type { TMapUnit } from '../../level-map/units';
+import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
 import { LetterBubble } from './letter-bubble';
 
 export class EducationBubbleScreen extends Container {
@@ -34,12 +34,12 @@ export class EducationBubbleScreen extends Container {
   private isPlaying: boolean = false;
   readonly endGame = () => {
     if (++EducationBubbleScreen.rounds < EducationBubbleScreen.MAX_ROUNDS) {
-      void engine().navigation.showScreen(EducationBubbleScreen, this.mapUnit);
+      void engine().navigation.showScreen(EducationBubbleScreen, this.level);
     } else {
       EducationBubbleScreen.rounds = 0;
       const { correct, mistakes } = useSessionStore.getState();
       useScoreManager.getState().addSession(correct, mistakes);
-      void engine().navigation.showPopup(EndScreenPopup, { mapUnit: this.mapUnit });
+      void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
     }
   };
   private soundButtonClick() {
@@ -50,8 +50,9 @@ export class EducationBubbleScreen extends Container {
     void engine().audio.sfx.play(aliasString);
     setTimeout(() => (this.isPlaying = false), durationMs);
   }
-  private mapUnit: TMapUnit;
-  constructor(mapUnit: TMapUnit) {
+  private level: TLevel;
+  constructor(level: TLevel) {
+    const mapUnit = findMapUnitForLevel(level);
     super({
       layout: {
         position: 'relative',
@@ -62,7 +63,7 @@ export class EducationBubbleScreen extends Container {
       },
     });
     engine().audio.bgm.setVolume(0);
-    this.mapUnit = mapUnit;
+    this.level = level;
     this.background = new Sprite({
       texture: Texture.from('education-levels/education-level-2/background.png'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
@@ -70,10 +71,10 @@ export class EducationBubbleScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: mapUnit.type,
+          type: getLevelType(level),
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      mapUnit,
+      level,
     });
 
     const [correctLetter, wrong1, wrong2] = pickRandomEducationLetters(3);

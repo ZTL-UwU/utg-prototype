@@ -11,20 +11,20 @@ import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
 import { LevelMapScreen } from '../../level-map';
-import type { TMapUnit } from '../../level-map/units';
+import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
 import { LetterChoice } from './letter-choice';
 
 const X_SLOTS = [0.2, 0.5, 0.8];
 const CHOICE_Y_RATIO = 0.38;
 
-function endGame(mapUnit: TMapUnit) {
+function endGame(level: TLevel) {
   if (++EducationImageScreen.rounds < EducationImageScreen.MAX_ROUNDS) {
-    void engine().navigation.showScreen(EducationImageScreen, mapUnit);
+    void engine().navigation.showScreen(EducationImageScreen, level);
   } else {
     EducationImageScreen.rounds = 0;
     const { correct, mistakes } = useSessionStore.getState();
     useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { mapUnit });
+    void engine().navigation.showPopup(EndScreenPopup, { level });
   }
 }
 
@@ -46,7 +46,8 @@ export class EducationImageScreen extends Container {
   private correctLetter: string;
   private isPlaying: boolean = false;
 
-  constructor(mapUnit: TMapUnit) {
+  constructor(level: TLevel) {
+    const mapUnit = findMapUnitForLevel(level);
     super({
       layout: {
         position: 'relative',
@@ -60,10 +61,10 @@ export class EducationImageScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: mapUnit.type,
+          type: getLevelType(level),
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      mapUnit,
+      level,
     });
 
     const letters = pickRandomEducationLetters(3);
@@ -83,7 +84,7 @@ export class EducationImageScreen extends Container {
         new LetterChoice(
           letter,
           this.correctLetter,
-          letter === this.correctLetter ? () => endGame(mapUnit) : undefined,
+          letter === this.correctLetter ? () => endGame(level) : undefined,
         ),
     );
     for (const choice of this.choices) this.choiceContainer.addChild(choice);

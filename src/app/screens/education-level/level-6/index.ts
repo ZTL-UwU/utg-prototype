@@ -16,7 +16,7 @@ import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
 import { LevelMapScreen } from '../../level-map';
-import type { TMapUnit } from '../../level-map/units';
+import { findMapUnitForLevel, type TLevel } from '../../level-map/units';
 import { LetterTile } from './letter-tile';
 
 function getPositionOffsets() {
@@ -123,7 +123,7 @@ export class EducationSheepJumpScreen extends Container {
   private sheepAnimation?: AnimationPlaybackControls;
   private thankYouAnimation?: AnimationPlaybackControls;
   private sheepLocation: SheepLocation = { type: 'origin' };
-  private readonly mapUnit: TMapUnit;
+  private readonly level: TLevel;
 
   private map: {
     letters: string[];
@@ -131,7 +131,8 @@ export class EducationSheepJumpScreen extends Container {
   }[];
   private step: number = 0;
 
-  constructor(mapUnit: TMapUnit) {
+  constructor(level: TLevel) {
+    const mapUnit = findMapUnitForLevel(level);
     super({
       layout: {
         position: 'relative',
@@ -140,7 +141,7 @@ export class EducationSheepJumpScreen extends Container {
       },
     });
     engine().audio.bgm.setVolume(0);
-    this.mapUnit = mapUnit;
+    this.level = level;
 
     this.map = Array.from({ length: 5 }).map(() => {
       const arr = [...EDUCATION_LETTERS].sort(() => Math.random() - 0.5).slice(0, 3);
@@ -181,10 +182,10 @@ export class EducationSheepJumpScreen extends Container {
         void engine().navigation.showPopup(QuitPopup, {
           type: 'education',
           onQuit: () => {
-            void engine().navigation.showScreen(LevelMapScreen, this.mapUnit);
+            void engine().navigation.showScreen(LevelMapScreen, mapUnit);
           },
         }),
-      mapUnit,
+      level,
     });
 
     this.soundButton = new SoundButton({
@@ -283,7 +284,7 @@ export class EducationSheepJumpScreen extends Container {
       if (starCount >= 2) {
         await this.playThankYouScene();
       }
-      void engine().navigation.showPopup(EndScreenPopup, { mapUnit: this.mapUnit });
+      void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
       return;
     }
 

@@ -10,7 +10,7 @@ import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { LetterChoice } from '../../../ui/letter-choice';
 import { SoundButton } from '../../../ui/sound-button';
-import type { TMapUnit } from '../../level-map/units';
+import type { TLevel } from '../../level-map/units';
 
 // Gameplay
 const NUM_CHOICES = 4;
@@ -41,10 +41,10 @@ export class LetterGrid extends Container {
   // STATIC ROUND COUNTER, RESET ON FIN
   public static rounds = 0;
   public static readonly MAX_ROUNDS = 5;
-  private mapUnit: TMapUnit;
+  private level: TLevel;
   private isPlaying: boolean = false;
 
-  constructor(mapUnit: TMapUnit) {
+  constructor(level: TLevel) {
     super({
       layout: {
         position: 'absolute',
@@ -65,7 +65,7 @@ export class LetterGrid extends Container {
     this.letterMap = new Map();
     this.letters = [];
 
-    this.mapUnit = mapUnit;
+    this.level = level;
     // Constructor logic wrapped in helpers for better readability
     this.initLetterAttributes();
     this.initLayouts();
@@ -181,9 +181,9 @@ export class LetterGrid extends Container {
     await Promise.all([choice.showCorrect(), waitFor(1)]);
 
     if (++LetterGrid.rounds < LetterGrid.MAX_ROUNDS) {
-      void engine().navigation.showScreen(EducationLevelScreen, this.mapUnit);
+      void engine().navigation.showScreen(EducationLevelScreen, this.level);
     } else {
-      LetterGrid.endGame(this.mapUnit);
+      LetterGrid.endGame(this.level);
     }
   }
   async show() {
@@ -193,11 +193,11 @@ export class LetterGrid extends Container {
     super.destroy(options);
   }
 
-  public static endGame(mapUnit: TMapUnit) {
+  public static endGame(level: TLevel) {
     LetterGrid.rounds = 0;
     const { correct, mistakes } = useSessionStore.getState();
 
     useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { mapUnit });
+    void engine().navigation.showPopup(EndScreenPopup, { level });
   }
 }

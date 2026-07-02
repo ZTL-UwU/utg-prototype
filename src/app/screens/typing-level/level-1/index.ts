@@ -6,7 +6,7 @@ import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
-import type { TMapUnit } from '../../level-map/units';
+import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
 import { Camel } from './camel';
 import { Clouds } from './clouds';
 import { LetterRow } from './letter-row';
@@ -25,7 +25,8 @@ export class TypingLevelScreen extends Container {
   private title: Text;
   private keyboard: KeyboardLayout;
 
-  constructor(mapUnit: TMapUnit) {
+  constructor(level: TLevel) {
+    const mapUnit = findMapUnitForLevel(level);
     super({
       layout: {
         flexDirection: 'column',
@@ -47,7 +48,7 @@ export class TypingLevelScreen extends Container {
     this.clouds = new Clouds();
     this.camel = new Camel();
     this.keyboard = new KeyboardLayout();
-    this.letterRow = new LetterRow(this.keyboard, mapUnit);
+    this.letterRow = new LetterRow(this.keyboard, level);
 
     this.title = new Text({
       text: 'TAKLAMAKAN DESERT',
@@ -66,10 +67,10 @@ export class TypingLevelScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: mapUnit.type,
+          type: getLevelType(level),
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      mapUnit,
+      level,
     });
 
     this.addChild(
