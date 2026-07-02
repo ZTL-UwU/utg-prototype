@@ -5,6 +5,7 @@ import { Container, Graphics, SplitText, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { curveSplitText } from '../../../utils/curve-split-text';
+import { useLevelProgress } from '../../../zustandStores/levelProgressStore';
 import useSessionStore from '../../../zustandStores/sessionStore';
 import { TutorialPopup } from '../../popups/tutorial';
 import { HUD } from '../../ui/hud';
@@ -154,6 +155,7 @@ export class LevelSplashScreen extends Container {
       void engine().audio.sfx.play('level-splash/game-start.mp3');
       useSessionStore.getState().reset();
       useSessionStore.getState().startSession(mapUnit.type);
+      useLevelProgress.getState().markAttempted(mapUnit.type, level.id);
 
       this.removeChildren();
       this.addChild(this.background);
