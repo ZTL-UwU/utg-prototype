@@ -275,7 +275,7 @@ export const typingMaps: TMapUnit[] = [
         unlocked: true,
         screen: TypingMarketScreen,
         background: 'typing-levels/typing-level/background-kashgar.png',
-        helpAsset: 'tutorial-popups/typing-tutorial.png',
+        helpAsset: 'tutorial-popups/typing-level-5.png',
         backdropColor: 0x7d5600,
         splashColorScheme: {
           BUTTON_FILL: 0x7e5433,
