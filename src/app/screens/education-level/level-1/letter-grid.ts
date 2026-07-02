@@ -136,7 +136,12 @@ export class LetterGrid extends Container {
     const panelH = BUTTON_DIM + 2 * (CARD_SIZE + VPADDING + VGAP);
     this.panel.x = (width - panelW) / 2;
     this.panel.y = (height - panelH) / 2;
-    this.backgroundTint.clear().roundRect(0, 0, panelW, panelH, 50).fill(0xd1dcf0);
+    this.backgroundTint
+      .clear()
+      .roundRect(0, 15, panelW, panelH, 60)
+      .fill({ color: 0x1b427a, alpha: 0.7 })
+      .roundRect(0, 0, panelW, panelH, 60)
+      .fill(0xd1dcf0);
   }
 
   private readonly soundButtonClick = () => {

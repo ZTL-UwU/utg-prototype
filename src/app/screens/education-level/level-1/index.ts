@@ -59,6 +59,13 @@ export class EducationLevelScreen extends Container {
     ]);
   }
 
+  public async hide() {
+    await Promise.all([
+      animate(this.letterGrid, { alpha: 0 }, { duration: 0.3, ease: 'easeIn' }),
+      animate(this.letterGrid.scale, { x: 0.5, y: 0.5 }, { duration: 0.3, ease: 'easeIn' }),
+    ]);
+  }
+
   // reset override from template to fix eventListener leakage
   public reset() {
     this.removeChild(this.letterGrid);
