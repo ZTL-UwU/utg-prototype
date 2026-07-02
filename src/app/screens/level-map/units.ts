@@ -44,8 +44,8 @@ export type TMapUnit = {
 export const educationMaps: TMapUnit[] = [
   {
     type: 'education',
-    background: 'education-levels/education-level-map/background.png',
-    title: { text: 'LEARN THE UYGHUR ALPHABET', fontSize: 100 },
+    background: 'education-levels/education-level-map/background-unit-1.png',
+    title: { text: 'LEVEL 1', fontSize: 240 },
     levels: [
       {
         id: 1,
@@ -80,6 +80,13 @@ export const educationMaps: TMapUnit[] = [
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
       },
+    ],
+  },
+  {
+    type: 'education',
+    background: 'education-levels/education-level-map/background-unit-2.png',
+    title: { text: 'LEVEL 2', fontSize: 240 },
+    levels: [
       {
         id: 4,
         unlocked: true,
@@ -91,13 +98,6 @@ export const educationMaps: TMapUnit[] = [
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
       },
-    ],
-  },
-  {
-    type: 'education',
-    background: 'education-levels/education-level-map/background.png',
-    title: { text: 'LEARN THE UYGHUR ALPHABET', fontSize: 100 },
-    levels: [
       {
         id: 5,
         unlocked: true,
@@ -120,6 +120,13 @@ export const educationMaps: TMapUnit[] = [
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
       },
+    ],
+  },
+  {
+    type: 'education',
+    background: 'education-levels/education-level-map/background-unit-3.png',
+    title: { text: 'LEVEL 3', fontSize: 240 },
+    levels: [
       {
         id: 7,
         unlocked: true,
@@ -134,6 +141,42 @@ export const educationMaps: TMapUnit[] = [
       },
       {
         id: 8,
+        unlocked: false,
+        mascot: 'sheep',
+        miniMapImage: 'education-levels/education-level-map/button-preview.svg',
+        screen: EducationImageScreen,
+        background: 'education-levels/education-level/background.png',
+        helpAsset: 'tutorial-popups/education-level-4.png',
+        backdropColor: 0x4a90e2,
+        mascotOnSplash: true,
+      },
+    ],
+  },
+  {
+    type: 'education',
+    background: 'education-levels/education-level-map/background-unit-4.png',
+    title: { text: 'LEVEL 4', fontSize: 240 },
+    levels: [
+      {
+        id: 9,
+        unlocked: false,
+        mascot: 'sheep',
+        miniMapImage: 'education-levels/education-level-map/button-preview.svg',
+        screen: EducationImageScreen,
+        background: 'education-levels/education-level/background.png',
+        helpAsset: 'tutorial-popups/education-level-4.png',
+        backdropColor: 0x4a90e2,
+        mascotOnSplash: true,
+      },
+    ],
+  },
+  {
+    type: 'education',
+    background: 'education-levels/education-level-map/background-unit-5.png',
+    title: { text: 'LEVEL 5', fontSize: 240 },
+    levels: [
+      {
+        id: 10,
         unlocked: false,
         mascot: 'sheep',
         miniMapImage: 'education-levels/education-level-map/button-preview.svg',
@@ -209,6 +252,15 @@ export const typingMaps: TMapUnit[] = [
         },
         mascotOnSplash: true,
       },
+    ],
+  },
+  {
+    type: 'typing',
+    background: 'typing-levels/typing-level-map/background.png',
+    title: { text: 'TYPING JOURNEY', fontSize: 150 },
+    helpAsset: 'tutorial-popups/typing-tutorial.png',
+    backdropColor: 0x7d5600,
+    levels: [
       {
         id: 4,
         unlocked: true,
@@ -227,15 +279,6 @@ export const typingMaps: TMapUnit[] = [
         },
         mascotOnSplash: false,
       },
-    ],
-  },
-  {
-    type: 'typing',
-    background: 'typing-levels/typing-level-map/background.png',
-    title: { text: 'TYPING JOURNEY', fontSize: 150 },
-    helpAsset: 'tutorial-popups/typing-tutorial.png',
-    backdropColor: 0x7d5600,
-    levels: [
       {
         id: 5,
         title: 'KASHGAR BAZAAR',
@@ -266,6 +309,15 @@ export const typingMaps: TMapUnit[] = [
         backdropColor: 0x7d5600,
         mascotOnSplash: true,
       },
+    ],
+  },
+  {
+    type: 'typing',
+    background: 'typing-levels/typing-level-map/background.png',
+    title: { text: 'TYPING JOURNEY', fontSize: 150 },
+    helpAsset: 'tutorial-popups/typing-tutorial.png',
+    backdropColor: 0x7d5600,
+    levels: [
       {
         id: 7,
         unlocked: false,

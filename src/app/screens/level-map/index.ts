@@ -1,10 +1,12 @@
 import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
+import { DropShadowFilter } from 'pixi-filters';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { HUD } from '../../ui/hud';
 import { LayerSelectScreen } from '../layer-select';
+import { CurvedText } from './curved-text';
 import { LevelRow } from './level-row';
 import { getNextMap, getPrevMap, type TMapUnit } from './units';
 
@@ -12,7 +14,7 @@ export class LevelMapScreen extends Container {
   public static assetBundles = ['typing-level-map', 'education-level-map', 'ui'];
 
   private background: Sprite;
-  private title: Text;
+  private title: CurvedText;
   private levelRow: LevelRow;
   private hud: HUD;
   private nextMapButton?: FancyButton;
@@ -43,19 +45,30 @@ export class LevelMapScreen extends Container {
       mapUnit,
     });
 
-    this.title = new Text({
+    this.title = new CurvedText({
       text: mapUnit.title.text,
       style: {
         fontFamily: 'Concert One',
         fontSize: mapUnit.title.fontSize,
         fontWeight: '800',
-        fill: 0x6b3f1f,
-      },
-      layout: {
-        position: 'absolute',
-        top: 140,
+        fill: 0xffffff,
       },
     });
+    this.title.filters = [
+      new DropShadowFilter({
+        color: 0x000000,
+        blur: 8,
+        quality: 5,
+        offset: { x: 0, y: 0 },
+      }),
+    ];
+    const titleBounds = this.title.getLocalBounds();
+    this.title.layout = {
+      position: 'absolute',
+      top: 100,
+      width: titleBounds.width,
+      height: titleBounds.height,
+    };
     this.levelRow = new LevelRow(mapUnit);
 
     const createMapNavButton = (label: string) => {
@@ -118,7 +131,7 @@ export class LevelMapScreen extends Container {
   }
 
   public async show() {
-    this.title.y = -(200 + 140);
+    this.title.y = -(300 + 100);
 
     const animations = [
       animate(this.title, { y: 0 }, { duration: 0.4, ease: 'backOut' }),
@@ -148,7 +161,7 @@ export class LevelMapScreen extends Container {
     const screenHeight = engine().navigation.height;
 
     const animations = [
-      animate(this.title, { y: -(200 + 140) }, { duration: 0.2, ease: 'backIn' }),
+      animate(this.title, { y: -(300 + 100) }, { duration: 0.2, ease: 'backIn' }),
       this.levelRow.playExitAnimation(screenHeight),
     ];
 
