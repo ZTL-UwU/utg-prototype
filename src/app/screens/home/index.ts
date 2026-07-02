@@ -84,18 +84,20 @@ export class HomeScreen extends Container {
 
     this.titleContainer.addChild(this.title, this.subtitle);
 
-    const buttonHeight = 140;
-    const buttonWidth = 350;
+    const buttonHeight = 180;
+    const buttonWidth = 400;
     this.startButton = new FancyButton({
-      defaultView: new Graphics().roundRect(0, 0, buttonWidth, buttonHeight).fill(0x2a523c),
-      hoverView: new Graphics().roundRect(0, 0, buttonWidth, buttonHeight).fill(0xe09a5c),
-      pressedView: new Graphics().roundRect(0, 0, buttonWidth, buttonHeight).fill(0xb86824),
+      defaultView: new Graphics()
+        .roundRect(0, 15, buttonWidth, buttonHeight, 40)
+        .fill({ color: 0x000000, alpha: 0.7 })
+        .roundRect(0, 0, buttonWidth, buttonHeight, 40)
+        .fill(0x2a523c),
       padding: 20,
       text: new Text({
         text: 'START',
         style: {
           fill: 0xfdf7e7,
-          fontSize: 56,
+          fontSize: 80,
           fontFamily: 'Concert One',
           fontWeight: '700',
         },
@@ -166,17 +168,17 @@ export class HomeScreen extends Container {
     this.startButton.scale.set(0.92);
 
     await Promise.all([
-      animate(this.butterfly, { alpha: 1 }, { duration: 0.5, ease: 'easeOut', delay: 0.2 }),
+      animate(this.butterfly, { alpha: 1 }, { duration: 0.5, ease: 'easeOut' }),
+      animate(this.titleContainer, { alpha: 1, y: 0 }, { duration: 0.45, ease: 'backOut' }),
       animate(
-        this.titleContainer,
+        this.startButton,
         { alpha: 1, y: 0 },
-        { duration: 0.45, ease: 'backOut', delay: 0.35 },
+        { duration: 0.4, ease: 'backOut', delay: 0.15 },
       ),
-      animate(this.startButton, { alpha: 1, y: 0 }, { duration: 0.4, ease: 'backOut', delay: 0.5 }),
       animate(
         this.startButton.scale,
         { x: 1, y: 1 },
-        { duration: 0.4, ease: 'backOut', delay: 0.5 },
+        { duration: 0.4, ease: 'backOut', delay: 0.15 },
       ),
     ]);
   }
