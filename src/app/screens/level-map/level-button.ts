@@ -60,9 +60,7 @@ export class LevelButton extends FancyButton {
   constructor(level: TLevel, mapUnit: TMapUnit) {
     super({
       defaultView: Texture.from(
-        level.unlocked
-          ? 'typing-levels/typing-level-map/button-unlocked.png'
-          : 'typing-levels/typing-level-map/button-locked.svg',
+        level.unlocked ? 'ui/map-button-unlocked.png' : 'ui/map-button-locked.svg',
       ),
       anchor: 0.5,
       animations: {
