@@ -6,7 +6,7 @@ import {
   EducationTutorialPopup,
   EducationTutorialScreen,
 } from '../screens/education-level/level-tutorial';
-import type { TMapUnit } from '../screens/level-map/units';
+import { findMapUnitForLevel, type TLevel, type TMapUnit } from '../screens/level-map/units';
 import { TypingTutorialPopup, TypingTutorialScreen } from '../screens/typing-level/level-tutorial';
 import { BackButton } from './back-button';
 import { HelpButton } from './help-button';
@@ -14,6 +14,7 @@ import { HelpButton } from './help-button';
 interface HUDProps {
   onBack: () => void;
   toTutorial?: boolean;
+  level?: TLevel;
   mapUnit?: TMapUnit;
   helpAsset?: string;
   backdropColor?: number;
@@ -24,7 +25,8 @@ export class HUD extends Container {
   constructor({
     onBack,
     toTutorial,
-    mapUnit,
+    level,
+    mapUnit: mapUnitProp,
     helpAsset,
     backdropColor = 0,
     noHelpButton = false,
@@ -37,6 +39,7 @@ export class HUD extends Container {
       },
     });
 
+    const mapUnit = mapUnitProp ?? (level ? findMapUnitForLevel(level) : undefined);
     const helpCallback =
       toTutorial && mapUnit
         ? () =>
@@ -62,7 +65,10 @@ export class HUD extends Container {
     if (!noHelpButton) {
       this.addChild(
         new BackButton(onBack),
-        new HelpButton({ onPress: helpCallback, toTutorial: toTutorial || !!mapUnit }),
+        new HelpButton({
+          onPress: helpCallback,
+          toTutorial: toTutorial || !!level || !!mapUnitProp,
+        }),
       );
     } else {
       this.addChild(new BackButton(onBack));

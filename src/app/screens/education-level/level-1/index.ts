@@ -5,7 +5,7 @@ import { engine } from '../../../../engine/getEngine';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { LevelMapScreen } from '../../level-map';
-import type { TMapUnit } from '../../level-map/units';
+import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
 import { LetterGrid } from './letter-grid';
 import { MessageContainer } from './message-container';
 
@@ -15,7 +15,8 @@ export class EducationLevelScreen extends Container {
   private hud: HUD;
   private letterGrid: LetterGrid;
   private messageContainer: MessageContainer;
-  constructor(mapUnit: TMapUnit) {
+  constructor(level: TLevel) {
+    const mapUnit = findMapUnitForLevel(level);
     super({
       layout: {
         position: 'relative',
@@ -32,12 +33,12 @@ export class EducationLevelScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: mapUnit.type,
+          type: getLevelType(level),
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      mapUnit,
+      level,
     });
-    this.letterGrid = new LetterGrid(mapUnit);
+    this.letterGrid = new LetterGrid(level);
     this.messageContainer = new MessageContainer();
     this.addChild(this.background, this.letterGrid, this.hud, this.messageContainer);
   }

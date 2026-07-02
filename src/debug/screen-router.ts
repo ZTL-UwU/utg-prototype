@@ -2,7 +2,7 @@ import { EducationTutorialScreen } from '../app/screens/education-level/level-tu
 import { HomeScreen } from '../app/screens/home';
 import { LayerSelectScreen } from '../app/screens/layer-select';
 import { LevelMapScreen } from '../app/screens/level-map';
-import { mapUnitStore } from '../app/screens/level-map/units';
+import { educationMaps, typingMaps } from '../app/screens/level-map/units';
 import { LevelSplashScreen } from '../app/screens/level-splash';
 import { TypingTutorialScreen } from '../app/screens/typing-level/level-tutorial';
 import type { AppScreenConstructor, Navigation } from '../engine/navigation/navigation';
@@ -36,35 +36,34 @@ function route(
   };
 }
 
-function mapNumber(mapKey: string) {
-  return mapKey.endsWith('-2') ? 2 : 1;
-}
-
-const screenRoutes: ScreenRoute[] = [
-  route('/home', HomeScreen),
-  route('/layers', LayerSelectScreen),
-  ...Object.entries(mapUnitStore).flatMap(([mapKey, mapUnit]) => {
-    // NOTE: hacky way. will get better once we refactor the map unit structure.
-    const mapPath = `/${mapUnit.type}/maps/${mapNumber(mapKey)}`;
+function mapRoutes(type: 'education' | 'typing', maps: typeof educationMaps) {
+  return maps.flatMap((mapUnit, index) => {
+    const mapPath = `/${type}/maps/${index + 1}`;
 
     return [
       route(mapPath, LevelMapScreen, mapUnit),
       route(
         `${mapPath}/tutorial`,
-        mapUnit.type === 'education' ? EducationTutorialScreen : TypingTutorialScreen,
+        type === 'education' ? EducationTutorialScreen : TypingTutorialScreen,
         mapUnit,
       ),
-      // Level & level splash
       ...mapUnit.levels.flatMap((level) => {
         if (!level.screen) return [];
-        const levelPath = `/${mapUnit.type}/levels/${level.id}`;
+        const levelPath = `/${type}/levels/${level.id}`;
         return [
-          route(levelPath, level.screen, mapUnit),
+          route(levelPath, level.screen, level),
           route(`${levelPath}/splash`, LevelSplashScreen, { level, mapUnit }),
         ];
       }),
     ];
-  }),
+  });
+}
+
+const screenRoutes: ScreenRoute[] = [
+  route('/home', HomeScreen),
+  route('/layers', LayerSelectScreen),
+  ...mapRoutes('education', educationMaps),
+  ...mapRoutes('typing', typingMaps),
 ];
 
 function normalizePath(path: string) {

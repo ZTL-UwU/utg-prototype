@@ -15,7 +15,7 @@ import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
-import type { TMapUnit } from '../../level-map/units';
+import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
 import { generateRoundsDictionary, type Round } from '../level-4';
 
 const FONT_SIZE = 100;
@@ -52,11 +52,12 @@ export class TypingMarketScreen extends Container {
   private _sw: number = 0;
   private _sh: number = 0;
   private paused: boolean;
-  private mapUnit: TMapUnit;
+  private level: TLevel;
 
-  constructor(mapUnit: TMapUnit) {
+  constructor(level: TLevel) {
+    const mapUnit = findMapUnitForLevel(level);
     super();
-    this.mapUnit = mapUnit;
+    this.level = level;
 
     this.background = new Sprite({
       texture: Texture.from('typing-levels/typing-level-5/background.png'),
@@ -72,10 +73,10 @@ export class TypingMarketScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: mapUnit.type,
+          type: getLevelType(level),
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      mapUnit,
+      level,
     });
 
     this.keyboard = new KeyboardLayout();
@@ -275,6 +276,6 @@ export class TypingMarketScreen extends Container {
     window.removeEventListener('keydown', this.handleKeyDown);
     const { correct, mistakes } = useSessionStore.getState();
     useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { mapUnit: this.mapUnit });
+    void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
   }
 }

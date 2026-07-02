@@ -5,7 +5,8 @@ import { engine } from '../../../engine/getEngine';
 import { getStarCount } from '../../../zustandStores/scoreManager';
 import useSessionStore from '../../../zustandStores/sessionStore';
 import { LevelMapScreen } from '../../screens/level-map';
-import type { TMapUnit } from '../../screens/level-map/units';
+import type { TLevel } from '../../screens/level-map/units';
+import { findMapUnitForLevel, getNextLevelAfter } from '../../screens/level-map/units';
 import { LevelSplashScreen } from '../../screens/level-splash';
 import { BackButton } from '../../ui/back-button';
 import { NextButton } from '../../ui/next-button';
@@ -82,49 +83,21 @@ function readSessionResults() {
 }
 
 type EndScreenPopupProps = {
-  mapUnit: TMapUnit;
+  level: TLevel;
 };
 
-function getCurrentMascot(mapUnit: TMapUnit): 'sheep' | 'goat' | 'camel' {
-  const currentScreen = engine().navigation.currentScreen;
-  const currentLevelIndex = mapUnit.levels.findIndex(
-    (level) => level.screen === currentScreen?.constructor,
-  );
-  const currentLevel = mapUnit.levels[currentLevelIndex];
-  return currentLevel.mascot;
+function getCurrentMascot(level: TLevel): 'sheep' | 'goat' | 'camel' {
+  return level.mascot;
 }
 
-function getNextLevel(mapUnit: TMapUnit) {
-  const currentScreen = engine().navigation.currentScreen;
-  const currentLevelIndex = mapUnit.levels.findIndex(
-    (level) => level.screen === currentScreen?.constructor,
-  );
-
-  if (currentLevelIndex === -1) return;
-
-  let nextMapUnit: TMapUnit | undefined = mapUnit;
-  let nextLevelIndex = currentLevelIndex + 1;
-
-  while (nextMapUnit) {
-    const nextLevel = nextMapUnit.levels
-      .slice(nextLevelIndex)
-      .find((level) => level.unlocked && level.screen);
-    if (nextLevel?.screen) {
-      return { mapUnit: nextMapUnit, level: nextLevel };
-    }
-
-    nextMapUnit = nextMapUnit.nextMap;
-    nextLevelIndex = 0;
-  }
-}
-
-function goToLevelMap(mapUnit: TMapUnit) {
+function goToLevelMap(level: TLevel) {
+  const mapUnit = findMapUnitForLevel(level);
   void engine()
     .navigation.hidePopup()
     .then(() => engine().navigation.showScreen(LevelMapScreen, mapUnit));
 }
 
-function goToNextLevel(nextLevel: NonNullable<ReturnType<typeof getNextLevel>>) {
+function goToNextLevel(nextLevel: NonNullable<ReturnType<typeof getNextLevelAfter>>) {
   void engine()
     .navigation.hidePopup()
     .then(() =>
@@ -145,7 +118,7 @@ export class EndScreenPopup extends Container {
   private stars: Stars;
   private starCount: number;
 
-  constructor({ mapUnit }: EndScreenPopupProps) {
+  constructor({ level }: EndScreenPopupProps) {
     super({
       layout: {
         flexDirection: 'column',
@@ -153,7 +126,7 @@ export class EndScreenPopup extends Container {
         justifyContent: 'center',
       },
     });
-    this.currentMascot = getCurrentMascot(mapUnit);
+    this.currentMascot = getCurrentMascot(level);
     const { correct, mistakes, accuracy, starCount } = readSessionResults();
     this.starCount = starCount;
     this.background = createPopupBackground(POPUP_WIDTH, POPUP_HEIGHT, this.currentMascot);
@@ -245,7 +218,7 @@ export class EndScreenPopup extends Container {
       },
     });
 
-    const backButton = new BackButton(() => goToLevelMap(mapUnit));
+    const backButton = new BackButton(() => goToLevelMap(level));
     backButton.anchor.set(0, 1);
     backButton.layout = {
       position: 'absolute',
@@ -255,7 +228,7 @@ export class EndScreenPopup extends Container {
     backButton.anchor.set(0, 0);
     backButton.scale.set(0.7);
 
-    const nextLevel = getNextLevel(mapUnit);
+    const nextLevel = getNextLevelAfter(level);
     const nextButton = new NextButton(() => {
       if (nextLevel) goToNextLevel(nextLevel);
     });

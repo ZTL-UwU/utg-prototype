@@ -10,7 +10,7 @@ import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
-import type { TMapUnit } from '../../level-map/units';
+import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
 import { DustOverlays } from './dust-overlays';
 import { LeafLetter } from './leaf-letter';
 
@@ -73,9 +73,10 @@ export class TypingSandstormScreen extends Container {
   private resolvedLetters = 0;
   private paused = true;
   private completed = false;
-  private readonly mapUnit: TMapUnit;
+  private readonly level: TLevel;
 
-  constructor(mapUnit: TMapUnit) {
+  constructor(level: TLevel) {
+    const mapUnit = findMapUnitForLevel(level);
     super({
       layout: {
         flexDirection: 'column',
@@ -83,7 +84,7 @@ export class TypingSandstormScreen extends Container {
         justifyContent: 'center',
       },
     });
-    this.mapUnit = mapUnit;
+    this.level = level;
 
     this.background = new Sprite({
       texture: Texture.from('typing-levels/typing-level-2/background.png'),
@@ -107,10 +108,10 @@ export class TypingSandstormScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: mapUnit.type,
+          type: getLevelType(level),
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      mapUnit,
+      level,
     });
 
     this.keyboard = new KeyboardLayout();
@@ -407,7 +408,7 @@ export class TypingSandstormScreen extends Container {
     window.removeEventListener('keydown', this.handleKeyDown);
     const { correct, mistakes } = useSessionStore.getState();
     useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { mapUnit: this.mapUnit });
+    void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
   }
 
   private removeEffectAnimation(animation: AnimationPlaybackControls) {

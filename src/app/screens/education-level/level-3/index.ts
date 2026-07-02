@@ -11,7 +11,7 @@ import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
 import { LevelMapScreen } from '../../level-map';
-import type { TMapUnit } from '../../level-map/units';
+import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
 import { LetterGrass } from './letter-grass';
 
 const GRASS_SIZE = 320;
@@ -59,12 +59,13 @@ export class EducationSheepScreen extends Container {
 
   private correctLetter: string;
   private isAnimating = false;
-  private mapUnit: TMapUnit;
+  private level: TLevel;
   private isPlaying: boolean = false;
-  constructor(mapUnit: TMapUnit) {
+  constructor(level: TLevel) {
+    const mapUnit = findMapUnitForLevel(level);
     super({ layout: { position: 'relative', width: '100%', height: '100%' } });
     engine().audio.bgm.setVolume(0);
-    this.mapUnit = mapUnit;
+    this.level = level;
 
     this.background = new Sprite({
       texture: Texture.from('education-levels/education-level-3/background.png'),
@@ -73,10 +74,10 @@ export class EducationSheepScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: mapUnit.type,
+          type: getLevelType(level),
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      mapUnit,
+      level,
     });
 
     const letters = getThreeUniqueLetters();
@@ -280,12 +281,12 @@ export class EducationSheepScreen extends Container {
   private endGame() {
     this.isAnimating = false;
     if (++EducationSheepScreen.rounds < EducationSheepScreen.MAX_ROUNDS) {
-      void engine().navigation.showScreen(EducationSheepScreen, this.mapUnit);
+      void engine().navigation.showScreen(EducationSheepScreen, this.level);
     } else {
       EducationSheepScreen.rounds = 0;
       const { correct, mistakes } = useSessionStore.getState();
       useScoreManager.getState().addSession(correct, mistakes);
-      void engine().navigation.showPopup(EndScreenPopup, { mapUnit: this.mapUnit });
+      void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
     }
   }
 }

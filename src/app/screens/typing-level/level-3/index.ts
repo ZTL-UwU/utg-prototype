@@ -10,7 +10,7 @@ import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout, type KeyboardColorOptions } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
-import type { TMapUnit } from '../../level-map/units';
+import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
 import { Letter } from '../level-1/letter';
 
 const NOTE_COUNT = 20;
@@ -153,11 +153,12 @@ export class TypingInstrumentScreen extends Container {
   private instrumentRestY = 0;
   private targetLabelRestY = 0;
 
-  private readonly mapUnit: TMapUnit;
+  private readonly level: TLevel;
 
-  constructor(mapUnit: TMapUnit) {
+  constructor(level: TLevel) {
+    const mapUnit = findMapUnitForLevel(level);
     super();
-    this.mapUnit = mapUnit;
+    this.level = level;
 
     this.background = new Sprite({
       texture: Texture.from('typing-levels/typing-level/background-tangri-tah.png'),
@@ -171,10 +172,10 @@ export class TypingInstrumentScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: mapUnit.type,
+          type: getLevelType(level),
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      mapUnit,
+      level,
     });
 
     this.queueCards.forEach((card) => this.queue.addChild(card));
@@ -371,6 +372,6 @@ export class TypingInstrumentScreen extends Container {
     window.removeEventListener('keydown', this.handleKeyDown);
     const { correct, mistakes } = useSessionStore.getState();
     useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { mapUnit: this.mapUnit });
+    void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
   }
 }

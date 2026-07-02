@@ -6,7 +6,7 @@ import { engine } from '../../../engine/getEngine';
 import { HUD } from '../../ui/hud';
 import { LayerSelectScreen } from '../layer-select';
 import { LevelRow } from './level-row';
-import type { TMapUnit } from './units';
+import { getNextMap, getPrevMap, type TMapUnit } from './units';
 
 export class LevelMapScreen extends Container {
   public static assetBundles = ['typing-level-map', 'education-level-map', 'ui'];
@@ -78,8 +78,8 @@ export class LevelMapScreen extends Container {
       });
     };
 
-    if (mapUnit.prevMap) {
-      const prevMap = mapUnit.prevMap;
+    const prevMap = getPrevMap(mapUnit);
+    if (prevMap) {
       this.prevMapButton = createMapNavButton('<<');
       this.prevMapButton.onPress.connect(() => {
         void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
@@ -87,8 +87,8 @@ export class LevelMapScreen extends Container {
       });
     }
 
-    if (mapUnit.nextMap) {
-      const nextMap = mapUnit.nextMap;
+    const nextMap = getNextMap(mapUnit);
+    if (nextMap) {
       this.nextMapButton = createMapNavButton('>>');
       this.nextMapButton.onPress.connect(() => {
         void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');

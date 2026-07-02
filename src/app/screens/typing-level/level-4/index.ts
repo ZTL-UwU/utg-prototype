@@ -15,7 +15,7 @@ import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
-import type { TMapUnit } from '../../level-map/units';
+import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
 
 const FONT_SIZE = 100;
 const NUM_ROUNDS = 5;
@@ -71,11 +71,12 @@ export class TypingWordScreen extends Container {
   private _sw: number = 0;
   private _sh: number = 0;
   private paused: boolean;
-  private mapUnit: TMapUnit;
+  private level: TLevel;
 
-  constructor(mapUnit: TMapUnit) {
+  constructor(level: TLevel) {
+    const mapUnit = findMapUnitForLevel(level);
     super();
-    this.mapUnit = mapUnit;
+    this.level = level;
     this.background = new Sprite({
       texture: Texture.from('typing-levels/typing-level/background-farmers-harvest.png'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
@@ -83,15 +84,14 @@ export class TypingWordScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: mapUnit.type,
+          type: getLevelType(level),
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      mapUnit,
+      level,
     });
     this.keyboard = new KeyboardLayout();
     this.rounds = generateRoundsDictionary();
     // this.rounds = DEV_TEST_ROUNDS; // uncomment to assign rounds to selected test set
-    this.mapUnit = mapUnit;
     this.card = new Graphics();
     this.cardShadow = new Graphics();
     this.wordText = new HTMLText({ style: this.wordStyle });
@@ -277,6 +277,6 @@ export class TypingWordScreen extends Container {
     window.removeEventListener('keydown', this.handleKeyDown);
     const { correct, mistakes } = useSessionStore.getState();
     useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { mapUnit: this.mapUnit });
+    void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
   }
 }
