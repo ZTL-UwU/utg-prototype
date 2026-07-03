@@ -2,11 +2,16 @@ import { animate } from 'motion';
 import { BlurFilter, Container, Graphics, Sprite, Text, TextStyle, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { useLevelProgress } from '../../../zustandStores/levelProgressStore';
 import { getStarCount } from '../../../zustandStores/scoreManager';
 import useSessionStore from '../../../zustandStores/sessionStore';
 import { LevelMapScreen } from '../../screens/level-map';
 import type { TLevel } from '../../screens/level-map/units';
-import { findMapUnitForLevel, getNextLevelAfter } from '../../screens/level-map/units';
+import {
+  findMapUnitForLevel,
+  getLevelType,
+  getNextLevelAfter,
+} from '../../screens/level-map/units';
 import { LevelSplashScreen } from '../../screens/level-splash';
 import { BackButton } from '../../ui/back-button';
 import { NextButton } from '../../ui/next-button';
@@ -129,6 +134,7 @@ export class EndScreenPopup extends Container {
     this.currentMascot = getCurrentMascot(level);
     const { correct, mistakes, accuracy, starCount } = readSessionResults();
     this.starCount = starCount;
+    useLevelProgress.getState().markAttempted(getLevelType(level), level.id);
     this.background = createPopupBackground(POPUP_WIDTH, POPUP_HEIGHT, this.currentMascot);
     this.background.layout = {
       width: POPUP_WIDTH,
