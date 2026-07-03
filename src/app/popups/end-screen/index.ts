@@ -59,17 +59,8 @@ function createStatStyle(mascot: 'sheep' | 'goat' | 'camel') {
   });
 }
 
-type MascotVariant = 'excellent' | 'well-done' | 'good-try' | 'try-again';
-
-function getMascotVariant(starCount: number): MascotVariant {
-  if (starCount >= 3) return 'excellent';
-  if (starCount >= 2) return 'well-done';
-  if (starCount >= 1) return 'good-try';
-  return 'try-again';
-}
-
-function getMascotTexture(mascot: 'sheep' | 'camel' | 'goat', variant: MascotVariant) {
-  return `mascots/${mascot}/dialog/${variant}.png`;
+function getMascotTexture(mascot: 'sheep' | 'camel' | 'goat', starCount: number) {
+  return `mascots/${mascot}/dialog/${starCount}-star.png`;
 }
 
 function readSessionResults() {
@@ -214,7 +205,7 @@ export class EndScreenPopup extends Container {
     this.contentContainer.addChild(headerSection, bodySection);
 
     const mascot = new Sprite({
-      texture: Texture.from(getMascotTexture(this.currentMascot, getMascotVariant(starCount))),
+      texture: Texture.from(getMascotTexture(this.currentMascot, starCount)),
       layout: {
         position: 'absolute',
         right: 20,
