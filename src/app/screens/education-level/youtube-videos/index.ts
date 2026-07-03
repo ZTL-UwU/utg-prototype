@@ -29,7 +29,6 @@ export class EducationYoutubeScreen extends Container {
 
     this.hud = new HUD({
       onBack: () => void engine().navigation.showScreen(EducationTutorialScreen, this.mapUnit),
-      noHelpButton: true,
     });
 
     this.addChild(this.background, this.hud);

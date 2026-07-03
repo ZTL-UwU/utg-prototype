@@ -25,7 +25,6 @@ export class TypingTutorialScreen extends Container {
         void (presentation === 'popup'
           ? engine().navigation.hidePopup()
           : engine().navigation.showScreen(LevelMapScreen, mapUnit)),
-      noHelpButton: true,
     });
 
     this.letterGrid = new AlphabetGrid(

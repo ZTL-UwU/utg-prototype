@@ -112,8 +112,7 @@ export class LevelSplashScreen extends Container {
 
     this.hud = new HUD({
       onBack: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
-      helpAsset: level.helpAsset,
-      backdropColor: level.backdropColor,
+      help: { kind: 'image', asset: level.helpAsset, backdropColor: level.backdropColor },
     });
 
     const buttonWidth = 300;

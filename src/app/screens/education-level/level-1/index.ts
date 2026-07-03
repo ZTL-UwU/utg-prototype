@@ -36,7 +36,7 @@ export class EducationLevelScreen extends Container {
           type: getLevelType(level),
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      level,
+      help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
     this.letterGrid = new LetterGrid(level);
     this.messageContainer = new MessageContainer();

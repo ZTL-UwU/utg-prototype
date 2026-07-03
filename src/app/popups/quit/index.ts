@@ -4,14 +4,16 @@ import { DropShadowFilter } from 'pixi-filters';
 import { BlurFilter, Container, Graphics, Texture, Sprite, Text } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import type { TLayer } from '../../screens/level-map/units';
 
-const CRYING_MASCOT_TEXTURES = {
+const CRYING_MASCOT_TEXTURES: Record<TLayer, string> = {
   education: 'mascots/sheep/crying.png',
   typing: 'mascots/camel/crying.png',
-} as const;
+  game: 'mascots/sheep/crying.png',
+};
 
 export type QuitPopupProps = {
-  type: keyof typeof CRYING_MASCOT_TEXTURES;
+  type: TLayer;
   onQuit: () => void;
 };
 

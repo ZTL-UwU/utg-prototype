@@ -4,6 +4,7 @@ import { engine } from '../../../engine/getEngine';
 import useSessionStore from '../../../zustandStores/sessionStore';
 import { BackButton } from '../../ui/back-button';
 import { HomeScreen } from '../home';
+import type { TLayer } from '../level-map/units';
 
 const PANEL_WIDTH = 600;
 const PANEL_PADDING_X = 64;
@@ -13,7 +14,7 @@ const PANEL_GAP = 28;
 interface EndScreenProps {
   correct: number;
   mistakes: number;
-  type?: 'education' | 'typing';
+  type?: TLayer;
 }
 
 export class EndScreen extends Container {

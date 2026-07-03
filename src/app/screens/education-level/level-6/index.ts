@@ -185,7 +185,7 @@ export class EducationSheepJumpScreen extends Container {
             void engine().navigation.showScreen(LevelMapScreen, mapUnit);
           },
         }),
-      level,
+      help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
     this.soundButton = new SoundButton({

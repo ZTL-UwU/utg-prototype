@@ -11,7 +11,7 @@ import { LevelRow } from './level-row';
 import { getNextMap, getPrevMap, type TMapUnit } from './units';
 
 export class LevelMapScreen extends Container {
-  public static assetBundles = ['typing-level-map', 'education-level-map', 'ui'];
+  public static assetBundles = ['typing-level-map', 'education-level-map', 'game-level-map', 'ui'];
 
   private background: Sprite;
   private title: CurvedText;
@@ -41,8 +41,7 @@ export class LevelMapScreen extends Container {
 
     this.hud = new HUD({
       onBack: () => void engine().navigation.showScreen(LayerSelectScreen),
-      toTutorial: true,
-      mapUnit,
+      help: { kind: 'tutorial', mapUnit, presentation: 'screen' },
     });
 
     this.title = new CurvedText({

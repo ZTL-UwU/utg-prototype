@@ -58,7 +58,6 @@ export class EducationTutorialScreen extends Container {
         void (presentation === 'popup'
           ? engine().navigation.hidePopup()
           : engine().navigation.showScreen(LevelMapScreen, mapUnit)),
-      noHelpButton: true,
     });
 
     engine().audio.bgm.setVolume(0);

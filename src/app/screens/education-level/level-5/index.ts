@@ -150,7 +150,7 @@ export class EducationWordScreen extends Container {
             void engine().navigation.showScreen(LevelMapScreen, mapUnit);
           },
         }),
-      level,
+      help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
     this.addChild(this.background, this.panel, this.feedback, this.hud);
