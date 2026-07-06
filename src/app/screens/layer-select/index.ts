@@ -6,7 +6,7 @@ import { engine } from '../../../engine/getEngine';
 import { UserStatsPopup } from '../../popups/user-stats';
 import { HomeScreen } from '../home';
 import { LevelMapScreen } from '../level-map';
-import { educationMaps, typingMaps } from '../level-map/units';
+import { getLayerMaps, type TLayer } from '../level-map/units';
 
 export class LayerSelectScreen extends Container {
   public static assetBundles = ['layer-select', 'home'];
@@ -76,7 +76,7 @@ export class LayerSelectScreen extends Container {
     const buttonData: {
       icon: Texture;
       layout: { left: number; top: number };
-      screenType?: 'typing' | 'education';
+      screenType?: TLayer;
     }[] = [
       {
         icon: Texture.from('layer-select/education-icon.png'),
@@ -91,6 +91,7 @@ export class LayerSelectScreen extends Container {
       {
         icon: Texture.from('layer-select/game-icon.png'),
         layout: { left: 1028, top: 604 },
+        screenType: 'game',
       },
     ];
 
@@ -112,12 +113,10 @@ export class LayerSelectScreen extends Container {
         ...data.layout,
       };
       if (data.screenType) {
+        const layer = data.screenType;
         button.onPress.connect(() => {
           void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-          void engine().navigation.showScreen(
-            LevelMapScreen,
-            data.screenType === 'education' ? educationMaps[0] : typingMaps[0],
-          );
+          void engine().navigation.showScreen(LevelMapScreen, getLayerMaps(layer)[0]);
         });
       }
       return button;

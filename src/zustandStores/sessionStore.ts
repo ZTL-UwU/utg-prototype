@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 
+import type { TLayer } from '../app/screens/level-map/units';
+
 interface SessionStore {
-  levelType: 'education' | 'typing' | null;
+  levelType: TLayer | null;
   correct: number;
   mistakes: number;
-  startSession: (type: 'education' | 'typing') => void;
+  startSession: (type: TLayer) => void;
   recordCorrect: () => void;
   recordMistake: () => void;
   reset: () => void;

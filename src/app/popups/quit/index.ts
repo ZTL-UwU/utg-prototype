@@ -4,14 +4,16 @@ import { DropShadowFilter } from 'pixi-filters';
 import { BlurFilter, Container, Graphics, Texture, Sprite, Text } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import type { TLayer } from '../../screens/level-map/units';
 
-const CRYING_MASCOT_TEXTURES = {
-  education: 'mascots/sheep/crying.png',
-  typing: 'mascots/camel/crying.png',
-} as const;
+const SAD_MASCOT_TEXTURES: Record<TLayer, string> = {
+  education: 'mascots/sheep/sad.png',
+  typing: 'mascots/camel/sad.png',
+  game: 'mascots/chef/sad.png',
+};
 
 export type QuitPopupProps = {
-  type: keyof typeof CRYING_MASCOT_TEXTURES;
+  type: TLayer;
   onQuit: () => void;
 };
 
@@ -46,11 +48,11 @@ export class QuitPopup extends Container {
     const dialogWidth = 700;
     const contentWidth = dialogWidth - 60;
 
-    const cryingMascot = new Sprite({
-      texture: Texture.from(CRYING_MASCOT_TEXTURES[type]),
+    const sadMascot = new Sprite({
+      texture: Texture.from(SAD_MASCOT_TEXTURES[type]),
       layout: true,
     });
-    const cryingMascotContainer = new Container({
+    const sadMascotContainer = new Container({
       layout: {
         width: contentWidth,
         display: 'flex',
@@ -58,7 +60,7 @@ export class QuitPopup extends Container {
         alignItems: 'center',
       },
     });
-    cryingMascotContainer.addChild(cryingMascot);
+    sadMascotContainer.addChild(sadMascot);
 
     const getBottomButton = (asset: string, onPress: () => void) => {
       const button = new FancyButton({
@@ -122,7 +124,7 @@ export class QuitPopup extends Container {
           fill: 0x6b411e,
         },
       }),
-      content: [cryingMascotContainer],
+      content: [sadMascotContainer],
       buttons: [quitButton, cancelButton],
       buttonList: {
         elementsMargin: 40,

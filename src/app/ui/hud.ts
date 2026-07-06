@@ -6,31 +6,22 @@ import {
   EducationTutorialPopup,
   EducationTutorialScreen,
 } from '../screens/education-level/level-tutorial';
-import { findMapUnitForLevel, type TLevel, type TMapUnit } from '../screens/level-map/units';
+import type { TMapUnit } from '../screens/level-map/units';
 import { TypingTutorialPopup, TypingTutorialScreen } from '../screens/typing-level/level-tutorial';
 import { BackButton } from './back-button';
 import { HelpButton } from './help-button';
 
+export type THudHelp =
+  | { kind: 'tutorial'; mapUnit: TMapUnit; presentation: 'popup' | 'screen' }
+  | { kind: 'image'; asset: string; backdropColor: number };
+
 interface HUDProps {
   onBack: () => void;
-  toTutorial?: boolean;
-  level?: TLevel;
-  mapUnit?: TMapUnit;
-  helpAsset?: string;
-  backdropColor?: number;
-  noHelpButton?: boolean;
+  help?: THudHelp;
 }
 
 export class HUD extends Container {
-  constructor({
-    onBack,
-    toTutorial,
-    level,
-    mapUnit: mapUnitProp,
-    helpAsset,
-    backdropColor = 0,
-    noHelpButton = false,
-  }: HUDProps) {
+  constructor({ onBack, help }: HUDProps) {
     super({
       layout: {
         position: 'absolute',
@@ -39,39 +30,37 @@ export class HUD extends Container {
       },
     });
 
-    const mapUnit = mapUnitProp ?? (level ? findMapUnitForLevel(level) : undefined);
-    const helpCallback =
-      toTutorial && mapUnit
-        ? () =>
-            void engine().navigation.showScreen(
-              mapUnit.type === 'education' ? EducationTutorialScreen : TypingTutorialScreen,
-              mapUnit,
-            )
-        : mapUnit
-          ? () =>
-              void engine().navigation.showPopup(
-                mapUnit.type === 'education' ? EducationTutorialPopup : TypingTutorialPopup,
-                mapUnit,
-              )
-          : helpAsset
-            ? () =>
-                void engine().navigation.showPopup(TutorialPopup, {
-                  asset: helpAsset,
-                  backdropColor,
-                  isFullscreen: false,
-                })
-            : undefined;
+    this.addChild(new BackButton(onBack));
 
-    if (!noHelpButton) {
-      this.addChild(
-        new BackButton(onBack),
-        new HelpButton({
-          onPress: helpCallback,
-          toTutorial: toTutorial || !!level || !!mapUnitProp,
-        }),
-      );
-    } else {
-      this.addChild(new BackButton(onBack));
+    const onHelp = help && createHelpAction(help);
+    if (onHelp) {
+      this.addChild(new HelpButton({ onPress: onHelp, icon: help.kind }));
     }
+  }
+}
+
+function createHelpAction(help: THudHelp): (() => void) | undefined {
+  if (help.kind === 'image') {
+    return () =>
+      void engine().navigation.showPopup(TutorialPopup, {
+        asset: help.asset,
+        backdropColor: help.backdropColor,
+        isFullscreen: false,
+      });
+  }
+
+  const { mapUnit, presentation } = help;
+  switch (mapUnit.type) {
+    case 'education':
+      return presentation === 'screen'
+        ? () => void engine().navigation.showScreen(EducationTutorialScreen, mapUnit)
+        : () => void engine().navigation.showPopup(EducationTutorialPopup, mapUnit);
+    case 'typing':
+      return presentation === 'screen'
+        ? () => void engine().navigation.showScreen(TypingTutorialScreen, mapUnit)
+        : () => void engine().navigation.showPopup(TypingTutorialPopup, mapUnit);
+    case 'game':
+      // Game levels have no tutorial, so the help button is hidden.
+      return undefined;
   }
 }

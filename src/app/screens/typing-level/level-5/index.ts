@@ -76,7 +76,7 @@ export class TypingMarketScreen extends Container {
           type: getLevelType(level),
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      level,
+      help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
     this.keyboard = new KeyboardLayout();

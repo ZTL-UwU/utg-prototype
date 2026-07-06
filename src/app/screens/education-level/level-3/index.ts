@@ -20,7 +20,7 @@ const GRASS_X_RATIOS = [0.2, 0.5, 0.8] as const;
 const GRASS_Y_RATIO = 0.75;
 const SHEEP_TEXTURES = {
   default: 'mascots/sheep/default.png',
-  crying: 'mascots/sheep/crying.png',
+  sad: 'mascots/sheep/sad.png',
   grazing: 'mascots/sheep/grazing.png',
   happy: 'mascots/sheep/happy.png',
 } as const;
@@ -77,7 +77,7 @@ export class EducationSheepScreen extends Container {
           type: getLevelType(level),
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
-      level,
+      help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
     const letters = getThreeUniqueLetters();
@@ -192,7 +192,7 @@ export class EducationSheepScreen extends Container {
 
   async sheepFlashSad(signedScale: ObservablePoint) {
     const defaultTex = this.sheep.texture;
-    this.sheep.texture = Texture.from(SHEEP_TEXTURES.crying);
+    this.sheep.texture = Texture.from(SHEEP_TEXTURES.sad);
     this.flashSadAnimation = animate(
       [
         [

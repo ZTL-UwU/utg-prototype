@@ -108,7 +108,7 @@ export class EducationWhackAMoleScreen extends Container {
             void engine().navigation.showScreen(LevelMapScreen, mapUnit);
           },
         }),
-      level,
+      help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
     this.addChild(this.background, ...this.targets, this.rabbit, this.hud, this.soundButton);

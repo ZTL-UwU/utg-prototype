@@ -2,7 +2,7 @@ import { EducationTutorialScreen } from '../app/screens/education-level/level-tu
 import { HomeScreen } from '../app/screens/home';
 import { LayerSelectScreen } from '../app/screens/layer-select';
 import { LevelMapScreen } from '../app/screens/level-map';
-import { educationMaps, typingMaps } from '../app/screens/level-map/units';
+import { educationMaps, gameMaps, typingMaps, type TLayer } from '../app/screens/level-map/units';
 import { LevelSplashScreen } from '../app/screens/level-splash';
 import { TypingTutorialScreen } from '../app/screens/typing-level/level-tutorial';
 import type { AppScreenConstructor, Navigation } from '../engine/navigation/navigation';
@@ -36,17 +36,21 @@ function route(
   };
 }
 
-function mapRoutes(type: 'education' | 'typing', maps: typeof educationMaps) {
+function mapRoutes(type: TLayer, maps: typeof educationMaps) {
   return maps.flatMap((mapUnit, index) => {
     const mapPath = `/${type}/maps/${index + 1}`;
 
     return [
       route(mapPath, LevelMapScreen, mapUnit),
-      route(
-        `${mapPath}/tutorial`,
-        type === 'education' ? EducationTutorialScreen : TypingTutorialScreen,
-        mapUnit,
-      ),
+      ...(type !== 'game'
+        ? [
+            route(
+              `${mapPath}/tutorial`,
+              type === 'education' ? EducationTutorialScreen : TypingTutorialScreen,
+              mapUnit,
+            ),
+          ]
+        : []),
       ...mapUnit.levels.flatMap((level) => {
         if (!level.screen) return [];
         const levelPath = `/${type}/levels/${level.id}`;
@@ -64,6 +68,7 @@ const screenRoutes: ScreenRoute[] = [
   route('/layers', LayerSelectScreen),
   ...mapRoutes('education', educationMaps),
   ...mapRoutes('typing', typingMaps),
+  ...mapRoutes('game', gameMaps),
 ];
 
 function normalizePath(path: string) {

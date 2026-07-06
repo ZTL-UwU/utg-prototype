@@ -6,8 +6,8 @@ import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import type { KeyboardLayout } from '../../../ui/keyboard-layout';
+import { TypingLetter } from '../../../ui/typing-letter';
 import type { TLevel } from '../../level-map/units';
-import { Letter } from './letter';
 
 const CARD_SIZE = 140;
 const CARD_GAP = 40;
@@ -26,7 +26,7 @@ function makeRow(): string[] {
 
 export class LetterRow extends Container {
   private letters = makeRow();
-  private letterCards: Letter[] = [];
+  private letterCards: TypingLetter[] = [];
   private readonly keyboard: KeyboardLayout;
   private readonly level: TLevel;
 
@@ -52,7 +52,7 @@ export class LetterRow extends Container {
     this.level = level;
 
     this.letterCards = this.letters.map((letter, index) => {
-      const card = new Letter({ letter, cardSize: CARD_SIZE });
+      const card = new TypingLetter({ letter, cardSize: CARD_SIZE });
       card.layout = {
         position: 'absolute',
         left: index * STEP,

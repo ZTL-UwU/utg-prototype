@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type TMapType = 'typing' | 'education';
+import type { TLayer } from '../app/screens/level-map/units';
 
-function key(mapType: TMapType, levelId: number) {
+function key(mapType: TLayer, levelId: number) {
   return `${mapType}-${levelId}`;
 }
 
@@ -11,9 +11,9 @@ interface LevelProgressState {
   attemptedLevels: Record<string, boolean>;
   pendingAnimations: Record<string, boolean>;
 
-  markAttempted: (mapType: TMapType, levelId: number) => void;
-  isAttempted: (mapType: TMapType, levelId: number) => boolean;
-  consumePendingAnimation: (mapType: TMapType, levelId: number) => boolean;
+  markAttempted: (mapType: TLayer, levelId: number) => void;
+  isAttempted: (mapType: TLayer, levelId: number) => boolean;
+  consumePendingAnimation: (mapType: TLayer, levelId: number) => boolean;
   resetAllAttempts: () => void;
 }
 

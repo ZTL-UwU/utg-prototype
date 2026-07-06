@@ -6,17 +6,20 @@ import { EducationImageScreen } from '../education-level/level-4';
 import { EducationWordScreen } from '../education-level/level-5';
 import { EducationSheepJumpScreen } from '../education-level/level-6';
 import { EducationWhackAMoleScreen } from '../education-level/level-7';
+import { GameLevelOneScreen } from '../game-level/level-1';
 import { TypingLevelScreen } from '../typing-level/level-1';
 import { TypingSandstormScreen } from '../typing-level/level-2';
 import { TypingInstrumentScreen } from '../typing-level/level-3';
 import { TypingWordScreen } from '../typing-level/level-4';
 import { TypingMarketScreen } from '../typing-level/level-5';
 
+export type TLayer = 'typing' | 'education' | 'game';
+
 export type TLevel = {
   id: number;
   title?: string;
   unlocked: boolean;
-  mascot: 'sheep' | 'goat' | 'camel';
+  mascot: 'sheep' | 'goat' | 'camel' | 'chef';
   screen?: AppScreenConstructor<any[]>;
   background: string;
   helpAsset: string;
@@ -33,14 +36,12 @@ export type SplashColorScheme = {
 };
 
 export type TMapUnit = {
-  type: 'typing' | 'education';
+  type: TLayer;
   background: string;
   title: {
     text: string;
     fontSize: number;
   };
-  helpAsset?: string;
-  backdropColor?: number;
   levels: TLevel[];
 };
 
@@ -188,8 +189,6 @@ export const typingMaps: TMapUnit[] = [
     type: 'typing',
     background: 'typing-levels/typing-level-map/background.png',
     title: { text: 'TYPING IN UYGHUR', fontSize: 150 },
-    helpAsset: 'tutorial-popups/typing-tutorial.png',
-    backdropColor: 0x7d5600,
     levels: [
       {
         id: 1,
@@ -248,8 +247,6 @@ export const typingMaps: TMapUnit[] = [
     type: 'typing',
     background: 'typing-levels/typing-level-map/background.png',
     title: { text: 'TYPING JOURNEY', fontSize: 150 },
-    helpAsset: 'tutorial-popups/typing-tutorial.png',
-    backdropColor: 0x7d5600,
     levels: [
       {
         id: 4,
@@ -302,8 +299,6 @@ export const typingMaps: TMapUnit[] = [
     type: 'typing',
     background: 'typing-levels/typing-level-map/background.png',
     title: { text: 'TYPING JOURNEY', fontSize: 150 },
-    helpAsset: 'tutorial-popups/typing-tutorial.png',
-    backdropColor: 0x7d5600,
     levels: [
       {
         id: 7,
@@ -331,8 +326,47 @@ export const typingMaps: TMapUnit[] = [
   },
 ];
 
+export const gameMaps: TMapUnit[] = [
+  {
+    type: 'game',
+    background: 'game-levels/game-level-map/background.png',
+    title: { text: 'GAME', fontSize: 150 },
+    levels: [
+      {
+        id: 1,
+        unlocked: true,
+        title: 'NAAN GAME',
+        mascot: 'chef',
+        screen: GameLevelOneScreen,
+        background: 'game-levels/game-level/background.png',
+        // TODO: missing tutorial asset
+        helpAsset: 'tutorial-popups/game-tutorial.png',
+        backdropColor: 0x7d5600,
+        splashColorScheme: {
+          BUTTON_FILL: 0x7e5433,
+          BUTTON_TEXT_FILL: 0xffe2bc,
+          LEVEL_FONT_FILL: 0x7e5433,
+          LEVEL_TITLE_FILL: 0x7e5433,
+        },
+        mascotOnSplash: false,
+      },
+    ],
+  },
+];
+
+export function getLayerMaps(layer: TLayer): TMapUnit[] {
+  switch (layer) {
+    case 'education':
+      return educationMaps;
+    case 'typing':
+      return typingMaps;
+    case 'game':
+      return gameMaps;
+  }
+}
+
 export function getMapCollection(mapUnit: TMapUnit): TMapUnit[] {
-  return mapUnit.type === 'education' ? educationMaps : typingMaps;
+  return getLayerMaps(mapUnit.type);
 }
 
 export function getPrevMap(mapUnit: TMapUnit): TMapUnit | undefined {
@@ -348,7 +382,7 @@ export function getNextMap(mapUnit: TMapUnit): TMapUnit | undefined {
 }
 
 export function findMapUnitForLevel(level: TLevel): TMapUnit {
-  const allMaps = [...educationMaps, ...typingMaps];
+  const allMaps = [...educationMaps, ...typingMaps, ...gameMaps];
   const mapUnit = allMaps.find((map) => map.levels.includes(level));
   if (!mapUnit) {
     throw new Error(`No map unit found for level ${level.id}`);
@@ -356,7 +390,7 @@ export function findMapUnitForLevel(level: TLevel): TMapUnit {
   return mapUnit;
 }
 
-export function getLevelType(level: TLevel): 'typing' | 'education' {
+export function getLevelType(level: TLevel): TLayer {
   return findMapUnitForLevel(level).type;
 }
 
