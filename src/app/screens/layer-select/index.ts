@@ -7,6 +7,7 @@ import { UserStatsPopup } from '../../popups/user-stats';
 import { HomeScreen } from '../home';
 import { LevelMapScreen } from '../level-map';
 import { getLayerMaps, type TLayer } from '../level-map/units';
+import { EducationLevelSelect } from '../level-select/education-level-select';
 
 export class LayerSelectScreen extends Container {
   public static assetBundles = ['layer-select', 'home'];
@@ -116,7 +117,11 @@ export class LayerSelectScreen extends Container {
         const layer = data.screenType;
         button.onPress.connect(() => {
           void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-          void engine().navigation.showScreen(LevelMapScreen, getLayerMaps(layer)[0]);
+          if (layer === 'education') {
+            void engine().navigation.showScreen(EducationLevelSelect);
+          } else {
+            void engine().navigation.showScreen(LevelMapScreen, getLayerMaps(layer)[0]);
+          }
         });
       }
       return button;
