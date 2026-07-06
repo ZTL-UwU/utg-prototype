@@ -259,7 +259,7 @@ export const typingMaps: TMapUnit[] = [
         screen: TypingWordScreen,
         background: 'typing-levels/typing-level/background-farmers-harvest.png',
         helpAsset: 'tutorial-popups/typing-tutorial.png',
-        backdropColor: 0x8ec24d,
+        backdropColor: 0x7d5600,
         splashColorScheme: {
           BUTTON_FILL: 0xc98144,
           BUTTON_TEXT_FILL: 0xffe2bc,
