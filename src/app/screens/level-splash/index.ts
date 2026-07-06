@@ -175,7 +175,7 @@ export class LevelSplashScreen extends Container {
       this.removeChildren();
       this.addChild(this.background);
       void engine().navigation.showPopup(TutorialPopup, {
-        asset: level.helpAsset,
+        assets: level.helpAsset,
         backdropColor: level.backdropColor,
         onNext: () => void engine().navigation.showScreen(level.screen!, level),
       });

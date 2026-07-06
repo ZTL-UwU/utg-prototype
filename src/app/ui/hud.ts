@@ -13,7 +13,7 @@ import { HelpButton } from './help-button';
 
 export type THudHelp =
   | { kind: 'tutorial'; mapUnit: TMapUnit; presentation: 'popup' | 'screen' }
-  | { kind: 'image'; asset: string; backdropColor: number };
+  | { kind: 'image'; asset: string[]; backdropColor: number };
 
 interface HUDProps {
   onBack: () => void;
@@ -43,7 +43,7 @@ function createHelpAction(help: THudHelp): (() => void) | undefined {
   if (help.kind === 'image') {
     return () =>
       void engine().navigation.showPopup(TutorialPopup, {
-        asset: help.asset,
+        assets: help.asset,
         backdropColor: help.backdropColor,
         isFullscreen: false,
       });

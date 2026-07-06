@@ -22,7 +22,7 @@ export type TLevel = {
   mascot: 'sheep' | 'goat' | 'camel' | 'chef';
   screen?: AppScreenConstructor<any[]>;
   background: string;
-  helpAsset: string;
+  helpAsset: string[];
   backdropColor: number;
   splashColorScheme?: SplashColorScheme;
   mascotOnSplash: boolean;
@@ -57,7 +57,7 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationLevelScreen,
         background: 'education-levels/education-level/background.png',
-        helpAsset: 'tutorial-popups/education-level-1.png',
+        helpAsset: ['tutorial-popups/education-level-1.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
       },
@@ -67,7 +67,7 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationBubbleScreen,
         background: 'education-levels/education-level/background.png',
-        helpAsset: 'tutorial-popups/education-level-2.png',
+        helpAsset: ['tutorial-popups/education-level-2.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
       },
@@ -77,7 +77,7 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationSheepScreen,
         background: 'education-levels/education-level/background.png',
-        helpAsset: 'tutorial-popups/education-level-3.png',
+        helpAsset: ['tutorial-popups/education-level-3.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
       },
@@ -94,7 +94,7 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationImageScreen,
         background: 'education-levels/education-level/background.png',
-        helpAsset: 'tutorial-popups/education-level-4.png',
+        helpAsset: ['tutorial-popups/education-level-4.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
       },
@@ -104,7 +104,7 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationWordScreen,
         background: 'education-levels/education-level/background.png',
-        helpAsset: 'tutorial-popups/education-level-5.png',
+        helpAsset: ['tutorial-popups/education-level-5.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
       },
@@ -114,7 +114,7 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationSheepJumpScreen,
         background: 'education-levels/education-level/background.png',
-        helpAsset: 'tutorial-popups/education-level-6.png',
+        helpAsset: ['tutorial-popups/education-level-6.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
       },
@@ -132,7 +132,7 @@ export const educationMaps: TMapUnit[] = [
         screen: EducationWhackAMoleScreen,
         background: 'education-levels/education-level/background.png',
         // TODO: missing tutorial asset
-        helpAsset: 'tutorial-popups/education-level-7.png',
+        helpAsset: ['tutorial-popups/education-level-7.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: false,
       },
@@ -142,7 +142,7 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationImageScreen,
         background: 'education-levels/education-level/background.png',
-        helpAsset: 'tutorial-popups/education-level-4.png',
+        helpAsset: ['tutorial-popups/education-level-4.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
       },
@@ -159,7 +159,7 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationImageScreen,
         background: 'education-levels/education-level/background.png',
-        helpAsset: 'tutorial-popups/education-level-4.png',
+        helpAsset: ['tutorial-popups/education-level-4.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
       },
@@ -176,7 +176,7 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationImageScreen,
         background: 'education-levels/education-level/background.png',
-        helpAsset: 'tutorial-popups/education-level-4.png',
+        helpAsset: ['tutorial-popups/education-level-4.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
       },
@@ -197,7 +197,7 @@ export const typingMaps: TMapUnit[] = [
         unlocked: true,
         screen: TypingLevelScreen,
         background: 'typing-levels/typing-level/background-taklamakan.png',
-        helpAsset: 'tutorial-popups/typing-tutorial.png',
+        helpAsset: ['tutorial-popups/typing-tutorial.png'],
         backdropColor: 0x7d5600,
         splashColorScheme: {
           BUTTON_FILL: 0xc45a14,
@@ -214,7 +214,7 @@ export const typingMaps: TMapUnit[] = [
         unlocked: true,
         screen: TypingSandstormScreen,
         background: 'typing-levels/typing-level/background-sandstorm.png',
-        helpAsset: 'tutorial-popups/typing-tutorial.png',
+        helpAsset: ['tutorial-popups/typing-tutorial.png'],
         backdropColor: 0x7d5600,
         splashColorScheme: {
           BUTTON_FILL: 0xc45a14,
@@ -231,7 +231,7 @@ export const typingMaps: TMapUnit[] = [
         mascot: 'goat',
         screen: TypingInstrumentScreen,
         background: 'typing-levels/typing-level/background-tangri-tah.png',
-        helpAsset: 'tutorial-popups/typing-tutorial.png',
+        helpAsset: ['tutorial-popups/typing-tutorial.png'],
         backdropColor: 0x7d5600,
         splashColorScheme: {
           BUTTON_FILL: 0x6e8539,
@@ -255,7 +255,7 @@ export const typingMaps: TMapUnit[] = [
         mascot: 'camel',
         screen: TypingWordScreen,
         background: 'typing-levels/typing-level/background-farmers-harvest.png',
-        helpAsset: 'tutorial-popups/typing-tutorial.png',
+        helpAsset: ['tutorial-popups/typing-tutorial.png'],
         backdropColor: 0x7d5600,
         splashColorScheme: {
           BUTTON_FILL: 0xc98144,
@@ -272,7 +272,7 @@ export const typingMaps: TMapUnit[] = [
         unlocked: true,
         screen: TypingMarketScreen,
         background: 'typing-levels/typing-level/background-kashgar.png',
-        helpAsset: 'tutorial-popups/typing-level-5.png',
+        helpAsset: ['tutorial-popups/typing-level-5-1.png', 'tutorial-popups/typing-level-5-2.png'],
         backdropColor: 0x7d5600,
         splashColorScheme: {
           BUTTON_FILL: 0x7e5433,
@@ -289,7 +289,7 @@ export const typingMaps: TMapUnit[] = [
         unlocked: false,
         screen: TypingSandstormScreen,
         background: 'typing-levels/typing-level/background-sandstorm.png',
-        helpAsset: 'tutorial-popups/typing-tutorial.png',
+        helpAsset: ['tutorial-popups/typing-tutorial.png'],
         backdropColor: 0x7d5600,
         mascotOnSplash: true,
       },
@@ -307,7 +307,7 @@ export const typingMaps: TMapUnit[] = [
         mascot: 'goat',
         screen: TypingWordScreen,
         background: 'typing-levels/typing-level/background-tangri-tah.png',
-        helpAsset: 'tutorial-popups/typing-tutorial.png',
+        helpAsset: ['tutorial-popups/typing-tutorial.png'],
         backdropColor: 0x8ec24d,
         mascotOnSplash: true,
       },
@@ -318,7 +318,7 @@ export const typingMaps: TMapUnit[] = [
         mascot: 'camel',
         screen: TypingInstrumentScreen,
         background: 'typing-levels/typing-level/background-taklamakan.png',
-        helpAsset: 'tutorial-popups/typing-tutorial.png',
+        helpAsset: ['tutorial-popups/typing-tutorial.png'],
         backdropColor: 0x7d5600,
         mascotOnSplash: true,
       },
@@ -340,7 +340,7 @@ export const gameMaps: TMapUnit[] = [
         screen: GameLevelOneScreen,
         background: 'game-levels/game-level/background.png',
         // TODO: missing tutorial asset
-        helpAsset: 'tutorial-popups/game-tutorial.png',
+        helpAsset: ['tutorial-popups/game-level-1-1.png', 'tutorial-popups/game-level-1-2.png'],
         backdropColor: 0x7d5600,
         splashColorScheme: {
           BUTTON_FILL: 0x7e5433,

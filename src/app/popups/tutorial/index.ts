@@ -6,7 +6,7 @@ import { engine } from '../../../engine/getEngine';
 import { RoundedProgressBar } from '../../ui/rounded-progress-bar';
 
 type TutorialProps = {
-  asset: string;
+  assets: string[];
   backdropColor: number;
   isFullscreen?: boolean;
   onNext?: () => void;
@@ -14,12 +14,21 @@ type TutorialProps = {
 
 const AUTO_ADVANCE_MS = 3000;
 
+function resolveAssets(assets: string[], isFullscreen: boolean, onNext?: () => void): string[] {
+  if (onNext && isFullscreen) {
+    return assets;
+  }
+  return assets.slice(0, 1);
+}
+
 export class TutorialPopup extends Container {
   public static assetBundles = ['tutorial-popups'];
   private background: Sprite;
   private exitButton: FancyButton;
   private onNext?: () => void;
 
+  private assets: string[];
+  private currentAssetIndex = 0;
   private autoAdvanceElapsedMs = 0;
   private progressBar?: RoundedProgressBar;
 
@@ -27,11 +36,12 @@ export class TutorialPopup extends Container {
   private backdropColor: number;
   private isFullscreen: boolean;
 
-  constructor({ asset, backdropColor, isFullscreen = true, onNext }: TutorialProps) {
+  constructor({ assets, backdropColor, isFullscreen = true, onNext }: TutorialProps) {
     super({ layout: { position: 'absolute', width: '100%', height: '100%' } });
     this.onNext = onNext;
     this.backdropColor = backdropColor;
     this.isFullscreen = isFullscreen;
+    this.assets = resolveAssets(assets, isFullscreen, onNext);
     this.backdrop = new Graphics();
     this.backdrop.layout = {
       position: 'absolute',
@@ -42,7 +52,7 @@ export class TutorialPopup extends Container {
     };
 
     this.background = new Sprite({
-      texture: Texture.from(asset),
+      texture: Texture.from(this.assets[0]!),
       layout: {
         position: 'absolute',
         width: '84%',
@@ -94,6 +104,22 @@ export class TutorialPopup extends Container {
     const bottomOffset = 32;
     this.progressBar.x = (screenWidth - this.progressBar.width) / 2;
     this.progressBar.y = screenHeight - this.progressBar.height - bottomOffset;
+  }
+
+  private getAutoAdvanceProgress(): number {
+    const slideProgress = Math.min(this.autoAdvanceElapsedMs / AUTO_ADVANCE_MS, 1);
+    return Math.min((this.currentAssetIndex + slideProgress) / this.assets.length, 1);
+  }
+
+  private advanceToNextAsset(): boolean {
+    if (this.currentAssetIndex >= this.assets.length - 1) {
+      return false;
+    }
+
+    this.currentAssetIndex += 1;
+    this.autoAdvanceElapsedMs = 0;
+    this.background.texture = Texture.from(this.assets[this.currentAssetIndex]!);
+    return true;
   }
 
   resize(width: number, height: number) {
@@ -150,10 +176,14 @@ export class TutorialPopup extends Container {
     this.autoAdvanceElapsedMs += ticker.deltaMS;
 
     if (this.progressBar) {
-      this.progressBar.progress = Math.min(this.autoAdvanceElapsedMs / AUTO_ADVANCE_MS, 1);
+      this.progressBar.progress = this.getAutoAdvanceProgress();
     }
 
     if (this.autoAdvanceElapsedMs >= AUTO_ADVANCE_MS) {
+      if (this.advanceToNextAsset()) {
+        return;
+      }
+
       void currentEngine.navigation.hidePopup().then(() => {
         this.onNext?.();
       });
