@@ -43,4 +43,12 @@ export class EducationLevelSelect extends Container {
   public resize(width: number, height: number) {
     this.layout = { width, height };
   }
+
+  public async show() {
+    await this.mapRow.playEnterAnimation(engine().navigation.height);
+  }
+
+  public async hide() {
+    await this.mapRow.playExitAnimation(engine().navigation.height);
+  }
 }
