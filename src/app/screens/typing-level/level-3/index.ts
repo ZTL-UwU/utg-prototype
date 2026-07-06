@@ -9,9 +9,9 @@ import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout, type KeyboardColorOptions } from '../../../ui/keyboard-layout';
+import { TypingLetter } from '../../../ui/typing-letter';
 import { LevelMapScreen } from '../../level-map';
 import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
-import { Letter } from '../level-1/letter';
 
 const NOTE_COUNT = 20;
 const QUEUE_SIZE = 4;
@@ -138,7 +138,7 @@ export class TypingInstrumentScreen extends Container {
     },
     anchor: 0.5,
   });
-  private target!: Letter;
+  private target!: TypingLetter;
   private readonly queueCards = Array.from(
     { length: QUEUE_SIZE },
     () => new NoteCard(SLOT_WIDTH, SLOT_HEIGHT, COLORS.queue),
@@ -299,7 +299,7 @@ export class TypingInstrumentScreen extends Container {
       this.removeChild(this.target);
       this.target.destroy({ children: true });
     }
-    this.target = new Letter({ letter, cardSize: TARGET_SIZE, cornerRadius: SLOT_RADIUS });
+    this.target = new TypingLetter({ letter, cardSize: TARGET_SIZE, cornerRadius: SLOT_RADIUS });
     this.target.setActive(true, false);
     this.target.position.set(this.targetPosition.x, this.targetPosition.y);
     this.addChildAt(this.target, this.getChildIndex(this.keyboard));

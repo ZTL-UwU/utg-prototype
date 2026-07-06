@@ -6,6 +6,7 @@ import { EducationImageScreen } from '../education-level/level-4';
 import { EducationWordScreen } from '../education-level/level-5';
 import { EducationSheepJumpScreen } from '../education-level/level-6';
 import { EducationWhackAMoleScreen } from '../education-level/level-7';
+import { GameLevelOneScreen } from '../game-level/level-1';
 import { TypingLevelScreen } from '../typing-level/level-1';
 import { TypingSandstormScreen } from '../typing-level/level-2';
 import { TypingInstrumentScreen } from '../typing-level/level-3';
@@ -18,7 +19,7 @@ export type TLevel = {
   id: number;
   title?: string;
   unlocked: boolean;
-  mascot: 'sheep' | 'goat' | 'camel';
+  mascot: 'sheep' | 'goat' | 'camel' | 'chef';
   screen?: AppScreenConstructor<any[]>;
   background: string;
   helpAsset: string;
@@ -333,13 +334,21 @@ export const gameMaps: TMapUnit[] = [
     levels: [
       {
         id: 1,
-        unlocked: false,
-        title: 'GAME',
-        mascot: 'sheep',
+        unlocked: true,
+        title: 'NAAN GAME',
+        mascot: 'chef',
+        screen: GameLevelOneScreen,
         background: 'game-levels/game-level/background.png',
+        // TODO: missing tutorial asset
         helpAsset: 'tutorial-popups/game-tutorial.png',
         backdropColor: 0x7d5600,
-        mascotOnSplash: true,
+        splashColorScheme: {
+          BUTTON_FILL: 0x7e5433,
+          BUTTON_TEXT_FILL: 0xffe2bc,
+          LEVEL_FONT_FILL: 0x7e5433,
+          LEVEL_TITLE_FILL: 0x7e5433,
+        },
+        mascotOnSplash: false,
       },
     ],
   },

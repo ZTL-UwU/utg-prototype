@@ -62,6 +62,18 @@ export class RoundedProgressBar extends Container {
     this.redrawFill();
   }
 
+  public setColors(trackColor: number, fillColor = trackColor) {
+    if (this.trackColor === trackColor && this.fillColor === fillColor) return;
+
+    this.trackColor = trackColor;
+    this.fillColor = fillColor;
+    this.track
+      .clear()
+      .roundRect(0, 0, this.barWidth, this.barHeight, this.barHeight / 2)
+      .stroke({ width: this.strokeWidth, color: this.trackColor, alignment: 0.5 });
+    this.redrawFill();
+  }
+
   private redrawFill() {
     const innerWidth = this.barWidth - this.padding * 2;
     const innerHeight = this.barHeight - this.padding * 2;

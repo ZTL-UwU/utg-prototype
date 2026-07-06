@@ -10,7 +10,10 @@ import { TutorialPopup } from '../../popups/tutorial';
 import { HUD } from '../../ui/hud';
 import { LevelMapScreen } from '../level-map';
 import type { SplashColorScheme, TLevel, TMapUnit } from '../level-map/units';
-function getDefaultColorScheme(mascot: 'sheep' | 'goat' | 'camel'): SplashColorScheme {
+
+type TMascot = 'sheep' | 'camel' | 'goat' | 'chef';
+
+function getDefaultColorScheme(mascot: TMascot): SplashColorScheme {
   return {
     BUTTON_FILL: getColorThemeFromMascot(mascot),
     BUTTON_TEXT_FILL: 0xffffff,
@@ -18,11 +21,26 @@ function getDefaultColorScheme(mascot: 'sheep' | 'goat' | 'camel'): SplashColorS
     LEVEL_TITLE_FILL: getColorThemeFromMascot(mascot),
   };
 }
-function getColorThemeFromMascot(mascot: 'sheep' | 'camel' | 'goat') {
-  return mascot === 'camel' ? 0xc45a14 : mascot === 'sheep' ? 0x2d6b6a : 0x6e8539;
+
+function getColorThemeFromMascot(mascot: TMascot) {
+  return mascot === 'camel'
+    ? 0xc45a14
+    : mascot === 'sheep'
+      ? 0x2d6b6a
+      : mascot === 'chef'
+        ? 0x7e5433
+        : 0x6e8539;
 }
+
 export class LevelSplashScreen extends Container {
-  public static assetBundles = ['level-splash', 'typing-level', 'education-level', 'mascots', 'ui'];
+  public static assetBundles = [
+    'level-splash',
+    'typing-level',
+    'education-level',
+    'game-level',
+    'mascots',
+    'ui',
+  ];
 
   private background: Sprite;
   private levelNumber: SplitText;
@@ -210,7 +228,7 @@ export class LevelSplashScreen extends Container {
       ),
     ]);
   }
-  private getTexturePathForMascot(mascot: 'sheep' | 'camel' | 'goat') {
+  private getTexturePathForMascot(mascot: TMascot) {
     return `mascots/${mascot}/default.png`;
   }
 }

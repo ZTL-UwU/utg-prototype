@@ -1,9 +1,9 @@
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Graphics, Text } from 'pixi.js';
 
-export type LetterFeedback = 'none' | 'error' | 'success';
+export type TypingLetterFeedback = 'none' | 'error' | 'success';
 
-type LetterOptions = {
+type TypingLetterOptions = {
   letter: string;
   cardSize?: number;
   cornerRadius?: number;
@@ -23,7 +23,7 @@ const shadowColors = {
   error: 0xd4452f,
 };
 
-export class Letter extends Container {
+export class TypingLetter extends Container {
   private readonly contentContainer: Container;
   private readonly feedbackContainer = new Container();
   private readonly focusContainer = new Container();
@@ -32,12 +32,12 @@ export class Letter extends Container {
   private readonly cardSize: number;
   private readonly cornerRadius: number;
 
-  private feedback: LetterFeedback = 'none';
+  private feedback: TypingLetterFeedback = 'none';
   private isActive = false;
   private focusAnimation?: AnimationPlaybackControls;
   private contentAnimation?: AnimationPlaybackControls;
 
-  constructor({ letter, cardSize = 88, cornerRadius = 18 }: LetterOptions) {
+  constructor({ letter, cardSize = 88, cornerRadius = 18 }: TypingLetterOptions) {
     super({
       layout: {
         width: cardSize,
@@ -156,7 +156,7 @@ export class Letter extends Container {
     ]);
   }
 
-  setFeedback(feedback: LetterFeedback, animateFeedback = true) {
+  setFeedback(feedback: TypingLetterFeedback, animateFeedback = true) {
     if (this.feedback === feedback && !animateFeedback) return;
 
     this.feedback = feedback;

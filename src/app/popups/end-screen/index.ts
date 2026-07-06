@@ -26,21 +26,25 @@ const MASCOT_BACKGROUND_COLORS = {
   camel: 0x7e5433,
   sheep: 0x5a8cd4,
   goat: 0x5a8cd4,
+  chef: 0x7e5433,
 } as const;
 
 const MASCOT_TEXT_COLORS = {
   camel: 0xfad68a,
   sheep: 0xfdf7e7,
   goat: 0xfdf7e7,
+  chef: 0xffe2bc,
 } as const;
 
-function createPopupBackground(width: number, height: number, mascot: 'sheep' | 'goat' | 'camel') {
+type Mascot = 'sheep' | 'goat' | 'camel' | 'chef';
+
+function createPopupBackground(width: number, height: number, mascot: Mascot) {
   return new Graphics()
     .roundRect(0, 0, width, height, POPUP_RADIUS)
     .fill(MASCOT_BACKGROUND_COLORS[mascot]);
 }
 
-function createScoreTitleStyle(mascot: 'sheep' | 'goat' | 'camel') {
+function createScoreTitleStyle(mascot: Mascot) {
   return new TextStyle({
     fontFamily: 'Concert One',
     fontSize: 48,
@@ -50,7 +54,7 @@ function createScoreTitleStyle(mascot: 'sheep' | 'goat' | 'camel') {
   });
 }
 
-function createStatStyle(mascot: 'sheep' | 'goat' | 'camel') {
+function createStatStyle(mascot: Mascot) {
   return new TextStyle({
     fontFamily: 'Concert One',
     fontSize: 32,
@@ -59,7 +63,7 @@ function createStatStyle(mascot: 'sheep' | 'goat' | 'camel') {
   });
 }
 
-function getMascotTexture(mascot: 'sheep' | 'camel' | 'goat', starCount: number) {
+function getMascotTexture(mascot: Mascot, starCount: number) {
   return `mascots/${mascot}/dialog/${starCount}-star.png`;
 }
 
@@ -82,7 +86,7 @@ type EndScreenPopupProps = {
   level: TLevel;
 };
 
-function getCurrentMascot(level: TLevel): 'sheep' | 'goat' | 'camel' {
+function getCurrentMascot(level: TLevel): Mascot {
   return level.mascot;
 }
 
@@ -106,7 +110,7 @@ function goToNextLevel(nextLevel: NonNullable<ReturnType<typeof getNextLevelAfte
 
 export class EndScreenPopup extends Container {
   public static assetBundles = ['end-screen', 'mascots', 'ui'];
-  private currentMascot: 'sheep' | 'camel' | 'goat';
+  private currentMascot: Mascot;
 
   private innerContainer: Container;
   private background: Graphics;
