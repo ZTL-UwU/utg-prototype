@@ -114,8 +114,6 @@ export class TypingLevelScreen extends Container {
   }
 
   public async show() {
-    void this.keyboard.resume();
-
     this.title.y = this.titleOffscreenY;
 
     await Promise.all([

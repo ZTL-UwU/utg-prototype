@@ -218,21 +218,28 @@ export class KeyboardLayout extends Container {
 
   private listening = false;
 
-  private panelWidth = 0;
-  private panelHeight = 0;
-  private viewWidth = 0;
-  private viewHeight = 0;
-  private restX = 0;
-  private restY = 0;
-  private hidden = true;
+  private readonly panelWidth: number;
+  private readonly panelHeight: number;
   private enterExitAnimation?: AnimationPlaybackControls;
 
   constructor(keyboardColorOptions: KeyboardColorOptions = DEFAULT_COLOR_OPTIONS) {
     super();
     this.keyboardColorOptions = keyboardColorOptions;
-    this.buildPanel();
+    const { width, height } = this.buildPanel();
+    this.panelWidth = width;
+    this.panelHeight = height;
     this.panel.alpha = 0;
     this.addChild(this.panel);
+    this.applyHiddenPose();
+    this.setListening(true);
+  }
+
+  /** Center horizontally and pin to the bottom of the given view size. */
+  public resize(viewWidth: number, viewHeight: number, bottomMargin = BOTTOM_MARGIN) {
+    this.position.set(
+      Math.round((viewWidth - this.panelWidth) / 2),
+      Math.round(viewHeight - bottomMargin - this.panelHeight),
+    );
   }
 
   public async pause() {
@@ -245,12 +252,11 @@ export class KeyboardLayout extends Container {
 
   public async playEnterAnimation() {
     this.enterExitAnimation?.stop();
-    this.hidden = false;
     this.applyHiddenPose();
 
     this.enterExitAnimation = animate(
       this.panel,
-      { alpha: 1, y: this.restY },
+      { alpha: 1, y: 0 },
       { duration: 0.4, ease: 'backOut' },
     );
     await this.enterExitAnimation.finished;
@@ -261,17 +267,10 @@ export class KeyboardLayout extends Container {
 
     this.enterExitAnimation = animate(
       this.panel,
-      { alpha: 0, y: this.restY + EXIT_Y_OFFSET },
+      { alpha: 0, y: EXIT_Y_OFFSET },
       { duration: 0.2, ease: 'backIn' },
     );
     await this.enterExitAnimation.finished;
-    this.hidden = true;
-  }
-
-  public resize(width: number, height: number) {
-    this.viewWidth = width;
-    this.viewHeight = height;
-    this.layoutPanel();
   }
 
   public setKeyFeedback(code: string, feedback: KeyFeedback) {
@@ -317,15 +316,15 @@ export class KeyboardLayout extends Container {
       return { caps, rowWidth };
     });
 
-    this.panelWidth = maxRowWidth + PANEL_PADDING * 2;
-    this.panelHeight =
+    const panelWidth = maxRowWidth + PANEL_PADDING * 2;
+    const panelHeight =
       keyboardLayout.length * UNIT + ROW_GAP * (keyboardLayout.length - 1) + PANEL_PADDING * 2;
 
-    this.drawPanelBackground();
+    this.drawPanelBackground(panelWidth, panelHeight);
     this.panel.addChild(this.panelBackground);
 
     rows.forEach(({ caps, rowWidth }, rowIndex) => {
-      let x = (this.panelWidth - rowWidth) / 2;
+      let x = (panelWidth - rowWidth) / 2;
       const y = PANEL_PADDING + rowIndex * (UNIT + ROW_GAP);
 
       caps.forEach((cap) => {
@@ -334,31 +333,21 @@ export class KeyboardLayout extends Container {
         x += cap.keyWidth + KEY_GAP;
       });
     });
+
+    return { width: panelWidth, height: panelHeight };
   }
 
-  private drawPanelBackground() {
+  private drawPanelBackground(panelWidth: number, panelHeight: number) {
     this.panelBackground
       .clear()
-      .roundRect(0, 12, this.panelWidth, this.panelHeight, PANEL_RADIUS)
+      .roundRect(0, 12, panelWidth, panelHeight, PANEL_RADIUS)
       .fill({ color: this.keyboardColorOptions.PANEL_SHADOW_COLOR, alpha: 0.7 })
-      .roundRect(0, 0, this.panelWidth, this.panelHeight, PANEL_RADIUS)
+      .roundRect(0, 0, panelWidth, panelHeight, PANEL_RADIUS)
       .fill({ color: this.keyboardColorOptions.PANEL_COLOR });
   }
 
-  private layoutPanel() {
-    this.restX = Math.round((this.viewWidth - this.panelWidth) / 2);
-    this.restY = Math.round(this.viewHeight - BOTTOM_MARGIN - this.panelHeight);
-
-    if (this.hidden) {
-      this.applyHiddenPose();
-      return;
-    }
-
-    this.panel.position.set(this.restX, this.restY);
-  }
-
   private applyHiddenPose() {
-    this.panel.position.set(this.restX, this.restY + ENTER_Y_OFFSET);
+    this.panel.position.set(0, ENTER_Y_OFFSET);
     this.panel.alpha = 0;
   }
 

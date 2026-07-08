@@ -206,7 +206,6 @@ export class TypingInstrumentScreen extends Container {
   public async show() {
     this.paused = false;
     window.addEventListener('keydown', this.handleKeyDown);
-    void this.keyboard.resume();
 
     this.instrument.alpha = 0;
     this.instrument.y = this.instrumentRestY + 80;

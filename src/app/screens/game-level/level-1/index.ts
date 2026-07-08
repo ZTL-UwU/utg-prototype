@@ -206,7 +206,6 @@ export class GameLevelOneScreen extends Container {
     this.background.texture = Texture.from(TIMER_BACKGROUNDS.green);
     this.gameplay.visible = true;
     window.addEventListener('keydown', this.handleKeyDown);
-    void this.keyboard.resume();
     await Promise.all([this.keyboard.playEnterAnimation(), this.target.playAppear(0)]);
     this.playing = true;
   }

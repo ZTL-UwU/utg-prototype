@@ -161,7 +161,6 @@ export class TypingSandstormScreen extends Container {
   }
 
   public async show() {
-    void this.keyboard.resume();
     window.addEventListener('keydown', this.handleKeyDown);
     this.cloud.y = 300;
     this.cloud.alpha = 0;

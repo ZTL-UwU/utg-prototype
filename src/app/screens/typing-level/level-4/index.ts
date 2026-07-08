@@ -122,7 +122,6 @@ export class TypingWordScreen extends Container {
   }
 
   async show() {
-    void this.keyboard.resume();
     this.paused = false;
     window.addEventListener('keydown', this.handleKeyDown);
     await this.keyboard.playEnterAnimation();
