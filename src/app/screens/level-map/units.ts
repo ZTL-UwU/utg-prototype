@@ -41,6 +41,7 @@ export type TMapUnit = {
   title: {
     text: string;
     fontSize: number;
+    fontColor: number;
   };
   levels: TLevel[];
 };
@@ -49,7 +50,7 @@ export const educationMaps: TMapUnit[] = [
   {
     type: 'education',
     background: 'education-levels/education-level-map/background-unit-1.png',
-    title: { text: 'LEVEL 1', fontSize: 240 },
+    title: { text: 'LEVEL 1', fontSize: 240, fontColor: 0x789843 },
     levels: [
       {
         id: 1,
@@ -86,7 +87,7 @@ export const educationMaps: TMapUnit[] = [
   {
     type: 'education',
     background: 'education-levels/education-level-map/background-unit-2.png',
-    title: { text: 'LEVEL 2', fontSize: 240 },
+    title: { text: 'LEVEL 2', fontSize: 240, fontColor: 0x4a9b54 },
     levels: [
       {
         id: 4,
@@ -123,7 +124,7 @@ export const educationMaps: TMapUnit[] = [
   {
     type: 'education',
     background: 'education-levels/education-level-map/background-unit-3.png',
-    title: { text: 'LEVEL 3', fontSize: 240 },
+    title: { text: 'LEVEL 3', fontSize: 240, fontColor: 0xebce9f },
     levels: [
       {
         id: 7,
@@ -151,7 +152,7 @@ export const educationMaps: TMapUnit[] = [
   {
     type: 'education',
     background: 'education-levels/education-level-map/background-unit-4.png',
-    title: { text: 'LEVEL 4', fontSize: 240 },
+    title: { text: 'LEVEL 4', fontSize: 240, fontColor: 0xe49835 },
     levels: [
       {
         id: 9,
@@ -168,7 +169,7 @@ export const educationMaps: TMapUnit[] = [
   {
     type: 'education',
     background: 'education-levels/education-level-map/background-unit-5.png',
-    title: { text: 'LEVEL 5', fontSize: 240 },
+    title: { text: 'LEVEL 5', fontSize: 240, fontColor: 0xe5c087 },
     levels: [
       {
         id: 10,
@@ -188,7 +189,7 @@ export const typingMaps: TMapUnit[] = [
   {
     type: 'typing',
     background: 'typing-levels/typing-level-map/background.png',
-    title: { text: 'TYPING IN UYGHUR', fontSize: 150 },
+    title: { text: 'TYPING IN UYGHUR', fontSize: 150, fontColor: 0xffffff },
     levels: [
       {
         id: 1,
@@ -246,7 +247,7 @@ export const typingMaps: TMapUnit[] = [
   {
     type: 'typing',
     background: 'typing-levels/typing-level-map/background.png',
-    title: { text: 'TYPING JOURNEY', fontSize: 150 },
+    title: { text: 'TYPING JOURNEY', fontSize: 150, fontColor: 0xffffff },
     levels: [
       {
         id: 4,
@@ -298,7 +299,7 @@ export const typingMaps: TMapUnit[] = [
   {
     type: 'typing',
     background: 'typing-levels/typing-level-map/background.png',
-    title: { text: 'TYPING JOURNEY', fontSize: 150 },
+    title: { text: 'TYPING JOURNEY', fontSize: 150, fontColor: 0xffffff },
     levels: [
       {
         id: 7,
@@ -330,7 +331,7 @@ export const gameMaps: TMapUnit[] = [
   {
     type: 'game',
     background: 'game-levels/game-level-map/background.png',
-    title: { text: 'GAME', fontSize: 150 },
+    title: { text: 'GAME', fontSize: 150, fontColor: 0xffffff },
     levels: [
       {
         id: 1,

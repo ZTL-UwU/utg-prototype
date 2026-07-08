@@ -54,7 +54,7 @@ export class LevelMapScreen extends Container {
         fontFamily: 'Concert One',
         fontSize: mapUnit.title.fontSize,
         fontWeight: '800',
-        fill: 0xffffff,
+        fill: mapUnit.title.fontColor,
       },
     });
     this.title.filters = [
