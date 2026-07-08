@@ -11,11 +11,17 @@ import { CurvedText } from './curved-text';
 import { LevelRow } from './level-row';
 import { getNextMap, getPrevMap, type TMapUnit } from './units';
 
+const TITLE_TOP = 100;
+const SUBTITLE_TOP = 300;
+/** Extra margin so drop shadows don't peek in from the screen edge. */
+const OFF_SCREEN_MARGIN = 40;
+
 export class LevelMapScreen extends Container {
   public static assetBundles = ['typing-level-map', 'education-level-map', 'game-level-map', 'ui'];
 
   private background: Sprite;
-  private title: CurvedText;
+  private title: CurvedText | Text;
+  private subtitle?: Text;
   private levelRow: LevelRow;
   private hud: HUD;
   private nextMapButton?: FancyButton;
@@ -48,15 +54,15 @@ export class LevelMapScreen extends Container {
       help: { kind: 'tutorial', mapUnit, presentation: 'screen' },
     });
 
-    this.title = new CurvedText({
-      text: mapUnit.title.text,
-      style: {
-        fontFamily: 'Concert One',
-        fontSize: mapUnit.title.fontSize,
-        fontWeight: '800',
-        fill: mapUnit.title.fontColor,
-      },
-    });
+    const titleStyle = {
+      fontFamily: 'Concert One',
+      fontSize: mapUnit.title.fontSize,
+      fontWeight: '800' as const,
+      fill: mapUnit.title.fontColor,
+    };
+    this.title = mapUnit.title.isCurved
+      ? new CurvedText({ text: mapUnit.title.text, style: titleStyle })
+      : new Text({ text: mapUnit.title.text, style: titleStyle });
     this.title.filters = [
       new DropShadowFilter({
         color: 0x000000,
@@ -68,10 +74,28 @@ export class LevelMapScreen extends Container {
     const titleBounds = this.title.getLocalBounds();
     this.title.layout = {
       position: 'absolute',
-      top: 100,
+      top: TITLE_TOP,
       width: titleBounds.width,
       height: titleBounds.height,
     };
+
+    if (mapUnit.subtitle) {
+      this.subtitle = new Text({
+        text: mapUnit.subtitle.text,
+        style: {
+          fontFamily: 'Noto Naskh Arabic Bold',
+          fontSize: mapUnit.subtitle.fontSize,
+          fontWeight: '700',
+          fill: mapUnit.subtitle.fontColor,
+          padding: 30,
+        },
+      });
+      this.subtitle.layout = {
+        position: 'absolute',
+        top: SUBTITLE_TOP,
+      };
+    }
+
     this.levelRow = new LevelRow(mapUnit);
 
     const createMapNavButton = (label: string) => {
@@ -115,11 +139,17 @@ export class LevelMapScreen extends Container {
     this.addChild(
       this.background,
       this.title,
+      ...(this.subtitle ? [this.subtitle] : []),
       this.levelRow,
       ...(this.prevMapButton ? [this.prevMapButton] : []),
       ...(this.nextMapButton ? [this.nextMapButton] : []),
       this.hud,
     );
+  }
+
+  /** The y offset that moves an element fully above the top screen edge. */
+  private offScreenY(element: Container, layoutTop: number) {
+    return -(layoutTop + element.getLocalBounds().maxY + OFF_SCREEN_MARGIN);
   }
 
   /** Resize the screen, fired whenever window size changes */
@@ -134,10 +164,14 @@ export class LevelMapScreen extends Container {
   }
 
   public async show() {
-    this.title.y = -(300 + 100);
+    this.title.y = this.offScreenY(this.title, TITLE_TOP);
+    if (this.subtitle) this.subtitle.y = this.offScreenY(this.subtitle, SUBTITLE_TOP);
 
     const animations = [
       animate(this.title, { y: 0 }, { duration: 0.4, ease: 'backOut' }),
+      ...(this.subtitle
+        ? [animate(this.subtitle, { y: 0 }, { duration: 0.4, ease: 'backOut' })]
+        : []),
       this.levelRow.playEnterAnimation(engine().navigation.height),
     ];
 
@@ -164,7 +198,20 @@ export class LevelMapScreen extends Container {
     const screenHeight = engine().navigation.height;
 
     const animations = [
-      animate(this.title, { y: -(300 + 100) }, { duration: 0.2, ease: 'backIn' }),
+      animate(
+        this.title,
+        { y: this.offScreenY(this.title, TITLE_TOP) },
+        { duration: 0.2, ease: 'backIn' },
+      ),
+      ...(this.subtitle
+        ? [
+            animate(
+              this.subtitle,
+              { y: this.offScreenY(this.subtitle, SUBTITLE_TOP) },
+              { duration: 0.2, ease: 'backIn' },
+            ),
+          ]
+        : []),
       this.levelRow.playExitAnimation(screenHeight),
     ];
 

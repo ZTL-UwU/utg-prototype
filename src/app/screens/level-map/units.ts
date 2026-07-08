@@ -42,6 +42,12 @@ export type TMapUnit = {
     text: string;
     fontSize: number;
     fontColor: number;
+    isCurved: boolean;
+  };
+  subtitle?: {
+    text: string;
+    fontSize: number;
+    fontColor: number;
   };
   levels: TLevel[];
 };
@@ -50,7 +56,7 @@ export const educationMaps: TMapUnit[] = [
   {
     type: 'education',
     background: 'education-levels/education-level-map/background-unit-1.png',
-    title: { text: 'LEVEL 1', fontSize: 240, fontColor: 0x789843 },
+    title: { text: 'LEVEL 1', fontSize: 240, fontColor: 0x789843, isCurved: true },
     levels: [
       {
         id: 1,
@@ -87,7 +93,7 @@ export const educationMaps: TMapUnit[] = [
   {
     type: 'education',
     background: 'education-levels/education-level-map/background-unit-2.png',
-    title: { text: 'LEVEL 2', fontSize: 240, fontColor: 0x4a9b54 },
+    title: { text: 'LEVEL 2', fontSize: 240, fontColor: 0x4a9b54, isCurved: true },
     levels: [
       {
         id: 4,
@@ -124,7 +130,7 @@ export const educationMaps: TMapUnit[] = [
   {
     type: 'education',
     background: 'education-levels/education-level-map/background-unit-3.png',
-    title: { text: 'LEVEL 3', fontSize: 240, fontColor: 0xebce9f },
+    title: { text: 'LEVEL 3', fontSize: 240, fontColor: 0xebce9f, isCurved: true },
     levels: [
       {
         id: 7,
@@ -152,7 +158,7 @@ export const educationMaps: TMapUnit[] = [
   {
     type: 'education',
     background: 'education-levels/education-level-map/background-unit-4.png',
-    title: { text: 'LEVEL 4', fontSize: 240, fontColor: 0xe49835 },
+    title: { text: 'LEVEL 4', fontSize: 240, fontColor: 0xe49835, isCurved: true },
     levels: [
       {
         id: 9,
@@ -169,7 +175,7 @@ export const educationMaps: TMapUnit[] = [
   {
     type: 'education',
     background: 'education-levels/education-level-map/background-unit-5.png',
-    title: { text: 'LEVEL 5', fontSize: 240, fontColor: 0xe5c087 },
+    title: { text: 'LEVEL 5', fontSize: 240, fontColor: 0xe5c087, isCurved: true },
     levels: [
       {
         id: 10,
@@ -189,7 +195,13 @@ export const typingMaps: TMapUnit[] = [
   {
     type: 'typing',
     background: 'typing-levels/typing-level-map/background.png',
-    title: { text: 'TYPING IN UYGHUR', fontSize: 150, fontColor: 0xffffff },
+    title: {
+      text: 'TYPING JOURNEY',
+      fontSize: 150,
+      fontColor: 0x7d4a1e,
+      isCurved: false,
+    },
+    subtitle: { text: 'سەپەر', fontSize: 100, fontColor: 0x7d4a1e },
     levels: [
       {
         id: 1,
@@ -242,13 +254,6 @@ export const typingMaps: TMapUnit[] = [
         },
         mascotOnSplash: true,
       },
-    ],
-  },
-  {
-    type: 'typing',
-    background: 'typing-levels/typing-level-map/background.png',
-    title: { text: 'TYPING JOURNEY', fontSize: 150, fontColor: 0xffffff },
-    levels: [
       {
         id: 4,
         unlocked: true,
@@ -283,46 +288,6 @@ export const typingMaps: TMapUnit[] = [
         },
         mascotOnSplash: false,
       },
-      {
-        id: 6,
-        title: 'TAKLAMAKAN SANDSTORM',
-        mascot: 'camel',
-        unlocked: false,
-        screen: TypingSandstormScreen,
-        background: 'typing-levels/typing-level/background-sandstorm.png',
-        helpAsset: ['tutorial-popups/typing-tutorial.png'],
-        backdropColor: 0x7d5600,
-        mascotOnSplash: true,
-      },
-    ],
-  },
-  {
-    type: 'typing',
-    background: 'typing-levels/typing-level-map/background.png',
-    title: { text: 'TYPING JOURNEY', fontSize: 150, fontColor: 0xffffff },
-    levels: [
-      {
-        id: 7,
-        unlocked: false,
-        title: 'TANGRI TAH',
-        mascot: 'goat',
-        screen: TypingWordScreen,
-        background: 'typing-levels/typing-level/background-tangri-tah.png',
-        helpAsset: ['tutorial-popups/typing-tutorial.png'],
-        backdropColor: 0x8ec24d,
-        mascotOnSplash: true,
-      },
-      {
-        id: 8,
-        unlocked: false,
-        title: 'FARMERS HARVEST',
-        mascot: 'camel',
-        screen: TypingInstrumentScreen,
-        background: 'typing-levels/typing-level/background-taklamakan.png',
-        helpAsset: ['tutorial-popups/typing-tutorial.png'],
-        backdropColor: 0x7d5600,
-        mascotOnSplash: true,
-      },
     ],
   },
 ];
@@ -331,7 +296,7 @@ export const gameMaps: TMapUnit[] = [
   {
     type: 'game',
     background: 'game-levels/game-level-map/background.png',
-    title: { text: 'GAME', fontSize: 150, fontColor: 0xffffff },
+    title: { text: 'GAME', fontSize: 150, fontColor: 0xffffff, isCurved: true },
     levels: [
       {
         id: 1,
