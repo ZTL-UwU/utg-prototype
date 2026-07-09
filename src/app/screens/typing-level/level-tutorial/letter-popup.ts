@@ -6,6 +6,7 @@ import { engine } from '../../../../engine/getEngine';
 import { EDUCATION_LETTERS, TYPING_SEQUENCE } from '../../../../utils/example-words';
 import { getKeyFromChar } from '../../../../utils/keymap';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
+import { HandGuide } from './hand-guide';
 
 const COLORS = {
   background: 0x8d6241,
@@ -24,6 +25,8 @@ const SHIFT_WIDTH = 130;
 const SHIFT_HEIGHT = 70;
 const SHIFT_RADIUS = 35;
 const FEEDBACK_DURATION_MS = 350;
+const HANDS_BOTTOM_GAP = 8;
+const KEYBOARD_ABOVE_HANDS_GAP = 12;
 
 type TutorialStep = {
   code: string;
@@ -112,6 +115,7 @@ export class LetterPopup extends Container {
 
   private readonly letter: string;
   private readonly keyboard: KeyboardLayout;
+  private readonly handGuide: HandGuide;
   private readonly background: Graphics;
   private readonly closeButton: FancyButton;
   private readonly guide = new Container();
@@ -135,17 +139,18 @@ export class LetterPopup extends Container {
 
     this.closeButton = this.createCloseButton();
     this.keyboard = new KeyboardLayout();
+    this.handGuide = new HandGuide();
     this.stars.visible = false;
     this.buildGuide();
 
-    this.addChild(this.background, this.closeButton, this.guide, this.keyboard);
+    this.addChild(this.background, this.closeButton, this.guide, this.keyboard, this.handGuide);
   }
 
   resize(width: number, height: number) {
     this.layout = { width, height };
     this.viewHeight = height;
     this.background.clear().rect(0, 0, width, height).fill(COLORS.background);
-    this.keyboard.resize(width, height);
+    this.layoutKeyboardAndHands(width, height);
     this.layoutGuide(width, height);
   }
 
@@ -241,6 +246,13 @@ export class LetterPopup extends Container {
     this.guide.position.set(width / 2, Math.max(150, height * 0.2));
   }
 
+  private layoutKeyboardAndHands(width: number, height: number) {
+    this.handGuide.resize(width, height);
+    const handsHeight = this.handGuide.height;
+    const keyboardBottomMargin = handsHeight + HANDS_BOTTOM_GAP + KEYBOARD_ABOVE_HANDS_GAP;
+    this.keyboard.resize(width, height, keyboardBottomMargin);
+  }
+
   private createStepBadge(step: number) {
     const badge = new Container();
     const circle = new Graphics().circle(0, 0, 43).fill({ color: COLORS.badge });
@@ -280,11 +292,19 @@ export class LetterPopup extends Container {
       for (const step of this.steps) {
         this.keyboard.setKeyFeedback(step.code, 'success');
       }
+      this.handGuide.setGuide(
+        undefined,
+        this.steps.map((step) => step.code),
+      );
     } else {
       for (let index = 0; index <= this.nextStepIndex; index += 1) {
         const step = this.steps[index];
         if (step) this.keyboard.setKeyFeedback(step.code, 'hint');
       }
+      this.handGuide.setGuide(
+        this.steps[this.nextStepIndex]?.code,
+        this.steps.slice(0, this.nextStepIndex).map((step) => step.code),
+      );
     }
 
     this.badges.forEach((badge, index) => {
