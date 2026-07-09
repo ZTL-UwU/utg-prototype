@@ -54,6 +54,11 @@ export class LeafLetter extends Container {
     this.addChild(this.content);
   }
 
+  /** Bottom edge of the drawn leaf in local coordinates. */
+  public get leafBottom(): number {
+    return this.leaf.height;
+  }
+
   public async playAppear(delay: number) {
     const fade = { alpha: 0 };
     this.alpha = fade.alpha;

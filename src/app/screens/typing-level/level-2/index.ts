@@ -67,7 +67,6 @@ export class TypingSandstormScreen extends Container {
   private effectAnimations: AnimationPlaybackControls[] = [];
   private feedbackTimeouts: number[] = [];
   private viewWidth = 0;
-  private viewHeight = 0;
   private spawnDelayMs = FIRST_SPAWN_DELAY_MS;
   private spawnedLetters = 0;
   private resolvedLetters = 0;
@@ -131,7 +130,6 @@ export class TypingSandstormScreen extends Container {
   public resize(width: number, height: number) {
     this.layout = { width, height };
     this.viewWidth = width;
-    this.viewHeight = height;
     this.dustOverlays.resize(width, height);
     this.keyboard.resize(width, height);
   }
@@ -225,7 +223,7 @@ export class TypingSandstormScreen extends Container {
       falling.card.rotation =
         falling.startRotation + Math.sin(elapsedSeconds * 2.4 + falling.phase) * 0.12;
 
-      if (falling.card.y + CARD_SIZE >= this.viewHeight) {
+      if (falling.card.y + falling.card.leafBottom >= this.keyboard.y) {
         this.missLetter(index);
       }
     }
@@ -364,7 +362,7 @@ export class TypingSandstormScreen extends Container {
     void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
 
     const dustX = falling.card.x + CARD_SIZE / 2;
-    const dustY = this.viewHeight - DUST_SIZE * 0.42;
+    const dustY = this.keyboard.y - DUST_SIZE * 0.42;
     this.destroyLetterCard(falling.card);
     this.showDustBall(dustX, dustY);
     this.tryEndGame();
