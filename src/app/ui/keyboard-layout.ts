@@ -102,6 +102,7 @@ const PANEL_PADDING = 24; // p-6
 const PANEL_RADIUS = 32; // rounded-4xl
 const KEY_RADIUS = 12; // rounded-xl
 const BOTTOM_MARGIN = 40; // bottom-10
+const MAX_WIDTH_FACTOR = 0.92;
 const ENTER_Y_OFFSET = 72;
 const EXIT_Y_OFFSET = 48;
 
@@ -236,9 +237,11 @@ export class KeyboardLayout extends Container {
 
   /** Center horizontally and pin to the bottom of the given view size. */
   public resize(viewWidth: number, viewHeight: number, bottomMargin = BOTTOM_MARGIN) {
+    const scale = Math.min(1, (viewWidth * MAX_WIDTH_FACTOR) / this.panelWidth);
+    this.scale.set(scale);
     this.position.set(
-      Math.round((viewWidth - this.panelWidth) / 2),
-      Math.round(viewHeight - bottomMargin - this.panelHeight),
+      Math.round((viewWidth - this.panelWidth * scale) / 2),
+      Math.round(viewHeight - bottomMargin - this.panelHeight * scale),
     );
   }
 

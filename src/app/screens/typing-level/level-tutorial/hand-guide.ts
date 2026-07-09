@@ -24,7 +24,9 @@ const FINGER_TIPS: Record<Finger, { x: number; y: number }> = {
 };
 
 const HANDS_WIDTH = 765;
-const HANDS_HEIGHT = 289;
+const HANDS_HEIGHT = 280;
+const HANDS_TARGET_WIDTH_FACTOR = 0.6;
+const HANDS_MAX_WIDTH = 820;
 const INDICATOR_ACTIVE_COLOR = 0xff2d2d;
 const INDICATOR_SUCCESS_COLOR = 0x8ec24d;
 const INDICATOR_RADIUS = 10;
@@ -156,7 +158,7 @@ export class HandGuide extends Container {
 
   private layoutHands() {
     // Sit under the keyboard, centered; scale to ~keyboard letter-key span.
-    const targetWidth = Math.min(this.viewWidth * 0.72, 980);
+    const targetWidth = Math.min(this.viewWidth * HANDS_TARGET_WIDTH_FACTOR, HANDS_MAX_WIDTH);
     const scale = targetWidth / HANDS_WIDTH;
     this.scale.set(scale);
     this.position.set(

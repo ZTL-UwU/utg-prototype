@@ -21,6 +21,11 @@ const GUIDE_KEY_WIDTH = 130;
 const GUIDE_KEY_HEIGHT = 136;
 const GUIDE_GAP = 64;
 const GUIDE_KEY_RADIUS = 28;
+const GUIDE_CONTENT_TOP = -100;
+const GUIDE_CONTENT_BOTTOM = 150;
+const GUIDE_TOP_MARGIN = 32;
+const GUIDE_KEYBOARD_GAP = 24;
+const GUIDE_MAX_WIDTH_FACTOR = 0.9;
 const SHIFT_WIDTH = 130;
 const SHIFT_HEIGHT = 70;
 const SHIFT_RADIUS = 35;
@@ -124,6 +129,7 @@ export class LetterPopup extends Container {
   });
   private readonly steps: TutorialStep[];
   private readonly badges: Container[] = [];
+  private guideContentWidth = GUIDE_KEY_WIDTH;
 
   private nextStepIndex = 0;
   private completed = false;
@@ -151,7 +157,7 @@ export class LetterPopup extends Container {
     this.viewHeight = height;
     this.background.clear().rect(0, 0, width, height).fill(COLORS.background);
     this.layoutKeyboardAndHands(width, height);
-    this.layoutGuide(width, height);
+    this.layoutGuide(width);
   }
 
   async show() {
@@ -220,6 +226,7 @@ export class LetterPopup extends Container {
       (width, item, index) => width + item.width + (index < items.length - 1 ? GUIDE_GAP : 0),
       0,
     );
+    this.guideContentWidth = totalWidth;
     let x = -totalWidth / 2;
 
     for (const item of items) {
@@ -242,8 +249,21 @@ export class LetterPopup extends Container {
     this.guide.addChild(this.stars);
   }
 
-  private layoutGuide(width: number, height: number) {
-    this.guide.position.set(width / 2, Math.max(150, height * 0.2));
+  private layoutGuide(width: number) {
+    const availableWidth = width * GUIDE_MAX_WIDTH_FACTOR;
+    const keyboardTop = this.keyboard.y;
+    const availableHeight = Math.max(1, keyboardTop - GUIDE_TOP_MARGIN - GUIDE_KEYBOARD_GAP);
+    const guideContentHeight = GUIDE_CONTENT_BOTTOM - GUIDE_CONTENT_TOP;
+    const scale = Math.min(
+      1,
+      availableWidth / this.guideContentWidth,
+      availableHeight / guideContentHeight,
+    );
+    const localCenterY = (GUIDE_CONTENT_TOP + GUIDE_CONTENT_BOTTOM) / 2;
+    const availableCenterY = GUIDE_TOP_MARGIN + availableHeight / 2;
+
+    this.guide.scale.set(scale);
+    this.guide.position.set(width / 2, Math.round(availableCenterY - localCenterY * scale));
   }
 
   private layoutKeyboardAndHands(width: number, height: number) {
