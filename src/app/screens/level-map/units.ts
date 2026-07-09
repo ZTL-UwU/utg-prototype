@@ -267,7 +267,7 @@ export const typingMaps: TMapUnit[] = [
           BUTTON_FILL: 0xc98144,
           BUTTON_TEXT_FILL: 0xffe2bc,
           LEVEL_FONT_FILL: 0xc98144,
-          LEVEL_TITLE_FILL: 0xffe2bc,
+          LEVEL_TITLE_FILL: 0xc98144,
         },
         mascotOnSplash: false,
       },
