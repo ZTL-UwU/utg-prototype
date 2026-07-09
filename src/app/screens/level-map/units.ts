@@ -283,7 +283,7 @@ export const typingMaps: TMapUnit[] = [
         splashColorScheme: {
           BUTTON_FILL: 0x7e5433,
           BUTTON_TEXT_FILL: 0xfbf0de,
-          LEVEL_FONT_FILL: 0x6b411e,
+          LEVEL_FONT_FILL: 0xfbf0de,
           LEVEL_TITLE_FILL: 0xfbf0de,
         },
         mascotOnSplash: false,
@@ -296,8 +296,8 @@ export const gameMaps: TMapUnit[] = [
   {
     type: 'game',
     background: 'game-levels/game-level-map/background.png',
-    title: { text: 'THE MASTERY', fontSize: 160, fontColor: 0x7d4a1e, isCurved: false },
-    subtitle: { text: 'سىناق', fontSize: 100, fontColor: 0x7d4a1e },
+    title: { text: 'THE MASTERY', fontSize: 160, fontColor: 0xffffff, isCurved: false },
+    subtitle: { text: 'سىناق', fontSize: 100, fontColor: 0xffffff },
     levels: [
       {
         id: 1,
