@@ -89,6 +89,14 @@ export class LevelMapScreen extends Container {
           fill: mapUnit.subtitle.fontColor,
           padding: 30,
         },
+        filters: [
+          new DropShadowFilter({
+            color: 0x000000,
+            blur: 8,
+            quality: 5,
+            offset: { x: 0, y: 0 },
+          }),
+        ],
       });
       this.subtitle.layout = {
         position: 'absolute',

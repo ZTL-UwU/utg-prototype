@@ -79,7 +79,7 @@ export class LevelSplashScreen extends Container {
       charAnchor: 0.5,
       filters: [
         new DropShadowFilter({
-          color: 0xfbf0de,
+          color: 0x000000,
           alpha: 0.7,
           quality: 5,
           blur: 10,
@@ -104,7 +104,7 @@ export class LevelSplashScreen extends Container {
       filters: [
         new DropShadowFilter({
           color: 0x000000,
-          alpha: 0.2,
+          alpha: 0.5,
           quality: 5,
           blur: 10,
         }),
