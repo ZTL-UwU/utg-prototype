@@ -197,7 +197,7 @@ export const typingMaps: TMapUnit[] = [
     background: 'typing-levels/typing-level-map/background.png',
     title: {
       text: 'TYPING JOURNEY',
-      fontSize: 150,
+      fontSize: 160,
       fontColor: 0x7d4a1e,
       isCurved: false,
     },
@@ -296,12 +296,13 @@ export const gameMaps: TMapUnit[] = [
   {
     type: 'game',
     background: 'game-levels/game-level-map/background.png',
-    title: { text: 'GAME', fontSize: 150, fontColor: 0xffffff, isCurved: true },
+    title: { text: 'THE MASTERY', fontSize: 160, fontColor: 0x7d4a1e, isCurved: false },
+    subtitle: { text: 'سىناق', fontSize: 100, fontColor: 0x7d4a1e },
     levels: [
       {
         id: 1,
         unlocked: true,
-        title: 'NAAN GAME',
+        title: 'TANDOOR RUSH',
         mascot: 'chef',
         screen: GameLevelOneScreen,
         background: 'game-levels/game-level/background.png',
