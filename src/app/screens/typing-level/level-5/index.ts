@@ -88,6 +88,10 @@ export class TypingMarketScreen extends Container {
     });
     this.wordText = new HTMLText({ style: this.wordStyle });
     this.wordStyle.align = 'right';
+    this.wordStyle.tagStyles = {
+      ...this.wordStyle.tagStyles,
+      active: { fill: 0xd4a017 },
+    };
     this.wordContainer.addChild(this.wordText);
 
     this.contentContainer = new Container({
