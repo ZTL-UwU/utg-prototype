@@ -1,7 +1,7 @@
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Graphics, Text } from 'pixi.js';
 
-import { getKeyboardLabel } from '../../utils/keymap';
+import { getKeyboardLabel, getShiftHintLabel } from '../../utils/keymap';
 
 export type KeyFeedback = 'none' | 'hint' | 'error' | 'success';
 
@@ -17,6 +17,7 @@ export type KeyboardColorOptions = {
   KEY_COLOR: number;
   KEY_PRESSED_COLOR: number;
   TEXT_COLOR: number;
+  SHIFT_HINT_COLOR: number;
 };
 
 const keyboardLayout: Key[][] = [
@@ -111,6 +112,7 @@ const PANEL_SHADOW_COLOR = 0xc98144;
 const KEY_COLOR = 0xc98144;
 const KEY_PRESSED_COLOR = 0x8d6241;
 const TEXT_COLOR = 0xffffff;
+const SHIFT_HINT_COLOR = 0xffde59;
 
 const DEFAULT_COLOR_OPTIONS: KeyboardColorOptions = {
   PANEL_COLOR,
@@ -118,10 +120,13 @@ const DEFAULT_COLOR_OPTIONS: KeyboardColorOptions = {
   KEY_COLOR,
   KEY_PRESSED_COLOR,
   TEXT_COLOR,
+  SHIFT_HINT_COLOR,
 };
 
 const KEY_SUCCESS_COLOR = 0x8ec24d;
 const KEY_ERROR_COLOR = 0xef5a42;
+const SHIFT_HINT_PADDING = 6;
+const SHIFT_HINT_FONT_SIZE = 22;
 
 class KeyCap extends Container {
   public readonly code: string;
@@ -130,6 +135,7 @@ class KeyCap extends Container {
   private readonly background = new Graphics();
   private readonly keyContent = new Container();
   private readonly keyLabel: Text;
+  private readonly hintLabel: Text;
   private readonly keyColor: number;
   private readonly keyPressedColor: number;
   private pressed = false;
@@ -142,17 +148,20 @@ class KeyCap extends Container {
     textColor = TEXT_COLOR,
     keyColor = KEY_COLOR,
     keyPressedColor = KEY_PRESSED_COLOR,
+    shiftHintColor = SHIFT_HINT_COLOR,
   ) {
     super();
     this.code = code;
     this.keyWidth = UNIT * widthMultiplier;
+
+    const isShift = code === 'ShiftLeft' || code === 'ShiftRight';
 
     this.keyLabel = new Text({
       text: '',
       resolution: 2,
       style: {
         align: 'center',
-        fill: textColor,
+        fill: isShift ? shiftHintColor : textColor,
         fontFamily: isAuxiliary ? 'Concert One' : 'Noto Naskh Arabic Bold',
         fontSize: isAuxiliary ? 26 : 30,
         fontWeight: '700',
@@ -163,11 +172,28 @@ class KeyCap extends Container {
     });
     this.keyLabel.position.set(this.keyWidth / 2, UNIT / 2);
 
+    this.hintLabel = new Text({
+      text: '',
+      resolution: 2,
+      style: {
+        align: 'left',
+        fill: shiftHintColor,
+        fontFamily: 'Noto Naskh Arabic Bold',
+        fontSize: SHIFT_HINT_FONT_SIZE,
+        fontWeight: '700',
+        lineHeight: SHIFT_HINT_FONT_SIZE,
+        padding: 10,
+      },
+      anchor: { x: 0, y: 0 },
+    });
+    this.hintLabel.position.set(SHIFT_HINT_PADDING, SHIFT_HINT_PADDING);
+    this.hintLabel.visible = false;
+
     // REFACTORED COLOR ASSIGNMENTS
     this.keyColor = keyColor;
     this.keyPressedColor = keyPressedColor;
 
-    this.keyContent.addChild(this.keyLabel);
+    this.keyContent.addChild(this.keyLabel, this.hintLabel);
     this.drawBackground();
     this.addChild(this.background, this.keyContent);
   }
@@ -188,6 +214,13 @@ class KeyCap extends Container {
   public setLabel(text: string) {
     if (this.keyLabel.text === text) return;
     this.keyLabel.text = text;
+  }
+
+  public setHint(text: string) {
+    if (this.hintLabel.text !== text) {
+      this.hintLabel.text = text;
+    }
+    this.hintLabel.visible = text.length > 0;
   }
 
   private drawBackground() {
@@ -303,8 +336,10 @@ export class KeyboardLayout extends Container {
           this.keyboardColorOptions.TEXT_COLOR,
           this.keyboardColorOptions.KEY_COLOR,
           this.keyboardColorOptions.KEY_PRESSED_COLOR,
+          this.keyboardColorOptions.SHIFT_HINT_COLOR,
         );
         cap.setLabel(getKeyboardLabel(code, shiftPressed));
+        cap.setHint(getShiftHintLabel(code));
         this.keys.push(cap);
         if (code) {
           this.keyByCode.set(code, cap);
@@ -400,6 +435,7 @@ export class KeyboardLayout extends Container {
     for (const cap of this.keys) {
       cap.setPressed(this.pressedCodes.has(cap.code));
       cap.setLabel(getKeyboardLabel(cap.code, shiftPressed));
+      cap.setHint(shiftPressed ? '' : getShiftHintLabel(cap.code));
     }
   }
 }

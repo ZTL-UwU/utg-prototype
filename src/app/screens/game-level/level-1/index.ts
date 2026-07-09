@@ -52,6 +52,7 @@ const KEYBOARD_COLORS: KeyboardColorOptions = {
   KEY_COLOR: 0xf5f3ef,
   KEY_PRESSED_COLOR: 0xafafaf,
   TEXT_COLOR: 0x495669,
+  SHIFT_HINT_COLOR: 0xffde59,
 };
 
 function shuffledLetters() {

@@ -41,6 +41,15 @@ export function getKeyboardLabel(code: string, shift: boolean): string {
   return AUXILIARY_LABELS[code] ?? '';
 }
 
+/** Shift-layer Arabic letter shown as a corner hint when Shift is not held. */
+export function getShiftHintLabel(code: string): string {
+  const defaultText = getMappedFromKeyCode(code, false);
+  const shiftText = getMappedFromKeyCode(code, true);
+  if (!shiftText || shiftText === defaultText) return '';
+  if (!/\p{Script=Arabic}/u.test(shiftText)) return '';
+  return formatKeyboardLabel(shiftText);
+}
+
 export function getMappedFromKeyboardEvent(event: KeyboardEvent): string {
   return getMappedFromKeyCode(event.code, event.shiftKey);
 }

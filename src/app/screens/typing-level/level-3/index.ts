@@ -39,6 +39,7 @@ const KEYBOARD_COLOR_SCHEME: KeyboardColorOptions = {
   KEY_COLOR: 0xf5f3ef,
   KEY_PRESSED_COLOR: 0xafafaf,
   TEXT_COLOR: 0x495669,
+  SHIFT_HINT_COLOR: 0xe8ab27,
 };
 
 type NoteCardState = 'default' | 'success' | 'error';
