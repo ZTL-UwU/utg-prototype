@@ -3,6 +3,7 @@ const EDUCATION_YOUTUBE_VIDEOS = [
   { id: 'R829Wy8RdQc', title: 'Education video 2' },
   // TODO: owner of the video disabled embedding
   // { id: '30EmO6arzvw', title: 'Education video 3' },
+  { id: '-TGIBTeqKUY', title: 'Education video 3' },
   { id: 'GT1DnXsbrno', title: 'Education video 4' },
 ];
 
