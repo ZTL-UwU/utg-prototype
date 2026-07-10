@@ -69,7 +69,7 @@ export class LevelSplashScreen extends Container {
     });
     this.colorScheme = level.splashColorScheme ?? getDefaultColorScheme(level.mascot);
     this.levelNumber = new SplitText({
-      text: `LEVEL ${level.id}`,
+      text: `${mapUnit.type === 'education' ? 'GAME' : 'LEVEL'} ${level.id}`,
       style: {
         fontFamily: 'Concert One',
         fontSize: 250,

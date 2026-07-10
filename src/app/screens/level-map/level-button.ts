@@ -1,12 +1,10 @@
 import { FancyButton } from '@pixi/ui';
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { DropShadowFilter } from 'pixi-filters';
-import { Graphics, Texture, Text, type DestroyOptions, Sprite } from 'pixi.js';
+import { Graphics, Texture, Text, type DestroyOptions } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { useLevelProgress } from '../../../zustandStores/levelProgressStore';
-import useSessionStore from '../../../zustandStores/sessionStore';
-import { TutorialPopup } from '../../popups/tutorial';
 import { LevelSplashScreen } from '../level-splash';
 import type { TLevel, TMapUnit } from './units';
 
@@ -156,28 +154,29 @@ export class LevelButton extends FancyButton {
 
       this.onPress.connect(() => {
         void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-        if (mapUnit.type === 'education') {
-          void engine().audio.sfx.play('level-splash/game-start.mp3');
-          useSessionStore.getState().reset();
-          useSessionStore.getState().startSession(mapUnit.type);
-          const currentScreen = engine().navigation.currentScreen ?? undefined;
-          if (currentScreen) {
-            currentScreen.removeChildren();
-            const background: Sprite = new Sprite({
-              texture: Texture.from(mapUnit.background),
-              layout: { position: 'absolute', width: '100%', height: '100%' },
-            });
-            currentScreen.addChild(background);
-          }
+        void engine().navigation.showScreen(LevelSplashScreen, { level, mapUnit });
+        // if (mapUnit.type === 'education') {
+        //   void engine().audio.sfx.play('level-splash/game-start.mp3');
+        //   useSessionStore.getState().reset();
+        //   useSessionStore.getState().startSession(mapUnit.type);
+        //   const currentScreen = engine().navigation.currentScreen ?? undefined;
+        //   if (currentScreen) {
+        //     currentScreen.removeChildren();
+        //     const background: Sprite = new Sprite({
+        //       texture: Texture.from(mapUnit.background),
+        //       layout: { position: 'absolute', width: '100%', height: '100%' },
+        //     });
+        //     currentScreen.addChild(background);
+        //   }
 
-          void engine().navigation.showPopup(TutorialPopup, {
-            assets: level.helpAsset,
-            backdropColor: level.backdropColor,
-            onNext: () => void engine().navigation.showScreen(level.screen!, level),
-          });
-        } else {
-          void engine().navigation.showScreen(LevelSplashScreen, { level, mapUnit });
-        }
+        //   void engine().navigation.showPopup(TutorialPopup, {
+        //     assets: level.helpAsset,
+        //     backdropColor: level.backdropColor,
+        //     onNext: () => void engine().navigation.showScreen(level.screen!, level),
+        //   });
+        // } else {
+        //   void engine().navigation.showScreen(LevelSplashScreen, { level, mapUnit });
+        // }
       });
     }
   }
