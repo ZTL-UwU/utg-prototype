@@ -46,6 +46,7 @@ example.
 | `JWT_SIGNING_KEY`        | `DJANGO_SECRET_KEY` in development                  | JWT signing key; explicitly required when debug is off |
 | `DJANGO_DEBUG`          | `true`                                              | Enables Django debug mode                      |
 | `DJANGO_ALLOWED_HOSTS`  | `localhost,127.0.0.1`                               | Comma-separated hostnames                      |
+| `DJANGO_CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000` | Comma-separated frontend origins for CORS |
 | `DATABASE_CONN_MAX_AGE` | `60`                                                | Persistent connection lifetime in seconds      |
 | `DATABASE_SSL_MODE`     | `prefer`                                            | PostgreSQL SSL mode                            |
 
