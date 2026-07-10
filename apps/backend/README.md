@@ -39,14 +39,25 @@ The service is then available at:
 Configuration is environment-driven. See `[.env.example](.env.example)` for a complete local
 example.
 
-| Variable                | Default                                             | Purpose                                        |
-| ----------------------- | --------------------------------------------------- | ---------------------------------------------- |
+| Variable                | Default                                             | Purpose                                               |
+| ----------------------- | --------------------------------------------------- | ----------------------------------------------------- |
 | `DATABASE_URL`          | `postgresql://postgres:postgres@localhost:5432/utg` | PostgreSQL connection URL                      |
 | `DJANGO_SECRET_KEY`     | development-only value                              | Django signing key; required when debug is off |
+| `JWT_SIGNING_KEY`        | `DJANGO_SECRET_KEY` in development                  | JWT signing key; explicitly required when debug is off |
 | `DJANGO_DEBUG`          | `true`                                              | Enables Django debug mode                      |
 | `DJANGO_ALLOWED_HOSTS`  | `localhost,127.0.0.1`                               | Comma-separated hostnames                      |
 | `DATABASE_CONN_MAX_AGE` | `60`                                                | Persistent connection lifetime in seconds      |
 | `DATABASE_SSL_MODE`     | `prefer`                                            | PostgreSQL SSL mode                            |
+
+### Generating `JWT_SIGNING_KEY`
+
+Use a long random secret (do not reuse `DJANGO_SECRET_KEY` in production):
+
+```bash
+openssl rand -base64 64
+```
+
+Copy the output into `.env` as `JWT_SIGNING_KEY=...`.
 
 ## Development checks
 

@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
@@ -42,6 +43,10 @@ DEBUG = env_bool("DJANGO_DEBUG", True)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 if not DEBUG and SECRET_KEY == "django-insecure-development-only":
     raise ImproperlyConfigured("DJANGO_SECRET_KEY must be set when DJANGO_DEBUG is false")
+JWT_SIGNING_KEY = os.getenv("JWT_SIGNING_KEY")
+if not DEBUG and not JWT_SIGNING_KEY:
+    raise ImproperlyConfigured("JWT_SIGNING_KEY must be set when DJANGO_DEBUG is false")
+JWT_SIGNING_KEY = JWT_SIGNING_KEY or SECRET_KEY
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -50,6 +55,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "ninja_jwt",
     "apps.game",
     "apps.users",
 ]
@@ -84,6 +90,17 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 DATABASES = {"default": database_config()}
 AUTH_USER_MODEL = "users.User"
+
+NINJA_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": JWT_SIGNING_KEY,
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

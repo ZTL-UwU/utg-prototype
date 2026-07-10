@@ -1,10 +1,11 @@
-from django.contrib import auth
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from ninja import Router, Status
-from ninja.security import SessionAuth
+from ninja_jwt.authentication import JWTAuth
+from ninja_jwt.exceptions import TokenError
+from ninja_jwt.tokens import RefreshToken
 
 from apps.game.models import Level
 from apps.users.models import LevelResult
@@ -13,6 +14,9 @@ from apps.users.schemas import (
     LevelResultIn,
     LevelResultOut,
     LoginIn,
+    LoginTokenPairOut,
+    RefreshedAccessTokenOut,
+    RefreshTokenIn,
     RegisterIn,
     RewardOut,
     UserOut,
@@ -20,7 +24,7 @@ from apps.users.schemas import (
 
 User = get_user_model()
 router = Router(tags=["users"])
-session_auth = SessionAuth(csrf=False)
+jwt_auth = JWTAuth()
 
 
 @router.post(
@@ -45,26 +49,33 @@ def register(request, payload: RegisterIn):
 
 @router.post(
     "/user/login",
-    response={200: UserOut, 401: ErrorOut},
-    summary="Log in and create a Django session",
+    response={200: LoginTokenPairOut, 401: ErrorOut},
+    summary="Log in and obtain JWT tokens",
 )
 def login(request, payload: LoginIn):
     user = authenticate(request, email=payload.email, password=payload.password)
     if user is None or not user.is_active:
         return Status(401, {"detail": "Invalid email or password."})
-    auth.login(request, user)
-    return user
+    refresh = RefreshToken.for_user(user)
+    return {"access": str(refresh.access_token), "refresh": str(refresh)}
 
 
-@router.post("/user/logout", auth=session_auth, response={204: None}, summary="Log out")
-def logout(request):
-    auth.logout(request)
-    return Status(204, None)
+@router.post(
+    "/user/token/refresh",
+    response={200: RefreshedAccessTokenOut, 401: ErrorOut},
+    summary="Refresh an access token",
+)
+def refresh_access_token(request, payload: RefreshTokenIn):
+    try:
+        refresh = RefreshToken(payload.refresh)
+    except TokenError:
+        return Status(401, {"detail": "Token is invalid or expired."})
+    return {"access": str(refresh.access_token)}
 
 
 @router.get(
     "/user/profile",
-    auth=session_auth,
+    auth=jwt_auth,
     response=UserOut,
     summary="Get the current user profile",
 )
@@ -74,7 +85,7 @@ def profile(request):
 
 @router.get(
     "/user/rewards/list",
-    auth=session_auth,
+    auth=jwt_auth,
     response=list[RewardOut],
     summary="List the current user's rewards",
 )
@@ -84,7 +95,7 @@ def rewards(request):
 
 @router.post(
     "/level-results",
-    auth=session_auth,
+    auth=jwt_auth,
     response={201: LevelResultOut, 404: ErrorOut},
     summary="Record a completed level",
 )
@@ -107,7 +118,7 @@ def create_level_result(request, payload: LevelResultIn):
 
 @router.get(
     "/level-results/list",
-    auth=session_auth,
+    auth=jwt_auth,
     response=list[LevelResultOut],
     summary="List the current user's level results",
 )

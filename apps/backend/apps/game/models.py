@@ -4,7 +4,7 @@ from django.db import models
 class Layer(models.TextChoices):
     TYPING = "typing", "Typing"
     EDUCATION = "education", "Education"
-    LOCKED = "locked", "Locked"
+    GAMES = "game", "Game"
 
 
 class Unit(models.Model):

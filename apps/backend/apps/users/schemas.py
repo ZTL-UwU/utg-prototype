@@ -12,6 +12,19 @@ class LoginIn(Schema):
     password: str
 
 
+class LoginTokenPairOut(Schema):
+    access: str
+    refresh: str
+
+
+class RefreshTokenIn(Schema):
+    refresh: str
+
+
+class RefreshedAccessTokenOut(Schema):
+    access: str
+
+
 class UserOut(Schema):
     id: int
     name: str | None
