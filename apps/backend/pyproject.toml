@@ -1,0 +1,27 @@
+[project]
+name = "utg-backend"
+version = "0.1.0"
+description = "Django Ninja and PostgreSQL backend for UTG"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "django>=6.0,<6.1",
+    "django-ninja>=1.5,<2",
+    "psycopg[binary]>=3.3,<4",
+    "whitenoise>=6.11,<7",
+]
+
+[dependency-groups]
+dev = [
+    "django-stubs>=5.2,<6",
+    "ruff>=0.14,<1",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ"]
+ignore = ["DJ001"]
