@@ -169,7 +169,7 @@ export class Letter extends Container {
       void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
       useSessionStore.getState().recordCorrect();
       setTimeout(() => {
-        if (++LetterGrid.rounds < LetterGrid.MAX_ROUNDS) {
+        if (++LetterGrid.rounds < LetterGrid.roundOrder.length) {
           void engine().navigation.showScreen(EducationLevelScreen, this.level);
         } else {
           LetterGrid.endGame(this.level);

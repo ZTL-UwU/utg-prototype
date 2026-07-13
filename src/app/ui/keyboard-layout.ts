@@ -1,7 +1,7 @@
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Graphics, Text } from 'pixi.js';
 
-import { getKeyboardLabel, getShiftHintLabel } from '../../utils/keymap';
+import { getKeyFromChar, getKeyboardLabel, getShiftHintLabel } from '../../utils/keymap';
 
 export type KeyFeedback = 'none' | 'hint' | 'error' | 'success';
 
@@ -249,6 +249,7 @@ export class KeyboardLayout extends Container {
   private readonly keyByCode = new Map<string, KeyCap>();
   private readonly pressedCodes = new Set<string>();
   private readonly keyboardColorOptions;
+  private hintedCode = '';
 
   private listening = false;
 
@@ -315,6 +316,13 @@ export class KeyboardLayout extends Container {
 
   public clearKeyFeedback(code: string) {
     this.setKeyFeedback(code, 'none');
+  }
+
+  /** Highlights the physical key for `letter` as a hint; pass undefined to clear it. */
+  public setHintedLetter(letter?: string) {
+    if (this.hintedCode) this.clearKeyFeedback(this.hintedCode);
+    this.hintedCode = letter ? getKeyFromChar(letter) : '';
+    if (this.hintedCode) this.setKeyFeedback(this.hintedCode, 'hint');
   }
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {

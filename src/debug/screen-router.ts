@@ -44,11 +44,9 @@ function mapRoutes(type: TLayer, maps: typeof educationMaps) {
       route(mapPath, LevelMapScreen, mapUnit),
       ...(type !== 'game'
         ? [
-            route(
-              `${mapPath}/tutorial`,
-              type === 'education' ? EducationTutorialScreen : TypingTutorialScreen,
-              mapUnit,
-            ),
+            type === 'education'
+              ? route(`${mapPath}/tutorial`, EducationTutorialScreen, { mapUnit })
+              : route(`${mapPath}/tutorial`, TypingTutorialScreen, mapUnit),
           ]
         : []),
       ...mapUnit.levels.flatMap((level) => {

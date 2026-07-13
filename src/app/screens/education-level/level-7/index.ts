@@ -3,8 +3,8 @@ import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { randomShuffle } from '../../../../engine/utils/random';
 import { waitFor } from '../../../../engine/utils/waitFor';
-import { EDUCATION_LETTERS } from '../../../../utils/example-words';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -15,7 +15,6 @@ import { LevelMapScreen } from '../../level-map';
 import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
 import { MOLE_UP_Y, MoleTarget } from './mole-target';
 
-const ROUND_COUNT = 10;
 const MOLE_DOWN_Y = 220;
 const MOLE_MOVE_DURATION = 0.3;
 const MOLE_TURN_DELAY_MS = 1200;
@@ -36,12 +35,15 @@ type Round = {
   answer: number;
 };
 
-function createRound(): Round {
-  const letters = [...EDUCATION_LETTERS].sort(() => Math.random() - 0.5).slice(0, 3);
+function createRound(correctLetter: string, pool: string[]): Round {
+  const distractors = randomShuffle<string>(
+    pool.filter((letter) => letter !== correctLetter),
+  ).slice(0, 2);
+  const letters = randomShuffle<string>([correctLetter, ...distractors]);
 
   return {
     letters,
-    answer: Math.floor(Math.random() * letters.length),
+    answer: letters.indexOf(correctLetter),
   };
 }
 
@@ -54,7 +56,7 @@ export class EducationWhackAMoleScreen extends Container {
   private readonly soundButton: SoundButton;
   private readonly targets: MoleTarget[];
   private readonly rabbit: Sprite;
-  private readonly rounds = Array.from({ length: ROUND_COUNT }, createRound);
+  private readonly rounds: Round[];
   private step = 0;
   private hiddenTarget = -1;
   private isResolving = false;
@@ -76,6 +78,10 @@ export class EducationWhackAMoleScreen extends Container {
 
     engine().audio.bgm.setVolume(0);
     this.level = level;
+
+    const letterPool: string[] = level.props!.letters;
+    const orderedLetters = randomShuffle<string>([...letterPool]);
+    this.rounds = orderedLetters.map((correctLetter) => createRound(correctLetter, letterPool));
 
     this.background = new Sprite({
       texture: Texture.from(`education-levels/education-level-7/background-grass.png`),

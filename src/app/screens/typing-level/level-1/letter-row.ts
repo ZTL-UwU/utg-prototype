@@ -64,6 +64,7 @@ export class LetterRow extends Container {
     });
 
     window.addEventListener('keydown', this.handleKeyDown);
+    this.keyboard.setHintedLetter(this.currentLetter);
 
     this.addChild(this.lettersContainer);
   }
@@ -99,7 +100,10 @@ export class LetterRow extends Container {
     current.setFeedback('error', true);
     if (event.code) {
       this.keyboard.setKeyFeedback(event.code, 'error');
-      window.setTimeout(() => this.keyboard.clearKeyFeedback(event.code), 350);
+      window.setTimeout(() => {
+        this.keyboard.clearKeyFeedback(event.code);
+        this.keyboard.setHintedLetter(this.currentLetter);
+      }, 350);
     }
   };
 
@@ -109,6 +113,7 @@ export class LetterRow extends Container {
 
   public async resume() {
     window.addEventListener('keydown', this.handleKeyDown);
+    this.keyboard.setHintedLetter(this.currentLetter);
   }
 
   private get currentLetter() {
@@ -140,6 +145,7 @@ export class LetterRow extends Container {
     }
 
     this.currentLetterCard?.setActive(true);
+    this.keyboard.setHintedLetter(this.currentLetter);
   }
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {

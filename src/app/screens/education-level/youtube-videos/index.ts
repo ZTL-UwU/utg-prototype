@@ -28,7 +28,8 @@ export class EducationYoutubeScreen extends Container {
     });
 
     this.hud = new HUD({
-      onBack: () => void engine().navigation.showScreen(EducationTutorialScreen, this.mapUnit),
+      onBack: () =>
+        void engine().navigation.showScreen(EducationTutorialScreen, { mapUnit: this.mapUnit }),
     });
 
     this.addChild(this.background, this.hud);

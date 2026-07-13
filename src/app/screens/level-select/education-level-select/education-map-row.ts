@@ -1,11 +1,15 @@
 import { animate } from 'motion';
 import { Container, Graphics } from 'pixi.js';
 
+import { EducationLevelSelect } from '.';
+import { engine } from '../../../../engine/getEngine';
+import { EducationTutorialScreen } from '../../education-level/level-tutorial';
 import { educationMaps } from '../../level-map/units';
 import { MapUnitButton } from './map-unit-button';
+import { TutorialEntryButton } from './tutorial-entry-button';
 
 export class EducationMapRow extends Container {
-  private unitButtons?: (MapUnitButton | Graphics)[];
+  private unitButtons?: (MapUnitButton | TutorialEntryButton | Graphics)[];
 
   constructor() {
     super({
@@ -19,14 +23,25 @@ export class EducationMapRow extends Container {
       },
     });
 
-    this.unitButtons = educationMaps.flatMap((mapUnit, i) => {
-      const fillerLine = new Graphics({ layout: { width: 100, height: 15 } })
-        .roundRect(0, 0, 100, 15, 10)
-        .fill(0xa66129);
-      const button = new MapUnitButton(mapUnit, i);
+    const openTutorial: () => void = () => {
+      void engine().navigation.showScreen(EducationTutorialScreen, {
+        mapUnit: educationMaps[0],
+        onBack: () => void engine().navigation.showScreen(EducationLevelSelect),
+      });
+    };
+    const tutorialButton = new TutorialEntryButton(openTutorial);
 
-      return i === 0 ? [button] : [fillerLine, button];
-    });
+    this.unitButtons = [
+      tutorialButton,
+      ...educationMaps.flatMap((mapUnit, i) => {
+        const fillerLine = new Graphics({ layout: { width: 100, height: 15 } })
+          .roundRect(0, 0, 100, 15, 10)
+          .fill(0xa66129);
+        const button = new MapUnitButton(mapUnit, i);
+
+        return [fillerLine, button];
+      }),
+    ];
 
     this.addChild(...this.unitButtons);
   }

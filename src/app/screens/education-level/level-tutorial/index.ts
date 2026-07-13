@@ -50,14 +50,24 @@ export class EducationTutorialScreen extends Container {
   private timings: { char: string; time: number }[] = [];
   private nextBounceIndex: number = 0;
   private songEndTime?: number;
-  constructor(mapUnit: TMapUnit, presentation: TutorialPresentation = 'screen') {
+  constructor({
+    mapUnit,
+    presentation = 'screen',
+    onBack,
+  }: {
+    mapUnit: TMapUnit;
+    presentation?: TutorialPresentation;
+    onBack?: () => void;
+  }) {
     super();
 
     this.hud = new HUD({
-      onBack: () =>
-        void (presentation === 'popup'
-          ? engine().navigation.hidePopup()
-          : engine().navigation.showScreen(LevelMapScreen, mapUnit)),
+      onBack:
+        onBack ??
+        (() =>
+          void (presentation === 'popup'
+            ? engine().navigation.hidePopup()
+            : engine().navigation.showScreen(LevelMapScreen, mapUnit))),
     });
 
     engine().audio.bgm.setVolume(0);
@@ -238,6 +248,6 @@ export class EducationTutorialScreen extends Container {
 
 export class EducationTutorialPopup extends EducationTutorialScreen {
   constructor(mapUnit: TMapUnit) {
-    super(mapUnit, 'popup');
+    super({ mapUnit, presentation: 'popup' });
   }
 }

@@ -2,6 +2,7 @@ import { sound } from '@pixi/sound';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { randomShuffle } from '../../../../engine/utils/random';
 import { pickRandomEducationLetters } from '../../../../utils/example-words';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
@@ -13,6 +14,11 @@ import { LevelMapScreen } from '../../level-map';
 import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
 import { LetterBubble } from './letter-bubble';
 
+// bubble slots, matches xSlots in resize()
+const NUM_CHOICES = 3;
+// only used when level.props.letters is missing entirely
+const FALLBACK_LETTER_COUNT = 8;
+
 export class EducationBubbleScreen extends Container {
   public static assetBundles = [
     'education-level-2',
@@ -21,7 +27,7 @@ export class EducationBubbleScreen extends Container {
     'education-letters-audio',
   ];
   public static rounds = 0;
-  public static readonly MAX_ROUNDS = 5;
+  private static roundOrder: string[] = [];
 
   private background: Sprite;
   private soundButton: SoundButton;
@@ -33,10 +39,11 @@ export class EducationBubbleScreen extends Container {
   private correctLetter: string;
   private isPlaying: boolean = false;
   readonly endGame = () => {
-    if (++EducationBubbleScreen.rounds < EducationBubbleScreen.MAX_ROUNDS) {
+    if (++EducationBubbleScreen.rounds < EducationBubbleScreen.roundOrder.length) {
       void engine().navigation.showScreen(EducationBubbleScreen, this.level);
     } else {
       EducationBubbleScreen.rounds = 0;
+      EducationBubbleScreen.roundOrder = [];
       const { correct, mistakes } = useSessionStore.getState();
       useScoreManager.getState().addSession(correct, mistakes);
       void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
@@ -77,8 +84,16 @@ export class EducationBubbleScreen extends Container {
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
-    const [correctLetter, wrong1, wrong2] = pickRandomEducationLetters(3);
-    const letters = [correctLetter, wrong1, wrong2].sort(() => Math.random() - 0.5);
+    const letterPool: string[] =
+      level.props?.letters ?? pickRandomEducationLetters(FALLBACK_LETTER_COUNT);
+    if (EducationBubbleScreen.rounds === 0) {
+      EducationBubbleScreen.roundOrder = randomShuffle([...letterPool]);
+    }
+    const correctLetter = EducationBubbleScreen.roundOrder[EducationBubbleScreen.rounds];
+    const distractors = randomShuffle<string>(
+      letterPool.filter((letter) => letter !== correctLetter),
+    ).slice(0, NUM_CHOICES - 1);
+    const letters: string[] = randomShuffle<string>([correctLetter, ...distractors]);
     this.soundButton = new SoundButton({
       onClick: () => {
         this.soundButtonClick();

@@ -23,7 +23,7 @@ export class LevelRow extends Container {
       const fillerLine = new Graphics({ layout: { width: 80, height: 15 } })
         .roundRect(0, 0, 100, 15, 10)
         .fill(0xa66129);
-      const button = new LevelButton(level, mapUnit);
+      const button = new LevelButton(level, mapUnit, i + 1);
 
       return i === 0 ? [button] : [fillerLine, button];
     });
