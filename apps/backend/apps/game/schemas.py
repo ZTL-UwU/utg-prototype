@@ -49,12 +49,7 @@ class UnitOut(Schema):
         return list(obj.levels.all())
 
 
-class LevelTypeNameOut(Schema):
-    name: str | None
-
-
-class SidebarLevelOut(Schema):
+class SidebarUnitOut(Schema):
     id: int
     layer: str
-    title: str | None
-    level_type: LevelTypeNameOut
+    title: str
