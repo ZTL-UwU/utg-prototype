@@ -57,7 +57,11 @@ def login(request, payload: LoginIn):
     if user is None or not user.is_active:
         return Status(401, {"detail": "Invalid email or password."})
     refresh = RefreshToken.for_user(user)
-    return {"access": str(refresh.access_token), "refresh": str(refresh)}
+    return {
+        "access": str(refresh.access_token),
+        "refresh": str(refresh),
+        "user": user,
+    }
 
 
 @router.post(

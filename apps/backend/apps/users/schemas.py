@@ -12,9 +12,18 @@ class LoginIn(Schema):
     password: str
 
 
+class UserOut(Schema):
+    id: int
+    name: str | None
+    email: str
+    total_score: int
+    total_stars: int
+
+
 class LoginTokenPairOut(Schema):
     access: str
     refresh: str
+    user: UserOut
 
 
 class RefreshTokenIn(Schema):
@@ -23,14 +32,6 @@ class RefreshTokenIn(Schema):
 
 class RefreshedAccessTokenOut(Schema):
     access: str
-
-
-class UserOut(Schema):
-    id: int
-    name: str | None
-    email: str
-    total_score: int
-    total_stars: int
 
 
 class RewardOut(Schema):
