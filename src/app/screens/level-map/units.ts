@@ -255,8 +255,8 @@ export const educationMaps: TMapUnit[] = [
   },
   {
     type: 'education',
-    background: 'education-levels/education-level-map/background-unit-4.png',
-    title: { text: 'LEVEL 4', fontSize: 240, fontColor: 0xe49835, isCurved: true },
+    background: 'education-levels/education-level-map/background-unit-5.png',
+    title: { text: 'LEVEL 5', fontSize: 240, fontColor: 0xe49835, isCurved: true },
     levels: [
       {
         id: 13,
@@ -271,13 +271,6 @@ export const educationMaps: TMapUnit[] = [
           letters: [...U_LETTER_SET].sort(() => Math.random() - 0.5).slice(0, 12),
         },
       },
-    ],
-  },
-  {
-    type: 'education',
-    background: 'education-levels/education-level-map/background-unit-5.png',
-    title: { text: 'LEVEL 5', fontSize: 240, fontColor: 0xe5c087, isCurved: true },
-    levels: [
       {
         id: 14,
         unlocked: true,
@@ -293,6 +286,26 @@ export const educationMaps: TMapUnit[] = [
       },
     ],
   },
+  //   {
+  //     type: 'education',
+  //     background: 'education-levels/education-level-map/background-unit-5.png',
+  //     title: { text: 'LEVEL 5', fontSize: 240, fontColor: 0xe5c087, isCurved: true },
+  //     levels: [
+  //       {
+  //         id: 14,
+  //         unlocked: true,
+  //         mascot: 'sheep',
+  //         screen: EducationImageScreen,
+  //         background: 'education-levels/education-level/background.png',
+  //         helpAsset: ['tutorial-popups/education-level-4.png'],
+  //         backdropColor: 0x4a90e2,
+  //         mascotOnSplash: true,
+  //         props: {
+  //           letters: [...U_LETTER_SET].sort(() => Math.random() - 0.5).slice(0, 12),
+  //         },
+  //       },
+  //     ],
+  //   },
 ];
 
 export const typingMaps: TMapUnit[] = [

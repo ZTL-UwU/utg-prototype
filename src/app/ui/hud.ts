@@ -53,7 +53,7 @@ function createHelpAction(help: THudHelp): (() => void) | undefined {
   switch (mapUnit.type) {
     case 'education':
       return presentation === 'screen'
-        ? () => void engine().navigation.showScreen(EducationTutorialScreen, mapUnit)
+        ? () => void engine().navigation.showScreen(EducationTutorialScreen, { mapUnit })
         : () => void engine().navigation.showPopup(EducationTutorialPopup, mapUnit);
     case 'typing':
       return presentation === 'screen'
