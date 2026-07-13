@@ -3,6 +3,7 @@ import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, ObservablePoint, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { randomShuffle } from '../../../../engine/utils/random';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -13,6 +14,8 @@ import { LevelMapScreen } from '../../level-map';
 import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
 import { LetterGrass } from './letter-grass';
 
+// grass slots, matches GRASS_X_RATIOS
+const NUM_CHOICES = 3;
 const GRASS_SIZE = 320;
 const SHEEP_GRASS_OFFSET = 200;
 const GRASS_X_RATIOS = [0.2, 0.5, 0.8] as const;
@@ -41,7 +44,8 @@ function getSheepFacingScale(currentScaleX: number, sheepX: number, targetX: num
 export class EducationSheepScreen extends Container {
   public static assetBundles = ['education-level-3', 'ui', 'mascots', 'education-letters-audio'];
   public static rounds = 0;
-  public static readonly MAX_ROUNDS = 5;
+  public static readonly MAX_ROUNDS = 8;
+  private static roundOrder: string[] = [];
 
   private background: Sprite;
   private hud: HUD;
@@ -74,8 +78,15 @@ export class EducationSheepScreen extends Container {
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
-    const letters: string[] = level.props!.letters;
-    this.correctLetter = letters[Math.floor(Math.random() * letters.length)];
+    const letterPool: string[] = level.props!.letters;
+    if (EducationSheepScreen.rounds === 0) {
+      EducationSheepScreen.roundOrder = randomShuffle<string>([...letterPool]);
+    }
+    this.correctLetter = EducationSheepScreen.roundOrder[EducationSheepScreen.rounds];
+    const distractors = randomShuffle<string>(
+      letterPool.filter((letter) => letter !== this.correctLetter),
+    ).slice(0, NUM_CHOICES - 1);
+    const displayLetters: string[] = randomShuffle<string>([this.correctLetter, ...distractors]);
     this.soundButton = new SoundButton({
       onClick: () => {
         this.soundButtonClick();
@@ -85,7 +96,7 @@ export class EducationSheepScreen extends Container {
     this.soundButton.anchor.set(0.5);
     this.soundButton.layout = { position: 'absolute', left: '50%', top: '20%' };
 
-    this.grasses = letters.map(
+    this.grasses = displayLetters.map(
       (letter, i) =>
         new LetterGrass(
           letter,
@@ -277,6 +288,7 @@ export class EducationSheepScreen extends Container {
       void engine().navigation.showScreen(EducationSheepScreen, this.level);
     } else {
       EducationSheepScreen.rounds = 0;
+      EducationSheepScreen.roundOrder = [];
       const { correct, mistakes } = useSessionStore.getState();
       useScoreManager.getState().addSession(correct, mistakes);
       void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
