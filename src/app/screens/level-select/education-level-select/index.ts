@@ -7,7 +7,7 @@ import { LayerSelectScreen } from '../../layer-select';
 import { EducationMapRow } from './education-map-row';
 
 export class EducationLevelSelect extends Container {
-  public static assetBundles = ['education-level', 'ui'];
+  public static assetBundles = ['education-level', 'education-level-map', 'ui'];
 
   private background: Sprite;
   private mapRow: EducationMapRow;

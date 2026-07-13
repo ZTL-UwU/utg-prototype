@@ -19,7 +19,7 @@ export class EducationMapRow extends Container {
         width: '100%',
         justifyContent: 'center',
         alignItems: 'center',
-        gap: 10,
+        gap: 8,
       },
     });
 
@@ -34,7 +34,7 @@ export class EducationMapRow extends Container {
     this.unitButtons = [
       tutorialButton,
       ...educationMaps.flatMap((mapUnit, i) => {
-        const fillerLine = new Graphics({ layout: { width: 100, height: 15 } })
+        const fillerLine = new Graphics({ layout: { width: 80, height: 15 } })
           .roundRect(0, 0, 100, 15, 10)
           .fill(0xa66129);
         const button = new MapUnitButton(mapUnit, i);
