@@ -3,8 +3,8 @@ import { Container, Graphics } from 'pixi.js';
 
 import { EducationLevelScreen } from '.';
 import { engine } from '../../../../engine/getEngine';
+import { randomShuffle } from '../../../../engine/utils/random';
 import { waitFor } from '../../../../engine/utils/waitFor';
-import { pickRandomEducationLetters } from '../../../../utils/example-words';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -19,6 +19,7 @@ const VGAP = CARD_SIZE / 4;
 const HPADDING = HGAP / 2;
 const VPADDING = VGAP / 2;
 const BUTTON_DIM = 150;
+const NUM_CHOICES = 4;
 
 export class LetterGrid extends Container {
   // Pixi Scene Objects
@@ -26,7 +27,6 @@ export class LetterGrid extends Container {
   private soundButton: SoundButton;
   private panel: Container;
   private letterStrings: string[];
-  //   private letterStrings: string[] = pickRandomEducationLetters(NUM_CHOICES);
   private topPanel: Container;
   private bottomPanel: Container;
 
@@ -34,11 +34,13 @@ export class LetterGrid extends Container {
   private letters: LetterChoice[];
   private letterMap: Map<string, LetterChoice>;
   private correctLetterString: string;
+  private displayLetters: string[];
   private isResolving = false;
 
   // STATIC ROUND COUNTER, RESET ON FIN
   public static rounds = 0;
-  public static readonly MAX_ROUNDS = 5;
+  public static readonly MAX_ROUNDS = 8;
+  private static roundOrder: string[] = [];
   private level: TLevel;
   private isPlaying: boolean = false;
 
@@ -59,8 +61,9 @@ export class LetterGrid extends Container {
     this.soundButton = new SoundButton({ onClick: this.soundButtonClick, size: BUTTON_DIM });
 
     // init Letter Attributes so linter is happy
-    this.letterStrings = level.props?.letters ?? pickRandomEducationLetters(4);
+    this.letterStrings = level.props!.letters;
     this.correctLetterString = '';
+    this.displayLetters = [];
     this.letterMap = new Map();
     this.letters = [];
 
@@ -72,12 +75,19 @@ export class LetterGrid extends Container {
     this.addChild(this.panel);
   }
 
-  // init letters, letterMap, correctLetterString
+  // init letters, letterMap, correctLetterString, displayLetters
   // ACCESSSES letterStrings
   private initLetterAttributes() {
-    this.correctLetterString =
-      this.letterStrings[Math.floor(Math.random() * this.letterStrings.length)];
-    this.letterStrings.forEach((letterString) => {
+    if (LetterGrid.rounds === 0) {
+      LetterGrid.roundOrder = randomShuffle([...this.letterStrings]);
+    }
+    this.correctLetterString = LetterGrid.roundOrder[LetterGrid.rounds];
+    const distractors = randomShuffle(
+      this.letterStrings.filter((letterString) => letterString !== this.correctLetterString),
+    ).slice(0, NUM_CHOICES - 1);
+    this.displayLetters = randomShuffle([this.correctLetterString, ...distractors]);
+
+    this.displayLetters.forEach((letterString) => {
       this.letterMap.set(
         letterString,
         new LetterChoice({
@@ -121,9 +131,9 @@ export class LetterGrid extends Container {
 
   private populatePanel() {
     // add letters equally to top/bottom panels
-    for (let i = 0; i < this.letterStrings.length; i++) {
+    for (let i = 0; i < this.displayLetters.length; i++) {
       const choiceSlot = this.createChoiceSlot(this.letters[i]);
-      if (i < this.letterStrings.length / 2) this.topPanel.addChild(choiceSlot);
+      if (i < this.displayLetters.length / 2) this.topPanel.addChild(choiceSlot);
       else this.bottomPanel.addChild(choiceSlot);
     }
 
@@ -200,6 +210,7 @@ export class LetterGrid extends Container {
 
   public static endGame(level: TLevel) {
     LetterGrid.rounds = 0;
+    LetterGrid.roundOrder = [];
     const { correct, mistakes } = useSessionStore.getState();
 
     useScoreManager.getState().addSession(correct, mistakes);
