@@ -57,7 +57,7 @@ export class LevelButton extends FancyButton {
   private currentRadius = RING_IDLE_RADIUS;
   private currentFill = 0;
 
-  constructor(level: TLevel, mapUnit: TMapUnit) {
+  constructor(level: TLevel, mapUnit: TMapUnit, idx: number) {
     super({
       defaultView: Texture.from(
         level.unlocked ? 'ui/map-button-unlocked.png' : 'ui/map-button-locked.svg',
@@ -73,7 +73,7 @@ export class LevelButton extends FancyButton {
       },
       text: level.unlocked
         ? new Text({
-            text: String(level.id),
+            text: String(idx),
             style: {
               fontFamily: 'Concert One',
               fontSize: 110,

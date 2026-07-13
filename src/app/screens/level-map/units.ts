@@ -260,11 +260,11 @@ export const educationMaps: TMapUnit[] = [
     levels: [
       {
         id: 13,
-        unlocked: false,
+        unlocked: true,
         mascot: 'sheep',
         screen: EducationSheepJumpScreen,
         background: 'education-levels/education-level/background.png',
-        helpAsset: ['tutorial-popups/education-level-4.png'],
+        helpAsset: ['tutorial-popups/education-level-6.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
         props: {
@@ -280,7 +280,7 @@ export const educationMaps: TMapUnit[] = [
     levels: [
       {
         id: 14,
-        unlocked: false,
+        unlocked: true,
         mascot: 'sheep',
         screen: EducationImageScreen,
         background: 'education-levels/education-level/background.png',
