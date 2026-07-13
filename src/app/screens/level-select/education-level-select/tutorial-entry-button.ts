@@ -37,7 +37,6 @@ export class TutorialEntryButton extends FancyButton {
 
   constructor(onPress: () => void) {
     super({
-      //   defaultView: Texture.from('ui/tutorial-button.svg'),
       defaultView: Texture.from('education-levels/education-level-map/tutorial-entry-button.png'),
       anchor: 0.5,
       animations: {
