@@ -141,6 +141,12 @@ export class TypingWordScreen extends Container {
     this.paused = false;
     window.addEventListener('keydown', this.handleKeyDown);
     await this.keyboard.resume();
+    this.keyboard.setHintedLetter(this.currentTargetLetter);
+  }
+
+  private get currentTargetLetter(): string | undefined {
+    if (!this.currentRound) return undefined;
+    return this.currentRound.word[this.currentRound.activeLetterIdx];
   }
 
   /**===== COMPONENT RENDERING HELPERS ======= */
@@ -203,6 +209,7 @@ export class TypingWordScreen extends Container {
       Texture.from(`education-levels/education-letter-images/${letter}.png`),
     );
     this.updateContentContainer(image, word, activeLetterIdx); // always highlights first letter, letterIdx for new round always at 0
+    this.keyboard.setHintedLetter(this.currentTargetLetter);
   }
   /**
    * ======= GAME LOGIC HELPERS =======
@@ -239,6 +246,7 @@ export class TypingWordScreen extends Container {
       setTimeout(() => {
         this.keyboard.clearKeyFeedback(event.code);
         this.card.tint = CARD_COLORS['default'];
+        this.keyboard.setHintedLetter(this.currentTargetLetter);
       }, FEEDBACK_DURATION_MS);
       useSessionStore.getState().recordMistake();
     }
@@ -257,6 +265,7 @@ export class TypingWordScreen extends Container {
         r.activeLetterIdx,
         r.word[r.activeLetterIdx].length,
       );
+      this.keyboard.setHintedLetter(this.currentTargetLetter);
     }
   };
 
