@@ -26,6 +26,7 @@ export type TLevel = {
   backdropColor: number;
   splashColorScheme?: SplashColorScheme;
   mascotOnSplash: boolean;
+  props?: { [key: string]: any };
 };
 
 export type SplashColorScheme = {
@@ -52,6 +53,19 @@ export type TMapUnit = {
   levels: TLevel[];
 };
 
+const LETTER_SETS = {
+  lvl1: ['ب', 'ئو', 'ج', 'ۋ', 'د', 'ش', 'ئۆ', 'ق'],
+  lvl2: ['ر', 'ن', 'ئە', 'ئې', 'ھ', 'چ', 'ز', 'غ'],
+  lvl3: ['ژ', 'س', 'ت', 'م', 'ل', 'ف', 'ئى', 'خ'],
+  lvl4: ['پ', 'ئۇ', 'ئا', 'ك', 'ڭ', 'ئۈ', 'ي', 'گ'],
+};
+const U_LETTER_SET = [
+  ...LETTER_SETS.lvl1,
+  ...LETTER_SETS.lvl2,
+  ...LETTER_SETS.lvl3,
+  ...LETTER_SETS.lvl4,
+];
+
 export const educationMaps: TMapUnit[] = [
   {
     type: 'education',
@@ -67,6 +81,9 @@ export const educationMaps: TMapUnit[] = [
         helpAsset: ['tutorial-popups/education-level-1.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
+        props: {
+          letters: LETTER_SETS.lvl1,
+        },
       },
       {
         id: 2,
@@ -77,6 +94,9 @@ export const educationMaps: TMapUnit[] = [
         helpAsset: ['tutorial-popups/education-level-2.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
+        props: {
+          letters: LETTER_SETS.lvl2,
+        },
       },
       {
         id: 3,
@@ -87,6 +107,9 @@ export const educationMaps: TMapUnit[] = [
         helpAsset: ['tutorial-popups/education-level-3.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
+        props: {
+          letters: LETTER_SETS.lvl3,
+        },
       },
     ],
   },
@@ -104,6 +127,9 @@ export const educationMaps: TMapUnit[] = [
         helpAsset: ['tutorial-popups/education-level-4.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
+        props: {
+          letters: LETTER_SETS.lvl4,
+        },
       },
       {
         id: 5,
@@ -114,6 +140,9 @@ export const educationMaps: TMapUnit[] = [
         helpAsset: ['tutorial-popups/education-level-5.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
+        props: {
+          letters: [...U_LETTER_SET].sort(() => Math.random() - 0.5).slice(0, 12),
+        },
       },
       {
         id: 6,
@@ -124,6 +153,9 @@ export const educationMaps: TMapUnit[] = [
         helpAsset: ['tutorial-popups/education-level-6.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
+        props: {
+          letters: [...U_LETTER_SET].sort(() => Math.random() - 0.5).slice(0, 12),
+        },
       },
     ],
   },

@@ -3,7 +3,6 @@ import { animate } from 'motion';
 import { Container, Graphics } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { pickRandomEducationLetters } from '../../../../utils/example-words';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -67,7 +66,7 @@ export class EducationImageScreen extends Container {
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
-    const letters = pickRandomEducationLetters(3);
+    const letters: string[] = level.props!.letters;
     letters.sort(() => Math.random() - 0.5);
     this.correctLetter = letters[Math.floor(Math.random() * letters.length)];
 

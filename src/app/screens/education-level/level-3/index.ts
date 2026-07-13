@@ -3,7 +3,6 @@ import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, ObservablePoint, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { pickRandomEducationLetters } from '../../../../utils/example-words';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -37,11 +36,6 @@ function getSheepY(grassY: number) {
 function getSheepFacingScale(currentScaleX: number, sheepX: number, targetX: number) {
   const magnitude = Math.abs(currentScaleX) || 1;
   return (sheepX > targetX ? -1 : 1) * magnitude;
-}
-
-function getThreeUniqueLetters(): [string, string, string] {
-  const [a, b, c] = pickRandomEducationLetters(3);
-  return [a, b, c];
 }
 
 export class EducationSheepScreen extends Container {
@@ -80,8 +74,7 @@ export class EducationSheepScreen extends Container {
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
-    const letters = getThreeUniqueLetters();
-    letters.sort(() => Math.random() - 0.5);
+    const letters: string[] = level.props!.letters;
     this.correctLetter = letters[Math.floor(Math.random() * letters.length)];
     this.soundButton = new SoundButton({
       onClick: () => {

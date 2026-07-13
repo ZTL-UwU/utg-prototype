@@ -77,7 +77,7 @@ export class EducationBubbleScreen extends Container {
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
-    const [correctLetter, wrong1, wrong2] = pickRandomEducationLetters(3);
+    const [correctLetter, wrong1, wrong2] = level.props?.letters ?? pickRandomEducationLetters(3);
     const letters = [correctLetter, wrong1, wrong2].sort(() => Math.random() - 0.5);
     this.soundButton = new SoundButton({
       onClick: () => {

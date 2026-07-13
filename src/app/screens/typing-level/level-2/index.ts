@@ -251,7 +251,7 @@ export class TypingSandstormScreen extends Container {
       card,
       spawnX,
       elapsedMs: 0,
-      fallSpeed: randomBetween(70, 90),
+      fallSpeed: randomBetween(70, 90), // TODO : (60,80)
       windSpeed: randomBetween(-20, 20),
       swayAmplitude: randomBetween(20, 50),
       swaySpeed: randomBetween(1.25, 2.5),

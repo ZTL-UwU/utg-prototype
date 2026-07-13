@@ -12,9 +12,6 @@ import { LetterChoice } from '../../../ui/letter-choice';
 import { SoundButton } from '../../../ui/sound-button';
 import type { TLevel } from '../../level-map/units';
 
-// Gameplay
-const NUM_CHOICES = 4;
-
 // Scene Object
 const CARD_SIZE = 150;
 const HGAP = CARD_SIZE * 1.5;
@@ -28,7 +25,8 @@ export class LetterGrid extends Container {
   private backgroundTint: Graphics;
   private soundButton: SoundButton;
   private panel: Container;
-  private letterStrings: string[] = pickRandomEducationLetters(NUM_CHOICES);
+  private letterStrings: string[];
+  //   private letterStrings: string[] = pickRandomEducationLetters(NUM_CHOICES);
   private topPanel: Container;
   private bottomPanel: Container;
 
@@ -61,6 +59,7 @@ export class LetterGrid extends Container {
     this.soundButton = new SoundButton({ onClick: this.soundButtonClick, size: BUTTON_DIM });
 
     // init Letter Attributes so linter is happy
+    this.letterStrings = level.props?.letters ?? pickRandomEducationLetters(4);
     this.correctLetterString = '';
     this.letterMap = new Map();
     this.letters = [];
@@ -76,7 +75,8 @@ export class LetterGrid extends Container {
   // init letters, letterMap, correctLetterString
   // ACCESSSES letterStrings
   private initLetterAttributes() {
-    this.correctLetterString = this.letterStrings[Math.floor(Math.random() * NUM_CHOICES)];
+    this.correctLetterString =
+      this.letterStrings[Math.floor(Math.random() * this.letterStrings.length)];
     this.letterStrings.forEach((letterString) => {
       this.letterMap.set(
         letterString,
@@ -121,9 +121,9 @@ export class LetterGrid extends Container {
 
   private populatePanel() {
     // add letters equally to top/bottom panels
-    for (let i = 0; i < NUM_CHOICES; i++) {
+    for (let i = 0; i < this.letterStrings.length; i++) {
       const choiceSlot = this.createChoiceSlot(this.letters[i]);
-      if (i < NUM_CHOICES / 2) this.topPanel.addChild(choiceSlot);
+      if (i < this.letterStrings.length / 2) this.topPanel.addChild(choiceSlot);
       else this.bottomPanel.addChild(choiceSlot);
     }
 
