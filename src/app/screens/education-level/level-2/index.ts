@@ -16,6 +16,8 @@ import { LetterBubble } from './letter-bubble';
 
 // bubble slots, matches xSlots in resize()
 const NUM_CHOICES = 3;
+// only used when level.props.letters is missing entirely
+const FALLBACK_LETTER_COUNT = 8;
 
 export class EducationBubbleScreen extends Container {
   public static assetBundles = [
@@ -25,7 +27,6 @@ export class EducationBubbleScreen extends Container {
     'education-letters-audio',
   ];
   public static rounds = 0;
-  public static readonly MAX_ROUNDS = 8;
   private static roundOrder: string[] = [];
 
   private background: Sprite;
@@ -38,7 +39,7 @@ export class EducationBubbleScreen extends Container {
   private correctLetter: string;
   private isPlaying: boolean = false;
   readonly endGame = () => {
-    if (++EducationBubbleScreen.rounds < EducationBubbleScreen.MAX_ROUNDS) {
+    if (++EducationBubbleScreen.rounds < EducationBubbleScreen.roundOrder.length) {
       void engine().navigation.showScreen(EducationBubbleScreen, this.level);
     } else {
       EducationBubbleScreen.rounds = 0;
@@ -84,7 +85,7 @@ export class EducationBubbleScreen extends Container {
     });
 
     const letterPool: string[] =
-      level.props?.letters ?? pickRandomEducationLetters(EducationBubbleScreen.MAX_ROUNDS);
+      level.props?.letters ?? pickRandomEducationLetters(FALLBACK_LETTER_COUNT);
     if (EducationBubbleScreen.rounds === 0) {
       EducationBubbleScreen.roundOrder = randomShuffle([...letterPool]);
     }

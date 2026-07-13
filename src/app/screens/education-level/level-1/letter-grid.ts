@@ -39,8 +39,7 @@ export class LetterGrid extends Container {
 
   // STATIC ROUND COUNTER, RESET ON FIN
   public static rounds = 0;
-  public static readonly MAX_ROUNDS = 8;
-  private static roundOrder: string[] = [];
+  public static roundOrder: string[] = [];
   private level: TLevel;
   private isPlaying: boolean = false;
 
@@ -195,7 +194,7 @@ export class LetterGrid extends Container {
     this.letters.forEach((letter) => letter.setInteractive(false));
     await Promise.all([choice.showCorrect(), waitFor(1)]);
 
-    if (++LetterGrid.rounds < LetterGrid.MAX_ROUNDS) {
+    if (++LetterGrid.rounds < LetterGrid.roundOrder.length) {
       void engine().navigation.showScreen(EducationLevelScreen, this.level);
     } else {
       LetterGrid.endGame(this.level);

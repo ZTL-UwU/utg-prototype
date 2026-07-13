@@ -3,13 +3,13 @@ import { animate } from 'motion';
 import { Container, Graphics, HTMLText, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { randomShuffle } from '../../../../engine/utils/random';
 import { waitFor } from '../../../../engine/utils/waitFor';
 import {
   createExampleWordStyle,
-  EDUCATION_LETTERS,
+  EXAMPLE_WORDS,
   getCompletedWordMarkup,
   getMissingWordMarkup,
-  getPlayableWords,
 } from '../../../../utils/example-words';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
@@ -30,18 +30,21 @@ const IMAGE_X = 280;
 const WORD_X = 750;
 const SOUND_BUTTON_X = 1220;
 const WORD_MAX_WIDTH = 760;
+// letter choice slots, matches CHOICE_X
+const NUM_CHOICES = 3;
 
-function getRound(): { letter: string; word: string; choices: string[] } {
-  const playableWords = getPlayableWords().sort(() => Math.random() - 0.5);
-  const [letter, word] = playableWords[0];
-  const distractors = EDUCATION_LETTERS.filter((candidate) => candidate !== letter)
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 2);
+function getRound(
+  letterPool: string[],
+  correctLetter: string,
+): { word: string; choices: string[] } {
+  const word = EXAMPLE_WORDS.get(correctLetter) ?? '';
+  const distractors = randomShuffle<string>(
+    letterPool.filter((letter) => letter !== correctLetter),
+  ).slice(0, NUM_CHOICES - 1);
 
   return {
-    letter,
     word,
-    choices: [letter, ...distractors].sort(() => Math.random() - 0.5),
+    choices: randomShuffle<string>([correctLetter, ...distractors]),
   };
 }
 
@@ -53,7 +56,7 @@ export class EducationWordScreen extends Container {
     'education-letters-audio',
   ];
   public static rounds = 0;
-  public static readonly MAX_ROUNDS = 5;
+  private static roundOrder: string[] = [];
 
   private readonly background: Sprite;
   private readonly panel: Container;
@@ -74,8 +77,12 @@ export class EducationWordScreen extends Container {
     engine().audio.bgm.setVolume(0);
     this.level = level;
 
-    const round = getRound();
-    this.correctLetter = round.letter;
+    const letterPool: string[] = level.props!.letters;
+    if (EducationWordScreen.rounds === 0) {
+      EducationWordScreen.roundOrder = randomShuffle<string>([...letterPool]);
+    }
+    this.correctLetter = EducationWordScreen.roundOrder[EducationWordScreen.rounds];
+    const round = getRound(letterPool, this.correctLetter);
     this.word = round.word;
 
     this.background = new Sprite({
@@ -147,6 +154,7 @@ export class EducationWordScreen extends Container {
           type: getLevelType(level),
           onQuit: () => {
             EducationWordScreen.rounds = 0;
+            EducationWordScreen.roundOrder = [];
             void engine().navigation.showScreen(LevelMapScreen, mapUnit);
           },
         }),
@@ -235,12 +243,13 @@ export class EducationWordScreen extends Container {
   }
 
   private endRound() {
-    if (++EducationWordScreen.rounds < EducationWordScreen.MAX_ROUNDS) {
+    if (++EducationWordScreen.rounds < EducationWordScreen.roundOrder.length) {
       void engine().navigation.showScreen(EducationWordScreen, this.level);
       return;
     }
 
     EducationWordScreen.rounds = 0;
+    EducationWordScreen.roundOrder = [];
     const { correct, mistakes } = useSessionStore.getState();
     useScoreManager.getState().addSession(correct, mistakes);
     void engine().navigation.showPopup(EndScreenPopup, { level: this.level });

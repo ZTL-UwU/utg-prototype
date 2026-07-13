@@ -44,7 +44,6 @@ function getSheepFacingScale(currentScaleX: number, sheepX: number, targetX: num
 export class EducationSheepScreen extends Container {
   public static assetBundles = ['education-level-3', 'ui', 'mascots', 'education-letters-audio'];
   public static rounds = 0;
-  public static readonly MAX_ROUNDS = 8;
   private static roundOrder: string[] = [];
 
   private background: Sprite;
@@ -284,7 +283,7 @@ export class EducationSheepScreen extends Container {
 
   private endGame() {
     this.isAnimating = false;
-    if (++EducationSheepScreen.rounds < EducationSheepScreen.MAX_ROUNDS) {
+    if (++EducationSheepScreen.rounds < EducationSheepScreen.roundOrder.length) {
       void engine().navigation.showScreen(EducationSheepScreen, this.level);
     } else {
       EducationSheepScreen.rounds = 0;

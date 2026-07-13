@@ -20,7 +20,7 @@ const X_SLOTS = [0.2, 0.5, 0.8];
 const CHOICE_Y_RATIO = 0.38;
 
 function endGame(level: TLevel) {
-  if (++EducationImageScreen.rounds < EducationImageScreen.MAX_ROUNDS) {
+  if (++EducationImageScreen.rounds < EducationImageScreen.roundOrder.length) {
     void engine().navigation.showScreen(EducationImageScreen, level);
   } else {
     EducationImageScreen.rounds = 0;
@@ -39,7 +39,6 @@ export class EducationImageScreen extends Container {
     'education-letters-audio',
   ];
   public static rounds = 0;
-  public static readonly MAX_ROUNDS = 8;
   public static roundOrder: string[] = [];
 
   private background: Graphics;

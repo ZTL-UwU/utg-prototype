@@ -3,8 +3,8 @@ import { animate, type AnimationPlaybackControls, type AnimationSequence } from 
 import { Container, Sprite, Texture, TilingSprite } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { randomShuffle } from '../../../../engine/utils/random';
 import { waitFor } from '../../../../engine/utils/waitFor';
-import { EDUCATION_LETTERS } from '../../../../utils/example-words';
 import {
   getAccuracyPercent,
   getStarCount,
@@ -143,11 +143,16 @@ export class EducationSheepJumpScreen extends Container {
     engine().audio.bgm.setVolume(0);
     this.level = level;
 
-    this.map = Array.from({ length: 5 }).map(() => {
-      const arr = [...EDUCATION_LETTERS].sort(() => Math.random() - 0.5).slice(0, 3);
+    const letterPool: string[] = level.props!.letters;
+    const orderedLetters = randomShuffle<string>([...letterPool]);
+    this.map = orderedLetters.map((correctLetter) => {
+      const distractors = randomShuffle<string>(
+        letterPool.filter((letter) => letter !== correctLetter),
+      ).slice(0, 2);
+      const rowLetters = randomShuffle<string>([correctLetter, ...distractors]);
       return {
-        letters: arr,
-        answer: Math.floor(Math.random() * arr.length),
+        letters: rowLetters,
+        answer: rowLetters.indexOf(correctLetter),
       };
     });
 
