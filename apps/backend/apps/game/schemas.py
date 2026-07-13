@@ -47,3 +47,14 @@ class UnitOut(Schema):
     @staticmethod
     def resolve_levels(obj):
         return list(obj.levels.all())
+
+
+class LevelTypeNameOut(Schema):
+    name: str | None
+
+
+class SidebarLevelOut(Schema):
+    id: int
+    layer: str
+    title: str | None
+    level_type: LevelTypeNameOut
