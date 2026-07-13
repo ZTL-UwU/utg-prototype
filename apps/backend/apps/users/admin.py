@@ -7,6 +7,7 @@ from apps.users.models import LevelResult, Reward, User, UserReward
 
 class UserRewardInline(admin.TabularInline):
     model = UserReward
+    fk_name = "user"
     extra = 0
     autocomplete_fields = ("reward",)
 
@@ -54,4 +55,4 @@ class LevelResultAdmin(admin.ModelAdmin):
     list_filter = ("star", "created_at")
     search_fields = ("user__email", "level__title")
     autocomplete_fields = ("user", "level")
-    readonly_fields = ("created_at",)
+    readonly_fields = ("created_at", "updated_at")

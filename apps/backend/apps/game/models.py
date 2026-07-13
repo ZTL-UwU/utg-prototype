@@ -1,5 +1,7 @@
 from django.db import models
 
+from apps.common.models import AuditingMixin
+
 
 class Layer(models.TextChoices):
     TYPING = "typing", "Typing"
@@ -7,7 +9,7 @@ class Layer(models.TextChoices):
     GAMES = "game", "Game"
 
 
-class Unit(models.Model):
+class Unit(AuditingMixin, models.Model):
     sort_order = models.IntegerField(db_index=True)
     layer = models.CharField(max_length=20, choices=Layer.choices)
     title = models.CharField(max_length=255)
@@ -22,7 +24,7 @@ class Unit(models.Model):
         return self.title
 
 
-class LevelType(models.Model):
+class LevelType(AuditingMixin, models.Model):
     name = models.CharField(max_length=255, null=True, blank=True)
     props_json_schema = models.JSONField()
 
@@ -33,7 +35,7 @@ class LevelType(models.Model):
         return self.name or f"Level type {self.pk}"
 
 
-class Mascot(models.Model):
+class Mascot(AuditingMixin, models.Model):
     name = models.CharField(max_length=255, null=True, blank=True)
     idle_asset_path = models.CharField(max_length=255)
     zero_star_asset_path = models.CharField(max_length=255, db_column="0_star_asset_path")
@@ -48,7 +50,7 @@ class Mascot(models.Model):
         return self.name or f"Mascot {self.pk}"
 
 
-class Level(models.Model):
+class Level(AuditingMixin, models.Model):
     sort_order = models.IntegerField(db_index=True)
     unit = models.ForeignKey(Unit, on_delete=models.CASCADE, related_name="levels")
     layer = models.CharField(max_length=20, choices=Layer.choices)
