@@ -57,7 +57,21 @@ class UnitOut(AuditingOut):
         return list(obj.levels.all())
 
 
-class UnitShortOut(AuditingOut):
+class UnitByLayerOut(AuditingOut):
+    id: int
+    sort_order: int
+    layer: str
+    title: str
+    title_font_size: int
+    background_asset_path: str
+    levels: list[LevelShortOut]
+
+    @staticmethod
+    def resolve_levels(obj):
+        return list(obj.levels.all())
+
+
+class UnitByIdOut(AuditingOut):
     id: int
     sort_order: int
     layer: str
