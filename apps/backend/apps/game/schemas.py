@@ -2,8 +2,10 @@ from typing import Any
 
 from ninja import Schema
 
+from apps.common.schemas import AuditingOut
 
-class MascotOut(Schema):
+
+class MascotOut(AuditingOut):
     id: int
     name: str | None
     idle_asset_path: str
@@ -13,13 +15,13 @@ class MascotOut(Schema):
     three_star_asset_path: str
 
 
-class LevelTypeOut(Schema):
+class LevelTypeOut(AuditingOut):
     id: int
     name: str | None
     props_json_schema: Any
 
 
-class LevelOut(Schema):
+class LevelOut(AuditingOut):
     id: int
     sort_order: int
     layer: str
@@ -35,7 +37,13 @@ class LevelOut(Schema):
     show_mascot_on_splash: bool
 
 
-class UnitOut(Schema):
+class LevelShortOut(AuditingOut):
+    id: int
+    sort_order: int
+    title: str | None
+
+
+class UnitOut(AuditingOut):
     id: int
     sort_order: int
     layer: str
@@ -43,6 +51,20 @@ class UnitOut(Schema):
     title_font_size: int
     background_asset_path: str
     levels: list[LevelOut]
+
+    @staticmethod
+    def resolve_levels(obj):
+        return list(obj.levels.all())
+
+
+class UnitShortOut(AuditingOut):
+    id: int
+    sort_order: int
+    layer: str
+    title: str
+    title_font_size: int
+    background_asset_path: str
+    levels: list[LevelShortOut]
 
     @staticmethod
     def resolve_levels(obj):

@@ -1,8 +1,8 @@
 from django.db.models import Prefetch
 from ninja import Router
 
-from apps.game.models import Level, Unit
-from apps.game.schemas import SidebarUnitOut, UnitOut
+from apps.game.models import Layer, Level, Unit
+from apps.game.schemas import SidebarUnitOut, UnitOut, UnitShortOut
 
 router = Router(tags=["game"])
 
@@ -20,3 +20,17 @@ def list_units(request):
 )
 def list_sidebar_units(request):
     return Unit.objects.only("id", "layer", "title", "sort_order").order_by("sort_order", "id")
+
+
+@router.get(
+    "/units/list-by-layer/{layer}",
+    response=list[UnitShortOut],
+    summary="List units by layer",
+)
+def list_units_by_layer(request, layer: Layer):
+    levels = Level.objects.order_by("sort_order", "id")
+    return (
+        Unit.objects.filter(layer=layer)
+        .prefetch_related(Prefetch("levels", queryset=levels))
+        .order_by("sort_order", "id")
+    )

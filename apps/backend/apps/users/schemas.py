@@ -1,5 +1,7 @@
 from ninja import Field, Schema
 
+from apps.common.schemas import AuditingOut
+
 
 class RegisterIn(Schema):
     email: str
@@ -34,7 +36,7 @@ class RefreshedAccessTokenOut(Schema):
     access: str
 
 
-class RewardOut(Schema):
+class RewardOut(AuditingOut):
     id: int
     name: str
     asset_path: str
@@ -48,7 +50,7 @@ class LevelResultIn(Schema):
     mistake: int = Field(ge=0)
 
 
-class LevelResultOut(Schema):
+class LevelResultOut(AuditingOut):
     id: int
     level: int
     star: int
