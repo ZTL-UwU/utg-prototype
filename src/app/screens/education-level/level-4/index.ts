@@ -37,6 +37,7 @@ export class EducationImageScreen extends Container {
     'education-letter-images',
     'ui',
     'education-letters-audio',
+    'education-words-audio',
   ];
   public static rounds = 0;
   public static roundOrder: string[] = [];
