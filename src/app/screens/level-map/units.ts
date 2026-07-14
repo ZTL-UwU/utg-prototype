@@ -22,6 +22,7 @@ export type TLevel = {
   mascot: 'sheep' | 'goat' | 'camel' | 'chef';
   screen?: AppScreenConstructor<any[]>;
   background: string;
+  splashScreenBg?: string;
   helpAsset: string[];
   backdropColor: number;
   splashColorScheme?: SplashColorScheme;
@@ -66,11 +67,34 @@ const U_LETTER_SET = [
   ...LETTER_SETS.lvl4,
 ];
 
+// Shared by each education map unit's title and the splash screens of the levels inside it.
+const EDUCATION_UNIT_COLORS = {
+  unit1: 0x789843,
+  unit2: 0x4a9b54,
+  unit3: 0xebce9f,
+  unit4: 0xe49835,
+  unit5: 0xe49835,
+};
+
+function educationSplashColorScheme(fontColor: number): SplashColorScheme {
+  return {
+    BUTTON_FILL: fontColor,
+    BUTTON_TEXT_FILL: 0xffffff,
+    LEVEL_FONT_FILL: fontColor,
+    LEVEL_TITLE_FILL: fontColor,
+  };
+}
+
 export const educationMaps: TMapUnit[] = [
   {
     type: 'education',
     background: 'education-levels/education-level-map/background-unit-1.png',
-    title: { text: 'LEVEL 1', fontSize: 240, fontColor: 0x789843, isCurved: true },
+    title: {
+      text: 'LEVEL 1',
+      fontSize: 240,
+      fontColor: EDUCATION_UNIT_COLORS.unit1,
+      isCurved: true,
+    },
     levels: [
       {
         id: 1,
@@ -78,6 +102,8 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationLevelScreen,
         background: 'education-levels/education-level/background.png',
+        splashScreenBg: 'education-levels/education-level-map/background-unit-1.png',
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit1),
         helpAsset: ['tutorial-popups/education-level-1.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
@@ -91,6 +117,8 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationBubbleScreen,
         background: 'education-levels/education-level/background.png',
+        splashScreenBg: 'education-levels/education-level-map/background-unit-1.png',
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit1),
         helpAsset: ['tutorial-popups/education-level-2.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
@@ -104,6 +132,8 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationImageScreen,
         background: 'education-levels/education-level/background.png',
+        splashScreenBg: 'education-levels/education-level-map/background-unit-1.png',
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit1),
         helpAsset: ['tutorial-popups/education-level-4.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
@@ -116,7 +146,12 @@ export const educationMaps: TMapUnit[] = [
   {
     type: 'education',
     background: 'education-levels/education-level-map/background-unit-2.png',
-    title: { text: 'LEVEL 2', fontSize: 240, fontColor: 0x4a9b54, isCurved: true },
+    title: {
+      text: 'LEVEL 2',
+      fontSize: 240,
+      fontColor: EDUCATION_UNIT_COLORS.unit2,
+      isCurved: true,
+    },
     levels: [
       {
         id: 4,
@@ -124,9 +159,11 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationLevelScreen,
         background: 'education-levels/education-level/background.png',
+        splashScreenBg: 'education-levels/education-level-map/background-unit-2.png',
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit2),
         helpAsset: ['tutorial-popups/education-level-1.png'],
         backdropColor: 0x4a90e2,
-        mascotOnSplash: true,
+        mascotOnSplash: false,
         props: {
           letters: LETTER_SETS.lvl2,
         },
@@ -137,9 +174,11 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationSheepScreen,
         background: 'education-levels/education-level/background.png',
+        splashScreenBg: 'education-levels/education-level-map/background-unit-2.png',
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit2),
         helpAsset: ['tutorial-popups/education-level-3.png'],
         backdropColor: 0x4a90e2,
-        mascotOnSplash: true,
+        mascotOnSplash: false,
         props: {
           letters: LETTER_SETS.lvl2,
         },
@@ -150,9 +189,11 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationWordScreen,
         background: 'education-levels/education-level/background.png',
+        splashScreenBg: 'education-levels/education-level-map/background-unit-2.png',
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit2),
         helpAsset: ['tutorial-popups/education-level-5.png'],
         backdropColor: 0x4a90e2,
-        mascotOnSplash: true,
+        mascotOnSplash: false,
         props: {
           letters: LETTER_SETS.lvl2,
         },
@@ -162,7 +203,12 @@ export const educationMaps: TMapUnit[] = [
   {
     type: 'education',
     background: 'education-levels/education-level-map/background-unit-3.png',
-    title: { text: 'LEVEL 3', fontSize: 240, fontColor: 0xebce9f, isCurved: true },
+    title: {
+      text: 'LEVEL 3',
+      fontSize: 240,
+      fontColor: EDUCATION_UNIT_COLORS.unit3,
+      isCurved: true,
+    },
     levels: [
       {
         id: 7,
@@ -170,6 +216,8 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationLevelScreen,
         background: 'education-levels/education-level/background.png',
+        splashScreenBg: 'education-levels/education-level-map/background-unit-3.png',
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit3),
         // TODO: missing tutorial asset
         helpAsset: ['tutorial-popups/education-level-1.png'],
         backdropColor: 0x4a90e2,
@@ -184,9 +232,11 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationWhackAMoleScreen,
         background: 'education-levels/education-level/background.png',
+        splashScreenBg: 'education-levels/education-level-map/background-unit-3.png',
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit3),
         helpAsset: ['tutorial-popups/education-level-7.png'],
         backdropColor: 0x4a90e2,
-        mascotOnSplash: true,
+        mascotOnSplash: false,
         props: {
           letters: LETTER_SETS.lvl3,
         },
@@ -197,9 +247,11 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationImageScreen,
         background: 'education-levels/education-level/background.png',
+        splashScreenBg: 'education-levels/education-level-map/background-unit-3.png',
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit3),
         helpAsset: ['tutorial-popups/education-level-4.png'],
         backdropColor: 0x4a90e2,
-        mascotOnSplash: true,
+        mascotOnSplash: false,
         props: {
           letters: LETTER_SETS.lvl3,
         },
@@ -209,7 +261,12 @@ export const educationMaps: TMapUnit[] = [
   {
     type: 'education',
     background: 'education-levels/education-level-map/background-unit-4.png',
-    title: { text: 'LEVEL 4', fontSize: 240, fontColor: 0xe49835, isCurved: true },
+    title: {
+      text: 'LEVEL 4',
+      fontSize: 240,
+      fontColor: EDUCATION_UNIT_COLORS.unit4,
+      isCurved: true,
+    },
     levels: [
       {
         id: 10,
@@ -217,6 +274,8 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationLevelScreen,
         background: 'education-levels/education-level/background.png',
+        splashScreenBg: 'education-levels/education-level-map/background-unit-4.png',
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit4),
         // TODO: missing tutorial asset
         helpAsset: ['tutorial-popups/education-level-1.png'],
         backdropColor: 0x4a90e2,
@@ -231,9 +290,11 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationBubbleScreen,
         background: 'education-levels/education-level/background.png',
+        splashScreenBg: 'education-levels/education-level-map/background-unit-4.png',
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit4),
         helpAsset: ['tutorial-popups/education-level-7.png'],
         backdropColor: 0x4a90e2,
-        mascotOnSplash: true,
+        mascotOnSplash: false,
         props: {
           letters: LETTER_SETS.lvl4,
         },
@@ -244,9 +305,11 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationWordScreen,
         background: 'education-levels/education-level/background.png',
+        splashScreenBg: 'education-levels/education-level-map/background-unit-4.png',
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit4),
         helpAsset: ['tutorial-popups/education-level-5.png'],
         backdropColor: 0x4a90e2,
-        mascotOnSplash: true,
+        mascotOnSplash: false,
         props: {
           letters: LETTER_SETS.lvl4,
         },
@@ -256,7 +319,12 @@ export const educationMaps: TMapUnit[] = [
   {
     type: 'education',
     background: 'education-levels/education-level-map/background-unit-5.png',
-    title: { text: 'LEVEL 5', fontSize: 240, fontColor: 0xe49835, isCurved: true },
+    title: {
+      text: 'LEVEL 5',
+      fontSize: 240,
+      fontColor: EDUCATION_UNIT_COLORS.unit5,
+      isCurved: true,
+    },
     levels: [
       {
         id: 13,
@@ -264,9 +332,11 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationSheepJumpScreen,
         background: 'education-levels/education-level/background.png',
+        splashScreenBg: 'education-levels/education-level-map/background-unit-5.png',
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit5),
         helpAsset: ['tutorial-popups/education-level-6.png'],
         backdropColor: 0x4a90e2,
-        mascotOnSplash: true,
+        mascotOnSplash: false,
         props: {
           letters: [...U_LETTER_SET].sort(() => Math.random() - 0.5).slice(0, 12),
         },
@@ -277,9 +347,11 @@ export const educationMaps: TMapUnit[] = [
         mascot: 'sheep',
         screen: EducationImageScreen,
         background: 'education-levels/education-level/background.png',
+        splashScreenBg: 'education-levels/education-level-map/background-unit-5.png',
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit5),
         helpAsset: ['tutorial-popups/education-level-4.png'],
         backdropColor: 0x4a90e2,
-        mascotOnSplash: true,
+        mascotOnSplash: false,
         props: {
           letters: [...U_LETTER_SET].sort(() => Math.random() - 0.5).slice(0, 12),
         },
@@ -299,7 +371,7 @@ export const educationMaps: TMapUnit[] = [
   //         background: 'education-levels/education-level/background.png',
   //         helpAsset: ['tutorial-popups/education-level-4.png'],
   //         backdropColor: 0x4a90e2,
-  //         mascotOnSplash: true,
+  //         mascotOnSplash : false,
   //         props: {
   //           letters: [...U_LETTER_SET].sort(() => Math.random() - 0.5).slice(0, 12),
   //         },

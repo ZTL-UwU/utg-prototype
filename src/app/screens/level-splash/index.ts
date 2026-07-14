@@ -59,7 +59,7 @@ export class LevelSplashScreen extends Container {
     });
 
     this.background = new Sprite({
-      texture: Texture.from(level.background),
+      texture: Texture.from(level.splashScreenBg ?? level.background),
       layout: {
         width: '100%',
         height: '100%',
@@ -173,7 +173,7 @@ export class LevelSplashScreen extends Container {
       isLeaf: true,
       width: buttonWidth,
       height: buttonHeight,
-      top: 660,
+      top: '45%',
     };
 
     this.startButton.onPress.connect(() => {

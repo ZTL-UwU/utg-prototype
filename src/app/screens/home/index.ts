@@ -54,9 +54,9 @@ export class HomeScreen extends Container {
 
     const textDropShadow: Partial<TextDropShadow> = {
       color: 0x000000,
-      blur: 20,
+      blur: 5,
       distance: 0,
-      alpha: 0.5,
+      alpha: 0.75,
     };
 
     this.title = new Text({
@@ -66,7 +66,7 @@ export class HomeScreen extends Container {
         fontFamily: 'Concert One',
         fontSize: 200,
         fontWeight: '700',
-        dropShadow: textDropShadow,
+        // dropShadow: textDropShadow,
       },
       layout: true,
     });
