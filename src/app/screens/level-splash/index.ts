@@ -26,7 +26,7 @@ function getColorThemeFromMascot(mascot: TMascot) {
   return mascot === 'camel'
     ? 0xc45a14
     : mascot === 'sheep'
-      ? 0x2d6b6a
+      ? 0x0d8583
       : mascot === 'chef'
         ? 0x7e5433
         : 0x6e8539;
@@ -68,11 +68,20 @@ export class LevelSplashScreen extends Container {
       },
     });
     this.colorScheme = level.splashColorScheme ?? getDefaultColorScheme(level.mascot);
+    let levelTextEntry;
+    if (mapUnit.type === 'education') {
+      let num = level.id % 3 === 0 ? 3 : level.id % 3;
+      levelTextEntry = `GAME ${num}`;
+    } else {
+      levelTextEntry = `LEVEL ${level.id}`;
+    }
+
     this.levelNumber = new SplitText({
-      text: `${mapUnit.type === 'education' ? 'GAME' : 'LEVEL'} ${level.id}`,
+      //   text: `${mapUnit.type === 'education' ? 'GAME' : 'LEVEL'} ${level.id }`,
+      text: levelTextEntry,
       style: {
         fontFamily: 'Concert One',
-        fontSize: 250,
+        fontSize: 175,
         fontWeight: '800',
         fill: this.colorScheme.LEVEL_FONT_FILL,
       },
