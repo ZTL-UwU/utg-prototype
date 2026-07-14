@@ -1,8 +1,10 @@
-from typing import Any
+from typing import Any, Literal
 
 from ninja import Schema
 
 from apps.common.schemas import AuditingOut
+
+LayerValue = Literal["typing", "education", "game"]
 
 
 class MascotOut(AuditingOut):
@@ -89,3 +91,15 @@ class SidebarUnitOut(Schema):
     id: int
     layer: str
     title: str
+
+
+class UnitUpdateIn(Schema):
+    layer: LayerValue
+    title: str
+    title_font_size: int
+    background_asset_path: str
+    is_published: bool
+
+
+class ErrorOut(Schema):
+    detail: str
