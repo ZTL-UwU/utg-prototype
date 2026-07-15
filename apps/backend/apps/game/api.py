@@ -64,6 +64,8 @@ def get_unit(request, unit_id: int):
     summary="Update a unit",
 )
 def update_unit(request, unit_id: int, payload: UnitUpdateIn):
+    if not(request.auth.has_perm("game.change_unit")):
+        return Status(403, {"detail": "You do not have permissions to edit units"})
     try:
         unit = _unit_with_levels(unit_id)
     except Unit.DoesNotExist:
