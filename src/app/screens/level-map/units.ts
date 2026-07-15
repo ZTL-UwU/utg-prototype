@@ -1,3 +1,5 @@
+import type { TextDropShadow } from 'pixi.js';
+
 import type { AppScreenConstructor } from '../../../engine/navigation/navigation';
 import { EducationLevelScreen } from '../education-level/level-1';
 import { EducationBubbleScreen } from '../education-level/level-2';
@@ -45,6 +47,7 @@ export type TMapUnit = {
     fontSize: number;
     fontColor: number;
     isCurved: boolean;
+    dropShadow?: Partial<TextDropShadow>;
   };
   subtitle?: {
     text: string;
@@ -74,6 +77,13 @@ const EDUCATION_UNIT_COLORS = {
   unit3: 0xebce9f,
   unit4: 0xe49835,
   unit5: 0xe49835,
+};
+
+const textDropShadow: Partial<TextDropShadow> = {
+  color: 0x000000,
+  blur: 5,
+  distance: 0,
+  alpha: 0.75,
 };
 
 function educationSplashColorScheme(fontColor: number): SplashColorScheme {
@@ -358,26 +368,6 @@ export const educationMaps: TMapUnit[] = [
       },
     ],
   },
-  //   {
-  //     type: 'education',
-  //     background: 'education-levels/education-level-map/background-unit-5.png',
-  //     title: { text: 'LEVEL 5', fontSize: 240, fontColor: 0xe5c087, isCurved: true },
-  //     levels: [
-  //       {
-  //         id: 14,
-  //         unlocked: true,
-  //         mascot: 'sheep',
-  //         screen: EducationImageScreen,
-  //         background: 'education-levels/education-level/background.png',
-  //         helpAsset: ['tutorial-popups/education-level-4.png'],
-  //         backdropColor: 0x4a90e2,
-  //         mascotOnSplash : false,
-  //         props: {
-  //           letters: [...U_LETTER_SET].sort(() => Math.random() - 0.5).slice(0, 12),
-  //         },
-  //       },
-  //     ],
-  //   },
 ];
 
 export const typingMaps: TMapUnit[] = [
@@ -387,10 +377,11 @@ export const typingMaps: TMapUnit[] = [
     title: {
       text: 'TYPING JOURNEY',
       fontSize: 160,
-      fontColor: 0x7d4a1e,
+      fontColor: 0xffffff,
       isCurved: false,
+      dropShadow: textDropShadow,
     },
-    subtitle: { text: 'سەپەر', fontSize: 100, fontColor: 0x7d4a1e },
+    subtitle: { text: 'سەپەر', fontSize: 100, fontColor: 0xffffff },
     levels: [
       {
         id: 1,

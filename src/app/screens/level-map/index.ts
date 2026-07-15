@@ -62,7 +62,13 @@ export class LevelMapScreen extends Container {
     };
     this.title = mapUnit.title.isCurved
       ? new CurvedText({ text: mapUnit.title.text, style: titleStyle })
-      : new Text({ text: mapUnit.title.text, style: titleStyle });
+      : new Text({
+          text: mapUnit.title.text,
+          style: {
+            ...titleStyle,
+            ...(mapUnit.title.dropShadow && { dropShadow: mapUnit.title.dropShadow }),
+          },
+        });
     this.title.filters = [
       new DropShadowFilter({
         color: 0x000000,

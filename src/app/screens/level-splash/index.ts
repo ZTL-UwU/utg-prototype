@@ -173,7 +173,7 @@ export class LevelSplashScreen extends Container {
       isLeaf: true,
       width: buttonWidth,
       height: buttonHeight,
-      top: '45%',
+      top: level.title ? 660 : '45%',
     };
 
     this.startButton.onPress.connect(() => {

@@ -1,5 +1,5 @@
 import { animate } from 'motion';
-import { Container, Sprite, Text, Texture } from 'pixi.js';
+import { Container, Sprite, Text, Texture, type TextDropShadow } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { HUD } from '../../../ui/hud';
@@ -40,13 +40,22 @@ export class EducationLevelSelect extends Container {
       onBack: () => void engine().navigation.showScreen(LayerSelectScreen),
     });
 
+    const textDropShadow: Partial<TextDropShadow> = {
+      color: 0x000000,
+      blur: 5,
+      distance: 0,
+      alpha: 0.75,
+    };
+
     this.title = new Text({
       text: 'THE ALPHABET',
       style: {
         fontFamily: 'Concert One',
         fontSize: 180,
         fontWeight: '800',
-        fill: 0x7d4a1e,
+        fill: 0xffffff,
+        dropShadow: textDropShadow,
+        padding: 8,
       },
     });
     this.title.layout = {
@@ -60,7 +69,9 @@ export class EducationLevelSelect extends Container {
         fontFamily: 'Noto Naskh Arabic Bold',
         fontSize: 100,
         fontWeight: '700',
-        fill: 0x7d4a1e,
+        fill: 0xffffff,
+        dropShadow: textDropShadow,
+        padding: 8,
       },
     });
     this.subtitle.layout = {
