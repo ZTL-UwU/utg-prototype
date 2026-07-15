@@ -72,9 +72,9 @@ const U_LETTER_SET = [
 
 // Shared by each education map unit's title and the splash screens of the levels inside it.
 const EDUCATION_UNIT_COLORS = {
-  unit1: 0x789843,
-  unit2: 0x4a9b54,
-  unit3: 0xebce9f,
+  unit1: 0xffffff,
+  unit2: 0xffffff,
+  unit3: 0xffffff,
   unit4: 0xe49835,
   unit5: 0xe49835,
 };
@@ -86,9 +86,12 @@ const textDropShadow: Partial<TextDropShadow> = {
   alpha: 0.75,
 };
 
-function educationSplashColorScheme(fontColor: number): SplashColorScheme {
+function educationSplashColorScheme(
+  fontColor: number,
+  fallbackButtonColor: number = 0xc08e82,
+): SplashColorScheme {
   return {
-    BUTTON_FILL: fontColor,
+    BUTTON_FILL: fontColor === 0xffffff ? fallbackButtonColor : fontColor,
     BUTTON_TEXT_FILL: 0xffffff,
     LEVEL_FONT_FILL: fontColor,
     LEVEL_TITLE_FILL: fontColor,
@@ -113,7 +116,7 @@ export const educationMaps: TMapUnit[] = [
         screen: EducationLevelScreen,
         background: 'education-levels/education-level/background.png',
         splashScreenBg: 'education-levels/education-level-map/background-unit-1.png',
-        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit1),
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit1, 0x789843),
         helpAsset: ['tutorial-popups/education-level-1.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
@@ -128,7 +131,7 @@ export const educationMaps: TMapUnit[] = [
         screen: EducationBubbleScreen,
         background: 'education-levels/education-level/background.png',
         splashScreenBg: 'education-levels/education-level-map/background-unit-1.png',
-        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit1),
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit1, 0x789843),
         helpAsset: ['tutorial-popups/education-level-2.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
@@ -143,7 +146,7 @@ export const educationMaps: TMapUnit[] = [
         screen: EducationImageScreen,
         background: 'education-levels/education-level/background.png',
         splashScreenBg: 'education-levels/education-level-map/background-unit-1.png',
-        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit1),
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit1, 0x789843),
         helpAsset: ['tutorial-popups/education-level-4.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: true,
@@ -170,7 +173,7 @@ export const educationMaps: TMapUnit[] = [
         screen: EducationLevelScreen,
         background: 'education-levels/education-level/background.png',
         splashScreenBg: 'education-levels/education-level-map/background-unit-2.png',
-        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit2),
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit2, 0x4a9b54),
         helpAsset: ['tutorial-popups/education-level-1.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: false,
@@ -185,7 +188,7 @@ export const educationMaps: TMapUnit[] = [
         screen: EducationSheepScreen,
         background: 'education-levels/education-level/background.png',
         splashScreenBg: 'education-levels/education-level-map/background-unit-2.png',
-        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit2),
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit2, 0x4a9b54),
         helpAsset: ['tutorial-popups/education-level-3.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: false,
@@ -200,7 +203,7 @@ export const educationMaps: TMapUnit[] = [
         screen: EducationWordScreen,
         background: 'education-levels/education-level/background.png',
         splashScreenBg: 'education-levels/education-level-map/background-unit-2.png',
-        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit2),
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit2, 0x4a9b54),
         helpAsset: ['tutorial-popups/education-level-5.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: false,
@@ -227,7 +230,7 @@ export const educationMaps: TMapUnit[] = [
         screen: EducationLevelScreen,
         background: 'education-levels/education-level/background.png',
         splashScreenBg: 'education-levels/education-level-map/background-unit-3.png',
-        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit3),
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit3, 0xebce9f),
         // TODO: missing tutorial asset
         helpAsset: ['tutorial-popups/education-level-1.png'],
         backdropColor: 0x4a90e2,
@@ -243,7 +246,7 @@ export const educationMaps: TMapUnit[] = [
         screen: EducationWhackAMoleScreen,
         background: 'education-levels/education-level/background.png',
         splashScreenBg: 'education-levels/education-level-map/background-unit-3.png',
-        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit3),
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit3, 0xebce9f),
         helpAsset: ['tutorial-popups/education-level-7.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: false,
@@ -258,7 +261,7 @@ export const educationMaps: TMapUnit[] = [
         screen: EducationImageScreen,
         background: 'education-levels/education-level/background.png',
         splashScreenBg: 'education-levels/education-level-map/background-unit-3.png',
-        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit3),
+        splashColorScheme: educationSplashColorScheme(EDUCATION_UNIT_COLORS.unit3, 0xebce9f),
         helpAsset: ['tutorial-popups/education-level-4.png'],
         backdropColor: 0x4a90e2,
         mascotOnSplash: false,
