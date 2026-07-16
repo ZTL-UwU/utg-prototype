@@ -19,12 +19,17 @@ const COLORS = {
 const WORD_STYLE = createExampleWordStyle(180);
 
 export class LetterPopup extends Container {
-  public static assetBundles = ['education-tutorial', 'education-letter-images'];
+  public static assetBundles = [
+    'education-tutorial',
+    'education-letter-images',
+    'education-letter-variants',
+  ];
   private isPlaying: boolean = false;
   private letter: string;
   private exampleWord: string | undefined;
   private wordText?: HTMLText;
   private exampleImage?: Sprite;
+  private variantImage: Sprite;
   private background: Graphics;
   private closeButton: FancyButton;
   private soundButton: SoundButton;
@@ -38,6 +43,18 @@ export class LetterPopup extends Container {
     this.background.layout = { position: 'absolute', width: '100%', height: '100%' };
 
     this.closeButton = this.createCloseButton();
+    this.variantImage = new Sprite({
+      texture: Texture.from(`education-levels/education-letter-variants/${this.letter}.png`),
+      anchor: 0.5,
+      layout: {
+        position: 'absolute',
+        left: '10%',
+        top: '63%',
+        width: '50%',
+        height: '16%',
+        objectFit: 'contain',
+      },
+    });
     this.soundButton = new SoundButton({
       onClick: () => {
         void this.playSound(this.getSoundAlias());
@@ -46,9 +63,9 @@ export class LetterPopup extends Container {
       variant: 'large',
     });
     this.soundButton.anchor.set(0.5);
-    this.soundButton.layout = { position: 'absolute', bottom: '25%', left: '50%' };
+    this.soundButton.layout = { position: 'absolute', left: '75%', top: '72%' };
 
-    this.addChild(this.background, this.closeButton, this.soundButton);
+    this.addChild(this.background, this.closeButton, this.variantImage, this.soundButton);
 
     if (this.exampleWord) {
       this.wordText = new HTMLText({
