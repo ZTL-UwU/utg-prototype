@@ -57,12 +57,15 @@ export type TMapUnit = {
   levels: TLevel[];
 };
 
+// SETS OF LETTERS FOR EACH LEVEL
 const LETTER_SETS = {
   lvl1: ['ب', 'ئو', 'ج', 'ۋ', 'د', 'ش', 'ئۆ', 'ق'],
   lvl2: ['ر', 'ن', 'ئە', 'ئې', 'ھ', 'چ', 'ز', 'غ'],
   lvl3: ['ژ', 'س', 'ت', 'م', 'ل', 'ف', 'ئى', 'خ'],
   lvl4: ['پ', 'ئۇ', 'ئا', 'ك', 'ڭ', 'ئۈ', 'ي', 'گ'],
 };
+
+// UNION OF ALL SETS FOR CHALLENGE LEVELS
 const U_LETTER_SET = [
   ...LETTER_SETS.lvl1,
   ...LETTER_SETS.lvl2,
@@ -420,6 +423,20 @@ export const typingMaps: TMapUnit[] = [
         },
         mascotOnSplash: false,
       },
+    ],
+  },
+  {
+    type: 'typing',
+    background: 'typing-levels/typing-level-map/background.png',
+    title: {
+      text: 'TYPING JOURNEY',
+      fontSize: 160,
+      fontColor: 0xffffff,
+      isCurved: false,
+      dropShadow: textDropShadow,
+    },
+    subtitle: { text: 'سەپەر', fontSize: 100, fontColor: 0xffffff },
+    levels: [
       {
         id: 3,
         unlocked: true,

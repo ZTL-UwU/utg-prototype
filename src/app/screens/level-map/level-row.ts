@@ -1,11 +1,14 @@
 import { animate } from 'motion';
 import { Container, Graphics } from 'pixi.js';
 
+import { engine } from '../../../engine/getEngine';
+import { TutorialEntryButton } from '../level-select/education-level-select/tutorial-entry-button';
+import { TypingTutorialScreen } from '../typing-level/level-tutorial';
 import { LevelButton } from './level-button';
-import type { TMapUnit } from './units';
+import { getPrevMap, type TMapUnit } from './units';
 
 export class LevelRow extends Container {
-  private levelButtons?: (LevelButton | Graphics)[];
+  private levelButtons?: (LevelButton | TutorialEntryButton | Graphics)[];
 
   constructor(mapUnit: TMapUnit) {
     super({
@@ -27,6 +30,16 @@ export class LevelRow extends Container {
 
       return i === 0 ? [button] : [fillerLine, button];
     });
+
+    if (mapUnit.type === 'typing' && getPrevMap(mapUnit) === undefined) {
+      const tutorialButton = new TutorialEntryButton(() => {
+        void engine().navigation.showScreen(TypingTutorialScreen, mapUnit);
+      });
+      const fillerLine = new Graphics({ layout: { width: 80, height: 15 } })
+        .roundRect(0, 0, 100, 15, 10)
+        .fill(0xa66129);
+      this.levelButtons = [tutorialButton, fillerLine, ...this.levelButtons];
+    }
 
     this.addChild(...this.levelButtons);
   }

@@ -51,7 +51,11 @@ export class LevelMapScreen extends Container {
         void engine().navigation.showScreen(
           mapUnit.type === 'education' ? EducationLevelSelect : LayerSelectScreen,
         ),
-      help: { kind: 'tutorial', mapUnit, presentation: 'screen' },
+      // Typing maps surface the tutorial as a node in the level row instead.
+      help:
+        mapUnit.type === 'typing'
+          ? undefined
+          : { kind: 'tutorial', mapUnit, presentation: 'screen' },
     });
 
     const titleStyle = {
