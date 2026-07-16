@@ -48,7 +48,7 @@ class Level(AuditingMixin, models.Model):
     unit = models.ForeignKey(Unit, on_delete=models.CASCADE, related_name="levels")
     layer = models.CharField(max_length=20, choices=Layer.choices)
     title = models.CharField(max_length=255, null=True, blank=True)
-    level_type = models.CharField(max_length=255, choices=LevelType.choices)
+    level_type = models.CharField(max_length=255)  # allow-list is LevelType; validated in API
     level_props = models.JSONField()
     mascot = models.ForeignKey(
         Mascot,
