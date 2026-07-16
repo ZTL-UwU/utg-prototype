@@ -5,6 +5,7 @@ from ninja import Schema
 from apps.common.schemas import AuditingOut
 
 LayerValue = Literal["typing", "education", "game"]
+LevelTypeValue = Literal["education-letter-grid"]
 
 
 class MascotOut(AuditingOut):
@@ -17,18 +18,12 @@ class MascotOut(AuditingOut):
     three_star_asset_path: str
 
 
-class LevelTypeOut(AuditingOut):
-    id: int
-    name: str | None
-    props_json_schema: Any
-
-
 class LevelOut(AuditingOut):
     id: int
     sort_order: int
     layer: str
     title: str | None
-    level_type: LevelTypeOut
+    level_type: str
     level_props: Any
     mascot: MascotOut | None
     splash_background_asset_path: str
@@ -103,7 +98,7 @@ class UnitUpdateIn(Schema):
 
 class LevelWriteIn(Schema):
     title: str | None = None
-    level_type_id: int
+    level_type: LevelTypeValue
     level_props: Any
     mascot_id: int | None = None
     splash_background_asset_path: str

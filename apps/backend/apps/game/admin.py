@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps.game.models import Level, LevelType, Mascot, Unit
+from apps.game.models import Level, Mascot, Unit
 
 
 @admin.register(Unit)
@@ -9,12 +9,6 @@ class UnitAdmin(admin.ModelAdmin):
     list_filter = ("layer",)
     search_fields = ("title",)
     ordering = ("sort_order",)
-
-
-@admin.register(LevelType)
-class LevelTypeAdmin(admin.ModelAdmin):
-    list_display = ("name",)
-    search_fields = ("name",)
 
 
 @admin.register(Mascot)
@@ -34,6 +28,6 @@ class LevelAdmin(admin.ModelAdmin):
         "show_mascot_on_splash",
     )
     list_filter = ("layer", "level_type", "unit")
-    search_fields = ("title",)
-    autocomplete_fields = ("unit", "level_type", "mascot")
+    search_fields = ("title", "level_type")
+    autocomplete_fields = ("unit", "mascot")
     ordering = ("unit", "sort_order")

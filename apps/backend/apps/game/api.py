@@ -1,4 +1,3 @@
-from django.contrib import auth
 from django.db import transaction
 from django.db.models import Max, Prefetch
 from django.utils import timezone
@@ -10,7 +9,6 @@ from apps.game.schemas import (
     ErrorOut,
     LevelOrderIn,
     LevelOut,
-    LevelTypeOut,
     LevelWriteIn,
     MascotOut,
     SidebarUnitOut,
@@ -25,13 +23,13 @@ jwt_auth = JWTAuth()
 
 
 def _unit_with_levels(unit_id: int) -> Unit:
-    levels = Level.objects.select_related("level_type", "mascot").order_by("sort_order", "id")
+    levels = Level.objects.select_related("mascot").order_by("sort_order", "id")
     return Unit.objects.prefetch_related(Prefetch("levels", queryset=levels)).get(id=unit_id)
 
 
 def _apply_level_payload(level: Level, payload: LevelWriteIn) -> None:
     level.title = payload.title
-    level.level_type_id = payload.level_type_id
+    level.level_type = payload.level_type
     level.level_props = payload.level_props
     level.mascot_id = payload.mascot_id
     level.splash_background_asset_path = payload.splash_background_asset_path
@@ -44,8 +42,8 @@ def _apply_level_payload(level: Level, payload: LevelWriteIn) -> None:
 
 
 def _validate_level_relations(payload: LevelWriteIn):
-    if not LevelType.objects.filter(id=payload.level_type_id).exists():
-        return Status(404, {"detail": "Level type not found."})
+    if payload.level_type not in LevelType.values:
+        return Status(400, {"detail": "Unknown level type."})
     if payload.mascot_id is not None and not Mascot.objects.filter(id=payload.mascot_id).exists():
         return Status(404, {"detail": "Mascot not found."})
     return None
@@ -53,7 +51,7 @@ def _validate_level_relations(payload: LevelWriteIn):
 
 @router.get("/units/list", response=list[UnitOut], summary="List units and their levels")
 def list_units(request):
-    levels = Level.objects.select_related("level_type", "mascot").order_by("sort_order", "id")
+    levels = Level.objects.select_related("mascot").order_by("sort_order", "id")
     return Unit.objects.prefetch_related(Prefetch("levels", queryset=levels))
 
 
@@ -64,15 +62,6 @@ def list_units(request):
 )
 def list_sidebar_units(request):
     return Unit.objects.only("id", "layer", "title", "sort_order").order_by("sort_order", "id")
-
-
-@router.get(
-    "/level-types/list",
-    response=list[LevelTypeOut],
-    summary="List level types for admin editing",
-)
-def list_level_types(request):
-    return LevelType.objects.order_by("name", "id")
 
 
 @router.get(
@@ -155,7 +144,7 @@ def create_level(request, unit_id: int, payload: LevelWriteIn):
     level.created_by = request.auth
     level.updated_by = request.auth
     level.save()
-    return Level.objects.select_related("level_type", "mascot").get(id=level.id)
+    return Level.objects.select_related("mascot").get(id=level.id)
 
 
 @router.patch(
@@ -166,7 +155,7 @@ def create_level(request, unit_id: int, payload: LevelWriteIn):
 )
 def update_level(request, level_id: int, payload: LevelWriteIn):
     try:
-        level = Level.objects.select_related("level_type", "mascot").get(id=level_id)
+        level = Level.objects.select_related("mascot").get(id=level_id)
     except Level.DoesNotExist:
         return Status(404, {"detail": "Level not found."})
     relation_error = _validate_level_relations(payload)
@@ -176,7 +165,7 @@ def update_level(request, level_id: int, payload: LevelWriteIn):
     _apply_level_payload(level, payload)
     level.updated_by = request.auth
     level.save()
-    return Level.objects.select_related("level_type", "mascot").get(id=level.id)
+    return Level.objects.select_related("mascot").get(id=level.id)
 
 
 @router.delete(

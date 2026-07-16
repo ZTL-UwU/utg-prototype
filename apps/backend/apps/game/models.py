@@ -9,6 +9,10 @@ class Layer(models.TextChoices):
     GAMES = "game", "Game"
 
 
+class LevelType(models.TextChoices):
+    EDUCATION_LETTER_GRID = "education-letter-grid", "Education letter grid"
+
+
 class Unit(AuditingMixin, models.Model):
     sort_order = models.IntegerField(db_index=True)
     layer = models.CharField(max_length=20, choices=Layer.choices)
@@ -22,17 +26,6 @@ class Unit(AuditingMixin, models.Model):
 
     def __str__(self) -> str:
         return self.title
-
-
-class LevelType(AuditingMixin, models.Model):
-    name = models.CharField(max_length=255, null=True, blank=True)
-    props_json_schema = models.JSONField()
-
-    class Meta:
-        db_table = "level_types"
-
-    def __str__(self) -> str:
-        return self.name or f"Level type {self.pk}"
 
 
 class Mascot(AuditingMixin, models.Model):
@@ -55,7 +48,7 @@ class Level(AuditingMixin, models.Model):
     unit = models.ForeignKey(Unit, on_delete=models.CASCADE, related_name="levels")
     layer = models.CharField(max_length=20, choices=Layer.choices)
     title = models.CharField(max_length=255, null=True, blank=True)
-    level_type = models.ForeignKey(LevelType, on_delete=models.PROTECT, related_name="levels")
+    level_type = models.CharField(max_length=255, choices=LevelType.choices)
     level_props = models.JSONField()
     mascot = models.ForeignKey(
         Mascot,
