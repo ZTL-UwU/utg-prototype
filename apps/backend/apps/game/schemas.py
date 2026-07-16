@@ -80,7 +80,7 @@ class UnitByIdOut(AuditingOut):
     title: str
     title_font_size: int
     background_asset_path: str
-    levels: list[LevelShortOut]
+    levels: list[LevelOut]
 
     @staticmethod
     def resolve_levels(obj):
@@ -99,6 +99,24 @@ class UnitUpdateIn(Schema):
     title_font_size: int
     background_asset_path: str
     is_published: bool
+
+
+class LevelWriteIn(Schema):
+    title: str | None = None
+    level_type_id: int
+    level_props: Any
+    mascot_id: int | None = None
+    splash_background_asset_path: str
+    splash_button_color: int | None = None
+    splash_button_text_color: int | None = None
+    splash_level_font_color: int | None = None
+    splash_level_title_color: int | None = None
+    show_mascot_on_splash: bool
+    is_published: bool
+
+
+class LevelOrderIn(Schema):
+    level_ids: list[int]
 
 
 class ErrorOut(Schema):
