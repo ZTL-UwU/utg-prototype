@@ -1,5 +1,6 @@
 import { formatDistanceToNow } from 'date-fns';
-import { Edit2 } from 'lucide-react';
+import { Edit2, GripVerticalIcon } from 'lucide-react';
+import type { Ref } from 'react';
 import { useNavigate } from 'react-router';
 
 import { Badge } from '~/components/ui/badge';
@@ -14,13 +15,41 @@ import {
 } from '~/components/ui/card';
 import { Skeleton } from '~/components/ui/skeleton';
 import type { Unit } from '~/lib/game';
+import { cn } from '~/lib/utils';
 
-export function UnitCard({ unit }: { unit: Unit }) {
+export function UnitCard({
+  unit,
+  cardRef,
+  handleRef,
+  isDragging = false,
+  isReordering = false,
+}: {
+  unit: Unit;
+  cardRef?: Ref<HTMLDivElement>;
+  handleRef?: Ref<HTMLButtonElement>;
+  isDragging?: boolean;
+  isReordering?: boolean;
+}) {
   const navigate = useNavigate();
   return (
-    <Card className="h-full">
+    <Card ref={cardRef} className={cn('h-full', isDragging && 'opacity-50')}>
       <CardHeader>
-        <CardTitle>{unit.title}</CardTitle>
+        <div className="flex min-w-0 items-center gap-1">
+          {handleRef ? (
+            <Button
+              ref={handleRef}
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="cursor-grab touch-none"
+              aria-label={`Reorder ${unit.title}`}
+              disabled={isReordering}
+            >
+              <GripVerticalIcon />
+            </Button>
+          ) : null}
+          <CardTitle className="truncate">{unit.title}</CardTitle>
+        </div>
         <CardAction>
           <Badge variant={unit.is_published ? 'default' : 'secondary'}>
             {unit.is_published ? 'Published' : 'Draft'}
