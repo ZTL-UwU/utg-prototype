@@ -1,8 +1,29 @@
+packages:
+  - apps/*
+
 allowBuilds:
   '@ffmpeg-installer/linux-x64': false
   cpu-features: false
+  esbuild: true
+  msw: false
   sharp: false
 
+catalog:
+  vite: npm:@voidzero-dev/vite-plus-core@latest
+  vitest: npm:@voidzero-dev/vite-plus-test@latest
+  vite-plus: ^0.2.4
+
+minimumReleaseAgeExclude:
+  - lucide-react@1.24.0
+
 overrides:
-  'vite': 'npm:@voidzero-dev/vite-plus-core@latest'
-  'vitest': 'npm:@voidzero-dev/vite-plus-test@latest'
+  vite: 'catalog:'
+  vitest: 'catalog:'
+
+peerDependencyRules:
+  allowAny:
+    - vite
+    - vitest
+  allowedVersions:
+    vite: '*'
+    vitest: '*'

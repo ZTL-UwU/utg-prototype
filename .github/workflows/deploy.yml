@@ -30,13 +30,13 @@ jobs:
       - name: Install dependencies
         run: vp install
 
-      - name: Build
-        run: vp build
+      - name: Build game
+        run: vp run --filter @utg/game build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: apps/game/dist
 
   deploy:
     needs: build
