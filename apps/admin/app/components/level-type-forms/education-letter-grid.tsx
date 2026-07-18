@@ -1,4 +1,5 @@
 import { useForm } from '@tanstack/react-form';
+import { educationLetterGridPropsSchema, type EducationLetterGridProps } from '@utg/level-types';
 
 import { EducationLetterSelector } from '~/components/education-letter-selector';
 import {
@@ -7,7 +8,6 @@ import {
   type LevelPropsFormProps,
 } from '~/components/level-type-forms/shared';
 import { Field, FieldError, FieldGroup, FieldLabel } from '~/components/ui/field';
-import { educationLetterGridPropsSchema, type EducationLetterGridProps } from '~/lib/level-types';
 
 export function EducationLetterGridPropsForm({
   defaultValues,

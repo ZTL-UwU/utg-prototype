@@ -18,8 +18,9 @@ Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.de
 # Monorepo layout
 
 ```
-apps/game   — PixiJS game client (@utg/game)
-apps/admin  — React Router admin app (@utg/admin)
+apps/game              — PixiJS game client (@utg/game)
+apps/admin             — React Router admin app (@utg/admin)
+packages/level-types   — Level type ids, labels, and Zod props schemas (@utg/level-types)
 ```
 
 Install once at the repo root with `vp install`.
@@ -32,3 +33,7 @@ Install once at the repo root with `vp install`.
 | Admin build | `vp run --filter @utg/admin build` or `vp run build:admin` |
 
 Admin talks to the backend via `VITE_BACKEND_URL` (see `apps/admin/.env.example`). Backend code lives in `../utg-project-be`.
+
+## Level types (`@utg/level-types`)
+
+Shared source of truth for level type ids and per-type `level_props` Zod schemas. Admin UI forms stay in `@utg/admin` (`level-type-forms`); keep the Django `LevelType` allow-list in sync when adding ids.

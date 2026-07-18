@@ -1,14 +1,14 @@
-import type { ComponentType } from 'react';
-
-import { EducationLetterGridPropsForm } from '~/components/level-type-forms/education-letter-grid';
-import { type LevelPropsFormProps } from '~/components/level-type-forms/shared';
-import type { Level } from '~/lib/game';
 import {
   defaultLevelProps,
   parseLevelProps,
   type LevelTypeId,
   type LevelTypeProps,
-} from '~/lib/level-types';
+} from '@utg/level-types';
+import type { ComponentType } from 'react';
+
+import { EducationLetterGridPropsForm } from '~/components/level-type-forms/education-letter-grid';
+import { type LevelPropsFormProps } from '~/components/level-type-forms/shared';
+import type { Level } from '~/lib/game';
 
 export { DirtyStateBridge, LEVEL_PROPS_FORM_ID } from '~/components/level-type-forms/shared';
 

@@ -3,6 +3,14 @@ import { DragDropProvider, type DragEndEvent } from '@dnd-kit/react';
 import { useSortable } from '@dnd-kit/react/sortable';
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import {
+  defaultLevelProps,
+  isLevelTypeId,
+  LEVEL_TYPE_IDS,
+  LEVEL_TYPES,
+  levelTypeLabel,
+  type LevelTypeId,
+} from '@utg/level-types';
 import { GripVerticalIcon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react';
 import { FetchError } from 'ofetch';
 import { useEffect, useRef, useState } from 'react';
@@ -48,14 +56,6 @@ import { Separator } from '~/components/ui/separator';
 import { Switch } from '~/components/ui/switch';
 import { api } from '~/lib/api';
 import { mascotsQueryOptions, type Level, type Mascot, type Unit } from '~/lib/game';
-import {
-  defaultLevelProps,
-  isLevelTypeId,
-  LEVEL_TYPE_IDS,
-  LEVEL_TYPES,
-  levelTypeLabel,
-  type LevelTypeId,
-} from '~/lib/level-types';
 import { cn } from '~/lib/utils';
 
 const NO_MASCOT_VALUE = '__no_mascot__';
@@ -63,6 +63,7 @@ const NO_MASCOT_VALUE = '__no_mascot__';
 const levelFormSchema = z.object({
   title: z.string().max(255, 'Title must be 255 characters or less.'),
   level_type: z.enum(LEVEL_TYPE_IDS, { error: 'Select a level type.' }),
+
   mascot_id: z.number().int().positive().nullable(),
   splash_background_asset_path: z
     .string()
