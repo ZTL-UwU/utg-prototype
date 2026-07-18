@@ -14,6 +14,7 @@ from apps.game.schemas import (
     SidebarUnitOut,
     UnitByIdOut,
     UnitByLayerOut,
+    UnitOrderIn,
     UnitOut,
     UnitUpdateIn,
 )
@@ -92,8 +93,6 @@ def get_unit(request, unit_id: int):
     return _unit_with_levels(unit_id)
 
 
-# Not including sort_order because it will be in a separate API
-# TODO: permission check for update
 @router.patch(
     "/units/{unit_id}",
     auth=jwt_auth,
@@ -210,3 +209,34 @@ def reorder_levels(request, unit_id: int, payload: LevelOrderIn):
         Level.objects.bulk_update(levels, ["sort_order", "updated_by", "updated_at"])
 
     return _unit_with_levels(unit.id)
+
+
+@router.put(
+    "/units/list-by-layer/{layer}/order",
+    auth=jwt_auth,
+    response={200: list[UnitByLayerOut], 400: ErrorOut},
+    summary="Reorder units within a layer",
+)
+def reorder_units(request, layer: Layer, payload: UnitOrderIn):
+    units = list(Unit.objects.filter(layer=layer).order_by("sort_order", "id"))
+    existing_ids = {unit.id for unit in units}
+    ordered_ids = payload.unit_ids
+    if len(ordered_ids) != len(set(ordered_ids)) or set(ordered_ids) != existing_ids:
+        return Status(400, {"detail": "Unit order must include each layer unit exactly once."})
+
+    units_by_id = {unit.id: unit for unit in units}
+    updated_at = timezone.now()
+    with transaction.atomic():
+        for sort_order, unit_id in enumerate(ordered_ids, start=1):
+            unit = units_by_id[unit_id]
+            unit.sort_order = sort_order
+            unit.updated_by = request.auth
+            unit.updated_at = updated_at
+        Unit.objects.bulk_update(units, ["sort_order", "updated_by", "updated_at"])
+
+    levels = Level.objects.order_by("sort_order", "id")
+    return (
+        Unit.objects.filter(layer=layer)
+        .prefetch_related(Prefetch("levels", queryset=levels))
+        .order_by("sort_order", "id")
+    )

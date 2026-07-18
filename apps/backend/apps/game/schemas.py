@@ -113,5 +113,9 @@ class LevelOrderIn(Schema):
     level_ids: list[int]
 
 
+class UnitOrderIn(Schema):
+    unit_ids: list[int]
+
+
 class ErrorOut(Schema):
     detail: str
