@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Env
+.env*
+!.env.example
+
 # Claude Code
 .claude
 
@@ -27,9 +31,14 @@ dist-ssr
 *.sln
 *.sw?
 
-# Assets
-public/assets
-.assetpack
-src/manifest.json
+# Game AssetPack
+apps/game/public/assets
+apps/game/.assetpack
+apps/game/src/manifest.json
+
+# Admin React Router
+apps/admin/.react-router
+apps/admin/build
+*.tsbuildinfo
 
 .pnpm-store/*

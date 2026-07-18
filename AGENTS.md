@@ -14,3 +14,21 @@ Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.de
 - [ ] If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.
 
 <!--VITE PLUS END-->
+
+# Monorepo layout
+
+```
+apps/game   — PixiJS game client (@utg/game)
+apps/admin  — React Router admin app (@utg/admin)
+```
+
+Install once at the repo root with `vp install`.
+
+| Task        | Command                                                    |
+| ----------- | ---------------------------------------------------------- |
+| Game dev    | `vp run --filter @utg/game dev` or `vp run dev:game`       |
+| Admin dev   | `vp run --filter @utg/admin dev` or `vp run dev:admin`     |
+| Game build  | `vp run --filter @utg/game build` or `vp run build:game`   |
+| Admin build | `vp run --filter @utg/admin build` or `vp run build:admin` |
+
+Admin talks to the backend via `VITE_BACKEND_URL` (see `apps/admin/.env.example`). Backend code lives in `../utg-project-be`.
