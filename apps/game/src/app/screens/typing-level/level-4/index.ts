@@ -56,6 +56,7 @@ export function generateRoundsDictionary(): Round[] {
 
 export class TypingWordScreen extends Container {
   public static assetBundles = ['typing-level-4', 'typing-level', 'education-letter-images'];
+  public static helpAssets = ['tutorial-popups/typing-tutorial.png'];
   private background: Sprite;
   private hud: HUD;
   private wordStyle: HTMLTextStyle = createTypingWordStyle(FONT_SIZE, 0xffffff);

@@ -56,6 +56,7 @@ export class EducationWordScreen extends Container {
     'education-letters-audio',
     'education-words-audio',
   ];
+  public static helpAssets = ['tutorial-popups/education-level-5.png'];
   public static rounds = 0;
   private static roundOrder: string[] = [];
 

@@ -49,6 +49,8 @@ function createRound(correctLetter: string, pool: string[]): Round {
 
 export class EducationWhackAMoleScreen extends Container {
   public static assetBundles = ['education-level-7', 'mascots', 'ui', 'education-letters-audio'];
+  // TODO: no tutorial asset authored for whack-a-mole yet.
+  public static helpAssets: string[] = [];
 
   private readonly hud: HUD;
   private readonly level: TLevel;

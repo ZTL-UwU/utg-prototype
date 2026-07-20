@@ -137,9 +137,13 @@ export class LevelSplashScreen extends Container {
       });
     }
 
+    const helpAssets = level.screen?.helpAssets ?? [];
+
     this.hud = new HUD({
       onBack: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
-      help: { kind: 'image', asset: level.helpAsset, backdropColor: level.backdropColor },
+      help: helpAssets.length
+        ? { kind: 'image', asset: helpAssets, backdropColor: level.backdropColor }
+        : undefined,
     });
 
     const buttonWidth = 300;
@@ -181,12 +185,18 @@ export class LevelSplashScreen extends Container {
       useSessionStore.getState().reset();
       useSessionStore.getState().startSession(mapUnit.type);
 
+      const startLevel = () => void engine().navigation.showScreen(level.screen!, level);
+      if (!helpAssets.length) {
+        startLevel();
+        return;
+      }
+
       this.removeChildren();
       this.addChild(this.background);
       void engine().navigation.showPopup(TutorialPopup, {
-        assets: level.helpAsset,
+        assets: helpAssets,
         backdropColor: level.backdropColor,
-        onNext: () => void engine().navigation.showScreen(level.screen!, level),
+        onNext: startLevel,
       });
     });
 

@@ -26,6 +26,7 @@ export class EducationBubbleScreen extends Container {
     'ui',
     'education-letters-audio',
   ];
+  public static helpAssets = ['tutorial-popups/education-level-2.png'];
   public static rounds = 0;
   private static roundOrder: string[] = [];
 

@@ -54,6 +54,7 @@ function randomBetween(min: number, max: number) {
 
 export class TypingSandstormScreen extends Container {
   public static assetBundles = ['typing-level', 'typing-level-2', 'ui'];
+  public static helpAssets = ['tutorial-popups/typing-tutorial.png'];
 
   private background: Sprite;
   private keyboard: KeyboardLayout;

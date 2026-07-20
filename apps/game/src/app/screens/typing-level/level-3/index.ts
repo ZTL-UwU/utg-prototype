@@ -111,6 +111,7 @@ function shuffledNotes() {
 
 export class TypingInstrumentScreen extends Container {
   public static assetBundles = ['typing-level', 'typing-level-3', 'ui'];
+  public static helpAssets = ['tutorial-popups/typing-tutorial.png'];
 
   private readonly background: Sprite;
   private readonly instrument: Sprite;

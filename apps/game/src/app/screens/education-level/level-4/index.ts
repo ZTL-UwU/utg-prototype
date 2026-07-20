@@ -39,6 +39,7 @@ export class EducationImageScreen extends Container {
     'education-letters-audio',
     'education-words-audio',
   ];
+  public static helpAssets = ['tutorial-popups/education-level-4.png'];
   public static rounds = 0;
   public static roundOrder: string[] = [];
 

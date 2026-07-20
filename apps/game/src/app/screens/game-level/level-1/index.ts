@@ -64,6 +64,10 @@ function shuffledLetters() {
 
 export class GameLevelOneScreen extends Container {
   public static assetBundles = ['game-level', 'game-level-1', 'ui'];
+  public static helpAssets = [
+    'tutorial-popups/game-level-1-1.png',
+    'tutorial-popups/game-level-1-2.png',
+  ];
 
   private readonly level: TLevel;
   private readonly background = new Sprite({

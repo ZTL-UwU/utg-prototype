@@ -43,6 +43,7 @@ function getSheepFacingScale(currentScaleX: number, sheepX: number, targetX: num
 
 export class EducationSheepScreen extends Container {
   public static assetBundles = ['education-level-3', 'ui', 'mascots', 'education-letters-audio'];
+  public static helpAssets = ['tutorial-popups/education-level-3.png'];
   public static rounds = 0;
   private static roundOrder: string[] = [];
 
