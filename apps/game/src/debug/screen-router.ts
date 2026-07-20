@@ -2,10 +2,11 @@ import { EducationTutorialScreen } from '../app/screens/education-level/level-tu
 import { HomeScreen } from '../app/screens/home';
 import { LayerSelectScreen } from '../app/screens/layer-select';
 import { LevelMapScreen } from '../app/screens/level-map';
-import { educationMaps, gameMaps, typingMaps, type TLayer } from '../app/screens/level-map/units';
+import { getLayerMaps, type TLayer, type TMapUnit } from '../app/screens/level-map/units';
 import { LevelSplashScreen } from '../app/screens/level-splash';
 import { TypingTutorialScreen } from '../app/screens/typing-level/level-tutorial';
 import type { AppScreenConstructor, Navigation } from '../engine/navigation/navigation';
+import { ensureCourseReady } from '../zustandStores/courseStore';
 
 type ScreenConstructor = AppScreenConstructor<any[]>;
 
@@ -36,7 +37,7 @@ function route(
   };
 }
 
-function mapRoutes(type: TLayer, maps: typeof educationMaps) {
+function mapRoutes(type: TLayer, maps: TMapUnit[]) {
   return maps.flatMap((mapUnit, index) => {
     const mapPath = `/${type}/maps/${index + 1}`;
 
@@ -61,13 +62,15 @@ function mapRoutes(type: TLayer, maps: typeof educationMaps) {
   });
 }
 
-const screenRoutes: ScreenRoute[] = [
-  route('/home', HomeScreen),
-  route('/layers', LayerSelectScreen),
-  ...mapRoutes('education', educationMaps),
-  ...mapRoutes('typing', typingMaps),
-  ...mapRoutes('game', gameMaps),
-];
+function buildScreenRoutes(): ScreenRoute[] {
+  return [
+    route('/home', HomeScreen),
+    route('/layers', LayerSelectScreen),
+    ...mapRoutes('education', getLayerMaps('education')),
+    ...mapRoutes('typing', getLayerMaps('typing')),
+    ...mapRoutes('game', getLayerMaps('game')),
+  ];
+}
 
 function normalizePath(path: string) {
   const withLeadingSlash = path.startsWith('/') ? path : `/${path}`;
@@ -110,7 +113,12 @@ class DebugScreenRouter {
     const path = this.currentPath();
     if (this.pendingPath === path) return;
 
-    const target = screenRoutes.find((candidate) => candidate.path === path);
+    // Map/level routes need the catalog; wait (or surface error) before resolving.
+    if (path !== '/home' && path !== '/' && path !== '') {
+      if (!(await ensureCourseReady())) return;
+    }
+
+    const target = buildScreenRoutes().find((candidate) => candidate.path === path);
     this.pendingPath = path;
 
     try {
@@ -129,7 +137,7 @@ class DebugScreenRouter {
   }
 
   private updateUrl(ctor: ScreenConstructor, props?: unknown) {
-    const screenRoute = screenRoutes.find((candidate) => candidate.matches(ctor, props));
+    const screenRoute = buildScreenRoutes().find((candidate) => candidate.matches(ctor, props));
     if (!screenRoute || this.currentPath() === screenRoute.path) return;
 
     const url = new URL(window.location.href);

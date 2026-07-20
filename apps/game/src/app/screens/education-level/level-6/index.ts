@@ -16,7 +16,12 @@ import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
 import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, type TLevel } from '../../level-map/units';
+import {
+  getTypedLevel,
+  findMapUnitForLevel,
+  type TLevel,
+  type TLevelOf,
+} from '../../level-map/units';
 import { LetterTile } from './letter-tile';
 
 function getPositionOffsets() {
@@ -124,7 +129,7 @@ export class EducationSheepJumpScreen extends Container {
   private sheepAnimation?: AnimationPlaybackControls;
   private thankYouAnimation?: AnimationPlaybackControls;
   private sheepLocation: SheepLocation = { type: 'origin' };
-  private readonly level: TLevel;
+  private readonly level: TLevelOf<'education-sheep-jump'>;
 
   private map: {
     letters: string[];
@@ -133,7 +138,8 @@ export class EducationSheepJumpScreen extends Container {
   private step: number = 0;
 
   constructor(level: TLevel) {
-    const mapUnit = findMapUnitForLevel(level);
+    const typedLevel = getTypedLevel(level, 'education-sheep-jump');
+    const mapUnit = findMapUnitForLevel(typedLevel);
     super({
       layout: {
         position: 'relative',
@@ -142,9 +148,9 @@ export class EducationSheepJumpScreen extends Container {
       },
     });
     engine().audio.bgm.setVolume(0);
-    this.level = level;
+    this.level = typedLevel;
 
-    const letterPool: string[] = level.props!.letters;
+    const letterPool: string[] = typedLevel.props.letters;
     const orderedLetters = randomShuffle<string>([...letterPool]);
     this.map = orderedLetters.map((correctLetter) => {
       const distractors = randomShuffle<string>(

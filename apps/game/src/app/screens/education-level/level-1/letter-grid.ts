@@ -10,7 +10,7 @@ import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { LetterChoice } from '../../../ui/letter-choice';
 import { SoundButton } from '../../../ui/sound-button';
-import type { TLevel } from '../../level-map/units';
+import { getTypedLevel, type TLevel, type TLevelOf } from '../../level-map/units';
 
 // Scene Object
 const CARD_SIZE = 150;
@@ -40,7 +40,7 @@ export class LetterGrid extends Container {
   // STATIC ROUND COUNTER, RESET ON FIN
   public static rounds = 0;
   public static roundOrder: string[] = [];
-  private level: TLevel;
+  private level: TLevelOf<'education-letter-grid'>;
   private isPlaying: boolean = false;
 
   constructor(level: TLevel) {
@@ -59,14 +59,16 @@ export class LetterGrid extends Container {
     this.bottomPanel = new Container();
     this.soundButton = new SoundButton({ onClick: this.soundButtonClick, size: BUTTON_DIM });
 
+    const typedLevel = getTypedLevel(level, 'education-letter-grid');
+
     // init Letter Attributes so linter is happy
-    this.letterStrings = level.props!.letters;
+    this.letterStrings = typedLevel.props.letters;
     this.correctLetterString = '';
     this.displayLetters = [];
     this.letterMap = new Map();
     this.letters = [];
 
-    this.level = level;
+    this.level = typedLevel;
     // Constructor logic wrapped in helpers for better readability
     this.initLetterAttributes();
     this.initLayouts();

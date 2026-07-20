@@ -7,6 +7,7 @@ import {
 import type { ComponentType } from 'react';
 
 import { EducationLetterGridPropsForm } from '~/components/level-type-forms/education-letter-grid';
+import { EmptyPropsForm } from '~/components/level-type-forms/empty-props';
 import { type LevelPropsFormProps } from '~/components/level-type-forms/shared';
 import type { Level } from '~/lib/game';
 
@@ -20,8 +21,21 @@ type LevelPropsFormComponent<T extends LevelTypeId> = ComponentType<
  * Register a props form for each level type here.
  * Adding a type: create the form component, then add one entry.
  */
+// TODO: most of these forms are placeholder, should be replaced with the actual forms
 const levelTypePropsForms = {
   'education-letter-grid': EducationLetterGridPropsForm,
+  'education-bubble': EducationLetterGridPropsForm,
+  'education-sheep': EducationLetterGridPropsForm,
+  'education-image': EducationLetterGridPropsForm,
+  'education-word': EducationLetterGridPropsForm,
+  'education-sheep-jump': EducationLetterGridPropsForm,
+  'education-whack-a-mole': EducationLetterGridPropsForm,
+  'typing-desert': EmptyPropsForm,
+  'typing-sandstorm': EmptyPropsForm,
+  'typing-instrument': EmptyPropsForm,
+  'typing-word': EmptyPropsForm,
+  'typing-market': EmptyPropsForm,
+  'game-tandoor-rush': EmptyPropsForm,
 } satisfies { [K in LevelTypeId]: LevelPropsFormComponent<K> };
 
 function resolveDefaultProps(level: Level | null, levelType: LevelTypeId) {

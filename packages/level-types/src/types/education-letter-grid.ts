@@ -1,15 +1,18 @@
-import { z } from 'zod';
-
 import { defineLevelType } from '../define';
+import {
+  defaultEducationLettersProps,
+  educationLettersPropsSchema,
+  type EducationLettersProps,
+} from '../schemas/education-letters';
 
-export const educationLetterGridPropsSchema = z.object({
-  letters: z.array(z.string().min(1, 'Letter is required.')),
-});
+/** Alias kept for existing admin imports; prefer `educationLettersPropsSchema`. */
+export const educationLetterGridPropsSchema = educationLettersPropsSchema;
 
-export type EducationLetterGridProps = z.infer<typeof educationLetterGridPropsSchema>;
+/** Alias kept for existing admin imports; prefer `EducationLettersProps`. */
+export type EducationLetterGridProps = EducationLettersProps;
 
 export const educationLetterGrid = defineLevelType({
   label: 'Education letter grid',
-  propsSchema: educationLetterGridPropsSchema,
-  defaultProps: (): EducationLetterGridProps => ({ letters: [] }),
+  propsSchema: educationLettersPropsSchema,
+  defaultProps: defaultEducationLettersProps,
 });

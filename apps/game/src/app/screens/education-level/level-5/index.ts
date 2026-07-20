@@ -19,7 +19,13 @@ import { HUD } from '../../../ui/hud';
 import { LetterChoice } from '../../../ui/letter-choice';
 import { SoundButton } from '../../../ui/sound-button';
 import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
+import {
+  getTypedLevel,
+  findMapUnitForLevel,
+  getLevelType,
+  type TLevel,
+  type TLevelOf,
+} from '../../level-map/units';
 
 const PANEL_WIDTH = 1500;
 const PANEL_HEIGHT = 760;
@@ -70,16 +76,17 @@ export class EducationWordScreen extends Container {
   private readonly correctLetter: string;
   private readonly word: string;
   private isResolving = false;
-  private readonly level: TLevel;
+  private readonly level: TLevelOf<'education-word'>;
   private isPlaying: boolean = false;
 
   constructor(level: TLevel) {
-    const mapUnit = findMapUnitForLevel(level);
+    const typedLevel = getTypedLevel(level, 'education-word');
+    const mapUnit = findMapUnitForLevel(typedLevel);
     super({ layout: { position: 'relative', width: '100%', height: '100%' } });
     engine().audio.bgm.setVolume(0);
-    this.level = level;
+    this.level = typedLevel;
 
-    const letterPool: string[] = level.props!.letters;
+    const letterPool: string[] = typedLevel.props.letters;
     if (EducationWordScreen.rounds === 0) {
       EducationWordScreen.roundOrder = randomShuffle<string>([...letterPool]);
     }

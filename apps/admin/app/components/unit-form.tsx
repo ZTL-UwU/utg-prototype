@@ -35,15 +35,38 @@ const unitFormSchema = z.object({
   title: z.string().min(1, 'Title is required.').max(255),
   layer: z.enum(LAYERS, { error: 'Select a layer.' }),
   title_font_size: z.number().int().positive('Font size must be positive.'),
+  title_font_color: z.number().int(),
+  title_is_curved: z.boolean(),
+  subtitle_text: z.string().max(255),
+  subtitle_font_size: z.number().int().positive().nullable(),
+  subtitle_font_color: z.number().int().nullable(),
   background_asset_path: z.string().min(1, 'Background asset path is required.').max(255),
   is_published: z.boolean(),
 });
 
 export type UnitFormValues = z.infer<typeof unitFormSchema>;
 
+type UnitWritePayload = Omit<UnitFormValues, 'subtitle_text'> & {
+  subtitle_text: string | null;
+};
+
 function parseNumberInput(value: string): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : Number.NaN;
+}
+
+function parseNullableNumber(value: string): number | null {
+  if (value.trim() === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function unitPayload(values: UnitFormValues): UnitWritePayload {
+  const subtitleText = values.subtitle_text.trim();
+  return {
+    ...values,
+    subtitle_text: subtitleText === '' ? null : subtitleText,
+  };
 }
 
 export function UnitForm({ unit }: { unit: Unit }) {
@@ -54,7 +77,7 @@ export function UnitForm({ unit }: { unit: Unit }) {
     mutationFn: (values: UnitFormValues) =>
       api<Unit>(`/units/${unit.id}`, {
         method: 'PATCH',
-        body: values,
+        body: unitPayload(values),
       }),
     onSuccess: async (updated) => {
       toast.success('Unit saved');
@@ -78,6 +101,11 @@ export function UnitForm({ unit }: { unit: Unit }) {
       title: unit.title,
       layer: unit.layer,
       title_font_size: unit.title_font_size,
+      title_font_color: unit.title_font_color,
+      title_is_curved: unit.title_is_curved,
+      subtitle_text: unit.subtitle_text ?? '',
+      subtitle_font_size: unit.subtitle_font_size,
+      subtitle_font_color: unit.subtitle_font_color,
       background_asset_path: unit.background_asset_path,
       is_published: unit.is_published,
     } satisfies UnitFormValues,
@@ -173,29 +201,151 @@ export function UnitForm({ unit }: { unit: Unit }) {
           />
         </div>
 
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <form.Field
+            name="title_font_size"
+            children={(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>Title font size</FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="number"
+                    value={Number.isNaN(field.state.value) ? '' : field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(parseNumberInput(event.target.value))}
+                    aria-invalid={isInvalid}
+                    required
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              );
+            }}
+          />
+
+          <form.Field
+            name="title_font_color"
+            children={(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>Title font color</FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="number"
+                    value={Number.isNaN(field.state.value) ? '' : field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(parseNumberInput(event.target.value))}
+                    aria-invalid={isInvalid}
+                    required
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              );
+            }}
+          />
+        </div>
+
         <form.Field
-          name="title_font_size"
+          name="title_is_curved"
           children={(field) => {
             const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
 
             return (
               <Field data-invalid={isInvalid}>
-                <FieldLabel htmlFor={field.name}>Title font size</FieldLabel>
-                <Input
+                <FieldLabel htmlFor={field.name}>Curved title</FieldLabel>
+                <FieldDescription>Render the unit title along a curve on the map</FieldDescription>
+                <Switch
                   id={field.name}
-                  name={field.name}
-                  type="number"
-                  value={Number.isNaN(field.state.value) ? '' : field.state.value}
+                  checked={field.state.value}
+                  onCheckedChange={(checked) => field.handleChange(checked)}
                   onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(parseNumberInput(event.target.value))}
                   aria-invalid={isInvalid}
-                  required
                 />
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             );
           }}
         />
+
+        <form.Field
+          name="subtitle_text"
+          children={(field) => {
+            const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+
+            return (
+              <Field data-invalid={isInvalid}>
+                <FieldLabel htmlFor={field.name}>Subtitle</FieldLabel>
+                <Input
+                  id={field.name}
+                  name={field.name}
+                  value={field.state.value}
+                  onBlur={field.handleBlur}
+                  onChange={(event) => field.handleChange(event.target.value)}
+                  aria-invalid={isInvalid}
+                />
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            );
+          }}
+        />
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <form.Field
+            name="subtitle_font_size"
+            children={(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>Subtitle font size</FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="number"
+                    value={field.state.value ?? ''}
+                    onBlur={field.handleBlur}
+                    onChange={(event) =>
+                      field.handleChange(parseNullableNumber(event.target.value))
+                    }
+                    aria-invalid={isInvalid}
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              );
+            }}
+          />
+
+          <form.Field
+            name="subtitle_font_color"
+            children={(field) => {
+              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+
+              return (
+                <Field data-invalid={isInvalid}>
+                  <FieldLabel htmlFor={field.name}>Subtitle font color</FieldLabel>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="number"
+                    value={field.state.value ?? ''}
+                    onBlur={field.handleBlur}
+                    onChange={(event) =>
+                      field.handleChange(parseNullableNumber(event.target.value))
+                    }
+                    aria-invalid={isInvalid}
+                  />
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              );
+            }}
+          />
+        </div>
 
         <form.Field
           name="background_asset_path"

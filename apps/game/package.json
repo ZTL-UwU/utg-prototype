@@ -17,12 +17,15 @@
     "@pixi/sound": "^6.0.1",
     "@pixi/ui": "^2.3.2",
     "@tailwindcss/vite": "^4.3.0",
+    "@utg/level-types": "workspace:*",
     "motion": "^12.40.0",
+    "ofetch": "^1.5.1",
     "pixi-filters": "^6.1.5",
     "pixi.js": "^8.18.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "tailwindcss": "^4.3.0",
+    "zod": "^4.4.3",
     "zustand": "^5.0.13"
   },
   "devDependencies": {

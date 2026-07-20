@@ -12,7 +12,13 @@ import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
 import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
+import {
+  getTypedLevel,
+  findMapUnitForLevel,
+  getLevelType,
+  type TLevel,
+  type TLevelOf,
+} from '../../level-map/units';
 import { MOLE_UP_Y, MoleTarget } from './mole-target';
 
 const MOLE_DOWN_Y = 220;
@@ -53,7 +59,7 @@ export class EducationWhackAMoleScreen extends Container {
   public static helpAssets: string[] = [];
 
   private readonly hud: HUD;
-  private readonly level: TLevel;
+  private readonly level: TLevelOf<'education-whack-a-mole'>;
   private readonly background: Sprite;
   private readonly soundButton: SoundButton;
   private readonly targets: MoleTarget[];
@@ -75,13 +81,14 @@ export class EducationWhackAMoleScreen extends Container {
   private rabbitAnimation?: AnimationPlaybackControls;
 
   constructor(level: TLevel) {
-    const mapUnit = findMapUnitForLevel(level);
+    const typedLevel = getTypedLevel(level, 'education-whack-a-mole');
+    const mapUnit = findMapUnitForLevel(typedLevel);
     super({ layout: { position: 'relative', width: '100%', height: '100%' } });
 
     engine().audio.bgm.setVolume(0);
-    this.level = level;
+    this.level = typedLevel;
 
-    const letterPool: string[] = level.props!.letters;
+    const letterPool: string[] = typedLevel.props.letters;
     const orderedLetters = randomShuffle<string>([...letterPool]);
     this.rounds = orderedLetters.map((correctLetter) => createRound(correctLetter, letterPool));
 

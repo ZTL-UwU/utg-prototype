@@ -41,6 +41,8 @@ export interface Level {
   splash_level_font_color: number | null;
   splash_level_title_color: number | null;
   show_mascot_on_splash: boolean;
+  background_asset_path: string;
+  backdrop_color: number;
   is_published: boolean;
 }
 
@@ -50,6 +52,11 @@ export interface Unit {
   layer: Layer;
   title: string;
   title_font_size: number;
+  title_font_color: number;
+  title_is_curved: boolean;
+  subtitle_text: string | null;
+  subtitle_font_size: number | null;
+  subtitle_font_color: number | null;
   background_asset_path: string;
   levels: Level[];
   updated_at: string;

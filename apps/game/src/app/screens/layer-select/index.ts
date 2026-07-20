@@ -3,6 +3,7 @@ import { animate } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { ensureCourseReady } from '../../../zustandStores/courseStore';
 import { UserStatsPopup } from '../../popups/user-stats';
 import { HomeScreen } from '../home';
 import { LevelMapScreen } from '../level-map';
@@ -117,11 +118,16 @@ export class LayerSelectScreen extends Container {
         const layer = data.screenType;
         button.onPress.connect(() => {
           void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-          if (layer === 'education') {
-            void engine().navigation.showScreen(EducationLevelSelect);
-          } else {
-            void engine().navigation.showScreen(LevelMapScreen, getLayerMaps(layer)[0]);
-          }
+          void (async () => {
+            if (!(await ensureCourseReady())) return;
+            if (layer === 'education') {
+              await engine().navigation.showScreen(EducationLevelSelect);
+              return;
+            }
+            const firstMap = getLayerMaps(layer)[0];
+            if (!firstMap) return;
+            await engine().navigation.showScreen(LevelMapScreen, firstMap);
+          })();
         });
       }
       return button;

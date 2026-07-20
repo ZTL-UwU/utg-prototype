@@ -4,7 +4,7 @@ import { Container, Graphics } from 'pixi.js';
 import { EducationLevelSelect } from '.';
 import { engine } from '../../../../engine/getEngine';
 import { EducationTutorialScreen } from '../../education-level/level-tutorial';
-import { educationMaps } from '../../level-map/units';
+import { getLayerMaps } from '../../level-map/units';
 import { MapUnitButton } from './map-unit-button';
 import { TutorialEntryButton } from './tutorial-entry-button';
 
@@ -23,9 +23,13 @@ export class EducationMapRow extends Container {
       },
     });
 
+    const educationMaps = getLayerMaps('education');
+
     const openTutorial: () => void = () => {
+      const firstMap = getLayerMaps('education')[0];
+      if (!firstMap) return;
       void engine().navigation.showScreen(EducationTutorialScreen, {
-        mapUnit: educationMaps[0],
+        mapUnit: firstMap,
         onBack: () => void engine().navigation.showScreen(EducationLevelSelect),
       });
     };

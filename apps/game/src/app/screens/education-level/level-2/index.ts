@@ -11,12 +11,18 @@ import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
 import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
+import {
+  getTypedLevel,
+  findMapUnitForLevel,
+  getLevelType,
+  type TLevel,
+  type TLevelOf,
+} from '../../level-map/units';
 import { LetterBubble } from './letter-bubble';
 
 // bubble slots, matches xSlots in resize()
 const NUM_CHOICES = 3;
-// only used when level.props.letters is missing entirely
+// only used when level.props.letters is empty
 const FALLBACK_LETTER_COUNT = 8;
 
 export class EducationBubbleScreen extends Container {
@@ -58,9 +64,10 @@ export class EducationBubbleScreen extends Container {
     void engine().audio.sfx.play(aliasString);
     setTimeout(() => (this.isPlaying = false), durationMs);
   }
-  private level: TLevel;
+  private level: TLevelOf<'education-bubble'>;
   constructor(level: TLevel) {
-    const mapUnit = findMapUnitForLevel(level);
+    const typedLevel = getTypedLevel(level, 'education-bubble');
+    const mapUnit = findMapUnitForLevel(typedLevel);
     super({
       layout: {
         position: 'relative',
@@ -71,7 +78,7 @@ export class EducationBubbleScreen extends Container {
       },
     });
     engine().audio.bgm.setVolume(0);
-    this.level = level;
+    this.level = typedLevel;
     this.background = new Sprite({
       texture: Texture.from('education-levels/education-level-2/background.png'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
@@ -79,14 +86,17 @@ export class EducationBubbleScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: getLevelType(level),
+          type: getLevelType(typedLevel),
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
+    const configuredLetters = typedLevel.props.letters;
     const letterPool: string[] =
-      level.props?.letters ?? pickRandomEducationLetters(FALLBACK_LETTER_COUNT);
+      configuredLetters.length > 0
+        ? configuredLetters
+        : pickRandomEducationLetters(FALLBACK_LETTER_COUNT);
     if (EducationBubbleScreen.rounds === 0) {
       EducationBubbleScreen.roundOrder = randomShuffle([...letterPool]);
     }

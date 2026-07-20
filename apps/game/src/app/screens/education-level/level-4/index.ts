@@ -11,7 +11,12 @@ import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
 import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
+import {
+  getTypedLevel,
+  findMapUnitForLevel,
+  getLevelType,
+  type TLevel,
+} from '../../level-map/units';
 import { LetterChoice } from './letter-choice';
 
 // image choice slots, matches X_SLOTS
@@ -52,7 +57,8 @@ export class EducationImageScreen extends Container {
   private isPlaying: boolean = false;
 
   constructor(level: TLevel) {
-    const mapUnit = findMapUnitForLevel(level);
+    const typedLevel = getTypedLevel(level, 'education-image');
+    const mapUnit = findMapUnitForLevel(typedLevel);
     super({
       layout: {
         position: 'relative',
@@ -66,13 +72,13 @@ export class EducationImageScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: getLevelType(level),
+          type: getLevelType(typedLevel),
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
-    const letterPool: string[] = level.props!.letters;
+    const letterPool: string[] = typedLevel.props.letters;
     if (EducationImageScreen.rounds === 0) {
       EducationImageScreen.roundOrder = randomShuffle<string>([...letterPool]);
     }
@@ -95,7 +101,7 @@ export class EducationImageScreen extends Container {
         new LetterChoice(
           letter,
           this.correctLetter,
-          letter === this.correctLetter ? () => endGame(level) : undefined,
+          letter === this.correctLetter ? () => endGame(typedLevel) : undefined,
         ),
     );
     for (const choice of this.choices) this.choiceContainer.addChild(choice);

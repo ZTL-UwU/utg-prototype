@@ -74,6 +74,8 @@ const levelFormSchema = z.object({
   splash_level_font_color: z.number().int().nullable(),
   splash_level_title_color: z.number().int().nullable(),
   show_mascot_on_splash: z.boolean(),
+  background_asset_path: z.string().min(1, 'Background asset path is required.').max(255),
+  backdrop_color: z.number().int(),
   is_published: z.boolean(),
 });
 
@@ -142,6 +144,8 @@ function defaultLevelValues(level: Level | null): LevelFormValues {
     splash_level_font_color: level?.splash_level_font_color ?? null,
     splash_level_title_color: level?.splash_level_title_color ?? null,
     show_mascot_on_splash: level?.show_mascot_on_splash ?? false,
+    background_asset_path: level?.background_asset_path ?? '',
+    backdrop_color: level?.backdrop_color ?? 0,
     is_published: level?.is_published ?? true,
   };
 }
@@ -709,6 +713,56 @@ function LevelStaticFields({ form, mascots }: { form: LevelFormApi; mascots: Mas
           label="Level title color"
         />
       </div>
+
+      <form.Field
+        name="background_asset_path"
+        children={(field: any) => {
+          const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+
+          return (
+            <Field data-invalid={isInvalid}>
+              <FieldLabel htmlFor={field.name}>Play background asset path</FieldLabel>
+              <Input
+                id={field.name}
+                name={field.name}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => field.handleChange(event.target.value)}
+                aria-invalid={isInvalid}
+                required
+              />
+              {isInvalid && <FieldError errors={field.state.meta.errors} />}
+            </Field>
+          );
+        }}
+      />
+
+      <form.Field
+        name="backdrop_color"
+        children={(field: any) => {
+          const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+
+          return (
+            <Field data-invalid={isInvalid}>
+              <FieldLabel htmlFor={field.name}>Backdrop color</FieldLabel>
+              <Input
+                id={field.name}
+                name={field.name}
+                type="number"
+                value={Number.isNaN(field.state.value) ? '' : field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(event) => {
+                  const parsed = Number(event.target.value);
+                  field.handleChange(Number.isFinite(parsed) ? parsed : Number.NaN);
+                }}
+                aria-invalid={isInvalid}
+                required
+              />
+              {isInvalid && <FieldError errors={field.state.meta.errors} />}
+            </Field>
+          );
+        }}
+      />
 
       <form.Field
         name="show_mascot_on_splash"

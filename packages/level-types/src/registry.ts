@@ -1,7 +1,19 @@
 import { z } from 'zod';
 
 import type { LevelTypeConfig } from './define';
+import { educationBubble } from './types/education-bubble';
+import { educationImage } from './types/education-image';
 import { educationLetterGrid } from './types/education-letter-grid';
+import { educationSheep } from './types/education-sheep';
+import { educationSheepJump } from './types/education-sheep-jump';
+import { educationWhackAMole } from './types/education-whack-a-mole';
+import { educationWord } from './types/education-word';
+import { gameTandoorRush } from './types/game-tandoor-rush';
+import { typingDesert } from './types/typing-desert';
+import { typingInstrument } from './types/typing-instrument';
+import { typingMarket } from './types/typing-market';
+import { typingSandstorm } from './types/typing-sandstorm';
+import { typingWord } from './types/typing-word';
 
 /**
  * Source of truth for level type ids, labels, and props schemas.
@@ -14,6 +26,18 @@ import { educationLetterGrid } from './types/education-letter-grid';
  */
 export const LEVEL_TYPES = {
   'education-letter-grid': educationLetterGrid,
+  'education-bubble': educationBubble,
+  'education-sheep': educationSheep,
+  'education-image': educationImage,
+  'education-word': educationWord,
+  'education-sheep-jump': educationSheepJump,
+  'education-whack-a-mole': educationWhackAMole,
+  'typing-desert': typingDesert,
+  'typing-sandstorm': typingSandstorm,
+  'typing-instrument': typingInstrument,
+  'typing-word': typingWord,
+  'typing-market': typingMarket,
+  'game-tandoor-rush': gameTandoorRush,
 } as const satisfies Record<string, LevelTypeConfig>;
 
 export type LevelTypeId = keyof typeof LEVEL_TYPES;

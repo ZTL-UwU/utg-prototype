@@ -11,7 +11,13 @@ import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
 import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
+import {
+  getTypedLevel,
+  findMapUnitForLevel,
+  getLevelType,
+  type TLevel,
+  type TLevelOf,
+} from '../../level-map/units';
 import { LetterGrass } from './letter-grass';
 
 // grass slots, matches GRASS_X_RATIOS
@@ -57,13 +63,14 @@ export class EducationSheepScreen extends Container {
 
   private correctLetter: string;
   private isAnimating = false;
-  private level: TLevel;
+  private level: TLevelOf<'education-sheep'>;
   private isPlaying: boolean = false;
   constructor(level: TLevel) {
-    const mapUnit = findMapUnitForLevel(level);
+    const typedLevel = getTypedLevel(level, 'education-sheep');
+    const mapUnit = findMapUnitForLevel(typedLevel);
     super({ layout: { position: 'relative', width: '100%', height: '100%' } });
     engine().audio.bgm.setVolume(0);
-    this.level = level;
+    this.level = typedLevel;
 
     this.background = new Sprite({
       texture: Texture.from('education-levels/education-level-3/background.png'),
@@ -72,13 +79,13 @@ export class EducationSheepScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: getLevelType(level),
+          type: getLevelType(typedLevel),
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
-    const letterPool: string[] = level.props!.letters;
+    const letterPool: string[] = typedLevel.props.letters;
     if (EducationSheepScreen.rounds === 0) {
       EducationSheepScreen.roundOrder = randomShuffle<string>([...letterPool]);
     }

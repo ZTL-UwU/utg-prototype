@@ -1,5 +1,5 @@
 import { useForm } from '@tanstack/react-form';
-import { educationLetterGridPropsSchema, type EducationLetterGridProps } from '@utg/level-types';
+import { educationLettersPropsSchema, type EducationLettersProps } from '@utg/level-types';
 
 import { EducationLetterSelector } from '~/components/education-letter-selector';
 import {
@@ -13,11 +13,11 @@ export function EducationLetterGridPropsForm({
   defaultValues,
   onSubmit,
   onDirtyChange,
-}: LevelPropsFormProps<EducationLetterGridProps>) {
+}: LevelPropsFormProps<EducationLettersProps>) {
   const form = useForm({
     defaultValues,
     validators: {
-      onSubmit: educationLetterGridPropsSchema,
+      onSubmit: educationLettersPropsSchema,
     },
     onSubmit: ({ value }) => {
       onSubmit(value);
