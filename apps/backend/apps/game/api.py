@@ -39,6 +39,8 @@ def _apply_level_payload(level: Level, payload: LevelWriteIn) -> None:
     level.splash_level_font_color = payload.splash_level_font_color
     level.splash_level_title_color = payload.splash_level_title_color
     level.show_mascot_on_splash = payload.show_mascot_on_splash
+    level.background_asset_path = payload.background_asset_path
+    level.backdrop_color = payload.backdrop_color
     level.is_published = payload.is_published
 
 
@@ -50,10 +52,18 @@ def _validate_level_relations(payload: LevelWriteIn):
     return None
 
 
-@router.get("/units/list", response=list[UnitOut], summary="List units and their levels")
+@router.get("/units/list", response=list[UnitOut], summary="List published units and their published levels")
 def list_units(request):
-    levels = Level.objects.select_related("mascot").order_by("sort_order", "id")
-    return Unit.objects.prefetch_related(Prefetch("levels", queryset=levels))
+    levels = (
+        Level.objects.filter(is_published=True, is_active=True)
+        .select_related("mascot")
+        .order_by("sort_order", "id")
+    )
+    return (
+        Unit.objects.filter(is_published=True, is_active=True)
+        .prefetch_related(Prefetch("levels", queryset=levels))
+        .order_by("sort_order", "id")
+    )
 
 
 @router.get(
@@ -110,6 +120,11 @@ def update_unit(request, unit_id: int, payload: UnitUpdateIn):
     unit.layer = payload.layer
     unit.title = payload.title
     unit.title_font_size = payload.title_font_size
+    unit.title_font_color = payload.title_font_color
+    unit.title_is_curved = payload.title_is_curved
+    unit.subtitle_text = payload.subtitle_text
+    unit.subtitle_font_size = payload.subtitle_font_size
+    unit.subtitle_font_color = payload.subtitle_font_color
     unit.background_asset_path = payload.background_asset_path
     unit.is_published = payload.is_published
     unit.updated_by = request.auth

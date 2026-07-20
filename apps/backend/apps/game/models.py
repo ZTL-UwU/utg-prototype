@@ -11,6 +11,18 @@ class Layer(models.TextChoices):
 
 class LevelType(models.TextChoices):
     EDUCATION_LETTER_GRID = "education-letter-grid", "Education letter grid"
+    EDUCATION_BUBBLE = "education-bubble", "Education bubble"
+    EDUCATION_SHEEP = "education-sheep", "Education sheep"
+    EDUCATION_IMAGE = "education-image", "Education image"
+    EDUCATION_WORD = "education-word", "Education word"
+    EDUCATION_SHEEP_JUMP = "education-sheep-jump", "Education sheep jump"
+    EDUCATION_WHACK_A_MOLE = "education-whack-a-mole", "Education whack-a-mole"
+    TYPING_DESERT = "typing-desert", "Typing desert"
+    TYPING_SANDSTORM = "typing-sandstorm", "Typing sandstorm"
+    TYPING_INSTRUMENT = "typing-instrument", "Typing instrument"
+    TYPING_WORD = "typing-word", "Typing word"
+    TYPING_MARKET = "typing-market", "Typing market"
+    GAME_TANDOOR_RUSH = "game-tandoor-rush", "Game tandoor rush"
 
 
 class Unit(AuditingMixin, models.Model):
@@ -18,6 +30,11 @@ class Unit(AuditingMixin, models.Model):
     layer = models.CharField(max_length=20, choices=Layer.choices)
     title = models.CharField(max_length=255)
     title_font_size = models.PositiveIntegerField()
+    title_font_color = models.BigIntegerField(default=0xFFFFFF)
+    title_is_curved = models.BooleanField(default=False)
+    subtitle_text = models.CharField(max_length=255, null=True, blank=True)
+    subtitle_font_size = models.PositiveIntegerField(null=True, blank=True)
+    subtitle_font_color = models.BigIntegerField(null=True, blank=True)
     background_asset_path = models.CharField(max_length=255)
 
     class Meta:
@@ -63,6 +80,8 @@ class Level(AuditingMixin, models.Model):
     splash_level_font_color = models.BigIntegerField(null=True, blank=True)
     splash_level_title_color = models.BigIntegerField(null=True, blank=True)
     show_mascot_on_splash = models.BooleanField(default=False)
+    background_asset_path = models.CharField(max_length=255, default="")
+    backdrop_color = models.BigIntegerField(default=0)
 
     class Meta:
         db_table = "levels"

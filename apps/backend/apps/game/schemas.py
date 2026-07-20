@@ -31,6 +31,8 @@ class LevelOut(AuditingOut):
     splash_level_font_color: int | None
     splash_level_title_color: int | None
     show_mascot_on_splash: bool
+    background_asset_path: str
+    backdrop_color: int
 
 
 class LevelShortOut(AuditingOut):
@@ -45,6 +47,11 @@ class UnitOut(AuditingOut):
     layer: str
     title: str
     title_font_size: int
+    title_font_color: int
+    title_is_curved: bool
+    subtitle_text: str | None
+    subtitle_font_size: int | None
+    subtitle_font_color: int | None
     background_asset_path: str
     levels: list[LevelOut]
 
@@ -59,6 +66,11 @@ class UnitByLayerOut(AuditingOut):
     layer: str
     title: str
     title_font_size: int
+    title_font_color: int
+    title_is_curved: bool
+    subtitle_text: str | None
+    subtitle_font_size: int | None
+    subtitle_font_color: int | None
     background_asset_path: str
     levels: list[LevelShortOut]
 
@@ -73,6 +85,11 @@ class UnitByIdOut(AuditingOut):
     layer: str
     title: str
     title_font_size: int
+    title_font_color: int
+    title_is_curved: bool
+    subtitle_text: str | None
+    subtitle_font_size: int | None
+    subtitle_font_color: int | None
     background_asset_path: str
     levels: list[LevelOut]
 
@@ -91,6 +108,11 @@ class UnitUpdateIn(Schema):
     layer: LayerValue
     title: str
     title_font_size: int
+    title_font_color: int
+    title_is_curved: bool
+    subtitle_text: str | None = None
+    subtitle_font_size: int | None = None
+    subtitle_font_color: int | None = None
     background_asset_path: str
     is_published: bool
 
@@ -106,6 +128,8 @@ class LevelWriteIn(Schema):
     splash_level_font_color: int | None = None
     splash_level_title_color: int | None = None
     show_mascot_on_splash: bool
+    background_asset_path: str
+    backdrop_color: int
     is_published: bool
 
 
