@@ -68,16 +68,11 @@ export class LevelSplashScreen extends Container {
       },
     });
     this.colorScheme = level.splashColorScheme ?? getDefaultColorScheme(level.mascot);
-    let levelTextEntry;
-    if (mapUnit.type === 'education') {
-      let num = level.id % 3 === 0 ? 3 : level.id % 3;
-      levelTextEntry = `GAME ${num}`;
-    } else {
-      levelTextEntry = `LEVEL ${level.id}`;
-    }
+    const levelIndex = mapUnit.levels.findIndex((entry) => entry.id === level.id) + 1;
+    const levelTextEntry =
+      mapUnit.type === 'education' ? `GAME ${levelIndex}` : `LEVEL ${levelIndex}`;
 
     this.levelNumber = new SplitText({
-      //   text: `${mapUnit.type === 'education' ? 'GAME' : 'LEVEL'} ${level.id }`,
       text: levelTextEntry,
       style: {
         fontFamily: 'Concert One',

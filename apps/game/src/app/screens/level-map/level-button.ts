@@ -73,7 +73,7 @@ export class LevelButton extends FancyButton {
       },
       text: level.unlocked
         ? new Text({
-            text: mapUnit.type === 'typing' ? String(level.id) : String(idx),
+            text: String(idx),
             style: {
               fontFamily: 'Concert One',
               fontSize: 110,
