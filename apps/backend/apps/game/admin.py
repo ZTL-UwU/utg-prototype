@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps.game.models import Level, Mascot, Unit
+from apps.game.models import Level, Mascot, Unit, Word
 
 
 @admin.register(Unit)
@@ -31,3 +31,10 @@ class LevelAdmin(admin.ModelAdmin):
     search_fields = ("title", "level_type")
     autocomplete_fields = ("unit", "mascot")
     ordering = ("unit", "sort_order")
+
+
+@admin.register(Word)
+class WordAdmin(admin.ModelAdmin):
+    list_display = ("word", "target_letter", "file")
+    list_filter = ("target_letter",)
+    search_fields = ("word", "target_letter")

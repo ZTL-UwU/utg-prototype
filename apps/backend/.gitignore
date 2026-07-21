@@ -9,3 +9,4 @@ htmlcov/
 .ruff_cache/
 staticfiles/*
 !staticfiles/.gitkeep
+media/

@@ -88,3 +88,15 @@ class Level(AuditingMixin, models.Model):
 
     def __str__(self) -> str:
         return self.title or f"Level {self.pk}"
+
+
+class Word(AuditingMixin, models.Model):
+    word = models.CharField(max_length=255)
+    target_letter = models.CharField(max_length=255)
+    file = models.FileField(upload_to="words/")
+
+    class Meta:
+        db_table = "words"
+
+    def __str__(self) -> str:
+        return self.word
