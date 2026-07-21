@@ -165,6 +165,17 @@ class WordOut(Schema):
         )
 
 
+class WordSimpleOut(Schema):
+    id: int
+    word: str
+    target_letter: str | None
+    is_tutorial_word: bool
+    image_url: str
+
+    @staticmethod
+    def resolve_image_url(obj) -> str:
+        return obj.image.url
+
 class LevelOrderIn(Schema):
     level_ids: list[int]
 

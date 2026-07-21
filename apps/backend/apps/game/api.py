@@ -19,6 +19,7 @@ from apps.game.schemas import (
     UnitUpdateIn,
     WordIn,
     WordOut,
+    WordSimpleOut,
 )
 
 router = Router(tags=["game"])
@@ -279,6 +280,11 @@ def create_word(request, data: Form[WordIn], image: File[UploadedFile]):
 @router.get("/words/list", response=list[WordOut], summary="List all words")
 def list_words(request):
     return Word.objects.order_by("-updated_at", "-id")
+
+
+@router.get("/words/list-simple", response=list[WordSimpleOut], summary="List all words (simple version)")
+def list_words_simple(request):
+    return Word.objects.only("id", "word", "target_letter", "is_tutorial_word")
 
 
 @router.patch(
