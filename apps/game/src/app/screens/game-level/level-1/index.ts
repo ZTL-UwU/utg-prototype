@@ -1,4 +1,3 @@
-import { animate } from 'motion';
 import { Container, Sprite, Text, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
@@ -196,18 +195,18 @@ export class GameLevelOneScreen extends Container {
     this.background.position.set(engine().navigation.width / 2, engine().navigation.height / 2);
     this.background.scale.set(this.backgroundBaseScale);
 
-    await Promise.all([
-      animate(
-        this.background.scale,
-        { x: this.backgroundGameplayScale, y: this.backgroundGameplayScale },
-        { duration: 1.1, ease: 'easeInOut' },
-      ),
-      animate(
-        this.background,
-        { y: this.backgroundGameplayY },
-        { duration: 1.1, ease: 'easeInOut' },
-      ),
-    ]);
+    // await Promise.all([
+    //   animate(
+    //     this.background.scale,
+    //     { x: this.backgroundGameplayScale, y: this.backgroundGameplayScale },
+    //     { duration: 1.1, ease: 'easeInOut' },
+    //   ),
+    //   animate(
+    //     this.background,
+    //     { y: this.backgroundGameplayY },
+    //     { duration: 1.1, ease: 'easeInOut' },
+    //   ),
+    // ]);
     this.background.texture = Texture.from(TIMER_BACKGROUNDS.green);
     this.gameplay.visible = true;
     window.addEventListener('keydown', this.handleKeyDown);
