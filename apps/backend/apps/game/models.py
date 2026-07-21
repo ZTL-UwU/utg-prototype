@@ -94,6 +94,7 @@ class Word(AuditingMixin, models.Model):
     word = models.CharField(max_length=255)
     target_letter = models.CharField(null=True, blank=True, max_length=255)
     translation = models.CharField(null=True, blank=True, max_length=255)
+    is_tutorial_word = models.BooleanField(default=False)
     image = models.ImageField(upload_to="words/")
 
     class Meta:
