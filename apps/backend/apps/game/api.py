@@ -39,7 +39,6 @@ def _apply_level_payload(level: Level, payload: LevelWriteIn) -> None:
     level.splash_level_font_color = payload.splash_level_font_color
     level.splash_level_title_color = payload.splash_level_title_color
     level.show_mascot_on_splash = payload.show_mascot_on_splash
-    level.background_asset_path = payload.background_asset_path
     level.backdrop_color = payload.backdrop_color
     level.is_published = payload.is_published
 

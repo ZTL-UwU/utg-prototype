@@ -31,7 +31,6 @@ class LevelOut(AuditingOut):
     splash_level_font_color: int | None
     splash_level_title_color: int | None
     show_mascot_on_splash: bool
-    background_asset_path: str
     backdrop_color: int
 
 
@@ -128,7 +127,6 @@ class LevelWriteIn(Schema):
     splash_level_font_color: int | None = None
     splash_level_title_color: int | None = None
     show_mascot_on_splash: bool
-    background_asset_path: str
     backdrop_color: int
     is_published: bool
 

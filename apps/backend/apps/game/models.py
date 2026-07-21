@@ -80,7 +80,6 @@ class Level(AuditingMixin, models.Model):
     splash_level_font_color = models.BigIntegerField(null=True, blank=True)
     splash_level_title_color = models.BigIntegerField(null=True, blank=True)
     show_mascot_on_splash = models.BooleanField(default=False)
-    background_asset_path = models.CharField(max_length=255, default="")
     backdrop_color = models.BigIntegerField(default=0)
 
     class Meta:
