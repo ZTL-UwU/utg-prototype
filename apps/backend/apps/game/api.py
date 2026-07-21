@@ -53,7 +53,9 @@ def _validate_level_relations(payload: LevelWriteIn):
     return None
 
 
-@router.get("/units/list", response=list[UnitOut], summary="List published units and their published levels")
+@router.get(
+    "/units/list", response=list[UnitOut], summary="List published units and their published levels"
+)
 def list_units(request):
     levels = (
         Level.objects.filter(is_published=True, is_active=True)
@@ -111,7 +113,7 @@ def get_unit(request, unit_id: int):
     summary="Update a unit",
 )
 def update_unit(request, unit_id: int, payload: UnitUpdateIn):
-    if not(request.auth.has_perm("game.change_unit")):
+    if not (request.auth.has_perm("game.change_unit")):
         return Status(403, {"detail": "You do not have permissions to edit units"})
     try:
         unit = _unit_with_levels(unit_id)
@@ -257,9 +259,16 @@ def reorder_units(request, layer: Layer, payload: UnitOrderIn):
         .order_by("sort_order", "id")
     )
 
-@router.post("/words", auth=jwt_auth, response={200:WordOut, 403: ErrorOut})
-def create_word(request, data:Form[WordIn], image:File[UploadedFile]):
-    if not(request.auth.has_perm("word.createWord")):
-        return Status(403, {"detail":"You do not have permission to create words"})
-    word = Word.objects.create(word = data.word, target_letter = data.target_letter, image = image)
+
+@router.post("/words", auth=jwt_auth, response={200: WordOut, 403: ErrorOut})
+def create_word(request, data: Form[WordIn], image: File[UploadedFile]):
+    if not (request.auth.has_perm("word.createWord")):
+        return Status(403, {"detail": "You do not have permission to create words"})
+    word = Word.objects.create(
+        word=data.word,
+        target_letter=data.target_letter,
+        translation=data.translation,
+        is_tutorial_word=data.is_tutorial_word,
+        image=image,
+    )
     return 200, word

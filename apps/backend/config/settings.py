@@ -141,8 +141,7 @@ def default_file_storage() -> dict[str, object]:
         "default_acl": None,
         "querystring_auth": env_bool("AWS_QUERYSTRING_AUTH", True),
         # Required by R2 / Spaces / modern S3; SigV2 is rejected.
-        "signature_version": os.getenv("AWS_S3_SIGNATURE_VERSION", "s3v4").strip()
-        or "s3v4",
+        "signature_version": os.getenv("AWS_S3_SIGNATURE_VERSION", "s3v4").strip() or "s3v4",
     }
     if access_key := os.getenv("AWS_ACCESS_KEY_ID", "").strip():
         options["access_key"] = access_key
