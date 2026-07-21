@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Literal
 
 from ninja import Schema
@@ -133,22 +134,35 @@ class LevelWriteIn(Schema):
 
 class WordIn(Schema):
     word: str
-    target_letter: str
+    target_letter: str | None = None
     translation: str | None = None
     is_tutorial_word: bool = False
+
+
+class ImageOut(Schema):
+    name: str
+    url: str
+    filename: str
+    size: int
 
 
 class WordOut(Schema):
     id: int
     word: str
-    target_letter: str
+    target_letter: str | None
     translation: str | None
     is_tutorial_word: bool
-    image_url: str
+    image: ImageOut
 
     @staticmethod
-    def resolve_image_url(obj) -> str:
-        return obj.image.url
+    def resolve_image(obj) -> ImageOut:
+        image = obj.image
+        return ImageOut(
+            name=image.name,
+            url=image.url,
+            filename=Path(image.name).name,
+            size=image.size,
+        )
 
 
 class LevelOrderIn(Schema):

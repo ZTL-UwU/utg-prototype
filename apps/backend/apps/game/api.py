@@ -266,8 +266,8 @@ def create_word(request, data: Form[WordIn], image: File[UploadedFile]):
         return Status(403, {"detail": "You do not have permission to create words"})
     word = Word.objects.create(
         word=data.word,
-        target_letter=data.target_letter,
-        translation=data.translation,
+        target_letter=data.target_letter or None,
+        translation=data.translation or None,
         is_tutorial_word=data.is_tutorial_word,
         image=image,
         created_by=request.auth,
@@ -301,8 +301,8 @@ def update_word(
         return Status(404, {"detail": "Word not found."})
 
     word.word = data.word
-    word.target_letter = data.target_letter
-    word.translation = data.translation
+    word.target_letter = data.target_letter or None
+    word.translation = data.translation or None
     word.is_tutorial_word = data.is_tutorial_word
     if image is not None:
         word.image = image
