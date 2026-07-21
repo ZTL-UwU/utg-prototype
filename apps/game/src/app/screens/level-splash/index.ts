@@ -59,7 +59,7 @@ export class LevelSplashScreen extends Container {
     });
 
     this.background = new Sprite({
-      texture: Texture.from(level.splashScreenBg ?? level.background),
+      texture: Texture.from(level.splashScreenBg),
       layout: {
         width: '100%',
         height: '100%',

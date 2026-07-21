@@ -25,8 +25,7 @@ type TLevelBase = {
   unlocked: boolean;
   mascot: 'sheep' | 'goat' | 'camel' | 'chef';
   screen?: LevelScreenConstructor;
-  background: string;
-  splashScreenBg?: string;
+  splashScreenBg: string;
   backdropColor: number;
   splashColorScheme?: SplashColorScheme;
   mascotOnSplash: boolean;

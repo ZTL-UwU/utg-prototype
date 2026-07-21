@@ -40,7 +40,6 @@ interface ApiLevel {
   splash_level_font_color: number | null;
   splash_level_title_color: number | null;
   show_mascot_on_splash: boolean;
-  background_asset_path: string;
   backdrop_color: number;
 }
 
@@ -106,8 +105,7 @@ function mapLevel(
     unlocked: true,
     mascot: mapMascot(level.mascot?.name),
     screen: screens[levelType],
-    background: level.background_asset_path,
-    splashScreenBg: level.splash_background_asset_path || undefined,
+    splashScreenBg: level.splash_background_asset_path,
     backdropColor: level.backdrop_color,
     splashColorScheme: mapSplashColorScheme(level),
     mascotOnSplash: level.show_mascot_on_splash,

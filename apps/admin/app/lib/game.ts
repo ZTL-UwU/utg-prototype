@@ -41,7 +41,6 @@ export interface Level {
   splash_level_font_color: number | null;
   splash_level_title_color: number | null;
   show_mascot_on_splash: boolean;
-  background_asset_path: string;
   backdrop_color: number;
   is_published: boolean;
 }
