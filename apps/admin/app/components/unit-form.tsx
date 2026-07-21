@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog';
 import { Button } from '~/components/ui/button';
+import { ColorInput } from '~/components/ui/color-input';
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import {
@@ -234,13 +235,12 @@ export function UnitForm({ unit }: { unit: Unit }) {
               return (
                 <Field data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Title font color</FieldLabel>
-                  <Input
+                  <ColorInput
                     id={field.name}
                     name={field.name}
-                    type="number"
-                    value={Number.isNaN(field.state.value) ? '' : field.state.value}
+                    value={field.state.value}
                     onBlur={field.handleBlur}
-                    onChange={(event) => field.handleChange(parseNumberInput(event.target.value))}
+                    onChange={(value) => field.handleChange(value ?? Number.NaN)}
                     aria-invalid={isInvalid}
                     required
                   />
@@ -329,16 +329,14 @@ export function UnitForm({ unit }: { unit: Unit }) {
               return (
                 <Field data-invalid={isInvalid}>
                   <FieldLabel htmlFor={field.name}>Subtitle font color</FieldLabel>
-                  <Input
+                  <ColorInput
                     id={field.name}
                     name={field.name}
-                    type="number"
-                    value={field.state.value ?? ''}
+                    value={field.state.value}
                     onBlur={field.handleBlur}
-                    onChange={(event) =>
-                      field.handleChange(parseNullableNumber(event.target.value))
-                    }
+                    onChange={(value) => field.handleChange(value)}
                     aria-invalid={isInvalid}
+                    nullable
                   />
                   {isInvalid && <FieldError errors={field.state.meta.errors} />}
                 </Field>

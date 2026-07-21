@@ -35,6 +35,7 @@ import {
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { Card, CardAction, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
+import { ColorInput } from '~/components/ui/color-input';
 import {
   Dialog,
   DialogContent,
@@ -153,12 +154,6 @@ function mergeCurrentMascot(mascots: Mascot[], level: Level | null): Mascot[] {
     return mascots;
   }
   return [level.mascot, ...mascots];
-}
-
-function parseNullableNumber(value: string): number | null {
-  if (value.trim() === '') return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
 }
 
 export function UnitLevelsSection({ unit }: { unit: Unit }) {
@@ -698,18 +693,10 @@ function LevelStaticFields({ form, mascots }: { form: LevelFormApi; mascots: Mas
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <NullableNumberField form={form} name="splash_button_color" label="Button color" />
-        <NullableNumberField
-          form={form}
-          name="splash_button_text_color"
-          label="Button text color"
-        />
-        <NullableNumberField form={form} name="splash_level_font_color" label="Level font color" />
-        <NullableNumberField
-          form={form}
-          name="splash_level_title_color"
-          label="Level title color"
-        />
+        <NullableColorField form={form} name="splash_button_color" label="Button color" />
+        <NullableColorField form={form} name="splash_button_text_color" label="Button text color" />
+        <NullableColorField form={form} name="splash_level_font_color" label="Level font color" />
+        <NullableColorField form={form} name="splash_level_title_color" label="Level title color" />
       </div>
 
       <form.Field
@@ -720,16 +707,12 @@ function LevelStaticFields({ form, mascots }: { form: LevelFormApi; mascots: Mas
           return (
             <Field data-invalid={isInvalid}>
               <FieldLabel htmlFor={field.name}>Backdrop color</FieldLabel>
-              <Input
+              <ColorInput
                 id={field.name}
                 name={field.name}
-                type="number"
-                value={Number.isNaN(field.state.value) ? '' : field.state.value}
+                value={field.state.value}
                 onBlur={field.handleBlur}
-                onChange={(event) => {
-                  const parsed = Number(event.target.value);
-                  field.handleChange(Number.isFinite(parsed) ? parsed : Number.NaN);
-                }}
+                onChange={(value) => field.handleChange(value ?? Number.NaN)}
                 aria-invalid={isInvalid}
                 required
               />
@@ -785,7 +768,7 @@ function LevelStaticFields({ form, mascots }: { form: LevelFormApi; mascots: Mas
   );
 }
 
-function NullableNumberField({
+function NullableColorField({
   form,
   name,
   label,
@@ -807,14 +790,14 @@ function NullableNumberField({
         return (
           <Field data-invalid={isInvalid}>
             <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
-            <Input
+            <ColorInput
               id={field.name}
               name={field.name}
-              type="number"
-              value={field.state.value ?? ''}
+              value={field.state.value}
               onBlur={field.handleBlur}
-              onChange={(event) => field.handleChange(parseNullableNumber(event.target.value))}
+              onChange={(value) => field.handleChange(value)}
               aria-invalid={isInvalid}
+              nullable
             />
             {isInvalid && <FieldError errors={field.state.meta.errors} />}
           </Field>
