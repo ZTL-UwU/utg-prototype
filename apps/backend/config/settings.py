@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "corsheaders",
     "ninja_jwt",
+    "storages",
     "apps.common",
     "apps.game",
     "apps.users",
@@ -126,8 +127,39 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME", "").strip()
+
+
+def default_file_storage() -> dict[str, object]:
+    if not AWS_STORAGE_BUCKET_NAME:
+        return {"BACKEND": "django.core.files.storage.FileSystemStorage"}
+
+    options: dict[str, object] = {
+        "bucket_name": AWS_STORAGE_BUCKET_NAME,
+        "file_overwrite": False,
+        "default_acl": None,
+        "querystring_auth": env_bool("AWS_QUERYSTRING_AUTH", True),
+        # Required by R2 / Spaces / modern S3; SigV2 is rejected.
+        "signature_version": os.getenv("AWS_S3_SIGNATURE_VERSION", "s3v4").strip()
+        or "s3v4",
+    }
+    if access_key := os.getenv("AWS_ACCESS_KEY_ID", "").strip():
+        options["access_key"] = access_key
+    if secret_key := os.getenv("AWS_SECRET_ACCESS_KEY", "").strip():
+        options["secret_key"] = secret_key
+    if region_name := os.getenv("AWS_S3_REGION_NAME", "").strip():
+        options["region_name"] = region_name
+    if endpoint_url := os.getenv("AWS_S3_ENDPOINT_URL", "").strip():
+        options["endpoint_url"] = endpoint_url
+    if custom_domain := os.getenv("AWS_S3_CUSTOM_DOMAIN", "").strip():
+        options["custom_domain"] = custom_domain
+
+    return {"BACKEND": "storages.backends.s3.S3Storage", "OPTIONS": options}
+
+
 STORAGES = {
-    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "default": default_file_storage(),
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

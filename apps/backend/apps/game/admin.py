@@ -35,6 +35,6 @@ class LevelAdmin(admin.ModelAdmin):
 
 @admin.register(Word)
 class WordAdmin(admin.ModelAdmin):
-    list_display = ("word", "target_letter", "file")
+    list_display = ("word", "target_letter", "image")
     list_filter = ("target_letter",)
     search_fields = ("word", "target_letter")

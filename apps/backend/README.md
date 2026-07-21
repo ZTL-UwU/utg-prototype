@@ -49,6 +49,14 @@ example.
 | `DJANGO_CORS_ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174` | Comma-separated frontend origins for CORS (admin :5173, game :5174) |
 | `DATABASE_CONN_MAX_AGE` | `60`                                                | Persistent connection lifetime in seconds      |
 | `DATABASE_SSL_MODE`     | `prefer`                                            | PostgreSQL SSL mode                            |
+| `AWS_STORAGE_BUCKET_NAME` | unset                                             | When set, media (`FileField`) is stored on S3  |
+| `AWS_ACCESS_KEY_ID`     | unset                                               | S3 access key (optional if using IAM role)     |
+| `AWS_SECRET_ACCESS_KEY` | unset                                               | S3 secret key (optional if using IAM role)     |
+| `AWS_S3_REGION_NAME`     | unset                                               | S3 region                                      |
+| `AWS_S3_ENDPOINT_URL`    | unset                                               | Custom endpoint (R2, MinIO, Tigris, etc.)      |
+| `AWS_S3_CUSTOM_DOMAIN`   | unset                                               | CDN / custom domain for media URLs             |
+| `AWS_S3_SIGNATURE_VERSION` | `s3v4`                                            | S3 request signing (SigV4; required by R2 etc.) |
+| `AWS_QUERYSTRING_AUTH`   | `true`                                              | Use signed URLs for media                      |
 
 ### Generating `JWT_SIGNING_KEY`
 

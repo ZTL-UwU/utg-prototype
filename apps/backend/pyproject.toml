@@ -9,6 +9,8 @@ dependencies = [
     "django-cors-headers>=4.9,<5",
     "django-ninja>=1.5,<2",
     "django-ninja-jwt>=5.4,<6",
+    "django-storages[s3]>=1.14,<2",
+    "pillow>=11,<12",
     "psycopg[binary]>=3.3,<4",
     "whitenoise>=6.11,<7",
 ]
