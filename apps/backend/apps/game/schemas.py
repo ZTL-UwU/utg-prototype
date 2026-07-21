@@ -130,6 +130,20 @@ class LevelWriteIn(Schema):
     backdrop_color: int
     is_published: bool
 
+class WordIn(Schema):
+    word : str
+    target_letter : str
+
+
+class WordOut(Schema):
+    id: int
+    word: str
+    target_letter: str
+    image_url: str
+
+    @staticmethod
+    def resolve_image_url(obj) -> str:
+        return obj.image.url
 
 class LevelOrderIn(Schema):
     level_ids: list[int]
@@ -141,3 +155,4 @@ class UnitOrderIn(Schema):
 
 class ErrorOut(Schema):
     detail: str
+
