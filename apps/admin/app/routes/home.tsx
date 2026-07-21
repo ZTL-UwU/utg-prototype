@@ -11,9 +11,6 @@ export default function Home() {
         <Link className="underline underline-offset-4 hover:text-foreground/80" to="/login">
           Login
         </Link>
-        <Link className="underline underline-offset-4 hover:text-foreground/80" to="/autoform">
-          AutoForm Demo
-        </Link>
         <Link className="underline underline-offset-4 hover:text-foreground/80" to="/sortable">
           Sortable Cards Demo
         </Link>

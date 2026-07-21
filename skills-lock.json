@@ -7,13 +7,6 @@
       "skillPath": "skills/pixijs/SKILL.md",
       "computedHash": "880175c74d347ba7e40e8434544f4ae8c1d006ed68296cec6ba355da0d532508"
     },
-    "autoform": {
-      "source": "vantezzen/autoform",
-      "ref": "main",
-      "sourceType": "github",
-      "skillPath": "skills/autoform/SKILL.md",
-      "computedHash": "84d6f8b2b0e8f42a19f60514d2a2ad49e049722e35f97d2e0dd09f9dbc0aff47"
-    },
     "shadcn": {
       "source": "shadcn/ui",
       "sourceType": "github",
