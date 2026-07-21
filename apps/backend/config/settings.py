@@ -72,6 +72,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Required so PATCH/PUT multipart uploads populate request.FILES (Django only does this for POST).
+    "ninja.compatibility.files.fix_request_files_middleware",
 ]
 
 CORS_ALLOWED_ORIGINS = env_list(

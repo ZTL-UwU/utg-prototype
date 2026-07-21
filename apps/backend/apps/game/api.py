@@ -260,7 +260,7 @@ def reorder_units(request, layer: Layer, payload: UnitOrderIn):
     )
 
 
-@router.post("/words", auth=jwt_auth, response={200: WordOut, 403: ErrorOut})
+@router.post("/words", auth=jwt_auth, response={200: WordOut, 403: ErrorOut}, summary="Create a word")
 def create_word(request, data: Form[WordIn], image: File[UploadedFile]):
     if not (request.auth.has_perm("word.createWord")):
         return Status(403, {"detail": "You do not have permission to create words"})
@@ -270,5 +270,57 @@ def create_word(request, data: Form[WordIn], image: File[UploadedFile]):
         translation=data.translation,
         is_tutorial_word=data.is_tutorial_word,
         image=image,
+        created_by=request.auth,
+        updated_by=request.auth,
     )
     return 200, word
+
+
+@router.get("/words/list", response=list[WordOut], summary="List all words")
+def list_words(request):
+    return Word.objects.all()
+
+
+@router.patch(
+    "/words/{word_id}",
+    auth=jwt_auth,
+    response={200: WordOut, 403: ErrorOut, 404: ErrorOut},
+    summary="Update a word",
+)
+def update_word(
+    request,
+    word_id: int,
+    data: Form[WordIn],
+    image: File[UploadedFile] = None,
+):
+    if not (request.auth.has_perm("word.updateWord")):
+        return Status(403, {"detail": "You do not have permission to update words"})
+    try:
+        word = Word.objects.get(id=word_id)
+    except Word.DoesNotExist:
+        return Status(404, {"detail": "Word not found."})
+
+    word.word = data.word
+    word.target_letter = data.target_letter
+    word.translation = data.translation
+    word.is_tutorial_word = data.is_tutorial_word
+    if image is not None:
+        word.image = image
+    word.updated_by = request.auth
+    word.save()
+    return word
+
+
+@router.delete(
+    "/words/{word_id}",
+    auth=jwt_auth,
+    response={204: None, 403: ErrorOut, 404: ErrorOut},
+    summary="Delete a word",
+)
+def delete_word(request, word_id: int):
+    if not (request.auth.has_perm("word.deleteWord")):
+        return Status(403, {"detail": "You do not have permission to delete words"})
+    deleted, _ = Word.objects.filter(id=word_id).delete()
+    if not deleted:
+        return Status(404, {"detail": "Word not found."})
+    return Status(204, None)
