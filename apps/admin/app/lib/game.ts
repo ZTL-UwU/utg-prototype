@@ -90,6 +90,22 @@ export const mascotsQueryOptions = queryOptions({
   staleTime: Infinity,
 });
 
+/** Mirrors WordOut from apps/game/schemas.py. */
+export interface Word {
+  id: number;
+  word: string;
+  target_letter: string | null;
+  translation: string | null;
+  is_tutorial_word: boolean;
+  image_url: string;
+}
+
+export const wordsQueryOptions = queryOptions({
+  queryKey: ['words', 'list'],
+  queryFn: () => api<Word[]>('/words/list'),
+  staleTime: Infinity,
+});
+
 export function unitsByLayer(units: SidebarUnit[]): Record<Layer, SidebarUnit[]> {
   const grouped: Record<Layer, SidebarUnit[]> = { education: [], typing: [], game: [] };
   for (const unit of units) {

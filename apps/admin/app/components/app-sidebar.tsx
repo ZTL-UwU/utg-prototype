@@ -18,6 +18,8 @@ import {
 } from '~/components/ui/sidebar';
 import { LAYER_TITLES, type Layer, type SidebarUnit, unitsByLayer } from '~/lib/game';
 
+import { NavWords } from './nav-words';
+
 const layerConfig: { layer: Layer; icon: React.ReactNode }[] = [
   { layer: 'education', icon: <GraduationCap /> },
   { layer: 'typing', icon: <Keyboard /> },
@@ -67,6 +69,7 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
+        <NavWords />
         <NavMain items={navMain} isLoading={isLoading} />
       </SidebarContent>
       <SidebarFooter>

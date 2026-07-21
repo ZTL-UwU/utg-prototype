@@ -7,6 +7,7 @@ export default [
     route('autoform', 'routes/autoform.tsx'),
     route('sortable', 'routes/sortable.tsx'),
     route('profile', 'routes/profile.tsx'),
+    route('words', 'routes/words.tsx'),
     route(':layer', 'routes/layer.tsx'),
     route(':layer/:unitId', 'routes/unit.tsx'),
   ]),

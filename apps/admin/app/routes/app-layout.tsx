@@ -94,7 +94,9 @@ export default function AppLayout() {
                   </>
                 ) : (
                   <BreadcrumbItem>
-                    <BreadcrumbPage>Home</BreadcrumbPage>
+                    <BreadcrumbPage>
+                      {location.pathname === '/words' ? 'Words' : 'Home'}
+                    </BreadcrumbPage>
                   </BreadcrumbItem>
                 )}
               </BreadcrumbList>
