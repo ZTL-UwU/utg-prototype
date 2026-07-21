@@ -278,7 +278,7 @@ def create_word(request, data: Form[WordIn], image: File[UploadedFile]):
 
 @router.get("/words/list", response=list[WordOut], summary="List all words")
 def list_words(request):
-    return Word.objects.all()
+    return Word.objects.order_by("-updated_at", "-id")
 
 
 @router.patch(
