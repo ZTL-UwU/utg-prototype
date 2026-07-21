@@ -1,10 +1,10 @@
 from django.db import transaction
 from django.db.models import Max, Prefetch
 from django.utils import timezone
-from ninja import Router, Status
+from ninja import File, Form, Router, Status, UploadedFile
 from ninja_jwt.authentication import JWTAuth
 
-from apps.game.models import Layer, Level, LevelType, Mascot, Unit
+from apps.game.models import Layer, Level, LevelType, Mascot, Unit, Word
 from apps.game.schemas import (
     ErrorOut,
     LevelOrderIn,
@@ -17,6 +17,8 @@ from apps.game.schemas import (
     UnitOrderIn,
     UnitOut,
     UnitUpdateIn,
+    WordIn,
+    WordOut,
 )
 
 router = Router(tags=["game"])
@@ -254,3 +256,10 @@ def reorder_units(request, layer: Layer, payload: UnitOrderIn):
         .prefetch_related(Prefetch("levels", queryset=levels))
         .order_by("sort_order", "id")
     )
+
+@router.post("/words", auth=jwt_auth, response={200:WordOut, 403: ErrorOut})
+def create_word(request, data:Form[WordIn], image:File[UploadedFile]):
+    if not(request.auth.has_perm("word.createWord")):
+        return Status(403, {"detail":"You do not have permission to create words"})
+    word = Word.objects.create(word = data.word, target_letter = data.target_letter, image = image)
+    return 200, word
