@@ -90,6 +90,16 @@ export const mascotsQueryOptions = queryOptions({
   staleTime: Infinity,
 });
 
+/** Mirrors ImageOut from apps/game/schemas.py. */
+export interface WordImage {
+  name: string;
+  url: string;
+  filename: string;
+  size: number;
+  width: number;
+  height: number;
+}
+
 /** Mirrors WordOut from apps/game/schemas.py. */
 export interface Word {
   id: number;
@@ -97,7 +107,7 @@ export interface Word {
   target_letter: string | null;
   translation: string | null;
   is_tutorial_word: boolean;
-  image_url: string;
+  image: WordImage;
 }
 
 export const wordsQueryOptions = queryOptions({

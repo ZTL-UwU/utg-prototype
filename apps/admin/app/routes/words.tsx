@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { PlusIcon } from 'lucide-react';
 import { FetchError } from 'ofetch';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -13,7 +14,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog';
+import { Button } from '~/components/ui/button';
 import { WordCard, WordCardSkeleton } from '~/components/word-card';
+import { WordFormDialog } from '~/components/word-form-dialog';
 import { api } from '~/lib/api';
 import { type Word, wordsQueryOptions } from '~/lib/game';
 
@@ -27,7 +30,24 @@ function getErrorDescription(error: unknown): string | undefined {
 export default function WordsPage() {
   const queryClient = useQueryClient();
   const { data: words, isPending, isError, error } = useQuery(wordsQueryOptions);
+  const [formOpen, setFormOpen] = useState(false);
+  const [wordToEdit, setWordToEdit] = useState<Word | null>(null);
   const [wordToDelete, setWordToDelete] = useState<Word | null>(null);
+
+  function openCreate() {
+    setWordToEdit(null);
+    setFormOpen(true);
+  }
+
+  function openEdit(word: Word) {
+    setWordToEdit(word);
+    setFormOpen(true);
+  }
+
+  function handleFormOpenChange(open: boolean) {
+    setFormOpen(open);
+    if (!open) setWordToEdit(null);
+  }
 
   const deleteWord = useMutation({
     mutationFn: (word: Word) =>
@@ -48,9 +68,17 @@ export default function WordsPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 md:gap-8">
-      <header className="flex max-w-2xl flex-col gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight">Words</h1>
-        <p className="text-muted-foreground">Vocabulary used across education and typing levels.</p>
+      <header className="flex items-start justify-between gap-4">
+        <div className="flex max-w-2xl flex-col gap-2">
+          <h1 className="text-3xl font-semibold tracking-tight">Words</h1>
+          <p className="text-muted-foreground">
+            Vocabulary used across education and typing levels.
+          </p>
+        </div>
+        <Button type="button" size="lg" onClick={openCreate}>
+          <PlusIcon data-icon="inline-start" />
+          Add word
+        </Button>
       </header>
 
       {isPending ? (
@@ -66,12 +94,19 @@ export default function WordsPage() {
       ) : words.length > 0 ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4">
           {words.map((word) => (
-            <WordCard key={word.id} word={word} onDelete={() => setWordToDelete(word)} />
+            <WordCard
+              key={word.id}
+              word={word}
+              onEdit={() => openEdit(word)}
+              onDelete={() => setWordToDelete(word)}
+            />
           ))}
         </div>
       ) : (
         <p className="text-muted-foreground">No words yet.</p>
       )}
+
+      <WordFormDialog open={formOpen} onOpenChange={handleFormOpenChange} word={wordToEdit} />
 
       <AlertDialog
         open={wordToDelete !== null}

@@ -1,4 +1,4 @@
-import { Book } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 
 import {
@@ -23,7 +23,7 @@ export function NavWords() {
             isActive={location.pathname === url}
             tooltip="Manage Words"
           >
-            <Book />
+            <BookOpen />
             <span className="font-medium">Manage Words</span>
           </SidebarMenuButton>
         </SidebarMenuItem>

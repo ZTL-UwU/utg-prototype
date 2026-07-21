@@ -22,17 +22,31 @@ function highlightTargetLetter(word: string, targetLetter: string | null): React
   );
 }
 
-export function WordCard({ word, onDelete }: { word: Word; onDelete: () => void }) {
+export function WordCard({
+  word,
+  onEdit,
+  onDelete,
+}: {
+  word: Word;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
   return (
     <Card className="h-full pt-0" size="sm">
       <div className="group relative">
         <img
-          src={mediaUrl(word.image_url)}
-          alt={word.word}
-          className="aspect-square w-full object-cover bg-muted"
+          src={mediaUrl(word.image.url)}
+          alt=""
+          className="aspect-square w-full object-cover bg-muted select-none"
         />
-        <div className="absolute end-2 top-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-          <Button type="button" variant="outline" size="icon" aria-label={`Edit ${word.word}`}>
+        <div className="absolute end-2 top-2 flex gap-1 md:opacity-0 transition-opacity group-hover:opacity-100">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label={`Edit ${word.word}`}
+            onClick={onEdit}
+          >
             <Pencil className="size-4" />
           </Button>
           <Button
@@ -47,11 +61,11 @@ export function WordCard({ word, onDelete }: { word: Word; onDelete: () => void 
         </div>
       </div>
       <CardHeader>
-        <CardTitle className="truncate text-lg! font-semibold" dir="auto">
+        <CardTitle className="truncate text-lg! font-semibold" dir="rtl">
           {highlightTargetLetter(word.word, word.target_letter)}
         </CardTitle>
         {word.translation ? (
-          <CardDescription className="truncate" dir="auto">
+          <CardDescription className="truncate" dir="rtl">
             {word.translation}
           </CardDescription>
         ) : null}
