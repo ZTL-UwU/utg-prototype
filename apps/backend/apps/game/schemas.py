@@ -143,7 +143,6 @@ class ImageOut(Schema):
     name: str
     url: str
     filename: str
-    size: int
 
 
 class WordOut(Schema):
@@ -161,7 +160,6 @@ class WordOut(Schema):
             name=image.name,
             url=image.url,
             filename=Path(image.name).name,
-            size=image.size,
         )
 
 
