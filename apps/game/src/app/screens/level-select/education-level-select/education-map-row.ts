@@ -8,8 +8,11 @@ import { getLayerMaps } from '../../level-map/units';
 import { MapUnitButton } from './map-unit-button';
 import { TutorialEntryButton } from './tutorial-entry-button';
 
+const ITEMS_PER_PAGE = 3;
+
 export class EducationMapRow extends Container {
-  private unitButtons?: (MapUnitButton | TutorialEntryButton | Graphics)[];
+  private pages: Container[] = [];
+  private currentPage = 0;
 
   constructor() {
     super({
@@ -19,7 +22,6 @@ export class EducationMapRow extends Container {
         width: '100%',
         justifyContent: 'center',
         alignItems: 'center',
-        gap: 8,
       },
     });
 
@@ -35,19 +37,62 @@ export class EducationMapRow extends Container {
     };
     const tutorialButton = new TutorialEntryButton(openTutorial);
 
-    this.unitButtons = [
+    const items: (MapUnitButton | TutorialEntryButton)[] = [
       tutorialButton,
-      ...educationMaps.flatMap((mapUnit, i) => {
-        const fillerLine = new Graphics({ layout: { width: 80, height: 15 } })
-          .roundRect(0, 0, 100, 15, 10)
-          .fill(0xa66129);
-        const button = new MapUnitButton(mapUnit, i);
-
-        return [fillerLine, button];
-      }),
+      ...educationMaps.map((mapUnit, i) => new MapUnitButton(mapUnit, i)),
     ];
 
-    this.addChild(...this.unitButtons);
+    for (let start = 0; start < items.length; start += ITEMS_PER_PAGE) {
+      const chunk = items.slice(start, start + ITEMS_PER_PAGE);
+      const page = new Container({
+        layout: {
+          width: '100%',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: 8,
+        },
+      });
+
+      chunk.forEach((item, i) => {
+        if (i > 0) {
+          const fillerLine = new Graphics({ layout: { width: 80, height: 15 } })
+            .roundRect(0, 0, 100, 15, 10)
+            .fill(0xa66129);
+          page.addChild(fillerLine);
+        }
+        page.addChild(item);
+      });
+
+      this.pages.push(page);
+    }
+
+    if (this.pages[0]) this.addChild(this.pages[0]);
+  }
+
+  public get hasPrev() {
+    return this.currentPage > 0;
+  }
+
+  public get hasNext() {
+    return this.currentPage < this.pages.length - 1;
+  }
+
+  public async nextPage(screenHeight: number) {
+    if (!this.hasNext) return;
+    await this.goToPage(this.currentPage + 1, screenHeight);
+  }
+
+  public async prevPage(screenHeight: number) {
+    if (!this.hasPrev) return;
+    await this.goToPage(this.currentPage - 1, screenHeight);
+  }
+
+  private async goToPage(target: number, screenHeight: number) {
+    await this.playExitAnimation(screenHeight);
+    this.removeChild(this.pages[this.currentPage]);
+    this.currentPage = target;
+    this.addChild(this.pages[this.currentPage]);
+    await this.playEnterAnimation(screenHeight);
   }
 
   private offScreenOffset(child: Container, screenHeight: number) {
@@ -55,7 +100,7 @@ export class EducationMapRow extends Container {
   }
 
   public async playEnterAnimation(screenHeight: number) {
-    const children = this.unitButtons ?? [];
+    const children = this.pages[this.currentPage]?.children ?? [];
 
     for (const child of children) {
       child.y = 0;
@@ -78,7 +123,7 @@ export class EducationMapRow extends Container {
   }
 
   public async playExitAnimation(screenHeight: number) {
-    const children = this.unitButtons ?? [];
+    const children = this.pages[this.currentPage]?.children ?? [];
 
     await Promise.all(
       children.map((child, index) =>
