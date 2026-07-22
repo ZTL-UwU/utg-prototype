@@ -36,7 +36,6 @@ export class EducationTutorialScreen extends Container {
     'education-level',
     'ui',
     'education-letters-audio',
-    'education-words-audio',
     'education-tutorial',
   ];
 

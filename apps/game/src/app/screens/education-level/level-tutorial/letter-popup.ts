@@ -7,8 +7,10 @@ import { engine } from '../../../../engine/getEngine';
 import { createExampleWordStyle, getCompletedWordMarkup } from '../../../../utils/example-words';
 import {
   getTutorialWordForLetter,
+  getWordAudioAlias,
   getWordImageAlias,
   REMOTE_WORDS_BUNDLE,
+  type WordSimple,
 } from '../../../../zustandStores/wordStore';
 import { SoundButton } from '../../../ui/sound-button';
 import { MissingWordNotice } from './missing-word-notice';
@@ -23,10 +25,12 @@ export class LetterPopup extends Container {
   public static assetBundles = [
     'education-tutorial',
     'education-letter-variants',
+    'education-letters-audio',
     REMOTE_WORDS_BUNDLE,
   ];
   private isPlaying: boolean = false;
   private letter: string;
+  private remoteWord?: WordSimple;
   private exampleWord: string | undefined;
   private wordText?: HTMLText;
   private exampleImage?: Sprite;
@@ -39,8 +43,8 @@ export class LetterPopup extends Container {
     super({ layout: { position: 'relative', width: '100%', height: '100%' } });
     this.letter = letter;
 
-    const remoteWord = getTutorialWordForLetter(letter);
-    this.exampleWord = remoteWord?.word.trim();
+    this.remoteWord = getTutorialWordForLetter(letter);
+    this.exampleWord = this.remoteWord?.word.trim();
 
     this.background = new Graphics();
     this.background.layout = { position: 'absolute', width: '100%', height: '100%' };
@@ -70,7 +74,7 @@ export class LetterPopup extends Container {
 
     this.addChild(this.background, this.closeButton, this.variantImage, this.soundButton);
 
-    if (this.exampleWord && remoteWord) {
+    if (this.exampleWord && this.remoteWord) {
       this.wordText = new HTMLText({
         text: getCompletedWordMarkup(this.letter, this.exampleWord),
         style: WORD_STYLE,
@@ -79,9 +83,9 @@ export class LetterPopup extends Container {
       });
       this.addChild(this.wordText);
 
-      if (remoteWord.image_url) {
+      if (this.remoteWord.image_url) {
         this.exampleImage = new Sprite({
-          texture: Texture.from(getWordImageAlias(remoteWord.id)),
+          texture: Texture.from(getWordImageAlias(this.remoteWord.id)),
           anchor: 0.5,
           scale: 0.8,
           layout: { position: 'absolute', left: '65%', top: '20%' },
@@ -100,8 +104,10 @@ export class LetterPopup extends Container {
   }
 
   private getSoundAlias(): string {
-    const wordsAlias = `education-levels/education-words-audio/${this.letter}.mp3`;
-    if (Assets.resolver.hasKey(wordsAlias)) return wordsAlias;
+    if (this.remoteWord?.audio_url) {
+      const remoteAlias = getWordAudioAlias(this.remoteWord.id);
+      if (Assets.resolver.hasKey(remoteAlias)) return remoteAlias;
+    }
 
     return `education-levels/education-letters-audio/${this.letter}.mp3`;
   }

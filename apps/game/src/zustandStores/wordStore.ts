@@ -4,12 +4,17 @@ import { create } from 'zustand';
 import { api } from '../lib/api';
 import { ensureRemoteReady, type RemoteStatus } from '../lib/remoteResource';
 
-/** Pixi Assets bundle name for remote word images. */
+/** Pixi Assets bundle name for remote word images + audio. */
 export const REMOTE_WORDS_BUNDLE = 'remote-words';
 
 /** Alias used with `Texture.from` / `Assets.load` for a word image. */
 export function getWordImageAlias(wordId: number): string {
   return `remote-words/${wordId}`;
+}
+
+/** Alias used with `@pixi/sound` / `Assets.load` for a word audio clip. */
+export function getWordAudioAlias(wordId: number): string {
+  return `remote-words-audio/${wordId}`;
 }
 
 /** Mirrors WordSimpleOut from the backend `/words/list-simple` endpoint. */
@@ -37,12 +42,22 @@ export function getTutorialWordForLetter(letter: string): WordSimple | undefined
 }
 
 function registerWordsBundle(words: WordSimple[]): void {
-  const entries = words
-    .filter((word): word is WordSimple & { image_url: string } => Boolean(word.image_url))
-    .map((word) => ({
-      alias: getWordImageAlias(word.id),
-      src: word.image_url,
-    }));
+  const entries: { alias: string; src: string }[] = [];
+
+  for (const word of words) {
+    if (word.image_url) {
+      entries.push({
+        alias: getWordImageAlias(word.id),
+        src: word.image_url,
+      });
+    }
+    if (word.audio_url) {
+      entries.push({
+        alias: getWordAudioAlias(word.id),
+        src: word.audio_url,
+      });
+    }
+  }
 
   // Always register so navigation can safely `loadBundle('remote-words')`.
   Assets.addBundle(REMOTE_WORDS_BUNDLE, entries);
