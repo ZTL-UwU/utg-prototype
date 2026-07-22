@@ -284,7 +284,8 @@ def list_words(request):
 
 @router.get("/words/list-simple", response=list[WordSimpleOut], summary="List all words (simple version)")
 def list_words_simple(request):
-    return Word.objects.only("id", "word", "target_letter", "is_tutorial_word")
+    qs = Word.objects.filter(is_active=True, is_published=True)
+    return qs.only("id", "word", "target_letter", "is_tutorial_word", "image")
 
 
 @router.patch(
