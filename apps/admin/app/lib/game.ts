@@ -95,7 +95,6 @@ export interface WordImage {
   name: string;
   url: string;
   filename: string;
-  size: number;
   width: number;
   height: number;
 }

@@ -365,7 +365,6 @@ function WordFormDialogBody({
               const previewSrc =
                 imagePreviewUrl ??
                 (!dismissedExistingImage && !selectedFile ? existingImageUrl : null);
-              const showingExistingImage = Boolean(previewSrc && !selectedFile);
 
               function setImageFile(file: File | null) {
                 if (file && !isImageFile(file)) {
@@ -410,10 +409,6 @@ function WordFormDialogBody({
                         {selectedFile ? (
                           <AttachmentDescription>
                             {formatFileSize(selectedFile.size)}
-                          </AttachmentDescription>
-                        ) : showingExistingImage ? (
-                          <AttachmentDescription>
-                            {formatFileSize(word?.image.size ?? 0)}
                           </AttachmentDescription>
                         ) : null}
                       </AttachmentContent>
