@@ -48,7 +48,7 @@ export class EducationLevelSelect extends Container {
     };
 
     this.title = new Text({
-      text: 'THE ALPHABET',
+      text: 'ALPHABETS',
       style: {
         fontFamily: 'Concert One',
         fontSize: 180,
