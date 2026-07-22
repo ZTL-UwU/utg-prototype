@@ -4,6 +4,7 @@ import { animate } from 'motion';
 import { Container, Graphics, Sprite, Texture, Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { ensureWordsReady } from '../../../../zustandStores/wordStore';
 import { AlphabetGrid } from '../../../ui/alphabet-grid';
 import { HUD } from '../../../ui/hud';
 import { LevelMapScreen } from '../../level-map';
@@ -74,9 +75,14 @@ export class EducationTutorialScreen extends Container {
 
     this.letterGrid = new AlphabetGrid((letter) => {
       void this.onStop();
-      void (presentation === 'popup'
-        ? engine().navigation.showNestedPopup(LetterPopup, letter)
-        : engine().navigation.showPopup(LetterPopup, letter));
+      void (async () => {
+        await ensureWordsReady();
+        if (presentation === 'popup') {
+          await engine().navigation.showNestedPopup(LetterPopup, letter);
+        } else {
+          await engine().navigation.showPopup(LetterPopup, letter);
+        }
+      })();
     });
 
     if (presentation === 'popup') {

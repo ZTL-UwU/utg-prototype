@@ -10,6 +10,7 @@ import type {
   TMapUnit,
 } from '../app/screens/level-map/units';
 import { api } from '../lib/api';
+import { ensureRemoteReady, type RemoteStatus } from '../lib/remoteResource';
 
 /** Client-only shadow for non-curved unit titles (not sent by the API). */
 const textDropShadow: Partial<TextDropShadow> = {
@@ -18,8 +19,6 @@ const textDropShadow: Partial<TextDropShadow> = {
   distance: 0,
   alpha: 0.75,
 };
-
-type CourseStatus = 'loading' | 'ready' | 'error';
 
 interface ApiMascot {
   id: number;
@@ -59,7 +58,7 @@ interface ApiUnit {
 }
 
 interface CourseStore {
-  status: CourseStatus;
+  status: RemoteStatus;
   error?: string;
   unitsByLayer: Record<TLayer, TMapUnit[]>;
   fetchCourseStructure: () => Promise<void>;
@@ -173,11 +172,14 @@ function groupUnitsByLayer(
   return grouped;
 }
 
-const useCourseStore = create<CourseStore>((set) => ({
-  status: 'loading',
+const useCourseStore = create<CourseStore>((set, get) => ({
+  status: 'idle',
   error: undefined,
   unitsByLayer: EMPTY_UNITS,
   fetchCourseStructure: async () => {
+    const { status } = get();
+    if (status === 'loading' || status === 'ready') return;
+
     set({ status: 'loading', error: undefined });
     try {
       // Lazy-load screens so this module does not cycle with screen → units → store.
@@ -204,32 +206,20 @@ const useCourseStore = create<CourseStore>((set) => ({
  * On error, navigates to CourseLoadErrorScreen and returns false.
  */
 export async function ensureCourseReady(): Promise<boolean> {
-  const { status } = useCourseStore.getState();
-  if (status === 'ready') return true;
-
-  if (status === 'error') {
-    const { CourseLoadErrorScreen } = await import('../app/screens/course-load-error');
-    const { engine } = await import('../engine/getEngine');
-    await engine().navigation.showScreen(CourseLoadErrorScreen);
-    return false;
-  }
-
-  return new Promise((resolve) => {
-    const unsub = useCourseStore.subscribe((state) => {
-      if (state.status === 'loading') return;
-      unsub();
-      if (state.status === 'ready') {
-        resolve(true);
-        return;
-      }
-      void (async () => {
-        const { CourseLoadErrorScreen } = await import('../app/screens/course-load-error');
-        const { engine } = await import('../engine/getEngine');
-        await engine().navigation.showScreen(CourseLoadErrorScreen);
-        resolve(false);
-      })();
-    });
+  const ready = await ensureRemoteReady({
+    getStatus: () => useCourseStore.getState().status,
+    subscribe: (listener) => useCourseStore.subscribe((state) => listener(state.status)),
+    start: () => {
+      void useCourseStore.getState().fetchCourseStructure();
+    },
   });
+
+  if (ready) return true;
+
+  const { CourseLoadErrorScreen } = await import('../app/screens/course-load-error');
+  const { engine } = await import('../engine/getEngine');
+  await engine().navigation.showScreen(CourseLoadErrorScreen);
+  return false;
 }
 
 export default useCourseStore;
