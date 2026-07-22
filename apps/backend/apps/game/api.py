@@ -320,8 +320,16 @@ def update_word(
     word.is_tutorial_word = data.is_tutorial_word
     if image is not None:
         word.image = image
+    elif data.clear_image:
+        if word.image:
+            word.image.delete(save=False)
+        word.image = None
     if audio is not None:
         word.audio = audio
+    elif data.clear_audio:
+        if word.audio:
+            word.audio.delete(save=False)
+        word.audio = None
     word.updated_by = request.auth
     word.save()
     return word

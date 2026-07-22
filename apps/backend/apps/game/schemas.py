@@ -137,6 +137,8 @@ class WordIn(Schema):
     target_letter: str | None = None
     translation: str | None = None
     is_tutorial_word: bool = False
+    clear_image: bool = False
+    clear_audio: bool = False
 
 
 class ImageOut(Schema):
