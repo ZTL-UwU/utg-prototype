@@ -4,11 +4,12 @@ import { animate } from 'motion';
 import { Assets, Container, Graphics, HTMLText, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { createExampleWordStyle, getCompletedWordMarkup } from '../../../../utils/example-words';
 import {
-  createExampleWordStyle,
-  EXAMPLE_WORDS,
-  getCompletedWordMarkup,
-} from '../../../../utils/example-words';
+  getTutorialWordForLetter,
+  getWordImageAlias,
+  REMOTE_WORDS_BUNDLE,
+} from '../../../../zustandStores/wordStore';
 import { SoundButton } from '../../../ui/sound-button';
 import { MissingWordNotice } from './missing-word-notice';
 
@@ -21,8 +22,8 @@ const WORD_STYLE = createExampleWordStyle(180);
 export class LetterPopup extends Container {
   public static assetBundles = [
     'education-tutorial',
-    'education-letter-images',
     'education-letter-variants',
+    REMOTE_WORDS_BUNDLE,
   ];
   private isPlaying: boolean = false;
   private letter: string;
@@ -37,7 +38,9 @@ export class LetterPopup extends Container {
   constructor(letter: string) {
     super({ layout: { position: 'relative', width: '100%', height: '100%' } });
     this.letter = letter;
-    this.exampleWord = EXAMPLE_WORDS.get(letter);
+
+    const remoteWord = getTutorialWordForLetter(letter);
+    this.exampleWord = remoteWord?.word.trim();
 
     this.background = new Graphics();
     this.background.layout = { position: 'absolute', width: '100%', height: '100%' };
@@ -67,21 +70,24 @@ export class LetterPopup extends Container {
 
     this.addChild(this.background, this.closeButton, this.variantImage, this.soundButton);
 
-    if (this.exampleWord) {
+    if (this.exampleWord && remoteWord) {
       this.wordText = new HTMLText({
         text: getCompletedWordMarkup(this.letter, this.exampleWord),
         style: WORD_STYLE,
         anchor: 0.5,
         layout: { position: 'absolute', left: '20%', top: '25%' },
       });
-      this.exampleImage = new Sprite({
-        texture: Texture.from(`education-levels/education-letter-images/${this.letter}.png`),
-        anchor: 0.5,
-        scale: 0.8,
-        layout: { position: 'absolute', left: '65%', top: '20%' },
-      });
+      this.addChild(this.wordText);
 
-      this.addChild(this.wordText, this.exampleImage);
+      if (remoteWord.image_url) {
+        this.exampleImage = new Sprite({
+          texture: Texture.from(getWordImageAlias(remoteWord.id)),
+          anchor: 0.5,
+          scale: 0.8,
+          layout: { position: 'absolute', left: '65%', top: '20%' },
+        });
+        this.addChild(this.exampleImage);
+      }
     } else {
       this.removeChild(this.soundButton);
       this.addChild(new MissingWordNotice());

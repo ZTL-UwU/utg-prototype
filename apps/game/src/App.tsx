@@ -6,7 +6,7 @@ import { MobileBlockerBanner } from './components/MobileBlockerBanner';
 import { ScreenOverlay } from './components/ScreenOverlay';
 import { CreationEngine } from './engine/engine';
 import { setEngine } from './engine/getEngine';
-import useCourseStore from './zustandStores/courseStore';
+import { bootstrapRemoteData } from './lib/bootstrapRemoteData';
 
 export default function App() {
   const engineRef = useRef<CreationEngine | null>(null);
@@ -26,16 +26,7 @@ export default function App() {
         antialias: true,
       });
 
-      // Kick off course catalog fetch without blocking Home / debug start.
-      void useCourseStore
-        .getState()
-        .fetchCourseStructure()
-        .then(async () => {
-          if (useCourseStore.getState().status === 'error') {
-            const { CourseLoadErrorScreen } = await import('./app/screens/course-load-error');
-            await engine.navigation.showScreen(CourseLoadErrorScreen);
-          }
-        });
+      bootstrapRemoteData();
 
       if (import.meta.env.DEV) {
         const { debugScreenRouter } = await import('./debug/screen-router');

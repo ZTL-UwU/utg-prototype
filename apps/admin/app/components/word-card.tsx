@@ -1,4 +1,4 @@
-import { Pencil, Trash2 } from 'lucide-react';
+import { Image, Pencil, Trash2, Volume2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { Button } from '~/components/ui/button';
@@ -34,11 +34,32 @@ export function WordCard({
   return (
     <Card className="h-full pt-0" size="sm">
       <div className="group relative">
-        <img
-          src={mediaUrl(word.image.url)}
-          alt=""
-          className="aspect-square w-full object-cover bg-muted select-none"
-        />
+        {word.image ? (
+          <img
+            src={mediaUrl(word.image.url)}
+            alt=""
+            className="aspect-square w-full object-cover bg-muted select-none"
+          />
+        ) : (
+          <div className="flex aspect-square w-full items-center justify-center bg-muted text-muted-foreground">
+            <Image className="size-10" aria-hidden />
+          </div>
+        )}
+        {word.audio ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="absolute start-2 top-2 md:opacity-0 transition-opacity group-hover:opacity-100"
+            aria-label={`Play audio for ${word.word}`}
+            onClick={() => {
+              const audio = new Audio(mediaUrl(word.audio!.url));
+              void audio.play();
+            }}
+          >
+            <Volume2 className="size-4" />
+          </Button>
+        ) : null}
         <div className="absolute end-2 top-2 flex gap-1 md:opacity-0 transition-opacity group-hover:opacity-100">
           <Button
             type="button"
@@ -61,8 +82,10 @@ export function WordCard({
         </div>
       </div>
       <CardHeader>
-        <CardTitle className="truncate text-lg! font-semibold" dir="rtl">
-          {highlightTargetLetter(word.word, word.target_letter)}
+        <CardTitle className="text-lg! font-semibold">
+          <span className="block truncate" dir="rtl">
+            {highlightTargetLetter(word.word, word.target_letter)}
+          </span>
         </CardTitle>
         {word.translation ? (
           <CardDescription className="truncate" dir="rtl">

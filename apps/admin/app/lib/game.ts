@@ -95,9 +95,15 @@ export interface WordImage {
   name: string;
   url: string;
   filename: string;
-  size: number;
   width: number;
   height: number;
+}
+
+/** Mirrors AudioOut from apps/game/schemas.py. */
+export interface WordAudio {
+  name: string;
+  url: string;
+  filename: string;
 }
 
 /** Mirrors WordOut from apps/game/schemas.py. */
@@ -107,7 +113,8 @@ export interface Word {
   target_letter: string | null;
   translation: string | null;
   is_tutorial_word: boolean;
-  image: WordImage;
+  image: WordImage | null;
+  audio: WordAudio | null;
 }
 
 export const wordsQueryOptions = queryOptions({
