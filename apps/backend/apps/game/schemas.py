@@ -145,21 +145,41 @@ class ImageOut(Schema):
     filename: str
 
 
+class AudioOut(Schema):
+    name: str
+    url: str
+    filename: str
+
+
 class WordOut(Schema):
     id: int
     word: str
     target_letter: str | None
     translation: str | None
     is_tutorial_word: bool
-    image: ImageOut
+    image: ImageOut | None = None
+    audio: AudioOut | None = None
 
     @staticmethod
-    def resolve_image(obj) -> ImageOut:
+    def resolve_image(obj) -> ImageOut | None:
         image = obj.image
+        if not image:
+            return None
         return ImageOut(
             name=image.name,
             url=image.url,
             filename=Path(image.name).name,
+        )
+
+    @staticmethod
+    def resolve_audio(obj) -> AudioOut | None:
+        audio = obj.audio
+        if not audio:
+            return None
+        return AudioOut(
+            name=audio.name,
+            url=audio.url,
+            filename=Path(audio.name).name,
         )
 
 
@@ -168,11 +188,16 @@ class WordSimpleOut(Schema):
     word: str
     target_letter: str | None
     is_tutorial_word: bool
-    image_url: str
+    image_url: str | None = None
+    audio_url: str | None = None
 
     @staticmethod
-    def resolve_image_url(obj) -> str:
-        return obj.image.url
+    def resolve_image_url(obj) -> str | None:
+        return obj.image.url if obj.image else None
+
+    @staticmethod
+    def resolve_audio_url(obj) -> str | None:
+        return obj.audio.url if obj.audio else None
 
 class LevelOrderIn(Schema):
     level_ids: list[int]

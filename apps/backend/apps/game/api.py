@@ -262,7 +262,12 @@ def reorder_units(request, layer: Layer, payload: UnitOrderIn):
 
 
 @router.post("/words", auth=jwt_auth, response={200: WordOut, 403: ErrorOut}, summary="Create a word")
-def create_word(request, data: Form[WordIn], image: File[UploadedFile]):
+def create_word(
+    request,
+    data: Form[WordIn],
+    image: File[UploadedFile] = None,
+    audio: File[UploadedFile] = None,
+):
     if not (request.auth.has_perm("word.createWord")):
         return Status(403, {"detail": "You do not have permission to create words"})
     word = Word.objects.create(
@@ -271,6 +276,7 @@ def create_word(request, data: Form[WordIn], image: File[UploadedFile]):
         translation=data.translation or None,
         is_tutorial_word=data.is_tutorial_word,
         image=image,
+        audio=audio,
         created_by=request.auth,
         updated_by=request.auth,
     )
@@ -285,7 +291,7 @@ def list_words(request):
 @router.get("/words/list-simple", response=list[WordSimpleOut], summary="List all words (simple version)")
 def list_words_simple(request):
     qs = Word.objects.filter(is_active=True, is_published=True)
-    return qs.only("id", "word", "target_letter", "is_tutorial_word", "image")
+    return qs.only("id", "word", "target_letter", "is_tutorial_word", "image", "audio")
 
 
 @router.patch(
@@ -299,6 +305,7 @@ def update_word(
     word_id: int,
     data: Form[WordIn],
     image: File[UploadedFile] = None,
+    audio: File[UploadedFile] = None,
 ):
     if not (request.auth.has_perm("word.updateWord")):
         return Status(403, {"detail": "You do not have permission to update words"})
@@ -313,6 +320,8 @@ def update_word(
     word.is_tutorial_word = data.is_tutorial_word
     if image is not None:
         word.image = image
+    if audio is not None:
+        word.audio = audio
     word.updated_by = request.auth
     word.save()
     return word
