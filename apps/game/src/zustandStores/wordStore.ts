@@ -18,7 +18,8 @@ export interface WordSimple {
   word: string;
   target_letter: string | null;
   is_tutorial_word: boolean;
-  image_url: string;
+  image_url: string | null;
+  audio_url: string | null;
 }
 
 interface WordStore {
@@ -36,10 +37,12 @@ export function getTutorialWordForLetter(letter: string): WordSimple | undefined
 }
 
 function registerWordsBundle(words: WordSimple[]): void {
-  const entries = words.map((word) => ({
-    alias: getWordImageAlias(word.id),
-    src: word.image_url,
-  }));
+  const entries = words
+    .filter((word): word is WordSimple & { image_url: string } => Boolean(word.image_url))
+    .map((word) => ({
+      alias: getWordImageAlias(word.id),
+      src: word.image_url,
+    }));
 
   // Always register so navigation can safely `loadBundle('remote-words')`.
   Assets.addBundle(REMOTE_WORDS_BUNDLE, entries);

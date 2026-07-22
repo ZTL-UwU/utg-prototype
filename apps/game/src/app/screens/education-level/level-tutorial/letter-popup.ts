@@ -77,14 +77,17 @@ export class LetterPopup extends Container {
         anchor: 0.5,
         layout: { position: 'absolute', left: '20%', top: '25%' },
       });
-      this.exampleImage = new Sprite({
-        texture: Texture.from(getWordImageAlias(remoteWord.id)),
-        anchor: 0.5,
-        scale: 0.8,
-        layout: { position: 'absolute', left: '65%', top: '20%' },
-      });
+      this.addChild(this.wordText);
 
-      this.addChild(this.wordText, this.exampleImage);
+      if (remoteWord.image_url) {
+        this.exampleImage = new Sprite({
+          texture: Texture.from(getWordImageAlias(remoteWord.id)),
+          anchor: 0.5,
+          scale: 0.8,
+          layout: { position: 'absolute', left: '65%', top: '20%' },
+        });
+        this.addChild(this.exampleImage);
+      }
     } else {
       this.removeChild(this.soundButton);
       this.addChild(new MissingWordNotice());
