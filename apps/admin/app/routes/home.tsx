@@ -1,8 +1,11 @@
 import { Link } from 'react-router';
 
+import { pageTitle } from '~/lib/page-title';
+
 export default function Home() {
   return (
     <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
+      <title>{pageTitle('Home')}</title>
       <div>
         <h1 className="font-medium">Project ready!</h1>
         <p>You may now add components and start building.</p>

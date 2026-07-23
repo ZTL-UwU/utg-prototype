@@ -8,7 +8,8 @@ import { toast } from 'sonner';
 
 import { UnitCard, UnitCardSkeleton } from '~/components/unit-card';
 import { api } from '~/lib/api';
-import { LAYER_TITLES, type Layer, type Unit } from '~/lib/game';
+import { LAYER_TITLES, isLayer, type Unit } from '~/lib/game';
+import { pageTitle } from '~/lib/page-title';
 
 import type { Route } from './+types/layer';
 
@@ -29,6 +30,7 @@ function hasSameUnitOrder(a: Unit[], b: Unit[]): boolean {
 
 export default function LayerPage({ params }: Route.ComponentProps) {
   const { layer } = params;
+  const layerTitle = isLayer(layer) ? LAYER_TITLES[layer] : layer;
   const queryClient = useQueryClient();
 
   const { data: unitsFromServer, isPending } = useQuery({
@@ -77,8 +79,9 @@ export default function LayerPage({ params }: Route.ComponentProps) {
 
   return (
     <div className="mx-auto w-full max-w-5xl flex flex-col gap-4 md:gap-8">
+      <title>{pageTitle(layerTitle)}</title>
       <header className="flex max-w-2xl flex-col gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight">{LAYER_TITLES[layer as Layer]}</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">{layerTitle}</h1>
       </header>
 
       {isPending ? (

@@ -19,6 +19,7 @@ import { WordCard, WordCardSkeleton } from '~/components/word-card';
 import { WordFormDialog } from '~/components/word-form-dialog';
 import { api } from '~/lib/api';
 import { type Word, wordsQueryOptions } from '~/lib/game';
+import { pageTitle } from '~/lib/page-title';
 
 function getErrorDescription(error: unknown): string | undefined {
   if (error instanceof FetchError) {
@@ -68,6 +69,7 @@ export default function WordsPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 md:gap-8">
+      <title>{pageTitle('Words')}</title>
       <header className="flex items-start justify-between gap-4">
         <div className="flex max-w-2xl flex-col gap-2">
           <h1 className="text-3xl font-semibold tracking-tight">Words</h1>

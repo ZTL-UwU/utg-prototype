@@ -8,6 +8,7 @@ import { Skeleton } from '~/components/ui/skeleton';
 import { UnitForm } from '~/components/unit-form';
 import { api } from '~/lib/api';
 import type { Unit } from '~/lib/game';
+import { pageTitle } from '~/lib/page-title';
 
 import type { Route } from './+types/unit';
 
@@ -27,6 +28,7 @@ export default function UnitPage({ params }: Route.ComponentProps) {
   if (isPending) {
     return (
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+        <title>{pageTitle('Edit Unit')}</title>
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-10 w-full" />
@@ -39,6 +41,7 @@ export default function UnitPage({ params }: Route.ComponentProps) {
   if (isError || !unit) {
     return (
       <div className="mx-auto w-full max-w-2xl text-sm text-destructive">
+        <title>{pageTitle('Unit not found')}</title>
         {error instanceof Error ? error.message : 'Unit not found.'}
       </div>
     );
@@ -46,6 +49,7 @@ export default function UnitPage({ params }: Route.ComponentProps) {
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
+      <title>{pageTitle(unit.title)}</title>
       <header className="flex items-center gap-2">
         <Link to={`/${unit.layer}`}>
           <ArrowLeftIcon className="size-5" />

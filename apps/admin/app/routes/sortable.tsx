@@ -6,6 +6,7 @@ import { useState } from 'react';
 
 import { Button } from '~/components/ui/button';
 import { Card, CardAction, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
+import { pageTitle } from '~/lib/page-title';
 import { cn } from '~/lib/utils';
 
 type Level = {
@@ -80,6 +81,7 @@ export default function SortableDemo() {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+      <title>{pageTitle('Sortable Demo')}</title>
       <header className="flex max-w-2xl flex-col gap-2">
         <h1 className="text-3xl font-semibold tracking-tight">DnD Sortable Demo</h1>
       </header>

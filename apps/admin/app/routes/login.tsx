@@ -1,6 +1,7 @@
 import { redirect } from 'react-router';
 
 import { LoginForm } from '~/components/login-form';
+import { pageTitle } from '~/lib/page-title';
 import { safeRedirect } from '~/lib/redirect';
 import { useAuthStore } from '~/stores/auth';
 
@@ -24,6 +25,7 @@ export function HydrateFallback() {
 export default function Login() {
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+      <title>{pageTitle('Login')}</title>
       <div className="w-full max-w-sm">
         <LoginForm />
       </div>

@@ -10,6 +10,7 @@ import {
 
 import { ThemeProvider } from '~/components/theme-provider';
 import { Toaster } from '~/components/ui/sonner';
+import { pageTitle } from '~/lib/page-title';
 import { queryClient } from '~/lib/query-client';
 
 import './app.css';
@@ -21,6 +22,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>{pageTitle()}</title>
         <Meta />
         <Links />
       </head>
