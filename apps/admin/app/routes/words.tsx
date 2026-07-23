@@ -82,7 +82,7 @@ export default function WordsPage() {
       </header>
 
       {isPending ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4 xl:grid-cols-5">
           {Array.from({ length: 8 }, (_, index) => (
             <WordCardSkeleton key={index} />
           ))}
@@ -92,7 +92,7 @@ export default function WordsPage() {
           {error instanceof Error ? error.message : 'Failed to load words.'}
         </p>
       ) : words.length > 0 ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4 xl:grid-cols-5">
           {words.map((word) => (
             <WordCard
               key={word.id}
