@@ -4,5 +4,5 @@ export function loginPath(redirectTo: string) {
 
 /** Only allow internal paths to prevent open redirects. */
 export function safeRedirect(value: string | null) {
-  return value?.startsWith('/') && !value.startsWith('//') ? value : '/';
+  return value?.startsWith('/') && !value.startsWith('//') ? value : '/education';
 }

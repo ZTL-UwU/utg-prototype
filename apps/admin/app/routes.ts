@@ -4,8 +4,6 @@ export default [
   route('login', 'routes/login.tsx'),
   layout('routes/app-layout.tsx', [
     index('routes/home.tsx'),
-    route('sortable', 'routes/sortable.tsx'),
-    route('profile', 'routes/profile.tsx'),
     route('words', 'routes/words.tsx'),
     route(':layer', 'routes/layer.tsx'),
     route(':layer/:unitId', 'routes/unit.tsx'),
