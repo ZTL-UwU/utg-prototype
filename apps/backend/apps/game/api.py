@@ -2,8 +2,9 @@ from django.db import transaction
 from django.db.models import Max, Prefetch
 from django.utils import timezone
 from ninja import File, Form, Router, Status, UploadedFile
-from ninja_jwt.authentication import JWTAuth
 
+from apps.common.auth import jwt_auth
+from apps.common.permissions import require_perm
 from apps.game.models import Layer, Level, LevelType, Mascot, Unit, Word
 from apps.game.schemas import (
     ErrorOut,
@@ -23,7 +24,6 @@ from apps.game.schemas import (
 )
 
 router = Router(tags=["game"])
-jwt_auth = JWTAuth()
 
 
 def _unit_with_levels(unit_id: int) -> Unit:
@@ -110,12 +110,11 @@ def get_unit(request, unit_id: int):
 @router.patch(
     "/units/{unit_id}",
     auth=jwt_auth,
-    response={200: UnitByIdOut, 404: ErrorOut},
+    response={200: UnitByIdOut, 403: ErrorOut, 404: ErrorOut},
     summary="Update a unit",
 )
+@require_perm("game.change_unit", message="You do not have permission to edit units")
 def update_unit(request, unit_id: int, payload: UnitUpdateIn):
-    if not (request.auth.has_perm("game.change_unit")):
-        return Status(403, {"detail": "You do not have permissions to edit units"})
     try:
         unit = _unit_with_levels(unit_id)
     except Unit.DoesNotExist:
@@ -139,9 +138,10 @@ def update_unit(request, unit_id: int, payload: UnitUpdateIn):
 @router.post(
     "/units/{unit_id}/levels",
     auth=jwt_auth,
-    response={200: LevelOut, 404: ErrorOut},
+    response={200: LevelOut, 403: ErrorOut, 404: ErrorOut},
     summary="Create a level in a unit",
 )
+@require_perm("game.add_level", message="You do not have permission to create levels")
 def create_level(request, unit_id: int, payload: LevelWriteIn):
     try:
         unit = Unit.objects.get(id=unit_id)
@@ -168,9 +168,10 @@ def create_level(request, unit_id: int, payload: LevelWriteIn):
 @router.patch(
     "/levels/{level_id}",
     auth=jwt_auth,
-    response={200: LevelOut, 404: ErrorOut},
+    response={200: LevelOut, 403: ErrorOut, 404: ErrorOut},
     summary="Update a level",
 )
+@require_perm("game.change_level", message="You do not have permission to edit levels")
 def update_level(request, level_id: int, payload: LevelWriteIn):
     try:
         level = Level.objects.select_related("mascot").get(id=level_id)
@@ -189,9 +190,10 @@ def update_level(request, level_id: int, payload: LevelWriteIn):
 @router.delete(
     "/levels/{level_id}",
     auth=jwt_auth,
-    response={204: None, 404: ErrorOut},
+    response={204: None, 403: ErrorOut, 404: ErrorOut},
     summary="Delete a level",
 )
+@require_perm("game.delete_level", message="You do not have permission to delete levels")
 def delete_level(request, level_id: int):
     deleted, _ = Level.objects.filter(id=level_id).delete()
     if not deleted:
@@ -202,9 +204,10 @@ def delete_level(request, level_id: int):
 @router.put(
     "/units/{unit_id}/levels/order",
     auth=jwt_auth,
-    response={200: UnitByIdOut, 400: ErrorOut, 404: ErrorOut},
+    response={200: UnitByIdOut, 400: ErrorOut, 403: ErrorOut, 404: ErrorOut},
     summary="Reorder levels within a unit",
 )
+@require_perm("game.change_level", message="You do not have permission to reorder levels")
 def reorder_levels(request, unit_id: int, payload: LevelOrderIn):
     try:
         unit = Unit.objects.get(id=unit_id)
@@ -233,9 +236,10 @@ def reorder_levels(request, unit_id: int, payload: LevelOrderIn):
 @router.put(
     "/units/list-by-layer/{layer}/order",
     auth=jwt_auth,
-    response={200: list[UnitByLayerOut], 400: ErrorOut},
+    response={200: list[UnitByLayerOut], 400: ErrorOut, 403: ErrorOut},
     summary="Reorder units within a layer",
 )
+@require_perm("game.change_unit", message="You do not have permission to reorder units")
 def reorder_units(request, layer: Layer, payload: UnitOrderIn):
     units = list(Unit.objects.filter(layer=layer).order_by("sort_order", "id"))
     existing_ids = {unit.id for unit in units}
@@ -261,15 +265,19 @@ def reorder_units(request, layer: Layer, payload: UnitOrderIn):
     )
 
 
-@router.post("/words", auth=jwt_auth, response={200: WordOut, 403: ErrorOut}, summary="Create a word")
+@router.post(
+    "/words",
+    auth=jwt_auth,
+    response={200: WordOut, 403: ErrorOut},
+    summary="Create a word",
+)
+@require_perm("game.add_word", message="You do not have permission to create words")
 def create_word(
     request,
     data: Form[WordIn],
     image: File[UploadedFile] = None,
     audio: File[UploadedFile] = None,
 ):
-    if not (request.auth.has_perm("word.createWord")):
-        return Status(403, {"detail": "You do not have permission to create words"})
     word = Word.objects.create(
         word=data.word,
         target_letter=data.target_letter or None,
@@ -288,7 +296,11 @@ def list_words(request):
     return Word.objects.order_by("-updated_at", "-id")
 
 
-@router.get("/words/list-simple", response=list[WordSimpleOut], summary="List all words (simple version)")
+@router.get(
+    "/words/list-simple",
+    response=list[WordSimpleOut],
+    summary="List all words (simple version)",
+)
 def list_words_simple(request):
     qs = Word.objects.filter(is_active=True, is_published=True)
     return qs.only("id", "word", "target_letter", "is_tutorial_word", "image", "audio")
@@ -300,6 +312,7 @@ def list_words_simple(request):
     response={200: WordOut, 403: ErrorOut, 404: ErrorOut},
     summary="Update a word",
 )
+@require_perm("game.change_word", message="You do not have permission to update words")
 def update_word(
     request,
     word_id: int,
@@ -307,8 +320,6 @@ def update_word(
     image: File[UploadedFile] = None,
     audio: File[UploadedFile] = None,
 ):
-    if not (request.auth.has_perm("word.updateWord")):
-        return Status(403, {"detail": "You do not have permission to update words"})
     try:
         word = Word.objects.get(id=word_id)
     except Word.DoesNotExist:
@@ -341,9 +352,8 @@ def update_word(
     response={204: None, 403: ErrorOut, 404: ErrorOut},
     summary="Delete a word",
 )
+@require_perm("game.delete_word", message="You do not have permission to delete words")
 def delete_word(request, word_id: int):
-    if not (request.auth.has_perm("word.deleteWord")):
-        return Status(403, {"detail": "You do not have permission to delete words"})
     deleted, _ = Word.objects.filter(id=word_id).delete()
     if not deleted:
         return Status(404, {"detail": "Word not found."})

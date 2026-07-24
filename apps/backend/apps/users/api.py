@@ -3,10 +3,10 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from ninja import Router, Status
-from ninja_jwt.authentication import JWTAuth
 from ninja_jwt.exceptions import TokenError
 from ninja_jwt.tokens import RefreshToken
 
+from apps.common.auth import jwt_auth
 from apps.game.models import Level
 from apps.users.models import LevelResult
 from apps.users.schemas import (
@@ -24,7 +24,6 @@ from apps.users.schemas import (
 
 User = get_user_model()
 router = Router(tags=["users"])
-jwt_auth = JWTAuth()
 
 
 @router.post(
