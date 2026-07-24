@@ -1,10 +1,10 @@
-from django.contrib.auth.models import _UserModel
-
-
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
 from ninja import Router, Status
 from ninja_jwt.exceptions import TokenError
 from ninja_jwt.tokens import RefreshToken
@@ -12,12 +12,16 @@ from ninja_jwt.tokens import RefreshToken
 from apps.common.auth import jwt_auth
 from apps.game.models import Level
 from apps.users.models import LevelResult
+from apps.users.password_reset import send_password_reset_email
 from apps.users.schemas import (
+    DetailOut,
     ErrorOut,
     LevelResultIn,
     LevelResultOut,
     LoginIn,
     LoginTokenPairOut,
+    PasswordResetConfirmIn,
+    PasswordResetRequestIn,
     RefreshedAccessTokenOut,
     RefreshTokenIn,
     RegisterIn,
@@ -86,6 +90,50 @@ def refresh_access_token(request, payload: RefreshTokenIn):
     except TokenError:
         return Status(401, {"detail": "Token is invalid or expired."})
     return {"access": str(refresh.access_token)}
+
+
+@router.post(
+    "/user/password-reset/request",
+    response={200: DetailOut},
+    summary="[Public] Request a password reset email",
+)
+def password_reset_request(request, payload: PasswordResetRequestIn):
+    email = User.objects.normalize_email(payload.email)
+    user = User.objects.filter(email=email, is_active=True).first()
+    if user is not None:
+        send_password_reset_email(user)
+    return {"detail": "If an account exists for that email, a reset link has been sent."}
+
+
+@router.post(
+    "/user/password-reset/confirm",
+    response={200: LoginTokenPairOut, 400: ErrorOut},
+    summary="[Public] Confirm a password reset with uid and token",
+)
+def password_reset_confirm(request, payload: PasswordResetConfirmIn):
+    try:
+        user_id = force_str(urlsafe_base64_decode(payload.uid))
+        user = User.objects.get(pk=user_id, is_active=True)
+    except (User.DoesNotExist, ValueError, TypeError, OverflowError):
+        return Status[dict[str, str]](400, {"detail": "Invalid or expired reset link."})
+
+    if not default_token_generator.check_token(user, payload.token):
+        return Status(400, {"detail": "Invalid or expired reset link."})
+
+    try:
+        validate_password(payload.password, user=user)
+    except ValidationError as exc:
+        return Status(400, {"detail": " ".join(exc.messages)})
+
+    user.set_password(payload.password)
+    user.save(update_fields=["password"])
+
+    refresh = RefreshToken.for_user(user)
+    return {
+        "access": str(refresh.access_token),
+        "refresh": str(refresh),
+        "user": user,
+    }
 
 
 @router.get(

@@ -65,3 +65,17 @@ class LevelResultOut(AuditingOut):
 
 class ErrorOut(Schema):
     detail: str
+
+
+class DetailOut(Schema):
+    detail: str
+
+
+class PasswordResetRequestIn(Schema):
+    email: str
+
+
+class PasswordResetConfirmIn(Schema):
+    uid: str
+    token: str
+    password: str
