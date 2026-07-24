@@ -1,5 +1,6 @@
 import { EducationTutorialScreen } from '../app/screens/education-level/level-tutorial';
 import { HomeScreen } from '../app/screens/home';
+import { AuthScreen } from '../app/screens/home/auth';
 import { LayerSelectScreen } from '../app/screens/layer-select';
 import { LevelMapScreen } from '../app/screens/level-map';
 import { getLayerMaps, type TLayer, type TMapUnit } from '../app/screens/level-map/units';
@@ -65,6 +66,7 @@ function mapRoutes(type: TLayer, maps: TMapUnit[]) {
 function buildScreenRoutes(): ScreenRoute[] {
   return [
     route('/home', HomeScreen),
+    route('/auth', AuthScreen),
     route('/layers', LayerSelectScreen),
     ...mapRoutes('education', getLayerMaps('education')),
     ...mapRoutes('typing', getLayerMaps('typing')),
@@ -114,7 +116,7 @@ class DebugScreenRouter {
     if (this.pendingPath === path) return;
 
     // Map/level routes need the catalog; wait (or surface error) before resolving.
-    if (path !== '/home' && path !== '/' && path !== '') {
+    if (path !== '/home' && path !== '/auth' && path !== '/' && path !== '') {
       if (!(await ensureCourseReady())) return;
     }
 

@@ -4,7 +4,7 @@ import { Graphics, Sprite, Text, Texture, type TextDropShadow, type Ticker } fro
 import { Container } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { LayerSelectScreen } from '../layer-select';
+import { AuthScreen } from './auth';
 import { Butterfly } from './butterfly';
 
 const TITLE_ENTER_OFFSET = 60;
@@ -127,7 +127,7 @@ export class HomeScreen extends Container {
 
     this.startButton.onPress.connect(() => {
       void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      void engine().navigation.showScreen(LayerSelectScreen);
+      void engine().navigation.showScreen(AuthScreen);
     });
 
     this.addChild(this.background, this.butterfly, this.titleContainer, this.startButton);
