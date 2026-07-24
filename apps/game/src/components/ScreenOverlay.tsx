@@ -3,10 +3,17 @@ import { useOverlayStore } from '../zustandStores/overlayStore';
 import { AuthParent } from './auth';
 import { YoutubeEmbedOverlay } from './YoutubeEmbedOverlay';
 
-/** Leaving auth always lands on the regular home screen. */
+/** Backing out of auth returns to the regular home screen. */
 function goToHomeScreen() {
   void import('../app/screens/home').then(({ HomeScreen }) =>
     engine().navigation.showScreen(HomeScreen),
+  );
+}
+
+/** Getting through auth continues into the game. */
+function goToLayerSelectScreen() {
+  void import('../app/screens/layer-select').then(({ LayerSelectScreen }) =>
+    engine().navigation.showScreen(LayerSelectScreen),
   );
 }
 
@@ -26,10 +33,10 @@ export function ScreenOverlay() {
       <div className="pointer-events-none absolute inset-0 z-10">
         <AuthParent
           onClose={goToHomeScreen}
-          onPlay={goToHomeScreen}
+          onPlay={goToLayerSelectScreen}
           onLogin={(credentials) => {
             console.log('login', credentials);
-            goToHomeScreen();
+            goToLayerSelectScreen();
           }}
           onSignUp={(data) => {
             console.log('sign up', data);

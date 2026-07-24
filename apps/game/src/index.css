@@ -1,9 +1,21 @@
 /*@import url('https://fonts.googleapis.com/css2?family=Concert+One&family=Noto+Sans+Arabic:wght@400..700&display=swap');*/
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400..700&family=Nunito:wght@400..700&display=swap');
 
 @import 'tailwindcss';
 
 @theme {
   --font-sans: 'Noto Sans', system-ui, sans-serif;
+  --font-display: 'Fredoka', system-ui, sans-serif;
+  --font-body: 'Nunito', system-ui, sans-serif;
+
+  --color-cream: #fbf4dd;
+  --color-forest: #2f5d3c;
+  --color-forest-dark: #254b30;
+  --color-ink: #1c1c1c;
+  --color-muted: #9a968c;
+  --color-alert: #c0523a;
+
+  --radius-pill: 9999px;
 }
 
 @layer base {
@@ -32,5 +44,29 @@
 
   #pixi-container canvas {
     @apply block size-full;
+  }
+}
+
+@layer utilities {
+  @keyframes auth-screen-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .auth-screen-enter {
+    animation: auth-screen-in 260ms ease-out both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .auth-screen-enter {
+      animation: none;
+    }
   }
 }

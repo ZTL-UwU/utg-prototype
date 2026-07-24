@@ -30,7 +30,8 @@ export function PrimaryButton({
     <button
       type={type}
       className={cn(
-        'w-full rounded-pill px-6 py-3 font-display text-lg font-semibold transition duration-100',
+        'mx-auto w-4/5 rounded-pill px-6 py-4.5 font-display text-lg font-semibold',
+        'transition duration-100',
         'active:translate-y-[2px] active:scale-[0.97]',
         'focus-visible:ring-4 focus-visible:ring-forest/40 focus-visible:outline-none',
         'disabled:cursor-not-allowed disabled:opacity-60',

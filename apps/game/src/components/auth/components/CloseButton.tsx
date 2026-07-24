@@ -17,11 +17,11 @@ export function CloseButton({ className, ...props }: CloseButtonProps) {
       )}
       {...props}
     >
-      <svg viewBox="0 0 24 24" className="size-5" fill="none" aria-hidden="true">
+      <svg viewBox="0 0 24 24" className="size-6" fill="none" aria-hidden="true">
         <path
           d="M5 5 19 19M19 5 5 19"
           stroke="currentColor"
-          strokeWidth="3.5"
+          strokeWidth="6"
           strokeLinecap="round"
         />
       </svg>

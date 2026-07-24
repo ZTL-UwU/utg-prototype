@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-type OverlayId = 'youtube-embeds';
+export type OverlayId = 'youtube-embeds' | 'auth';
 
 interface OverlayStore {
   activeOverlay: OverlayId | null;
