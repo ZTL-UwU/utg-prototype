@@ -6,6 +6,7 @@ from django.db import IntegrityError, transaction
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from ninja import Router, Status
+from ninja.throttling import AnonRateThrottle
 from ninja_jwt.exceptions import TokenError
 from ninja_jwt.tokens import RefreshToken
 
@@ -37,6 +38,7 @@ router = Router(tags=["users"])
     "/user/register",
     response={201: LoginTokenPairOut, 400: ErrorOut},
     summary="[Public] Register a user and obtain JWT tokens",
+    throttle=AnonRateThrottle("5/h"),
 )
 def register(request, payload: RegisterIn):
     user = User(email=User.objects.normalize_email(payload.email), name=payload.name)
@@ -96,6 +98,7 @@ def refresh_access_token(request, payload: RefreshTokenIn):
     "/user/password-reset/request",
     response={200: DetailOut},
     summary="[Public] Request a password reset email",
+    throttle=AnonRateThrottle("5/h"),
 )
 def password_reset_request(request, payload: PasswordResetRequestIn):
     email = User.objects.normalize_email(payload.email)
@@ -109,6 +112,7 @@ def password_reset_request(request, payload: PasswordResetRequestIn):
     "/user/password-reset/confirm",
     response={200: LoginTokenPairOut, 400: ErrorOut},
     summary="[Public] Confirm a password reset with uid and token",
+    throttle=AnonRateThrottle("10/h"),
 )
 def password_reset_confirm(request, payload: PasswordResetConfirmIn):
     try:
