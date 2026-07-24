@@ -58,9 +58,9 @@ export function UnitCard({
       </CardHeader>
       <CardContent className="flex-1">
         <div className="flex flex-col gap-2">
-          {unit.levels.map((level) => (
+          {unit.levels.map((level, index) => (
             <div key={level.id}>
-              <h4>{level.title}</h4>
+              <h4>{level.title?.trim() || `Game ${index + 1}`}</h4>
             </div>
           ))}
         </div>
