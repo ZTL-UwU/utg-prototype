@@ -1,3 +1,6 @@
+from django.contrib.auth.models import _UserModel
+
+
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -28,8 +31,8 @@ router = Router(tags=["users"])
 
 @router.post(
     "/user/register",
-    response={201: UserOut, 400: ErrorOut},
-    summary="[Public] Register a user",
+    response={201: LoginTokenPairOut, 400: ErrorOut},
+    summary="[Public] Register a user and obtain JWT tokens",
 )
 def register(request, payload: RegisterIn):
     user = User(email=User.objects.normalize_email(payload.email), name=payload.name)
@@ -43,7 +46,16 @@ def register(request, payload: RegisterIn):
         return Status(400, {"detail": " ".join(exc.messages)})
     except IntegrityError:
         return Status(400, {"detail": "A user with that email already exists."})
-    return Status(201, user)
+
+    refresh = RefreshToken.for_user(user)
+    return Status(
+        201,
+        {
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "user": user,
+        },
+    )
 
 
 @router.post(
