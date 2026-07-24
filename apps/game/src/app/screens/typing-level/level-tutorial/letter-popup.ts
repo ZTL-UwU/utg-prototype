@@ -1,9 +1,9 @@
 import { FancyButton } from '@pixi/ui';
+import { EDUCATION_LETTERS, TYPING_SEQUENCE } from '@utg/letters';
 import { animate } from 'motion';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { EDUCATION_LETTERS, TYPING_SEQUENCE } from '../../../../utils/example-words';
 import { getKeyFromChar } from '../../../../utils/keymap';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { HandGuide } from './hand-guide';

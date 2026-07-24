@@ -5,6 +5,7 @@ export default defineConfig({
     'apps/game/**': 'vp run --filter @utg/game lint:fix',
     'apps/admin/**': 'vp run --filter @utg/admin lint:fix',
     'packages/level-types/**': 'vp run --filter @utg/level-types lint:fix',
+    'packages/letters/**': 'vp run --filter @utg/letters lint:fix',
     '*': 'vp check --fix',
   },
   fmt: {

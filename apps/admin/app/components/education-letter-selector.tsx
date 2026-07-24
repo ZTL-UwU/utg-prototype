@@ -1,8 +1,8 @@
+import { EDUCATION_LETTERS } from '@utg/letters';
 import { XIcon } from 'lucide-react';
 
 import { Button } from '~/components/ui/button';
 import { Card, CardContent, CardHeader } from '~/components/ui/card';
-import { EDUCATION_LETTERS } from '~/lib/education-letters';
 import { cn } from '~/lib/utils';
 
 type EducationLetterSelectorProps = {

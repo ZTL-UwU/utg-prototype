@@ -1,5 +1,6 @@
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { EDUCATION_LETTERS } from '@utg/letters';
 import { Image, Music, XIcon } from 'lucide-react';
 import { FetchError } from 'ofetch';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -43,7 +44,6 @@ import {
 } from '~/components/ui/select';
 import { Switch } from '~/components/ui/switch';
 import { api } from '~/lib/api';
-import { EDUCATION_LETTERS } from '~/lib/education-letters';
 import { type Word, wordsQueryOptions } from '~/lib/game';
 import { cn, mediaUrl } from '~/lib/utils';
 

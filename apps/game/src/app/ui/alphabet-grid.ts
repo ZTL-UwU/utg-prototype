@@ -1,8 +1,8 @@
 import { FancyButton } from '@pixi/ui';
+import { EDUCATION_LETTERS } from '@utg/letters';
 import { animate } from 'motion';
 import { Container, Graphics, Text } from 'pixi.js';
 
-import { EDUCATION_LETTERS } from '../../utils/example-words';
 import alphabetTimings from './alphabet-timings.json';
 
 export type AlphabetGridColorOptions = {

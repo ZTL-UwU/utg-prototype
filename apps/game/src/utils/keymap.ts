@@ -157,12 +157,3 @@ export function getKeyFromChar(char: string): string {
   }
   return '';
 }
-
-export function getAllKeys(): KeyEntry[] {
-  return (Object.entries(LAYERS) as [LayerId, Record<string, string>][]).flatMap(
-    ([layerId, layer]) =>
-      Object.values(layer)
-        .filter((text) => text.length > 0 && /\p{Script=Arabic}+/u.test(text))
-        .map((text) => ({ text, layerId })),
-  );
-}
