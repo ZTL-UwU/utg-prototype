@@ -72,7 +72,7 @@ export class HomeScreen extends Container {
     });
 
     this.subtitle = new Text({
-      text: "LET'S LEARN UYGHUR!",
+      text: 'A TYPICAL ADVENTURE!',
       style: {
         fill: 0xffffff,
         fontFamily: 'Concert One',
