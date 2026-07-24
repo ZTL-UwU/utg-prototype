@@ -55,7 +55,9 @@ def _validate_level_relations(payload: LevelWriteIn):
 
 
 @router.get(
-    "/units/list", response=list[UnitOut], summary="List published units and their published levels"
+    "/units/list",
+    response=list[UnitOut],
+    summary="[Public] List published units and their published levels",
 )
 def list_units(request):
     levels = (
@@ -72,27 +74,33 @@ def list_units(request):
 
 @router.get(
     "/units/sidebar",
-    response=list[SidebarUnitOut],
-    summary="List units for admin sidebar navigation",
+    auth=jwt_auth,
+    response={200: list[SidebarUnitOut], 403: ErrorOut},
+    summary="[Admin] List units for admin sidebar navigation",
 )
+@require_perm("game.view_unit", message="You do not have permission to view units")
 def list_sidebar_units(request):
     return Unit.objects.only("id", "layer", "title", "sort_order").order_by("sort_order", "id")
 
 
 @router.get(
     "/mascots/list",
-    response=list[MascotOut],
-    summary="List mascots for admin editing",
+    auth=jwt_auth,
+    response={200: list[MascotOut], 403: ErrorOut},
+    summary="[Admin] List mascots for admin editing",
 )
+@require_perm("game.view_mascot", message="You do not have permission to view mascots")
 def list_mascots(request):
     return Mascot.objects.order_by("name", "id")
 
 
 @router.get(
     "/units/list-by-layer/{layer}",
-    response=list[UnitByLayerOut],
-    summary="List units by layer",
+    auth=jwt_auth,
+    response={200: list[UnitByLayerOut], 403: ErrorOut},
+    summary="[Admin] List units by layer",
 )
+@require_perm("game.view_unit", message="You do not have permission to view units")
 def list_units_by_layer(request, layer: Layer):
     levels = Level.objects.order_by("sort_order", "id")
     return (
@@ -102,7 +110,13 @@ def list_units_by_layer(request, layer: Layer):
     )
 
 
-@router.get("/units/{unit_id}", response=UnitByIdOut, summary="Get a unit by ID")
+@router.get(
+    "/units/{unit_id}",
+    auth=jwt_auth,
+    response={200: UnitByIdOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Get a unit by ID",
+)
+@require_perm("game.view_unit", message="You do not have permission to view units")
 def get_unit(request, unit_id: int):
     return _unit_with_levels(unit_id)
 
@@ -111,7 +125,7 @@ def get_unit(request, unit_id: int):
     "/units/{unit_id}",
     auth=jwt_auth,
     response={200: UnitByIdOut, 403: ErrorOut, 404: ErrorOut},
-    summary="Update a unit",
+    summary="[Admin] Update a unit",
 )
 @require_perm("game.change_unit", message="You do not have permission to edit units")
 def update_unit(request, unit_id: int, payload: UnitUpdateIn):
@@ -139,7 +153,7 @@ def update_unit(request, unit_id: int, payload: UnitUpdateIn):
     "/units/{unit_id}/levels",
     auth=jwt_auth,
     response={200: LevelOut, 403: ErrorOut, 404: ErrorOut},
-    summary="Create a level in a unit",
+    summary="[Admin] Create a level in a unit",
 )
 @require_perm("game.add_level", message="You do not have permission to create levels")
 def create_level(request, unit_id: int, payload: LevelWriteIn):
@@ -169,7 +183,7 @@ def create_level(request, unit_id: int, payload: LevelWriteIn):
     "/levels/{level_id}",
     auth=jwt_auth,
     response={200: LevelOut, 403: ErrorOut, 404: ErrorOut},
-    summary="Update a level",
+    summary="[Admin] Update a level",
 )
 @require_perm("game.change_level", message="You do not have permission to edit levels")
 def update_level(request, level_id: int, payload: LevelWriteIn):
@@ -191,7 +205,7 @@ def update_level(request, level_id: int, payload: LevelWriteIn):
     "/levels/{level_id}",
     auth=jwt_auth,
     response={204: None, 403: ErrorOut, 404: ErrorOut},
-    summary="Delete a level",
+    summary="[Admin] Delete a level",
 )
 @require_perm("game.delete_level", message="You do not have permission to delete levels")
 def delete_level(request, level_id: int):
@@ -205,7 +219,7 @@ def delete_level(request, level_id: int):
     "/units/{unit_id}/levels/order",
     auth=jwt_auth,
     response={200: UnitByIdOut, 400: ErrorOut, 403: ErrorOut, 404: ErrorOut},
-    summary="Reorder levels within a unit",
+    summary="[Admin] Reorder levels within a unit",
 )
 @require_perm("game.change_level", message="You do not have permission to reorder levels")
 def reorder_levels(request, unit_id: int, payload: LevelOrderIn):
@@ -237,7 +251,7 @@ def reorder_levels(request, unit_id: int, payload: LevelOrderIn):
     "/units/list-by-layer/{layer}/order",
     auth=jwt_auth,
     response={200: list[UnitByLayerOut], 400: ErrorOut, 403: ErrorOut},
-    summary="Reorder units within a layer",
+    summary="[Admin] Reorder units within a layer",
 )
 @require_perm("game.change_unit", message="You do not have permission to reorder units")
 def reorder_units(request, layer: Layer, payload: UnitOrderIn):
@@ -269,7 +283,7 @@ def reorder_units(request, layer: Layer, payload: UnitOrderIn):
     "/words",
     auth=jwt_auth,
     response={200: WordOut, 403: ErrorOut},
-    summary="Create a word",
+    summary="[Admin] Create a word",
 )
 @require_perm("game.add_word", message="You do not have permission to create words")
 def create_word(
@@ -291,7 +305,13 @@ def create_word(
     return 200, word
 
 
-@router.get("/words/list", response=list[WordOut], summary="List all words")
+@router.get(
+    "/words/list",
+    auth=jwt_auth,
+    response={200: list[WordOut], 403: ErrorOut},
+    summary="[Admin] List all words",
+)
+@require_perm("game.view_word", message="You do not have permission to view words")
 def list_words(request):
     return Word.objects.order_by("-updated_at", "-id")
 
@@ -299,7 +319,7 @@ def list_words(request):
 @router.get(
     "/words/list-simple",
     response=list[WordSimpleOut],
-    summary="List all words (simple version)",
+    summary="[Public] List published words (simple version)",
 )
 def list_words_simple(request):
     qs = Word.objects.filter(is_active=True, is_published=True)
@@ -310,7 +330,7 @@ def list_words_simple(request):
     "/words/{word_id}",
     auth=jwt_auth,
     response={200: WordOut, 403: ErrorOut, 404: ErrorOut},
-    summary="Update a word",
+    summary="[Admin] Update a word",
 )
 @require_perm("game.change_word", message="You do not have permission to update words")
 def update_word(
@@ -350,7 +370,7 @@ def update_word(
     "/words/{word_id}",
     auth=jwt_auth,
     response={204: None, 403: ErrorOut, 404: ErrorOut},
-    summary="Delete a word",
+    summary="[Admin] Delete a word",
 )
 @require_perm("game.delete_word", message="You do not have permission to delete words")
 def delete_word(request, word_id: int):

@@ -8,6 +8,6 @@ api.add_router("", users_router)
 api.add_router("", game_router)
 
 
-@api.get("/health", tags=["system"], summary="Health check")
+@api.get("/health", tags=["system"], summary="[Public] Health check")
 def health(request):
     return {"status": "ok"}

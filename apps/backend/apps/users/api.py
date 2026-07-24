@@ -29,7 +29,7 @@ router = Router(tags=["users"])
 @router.post(
     "/user/register",
     response={201: UserOut, 400: ErrorOut},
-    summary="Register a user",
+    summary="[Public] Register a user",
 )
 def register(request, payload: RegisterIn):
     user = User(email=User.objects.normalize_email(payload.email), name=payload.name)
@@ -49,7 +49,7 @@ def register(request, payload: RegisterIn):
 @router.post(
     "/user/login",
     response={200: LoginTokenPairOut, 401: ErrorOut},
-    summary="Log in and obtain JWT tokens",
+    summary="[Public] Log in and obtain JWT tokens",
 )
 def login(request, payload: LoginIn):
     user = authenticate(request, email=payload.email, password=payload.password)
@@ -66,7 +66,7 @@ def login(request, payload: LoginIn):
 @router.post(
     "/user/token/refresh",
     response={200: RefreshedAccessTokenOut, 401: ErrorOut},
-    summary="Refresh an access token",
+    summary="[Public] Refresh an access token",
 )
 def refresh_access_token(request, payload: RefreshTokenIn):
     try:
@@ -80,7 +80,7 @@ def refresh_access_token(request, payload: RefreshTokenIn):
     "/user/profile",
     auth=jwt_auth,
     response=UserOut,
-    summary="Get the current user profile",
+    summary="[Public] Get the current user profile",
 )
 def profile(request):
     return request.auth
@@ -90,7 +90,7 @@ def profile(request):
     "/user/rewards/list",
     auth=jwt_auth,
     response=list[RewardOut],
-    summary="List the current user's rewards",
+    summary="[Public] List the current user's rewards",
 )
 def rewards(request):
     return request.auth.rewards.all()
@@ -100,7 +100,7 @@ def rewards(request):
     "/level-results",
     auth=jwt_auth,
     response={201: LevelResultOut, 404: ErrorOut},
-    summary="Record a completed level",
+    summary="[Public] Record a completed level",
 )
 def create_level_result(request, payload: LevelResultIn):
     try:
@@ -123,7 +123,7 @@ def create_level_result(request, payload: LevelResultIn):
     "/level-results/list",
     auth=jwt_auth,
     response=list[LevelResultOut],
-    summary="List the current user's level results",
+    summary="[Public] List the current user's level results",
 )
 def list_level_results(request):
     return request.auth.level_results.all()
