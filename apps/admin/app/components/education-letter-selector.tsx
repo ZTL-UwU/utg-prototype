@@ -1,7 +1,7 @@
 import { XIcon } from 'lucide-react';
 
 import { Button } from '~/components/ui/button';
-import { Card, CardContent } from '~/components/ui/card';
+import { Card, CardContent, CardHeader } from '~/components/ui/card';
 import { EDUCATION_LETTERS } from '~/lib/education-letters';
 import { cn } from '~/lib/utils';
 
@@ -78,65 +78,47 @@ export function EducationLetterSelector({
   };
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-2">
-        {value.length === 0 && (
-          <span className="text-sm text-muted-foreground">
-            No letters selected yet, click on letters below to select them
-          </span>
-        )}
-        {value.map((letter, index) => (
-          <LetterButton
-            key={`${letter}-${index}`}
-            letter={letter}
-            selected
-            showRemoveOnHover
-            variant="outline"
-            ariaLabel={`Remove letter ${letter}`}
-            onClick={() => removeLetter(index)}
-          />
-        ))}
-      </div>
+    <Card size="sm">
+      <CardHeader>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            if (allSelected) {
+              onChange([]);
+            } else {
+              selectAll();
+            }
+          }}
+          size="sm"
+          className="w-fit"
+        >
+          {allSelected ? 'Deselect all' : 'Select all'}
+        </Button>
+      </CardHeader>
+      <CardContent className="flex flex-wrap gap-1">
+        {letters.map((letter) => {
+          const isSelected = selectedSet.has(letter);
 
-      <Card size="sm">
-        <CardContent className="flex flex-wrap gap-1">
-          {letters.map((letter) => {
-            const isSelected = selectedSet.has(letter);
-
-            return (
-              <LetterButton
-                key={letter}
-                letter={letter}
-                selected={isSelected}
-                showRemoveOnHover={isSelected}
-                variant={isSelected ? 'default' : 'secondary'}
-                ariaLabel={isSelected ? `Deselect letter ${letter}` : `Select letter ${letter}`}
-                onClick={() => {
-                  if (isSelected) {
-                    removeLetter(value.indexOf(letter));
-                  } else {
-                    addLetter(letter);
-                  }
-                }}
-              />
-            );
-          })}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              if (allSelected) {
-                onChange([]);
-              } else {
-                selectAll();
-              }
-            }}
-            size="icon-lg"
-          >
-            All
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+          return (
+            <LetterButton
+              key={letter}
+              letter={letter}
+              selected={isSelected}
+              showRemoveOnHover={isSelected}
+              variant={isSelected ? 'default' : 'secondary'}
+              ariaLabel={isSelected ? `Deselect letter ${letter}` : `Select letter ${letter}`}
+              onClick={() => {
+                if (isSelected) {
+                  removeLetter(value.indexOf(letter));
+                } else {
+                  addLetter(letter);
+                }
+              }}
+            />
+          );
+        })}
+      </CardContent>
+    </Card>
   );
 }

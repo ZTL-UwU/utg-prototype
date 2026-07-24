@@ -1,7 +1,8 @@
 import { useForm } from '@tanstack/react-form';
-import { educationLetterGridPropsSchema, type EducationLetterGridProps } from '@utg/level-types';
+import { educationSheepJumpPropsSchema, type EducationSheepJumpProps } from '@utg/level-types';
 
 import { EducationLetterSelector } from '~/components/education-letter-selector';
+import { NumberPropsField } from '~/components/level-type-forms/number-props-field';
 import {
   DirtyStateBridge,
   LEVEL_PROPS_FORM_ID,
@@ -9,14 +10,14 @@ import {
 } from '~/components/level-type-forms/shared';
 import { Field, FieldError, FieldGroup, FieldLabel } from '~/components/ui/field';
 
-export function EducationLetterGridPropsForm({
+export function EducationSheepJumpPropsForm({
   defaultValues,
   onSubmit,
   onDirtyChange,
-}: LevelPropsFormProps<EducationLetterGridProps>) {
+}: LevelPropsFormProps<EducationSheepJumpProps>) {
   const form = useForm({
     defaultValues,
-    validators: { onSubmit: educationLetterGridPropsSchema },
+    validators: { onSubmit: educationSheepJumpPropsSchema },
     onSubmit: ({ value }) => onSubmit(value),
   });
 
@@ -54,6 +55,12 @@ export function EducationLetterGridPropsForm({
             </FieldGroup>
           );
         }}
+      </form.Field>
+
+      <form.Field name="thankYouMinStars">
+        {(field) => (
+          <NumberPropsField field={field} label="Thank-you scene min stars" min={0} max={3} />
+        )}
       </form.Field>
     </form>
   );

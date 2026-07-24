@@ -1,22 +1,23 @@
 import { useForm } from '@tanstack/react-form';
-import { educationLetterGridPropsSchema, type EducationLetterGridProps } from '@utg/level-types';
+import { typingWordsPropsSchema, type TypingWordsProps } from '@utg/level-types';
 
-import { EducationLetterSelector } from '~/components/education-letter-selector';
+import { NumberPropsField } from '~/components/level-type-forms/number-props-field';
 import {
   DirtyStateBridge,
   LEVEL_PROPS_FORM_ID,
   type LevelPropsFormProps,
 } from '~/components/level-type-forms/shared';
 import { Field, FieldError, FieldGroup, FieldLabel } from '~/components/ui/field';
+import { WordIdsSelector } from '~/components/word-ids-selector';
 
-export function EducationLetterGridPropsForm({
+export function TypingMarketPropsForm({
   defaultValues,
   onSubmit,
   onDirtyChange,
-}: LevelPropsFormProps<EducationLetterGridProps>) {
+}: LevelPropsFormProps<TypingWordsProps>) {
   const form = useForm({
     defaultValues,
-    validators: { onSubmit: educationLetterGridPropsSchema },
+    validators: { onSubmit: typingWordsPropsSchema },
     onSubmit: ({ value }) => onSubmit(value),
   });
 
@@ -35,25 +36,30 @@ export function EducationLetterGridPropsForm({
         children={(dirty) => <DirtyStateBridge dirty={dirty} onDirtyChange={onDirtyChange} />}
       />
 
-      <form.Field name="letters" mode="array">
+      <form.Field name="wordIds" mode="array">
         {(field) => {
           const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
           return (
             <FieldGroup>
-              <FieldLabel>Letters</FieldLabel>
+              <FieldLabel>Words</FieldLabel>
               <Field data-invalid={isInvalid}>
-                <EducationLetterSelector
+                <WordIdsSelector
                   value={field.state.value}
-                  onChange={(letters) => {
-                    field.setValue(letters);
+                  onChange={(wordIds) => {
+                    field.setValue(wordIds);
                     field.handleBlur();
                   }}
+                  requireTargetLetter={false}
                 />
                 {isInvalid && <FieldError errors={field.state.meta.errors} />}
               </Field>
             </FieldGroup>
           );
         }}
+      </form.Field>
+
+      <form.Field name="roundCount">
+        {(field) => <NumberPropsField field={field} label="Round count" min={1} />}
       </form.Field>
     </form>
   );

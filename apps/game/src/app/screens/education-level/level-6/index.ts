@@ -130,6 +130,7 @@ export class EducationSheepJumpScreen extends Container {
   private thankYouAnimation?: AnimationPlaybackControls;
   private sheepLocation: SheepLocation = { type: 'origin' };
   private readonly level: TLevelOf<'education-sheep-jump'>;
+  private readonly thankYouMinStars: number;
 
   private map: {
     letters: string[];
@@ -151,6 +152,7 @@ export class EducationSheepJumpScreen extends Container {
     this.level = typedLevel;
 
     const letterPool: string[] = typedLevel.props.letters;
+    this.thankYouMinStars = typedLevel.props.thankYouMinStars;
     const orderedLetters = randomShuffle<string>([...letterPool]);
     this.map = orderedLetters.map((correctLetter) => {
       const distractors = randomShuffle<string>(
@@ -293,7 +295,7 @@ export class EducationSheepJumpScreen extends Container {
       const { correct, mistakes } = useSessionStore.getState();
       const starCount = getStarCount(getAccuracyPercent(correct, mistakes));
       useScoreManager.getState().addSession(correct, mistakes);
-      if (starCount >= 2) {
+      if (starCount >= this.thankYouMinStars) {
         await this.playThankYouScene();
       }
       void engine().navigation.showPopup(EndScreenPopup, { level: this.level });

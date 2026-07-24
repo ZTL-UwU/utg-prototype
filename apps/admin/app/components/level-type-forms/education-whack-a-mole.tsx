@@ -1,7 +1,8 @@
 import { useForm } from '@tanstack/react-form';
-import { educationLetterGridPropsSchema, type EducationLetterGridProps } from '@utg/level-types';
+import { educationWhackAMolePropsSchema, type EducationWhackAMoleProps } from '@utg/level-types';
 
 import { EducationLetterSelector } from '~/components/education-letter-selector';
+import { NumberPropsField } from '~/components/level-type-forms/number-props-field';
 import {
   DirtyStateBridge,
   LEVEL_PROPS_FORM_ID,
@@ -9,14 +10,14 @@ import {
 } from '~/components/level-type-forms/shared';
 import { Field, FieldError, FieldGroup, FieldLabel } from '~/components/ui/field';
 
-export function EducationLetterGridPropsForm({
+export function EducationWhackAMolePropsForm({
   defaultValues,
   onSubmit,
   onDirtyChange,
-}: LevelPropsFormProps<EducationLetterGridProps>) {
+}: LevelPropsFormProps<EducationWhackAMoleProps>) {
   const form = useForm({
     defaultValues,
-    validators: { onSubmit: educationLetterGridPropsSchema },
+    validators: { onSubmit: educationWhackAMolePropsSchema },
     onSubmit: ({ value }) => onSubmit(value),
   });
 
@@ -54,6 +55,18 @@ export function EducationLetterGridPropsForm({
             </FieldGroup>
           );
         }}
+      </form.Field>
+
+      <form.Field name="moleTurnDelayMs">
+        {(field) => (
+          <NumberPropsField field={field} label="Mole turn delay (ms)" min={1} step={50} />
+        )}
+      </form.Field>
+
+      <form.Field name="initialMoleDelayMs">
+        {(field) => (
+          <NumberPropsField field={field} label="Initial mole delay (ms)" min={1} step={50} />
+        )}
       </form.Field>
     </form>
   );

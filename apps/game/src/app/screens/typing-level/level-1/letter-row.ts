@@ -1,47 +1,42 @@
 import { Container } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { getAllKeys, getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import type { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { TypingLetter } from '../../../ui/typing-letter';
-import type { TLevel } from '../../level-map/units';
+import { getTypedLevel, type TLevel } from '../../level-map/units';
 
 const CARD_SIZE = 140;
 const CARD_GAP = 40;
 const STEP = CARD_SIZE + CARD_GAP;
-const ROW_SIZE = 6;
-const ROW_WIDTH = ROW_SIZE * CARD_SIZE + (ROW_SIZE - 1) * CARD_GAP;
 
-function makeRow(): string[] {
-  const entries = getAllKeys();
-
-  return Array.from({ length: ROW_SIZE }, () => {
-    const pick = entries[Math.floor(Math.random() * entries.length)];
-    return pick?.text ?? '';
+function makeRow(letters: string[], rowSize: number): string[] {
+  return Array.from({ length: rowSize }, () => {
+    const pick = letters[Math.floor(Math.random() * letters.length)];
+    return pick ?? '';
   });
 }
 
 export class LetterRow extends Container {
-  private letters = makeRow();
+  private letters: string[];
   private letterCards: TypingLetter[] = [];
   private readonly keyboard: KeyboardLayout;
   private readonly level: TLevel;
 
   private isRemoving = false;
-  private lettersContainer = new Container({
-    layout: {
-      width: ROW_WIDTH,
-      height: CARD_SIZE,
-    },
-  });
+  private lettersContainer: Container;
 
   constructor(keyboard: KeyboardLayout, level: TLevel) {
+    const typedLevel = getTypedLevel(level, 'typing-desert');
+    const { letters, rowSize } = typedLevel.props;
+    const rowWidth = rowSize * CARD_SIZE + (rowSize - 1) * CARD_GAP;
+
     super({
       layout: {
-        width: ROW_WIDTH,
+        width: rowWidth,
         height: CARD_SIZE,
         position: 'absolute',
         top: '25%',
@@ -49,7 +44,14 @@ export class LetterRow extends Container {
     });
 
     this.keyboard = keyboard;
-    this.level = level;
+    this.level = typedLevel;
+    this.letters = makeRow(letters, rowSize);
+    this.lettersContainer = new Container({
+      layout: {
+        width: rowWidth,
+        height: CARD_SIZE,
+      },
+    });
 
     this.letterCards = this.letters.map((letter, index) => {
       const card = new TypingLetter({ letter, cardSize: CARD_SIZE });

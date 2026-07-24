@@ -23,7 +23,6 @@ import { MOLE_UP_Y, MoleTarget } from './mole-target';
 
 const MOLE_DOWN_Y = 220;
 const MOLE_MOVE_DURATION = 0.3;
-const MOLE_TURN_DELAY_MS = 1200;
 const RABBIT_JUMP_DURATION = 0.7;
 
 type MoleCyclePhase = 'idle' | 'waiting' | 'animating';
@@ -65,6 +64,8 @@ export class EducationWhackAMoleScreen extends Container {
   private readonly targets: MoleTarget[];
   private readonly rabbit: Sprite;
   private readonly rounds: Round[];
+  private readonly moleTurnDelayMs: number;
+  private readonly initialMoleDelayMs: number;
   private step = 0;
   private hiddenTarget = -1;
   private isResolving = false;
@@ -88,7 +89,9 @@ export class EducationWhackAMoleScreen extends Container {
     engine().audio.bgm.setVolume(0);
     this.level = typedLevel;
 
-    const letterPool: string[] = typedLevel.props.letters;
+    const { letters: letterPool, moleTurnDelayMs, initialMoleDelayMs } = typedLevel.props;
+    this.moleTurnDelayMs = moleTurnDelayMs;
+    this.initialMoleDelayMs = initialMoleDelayMs;
     const orderedLetters = randomShuffle<string>([...letterPool]);
     this.rounds = orderedLetters.map((correctLetter) => createRound(correctLetter, letterPool));
 
@@ -163,7 +166,7 @@ export class EducationWhackAMoleScreen extends Container {
         this.targets[this.animRisingTarget].finishRaising(!this.isResolving);
       }
       this.hiddenTarget = this.pendingHiddenTarget;
-      this.beginMoleTurnWait(MOLE_TURN_DELAY_MS);
+      this.beginMoleTurnWait(this.moleTurnDelayMs);
     }
   }
 
@@ -207,7 +210,7 @@ export class EducationWhackAMoleScreen extends Container {
     });
     this.positionScene(engine().navigation.width, engine().navigation.height);
     this.playCurrentAnswerAudio();
-    this.beginMoleTurnWait(700);
+    this.beginMoleTurnWait(this.initialMoleDelayMs);
   }
 
   private beginMoleTurnWait(delayMs: number) {

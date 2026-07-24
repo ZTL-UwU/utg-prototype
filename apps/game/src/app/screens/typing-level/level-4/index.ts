@@ -2,23 +2,28 @@ import { animate } from 'motion';
 import { Container, Graphics, HTMLText, HTMLTextStyle, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import {
-  createTypingWordStyle,
-  getHighlightedWordMarkup,
-  getPlayableWords,
-} from '../../../../utils/example-words';
+import { createTypingWordStyle, getHighlightedWordMarkup } from '../../../../utils/example-words';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
+import {
+  getWordImageAlias,
+  REMOTE_WORDS_BUNDLE,
+  resolveWordsByIds,
+} from '../../../../zustandStores/wordStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
+import {
+  findMapUnitForLevel,
+  getLevelType,
+  getTypedLevel,
+  type TLevel,
+} from '../../level-map/units';
 
 const FONT_SIZE = 100;
-const NUM_ROUNDS = 5;
 const CARD_WIDTH = 200;
 const PAD_Y = 32;
 const PAD_X = 48;
@@ -33,7 +38,7 @@ const CARD_COLORS = {
 };
 
 export type Round = {
-  letter: string;
+  wordId: number;
   word: string;
   activeLetterIdx: number;
 };
@@ -44,18 +49,23 @@ export type Round = {
  *
  */
 // const DEV_TEST_ROUNDS: Round[] = [
-//   { letter: 'ئا', word: 'ئايروپىلان', activeLetterIdx: 0 },
-//   { letter: 'ت', word: 'تاۋۇز', activeLetterIdx: 0 },
+//   { wordId: 1, word: 'ئايروپىلان', activeLetterIdx: 0 },
+//   { wordId: 2, word: 'تاۋۇز', activeLetterIdx: 0 },
 // ];
-export function generateRoundsDictionary(): Round[] {
-  return getPlayableWords()
-    .sort(() => Math.random() - 0.5)
-    .slice(0, NUM_ROUNDS)
-    .map(([letter, word]) => ({ letter, word: word.trim(), activeLetterIdx: 0 }));
+export function generateRoundsDictionary(wordIds: number[] = [], roundCount = 5): Round[] {
+  const pool = resolveWordsByIds(wordIds)
+    .filter((word) => word.image_url)
+    .map((word) => ({
+      wordId: word.id,
+      word: word.word.trim(),
+      activeLetterIdx: 0,
+    }));
+
+  return [...pool].sort(() => Math.random() - 0.5).slice(0, roundCount);
 }
 
 export class TypingWordScreen extends Container {
-  public static assetBundles = ['typing-level-4', 'typing-level', 'education-letter-images'];
+  public static assetBundles = ['typing-level-4', 'typing-level', REMOTE_WORDS_BUNDLE];
   public static helpAssets = ['tutorial-popups/typing-tutorial.png'];
   private background: Sprite;
   private hud: HUD;
@@ -75,9 +85,10 @@ export class TypingWordScreen extends Container {
   private level: TLevel;
 
   constructor(level: TLevel) {
-    const mapUnit = findMapUnitForLevel(level);
+    const typedLevel = getTypedLevel(level, 'typing-word');
+    const mapUnit = findMapUnitForLevel(typedLevel);
     super();
-    this.level = level;
+    this.level = typedLevel;
     this.background = new Sprite({
       texture: Texture.from('typing-levels/typing-level/background-farmers-harvest.png'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
@@ -85,13 +96,13 @@ export class TypingWordScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: getLevelType(level),
+          type: getLevelType(typedLevel),
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
     this.keyboard = new KeyboardLayout();
-    this.rounds = generateRoundsDictionary();
+    this.rounds = generateRoundsDictionary(typedLevel.props.wordIds, typedLevel.props.roundCount);
     // this.rounds = DEV_TEST_ROUNDS; // uncomment to assign rounds to selected test set
     this.card = new Graphics();
     this.cardShadow = new Graphics();
@@ -205,10 +216,8 @@ export class TypingWordScreen extends Container {
     if (this.rounds.length === 0) this.endGame();
     this.currentRound = this.rounds.pop() ?? undefined;
     if (!this.currentRound) return;
-    const { letter, word, activeLetterIdx } = this.currentRound!;
-    const image: Sprite = new Sprite(
-      Texture.from(`education-levels/education-letter-images/${letter}.png`),
-    );
+    const { wordId, word, activeLetterIdx } = this.currentRound!;
+    const image: Sprite = new Sprite(Texture.from(getWordImageAlias(wordId)));
     this.updateContentContainer(image, word, activeLetterIdx); // always highlights first letter, letterIdx for new round always at 0
     this.keyboard.setHintedLetter(this.currentTargetLetter);
   }

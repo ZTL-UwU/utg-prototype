@@ -1,11 +1,11 @@
 import { defineLevelType } from '../define';
 import {
-  defaultEducationLettersProps,
-  educationLettersPropsSchema,
+  defaultEducationBubbleProps,
+  educationBubblePropsSchema,
 } from '../schemas/education-letters';
 
 export const educationBubble = defineLevelType({
   label: 'Education bubble',
-  propsSchema: educationLettersPropsSchema,
-  defaultProps: defaultEducationLettersProps,
+  propsSchema: educationBubblePropsSchema,
+  defaultProps: defaultEducationBubbleProps,
 });

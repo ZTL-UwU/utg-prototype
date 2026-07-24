@@ -7,12 +7,18 @@ import { randomShuffle } from '../../../../engine/utils/random';
 import { waitFor } from '../../../../engine/utils/waitFor';
 import {
   createExampleWordStyle,
-  EXAMPLE_WORDS,
   getCompletedWordMarkup,
   getMissingWordMarkup,
 } from '../../../../utils/example-words';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
+import {
+  getWordAudioAlias,
+  getWordImageAlias,
+  REMOTE_WORDS_BUNDLE,
+  resolveWordsByIds,
+  type WordSimple,
+} from '../../../../zustandStores/wordStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
@@ -39,32 +45,39 @@ const WORD_MAX_WIDTH = 760;
 // letter choice slots, matches CHOICE_X
 const NUM_CHOICES = 3;
 
+function playableWords(wordIds: number[]): WordSimple[] {
+  return resolveWordsByIds(wordIds).filter(
+    (word) => word.target_letter != null && word.target_letter.length > 0,
+  );
+}
+
 function getRound(
-  letterPool: string[],
-  correctLetter: string,
-): { word: string; choices: string[] } {
-  const word = EXAMPLE_WORDS.get(correctLetter) ?? '';
-  const distractors = randomShuffle<string>(
-    letterPool.filter((letter) => letter !== correctLetter),
-  ).slice(0, NUM_CHOICES - 1);
+  words: WordSimple[],
+  correctWord: WordSimple,
+): { word: string; letter: string; choices: string[] } {
+  const letter = correctWord.target_letter ?? '';
+  const distractors = randomShuffle(words.filter((item) => item.target_letter !== letter))
+    .slice(0, NUM_CHOICES - 1)
+    .map((item) => item.target_letter!)
+    .filter(Boolean);
 
   return {
-    word,
-    choices: randomShuffle<string>([correctLetter, ...distractors]),
+    word: correctWord.word.trim(),
+    letter,
+    choices: randomShuffle([letter, ...distractors]),
   };
 }
 
 export class EducationWordScreen extends Container {
   public static assetBundles = [
     'education-level',
-    'education-letter-images',
     'ui',
     'education-letters-audio',
-    'education-words-audio',
+    REMOTE_WORDS_BUNDLE,
   ];
   public static helpAssets = ['tutorial-popups/education-level-5.png'];
   public static rounds = 0;
-  private static roundOrder: string[] = [];
+  private static roundOrder: WordSimple[] = [];
 
   private readonly background: Sprite;
   private readonly panel: Container;
@@ -74,6 +87,7 @@ export class EducationWordScreen extends Container {
   private readonly wordText: HTMLText;
   private readonly choices: LetterChoice[];
   private readonly correctLetter: string;
+  private readonly correctWordId: number;
   private readonly word: string;
   private isResolving = false;
   private readonly level: TLevelOf<'education-word'>;
@@ -86,12 +100,16 @@ export class EducationWordScreen extends Container {
     engine().audio.bgm.setVolume(0);
     this.level = typedLevel;
 
-    const letterPool: string[] = typedLevel.props.letters;
+    const words = playableWords(typedLevel.props.wordIds);
     if (EducationWordScreen.rounds === 0) {
-      EducationWordScreen.roundOrder = randomShuffle<string>([...letterPool]);
+      EducationWordScreen.roundOrder = randomShuffle([...words]);
     }
-    this.correctLetter = EducationWordScreen.roundOrder[EducationWordScreen.rounds];
-    const round = getRound(letterPool, this.correctLetter);
+    const correctWord = EducationWordScreen.roundOrder[EducationWordScreen.rounds];
+    const round = correctWord
+      ? getRound(words, correctWord)
+      : { word: '', letter: '', choices: [] as string[] };
+    this.correctLetter = round.letter;
+    this.correctWordId = correctWord?.id ?? 0;
     this.word = round.word;
 
     this.background = new Sprite({
@@ -109,11 +127,13 @@ export class EducationWordScreen extends Container {
         .fill(0xd1dcf0),
     );
 
-    const imageTexture = Texture.from(
-      `education-levels/education-letter-images/${this.correctLetter}.png`,
-    );
+    const imageTexture = correctWord
+      ? Texture.from(getWordImageAlias(correctWord.id))
+      : Texture.EMPTY;
     const image = new Sprite({ texture: imageTexture, anchor: 0.5 });
-    image.scale.set(300 / Math.max(imageTexture.width, imageTexture.height));
+    if (imageTexture.width > 0 && imageTexture.height > 0) {
+      image.scale.set(300 / Math.max(imageTexture.width, imageTexture.height));
+    }
     image.position.set(IMAGE_X, 220);
 
     this.wordText = new HTMLText({
@@ -138,7 +158,7 @@ export class EducationWordScreen extends Container {
         }),
     );
     this.choices.forEach((choice, index) => {
-      choice.position.set(CHOICE_X[index], CHOICE_Y);
+      choice.position.set(CHOICE_X[index] ?? CHOICE_X[CHOICE_X.length - 1], CHOICE_Y);
       this.panel.addChild(choice);
     });
 
@@ -213,7 +233,7 @@ export class EducationWordScreen extends Container {
   }
 
   private playAudio() {
-    if (this.isPlaying) return;
+    if (this.isPlaying || !this.correctLetter) return;
     this.isPlaying = true;
     const aliasString: string = `education-levels/education-letters-audio/${this.correctLetter}.mp3`;
     const durationMs = (sound.find(aliasString)?.duration ?? 0) * 1000;
@@ -247,7 +267,7 @@ export class EducationWordScreen extends Container {
       animate(this.feedback, { alpha: 1 }, { duration: 0.35, ease: 'backOut' }),
       animate(this.feedback.scale, { x: 1, y: 1 }, { duration: 0.35, ease: 'backOut' }),
     ]);
-    const wordAudioAlias = `education-levels/education-words-audio/${this.correctLetter}.mp3`;
+    const wordAudioAlias = getWordAudioAlias(this.correctWordId);
     if (sound.exists(wordAudioAlias)) {
       const audio: IMediaInstance = await engine().audio.sfx.play(wordAudioAlias);
       await new Promise<void>((resolve) => {

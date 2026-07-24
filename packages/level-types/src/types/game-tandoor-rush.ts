@@ -1,8 +1,8 @@
 import { defineLevelType } from '../define';
-import { defaultEmptyProps, emptyPropsSchema } from '../schemas/empty-props';
+import { defaultGameTandoorRushProps, gameTandoorRushPropsSchema } from '../schemas/typing-game';
 
 export const gameTandoorRush = defineLevelType({
   label: 'Game tandoor rush',
-  propsSchema: emptyPropsSchema,
-  defaultProps: defaultEmptyProps,
+  propsSchema: gameTandoorRushPropsSchema,
+  defaultProps: defaultGameTandoorRushProps,
 });

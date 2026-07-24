@@ -7,7 +7,7 @@ import { Skeleton } from '~/components/ui/skeleton';
 import type { Word } from '~/lib/game';
 import { mediaUrl } from '~/lib/utils';
 
-function highlightTargetLetter(word: string, targetLetter: string | null): ReactNode {
+export function highlightTargetLetter(word: string, targetLetter: string | null): ReactNode {
   if (!targetLetter) return word;
 
   const index = word.indexOf(targetLetter);

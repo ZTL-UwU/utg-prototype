@@ -1,4 +1,4 @@
-import { Assets, HTMLTextStyle } from 'pixi.js';
+import { HTMLTextStyle } from 'pixi.js';
 
 export const EDUCATION_LETTERS = [
   'خ',
@@ -34,41 +34,6 @@ export const EDUCATION_LETTERS = [
   'ئۇ',
   'ئو',
 ] as const;
-
-export const EXAMPLE_WORDS = new Map<string, string>([
-  ['خ', 'خوراز'],
-  ['چ', 'چاينەك'],
-  ['ج', 'جان'],
-  ['ت', 'تاۋۇز'],
-  ['پ', 'پاراخوت '],
-  ['ب', 'بولقا'],
-  ['ئە', 'ئەينەك'],
-  ['ئا', 'ئايروپىلان'],
-  ['ف', 'فونتان'],
-  ['غ', 'غاز'],
-  ['ش', 'شام'],
-  ['س', 'سائەت'],
-  ['ژ', 'ژۇرنال'],
-  ['ز', 'زەنجىر'],
-  ['ر', 'رادىئو'],
-  ['د', 'دەزمال'],
-  ['ھ', 'ھھارۋا'],
-  ['ن', 'نان'],
-  ['م', 'ماشىنا'],
-  ['ل', 'لەگەن'],
-  ['ڭ', 'ڭوز'],
-  ['گ', 'گىلەم'],
-  ['ك', 'كۆلەيكە'],
-  ['ق', 'قوغۇن'],
-  ['ي', 'يەلپۈگۈچ'],
-  ['ئى', 'ئىت'],
-  ['ئې', 'ئېيىق'],
-  ['ۋ', 'ۋېلوسىپېد'],
-  ['ئۈ', 'ئۈزۈم'],
-  ['ئۆ', 'ئۆي'],
-  ['ئۇ', 'ئۇۋا'],
-  ['ئو', 'ئورغاق'],
-]);
 
 export const TYPING_SEQUENCE = new Map<(typeof EDUCATION_LETTERS)[number], readonly string[]>([
   ['خ', ['shift', 'ى']],
@@ -176,37 +141,5 @@ export function getAdvancedWordMarkup(word: string, offset: number, length: numb
     word.slice(0, offset) +
     `<active>${word.slice(offset, offset + length)}</active>` +
     word.slice(offset + length)
-  );
-}
-
-export function hasEducationLetterAudio(letter: string): boolean {
-  return (
-    Assets.resolver.hasKey(`education-levels/education-letters-audio/${letter}.mp3`) ||
-    Assets.resolver.hasKey(`${letter}.mp3`)
-  );
-}
-
-export function hasEducationLetterImage(letter: string): boolean {
-  return Assets.resolver.hasKey(`education-levels/education-letter-images/${letter}.png`);
-}
-
-export function getEducationLettersWithAudio(): string[] {
-  return EDUCATION_LETTERS.filter(hasEducationLetterAudio);
-}
-
-export function getPlayableEducationLetters(): string[] {
-  return EDUCATION_LETTERS.filter(
-    (letter) => hasEducationLetterAudio(letter) && hasEducationLetterImage(letter),
-  );
-}
-
-export function pickRandomEducationLetters(count: number): string[] {
-  const pool = [...getPlayableEducationLetters()].sort(() => Math.random() - 0.5);
-  return pool.slice(0, count);
-}
-
-export function getPlayableWords(): [string, string][] {
-  return [...EXAMPLE_WORDS.entries()].filter(
-    ([letter]) => hasEducationLetterAudio(letter) && hasEducationLetterImage(letter),
   );
 }

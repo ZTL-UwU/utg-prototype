@@ -22,15 +22,21 @@ export function defaultLevelProps<T extends LevelTypeId>(levelType: T): LevelTyp
 }
 
 /**
- * Parse props for a level type. On invalid/legacy JSON, falls back to defaults
- * so admin editors can still open. Prefer `safeParseLevelProps` when failure must surface.
+ * Parse props for a level type. Merges with defaults first so partial/legacy
+ * JSON (e.g. partial props objects) still succeeds. On invalid
+ * data, falls back to defaults so admin editors can still open.
  */
 export function parseLevelProps<T extends LevelTypeId>(
   levelType: T,
   value: unknown,
 ): LevelTypeProps[T] {
-  const parsed = safeParseLevelProps(levelType, value);
-  return parsed.success ? parsed.data : defaultLevelProps(levelType);
+  const defaults = defaultLevelProps(levelType);
+  const merged =
+    value != null && typeof value === 'object' && !Array.isArray(value)
+      ? { ...defaults, ...(value as Record<string, unknown>) }
+      : defaults;
+  const parsed = safeParseLevelProps(levelType, merged);
+  return parsed.success ? parsed.data : defaults;
 }
 
 export function safeParseLevelProps<T extends LevelTypeId>(

@@ -1,11 +1,11 @@
 import { defineLevelType } from '../define';
 import {
-  defaultEducationLettersProps,
-  educationLettersPropsSchema,
+  defaultEducationSheepJumpProps,
+  educationSheepJumpPropsSchema,
 } from '../schemas/education-letters';
 
 export const educationSheepJump = defineLevelType({
   label: 'Education sheep jump',
-  propsSchema: educationLettersPropsSchema,
-  defaultProps: defaultEducationLettersProps,
+  propsSchema: educationSheepJumpPropsSchema,
+  defaultProps: defaultEducationSheepJumpProps,
 });

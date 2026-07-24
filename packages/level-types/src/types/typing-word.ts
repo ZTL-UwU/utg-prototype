@@ -1,8 +1,8 @@
 import { defineLevelType } from '../define';
-import { defaultEmptyProps, emptyPropsSchema } from '../schemas/empty-props';
+import { defaultTypingWordsProps, typingWordsPropsSchema } from '../schemas/typing-game';
 
 export const typingWord = defineLevelType({
   label: 'Typing word',
-  propsSchema: emptyPropsSchema,
-  defaultProps: defaultEmptyProps,
+  propsSchema: typingWordsPropsSchema,
+  defaultProps: defaultTypingWordsProps,
 });

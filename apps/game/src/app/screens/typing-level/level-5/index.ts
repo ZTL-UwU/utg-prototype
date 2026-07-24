@@ -10,12 +10,18 @@ import {
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
+import { getWordImageAlias, REMOTE_WORDS_BUNDLE } from '../../../../zustandStores/wordStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
+import {
+  findMapUnitForLevel,
+  getLevelType,
+  getTypedLevel,
+  type TLevel,
+} from '../../level-map/units';
 import { generateRoundsDictionary, type Round } from '../level-4';
 
 const FONT_SIZE = 100;
@@ -35,7 +41,7 @@ function randomTouristTexture() {
 }
 
 export class TypingMarketScreen extends Container {
-  public static assetBundles = ['typing-level', 'typing-level-5', 'education-letter-images'];
+  public static assetBundles = ['typing-level', 'typing-level-5', REMOTE_WORDS_BUNDLE];
   public static helpAssets = [
     'tutorial-popups/typing-level-5-1.png',
     'tutorial-popups/typing-level-5-2.png',
@@ -59,9 +65,10 @@ export class TypingMarketScreen extends Container {
   private level: TLevel;
 
   constructor(level: TLevel) {
-    const mapUnit = findMapUnitForLevel(level);
+    const typedLevel = getTypedLevel(level, 'typing-market');
+    const mapUnit = findMapUnitForLevel(typedLevel);
     super();
-    this.level = level;
+    this.level = typedLevel;
 
     this.background = new Sprite({
       texture: Texture.from('typing-levels/typing-level-5/background.png'),
@@ -77,14 +84,14 @@ export class TypingMarketScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: getLevelType(level),
+          type: getLevelType(typedLevel),
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
     this.keyboard = new KeyboardLayout();
-    this.rounds = generateRoundsDictionary();
+    this.rounds = generateRoundsDictionary(typedLevel.props.wordIds, typedLevel.props.roundCount);
 
     this.card = new Sprite({
       texture: Texture.from('typing-levels/typing-level-5/card-background.png'),
@@ -208,10 +215,8 @@ export class TypingMarketScreen extends Container {
     if (this.rounds.length === 0) this.endGame();
     this.currentRound = this.rounds.pop() ?? undefined;
     if (!this.currentRound) return Promise.resolve();
-    const { letter, word, activeLetterIdx } = this.currentRound;
-    const image = new Sprite(
-      Texture.from(`education-levels/education-letter-images/${letter}.png`),
-    );
+    const { wordId, word, activeLetterIdx } = this.currentRound;
+    const image = new Sprite(Texture.from(getWordImageAlias(wordId)));
     return this.updateContentContainer(image, word, activeLetterIdx);
   }
 

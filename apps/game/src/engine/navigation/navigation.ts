@@ -1,6 +1,7 @@
 import type { Ticker } from 'pixi.js';
 import { Assets, BigPool, Container } from 'pixi.js';
 
+import { ensureWordsReady, REMOTE_WORDS_BUNDLE } from '../../zustandStores/wordStore';
 import type { CreationEngine } from '../engine';
 
 /** Interface for app screens */
@@ -68,6 +69,15 @@ export class Navigation {
 
   public init(app: CreationEngine) {
     this.app = app;
+  }
+
+  /**
+   * Screens that list `REMOTE_WORDS_BUNDLE` need the word catalog registered
+   * before Pixi can load that bundle.
+   */
+  private async ensureBundlesReady(assetBundles?: string[]) {
+    if (!assetBundles?.includes(REMOTE_WORDS_BUNDLE)) return;
+    await ensureWordsReady();
   }
 
   /** Subscribe to completed screen changes. */
@@ -160,6 +170,7 @@ export class Navigation {
 
     // Load assets for the new screen, if available
     if (ctor.assetBundles) {
+      await this.ensureBundlesReady(ctor.assetBundles);
       // Load all assets required by this new screen
       await Assets.loadBundle(ctor.assetBundles, (progress) => {
         if (this.currentScreen?.onLoad) {
@@ -215,6 +226,7 @@ export class Navigation {
     // Load assets for the new screen, if available
     // This is safe against multiple calls, since Repeated Loads Are Safe (https://pixijs.com/8.x/guides/components/assets#repeated-loads-are-safe)
     if (ctor.assetBundles) {
+      await this.ensureBundlesReady(ctor.assetBundles);
       // Load all assets required by this new screen
       await Assets.loadBundle(ctor.assetBundles);
     }
@@ -245,6 +257,7 @@ export class Navigation {
     await parentPopup.pause?.();
 
     if (ctor.assetBundles) {
+      await this.ensureBundlesReady(ctor.assetBundles);
       await Assets.loadBundle(ctor.assetBundles);
     }
 

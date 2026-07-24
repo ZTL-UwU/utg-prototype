@@ -6,6 +6,11 @@ import { engine } from '../../../../engine/getEngine';
 import { randomShuffle } from '../../../../engine/utils/random';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
+import {
+  REMOTE_WORDS_BUNDLE,
+  resolveWordsByIds,
+  type WordSimple,
+} from '../../../../zustandStores/wordStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
@@ -36,17 +41,22 @@ function endGame(level: TLevel) {
   }
 }
 
+function playableWords(wordIds: number[]): WordSimple[] {
+  return resolveWordsByIds(wordIds).filter(
+    (word) => word.target_letter != null && word.target_letter.length > 0,
+  );
+}
+
 export class EducationImageScreen extends Container {
   public static assetBundles = [
     'education-level',
-    'education-letter-images',
     'ui',
     'education-letters-audio',
-    'education-words-audio',
+    REMOTE_WORDS_BUNDLE,
   ];
   public static helpAssets = ['tutorial-popups/education-level-4.png'];
   public static rounds = 0;
-  public static roundOrder: string[] = [];
+  public static roundOrder: WordSimple[] = [];
 
   private background: Graphics;
   private soundButton: SoundButton;
@@ -78,15 +88,16 @@ export class EducationImageScreen extends Container {
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
-    const letterPool: string[] = typedLevel.props.letters;
+    const words = playableWords(typedLevel.props.wordIds);
     if (EducationImageScreen.rounds === 0) {
-      EducationImageScreen.roundOrder = randomShuffle<string>([...letterPool]);
+      EducationImageScreen.roundOrder = randomShuffle([...words]);
     }
-    this.correctLetter = EducationImageScreen.roundOrder[EducationImageScreen.rounds];
-    const distractors = randomShuffle<string>(
-      letterPool.filter((letter) => letter !== this.correctLetter),
+    const correctWord = EducationImageScreen.roundOrder[EducationImageScreen.rounds];
+    this.correctLetter = correctWord?.target_letter ?? '';
+    const distractors = randomShuffle(
+      words.filter((word) => word.target_letter !== this.correctLetter),
     ).slice(0, NUM_CHOICES - 1);
-    const displayLetters: string[] = randomShuffle<string>([this.correctLetter, ...distractors]);
+    const displayWords = randomShuffle(correctWord ? [correctWord, ...distractors] : distractors);
 
     this.soundButton = new SoundButton({
       onClick: () => this.soundButtonClick(),
@@ -96,12 +107,12 @@ export class EducationImageScreen extends Container {
     this.soundButton.anchor.set(0.5);
     this.soundButton.layout = { position: 'absolute', left: '50%', bottom: '20%' };
 
-    this.choices = displayLetters.map(
-      (letter) =>
+    this.choices = displayWords.map(
+      (word) =>
         new LetterChoice(
-          letter,
+          word,
           this.correctLetter,
-          letter === this.correctLetter ? () => endGame(typedLevel) : undefined,
+          word.target_letter === this.correctLetter ? () => endGame(typedLevel) : undefined,
         ),
     );
     for (const choice of this.choices) this.choiceContainer.addChild(choice);
@@ -120,7 +131,7 @@ export class EducationImageScreen extends Container {
   resize(width: number, height: number) {
     this.layout = { width, height };
     for (let i = 0; i < this.choices.length; i++) {
-      this.choices[i].x = width * X_SLOTS[i];
+      this.choices[i].x = width * (X_SLOTS[i] ?? X_SLOTS[X_SLOTS.length - 1]);
       this.choices[i].y = height * CHOICE_Y_RATIO;
     }
     this.background.clear().rect(0, 0, width, height).fill(0xe8eef8);
@@ -168,7 +179,7 @@ export class EducationImageScreen extends Container {
   }
 
   private soundButtonClick() {
-    if (this.isPlaying) return;
+    if (this.isPlaying || !this.correctLetter) return;
     this.isPlaying = true;
     const aliasString: string = `education-levels/education-letters-audio/${this.correctLetter}.mp3`;
     const durationMs = (sound.find(aliasString)?.duration ?? 0) * 1000;

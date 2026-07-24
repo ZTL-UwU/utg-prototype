@@ -1,8 +1,8 @@
 import { defineLevelType } from '../define';
-import { defaultEmptyProps, emptyPropsSchema } from '../schemas/empty-props';
+import { defaultTypingSandstormProps, typingSandstormPropsSchema } from '../schemas/typing-game';
 
 export const typingSandstorm = defineLevelType({
   label: 'Typing sandstorm',
-  propsSchema: emptyPropsSchema,
-  defaultProps: defaultEmptyProps,
+  propsSchema: typingSandstormPropsSchema,
+  defaultProps: defaultTypingSandstormProps,
 });

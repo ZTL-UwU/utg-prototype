@@ -2,7 +2,7 @@ import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { getAllKeys, getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -10,16 +10,16 @@ import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
+import {
+  findMapUnitForLevel,
+  getLevelType,
+  getTypedLevel,
+  type TLevel,
+} from '../../level-map/units';
 import { DustOverlays } from './dust-overlays';
 import { LeafLetter } from './leaf-letter';
 
 const CARD_SIZE = 300;
-const LETTER_GOAL = 18;
-const MAX_ACTIVE_LETTERS = 3;
-const FIRST_SPAWN_DELAY_MS = 0;
-const MIN_SPAWN_DELAY_MS = 1000;
-const MAX_SPAWN_DELAY_MS = 1800;
 const SPAWN_WIDTH_RATIO = 0.5;
 const MIN_SPAWN_SEPARATION = CARD_SIZE * 1.35;
 const DUST_SIZE = 104;
@@ -42,12 +42,6 @@ type FallingLetter = {
   startRotation: number;
 };
 
-function makeRandomLetter() {
-  const entries = getAllKeys();
-  const pick = entries[Math.floor(Math.random() * entries.length)];
-  return pick?.text ?? '';
-}
-
 function randomBetween(min: number, max: number) {
   return min + Math.random() * (max - min);
 }
@@ -68,15 +62,23 @@ export class TypingSandstormScreen extends Container {
   private effectAnimations: AnimationPlaybackControls[] = [];
   private feedbackTimeouts: number[] = [];
   private viewWidth = 0;
-  private spawnDelayMs = FIRST_SPAWN_DELAY_MS;
+  private spawnDelayMs = 0;
   private spawnedLetters = 0;
   private resolvedLetters = 0;
   private paused = true;
   private completed = false;
   private readonly level: TLevel;
+  private readonly letterPool: string[];
+  private readonly letterGoal: number;
+  private readonly maxActiveLetters: number;
+  private readonly minSpawnDelayMs: number;
+  private readonly maxSpawnDelayMs: number;
+  private readonly fallSpeedMin: number;
+  private readonly fallSpeedMax: number;
 
   constructor(level: TLevel) {
-    const mapUnit = findMapUnitForLevel(level);
+    const typedLevel = getTypedLevel(level, 'typing-sandstorm');
+    const mapUnit = findMapUnitForLevel(typedLevel);
     super({
       layout: {
         flexDirection: 'column',
@@ -84,7 +86,14 @@ export class TypingSandstormScreen extends Container {
         justifyContent: 'center',
       },
     });
-    this.level = level;
+    this.level = typedLevel;
+    this.letterPool = typedLevel.props.letters;
+    this.letterGoal = typedLevel.props.letterGoal;
+    this.maxActiveLetters = typedLevel.props.maxActiveLetters;
+    this.minSpawnDelayMs = typedLevel.props.minSpawnDelayMs;
+    this.maxSpawnDelayMs = typedLevel.props.maxSpawnDelayMs;
+    this.fallSpeedMin = typedLevel.props.fallSpeedMin;
+    this.fallSpeedMax = typedLevel.props.fallSpeedMax;
 
     this.background = new Sprite({
       texture: Texture.from('typing-levels/typing-level-2/background.png'),
@@ -108,7 +117,7 @@ export class TypingSandstormScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: getLevelType(level),
+          type: getLevelType(typedLevel),
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
@@ -195,8 +204,8 @@ export class TypingSandstormScreen extends Container {
 
   private updateSpawning(deltaMs: number) {
     if (
-      this.spawnedLetters >= LETTER_GOAL ||
-      this.fallingLetters.length >= MAX_ACTIVE_LETTERS ||
+      this.spawnedLetters >= this.letterGoal ||
+      this.fallingLetters.length >= this.maxActiveLetters ||
       this.viewWidth <= 0
     ) {
       return;
@@ -206,7 +215,7 @@ export class TypingSandstormScreen extends Container {
     if (this.spawnDelayMs > 0) return;
 
     this.spawnLetter();
-    this.spawnDelayMs = randomBetween(MIN_SPAWN_DELAY_MS, MAX_SPAWN_DELAY_MS);
+    this.spawnDelayMs = randomBetween(this.minSpawnDelayMs, this.maxSpawnDelayMs);
   }
 
   private updateFallingLetters(deltaMs: number) {
@@ -234,7 +243,7 @@ export class TypingSandstormScreen extends Container {
     const spawnWidth = this.viewWidth * SPAWN_WIDTH_RATIO;
     const spawnLeft = (this.viewWidth - spawnWidth) / 2;
     const spawnRight = spawnLeft + spawnWidth;
-    const letter = makeRandomLetter();
+    const letter = this.letterPool[Math.floor(Math.random() * this.letterPool.length)] ?? '';
     const leafAsset = LEAF_ASSETS[Math.floor(Math.random() * LEAF_ASSETS.length)];
     const card = new LeafLetter({ letter, size: CARD_SIZE, leafAsset });
     const spawnX = this.pickSpawnX(spawnLeft, spawnRight - CARD_SIZE);
@@ -252,7 +261,7 @@ export class TypingSandstormScreen extends Container {
       card,
       spawnX,
       elapsedMs: 0,
-      fallSpeed: randomBetween(60, 80),
+      fallSpeed: randomBetween(this.fallSpeedMin, this.fallSpeedMax),
       windSpeed: randomBetween(-20, 20),
       swayAmplitude: randomBetween(20, 50),
       swaySpeed: randomBetween(1.25, 2.5),
@@ -397,7 +406,11 @@ export class TypingSandstormScreen extends Container {
   }
 
   private tryEndGame() {
-    if (this.completed || this.resolvedLetters < LETTER_GOAL || this.fallingLetters.length > 0) {
+    if (
+      this.completed ||
+      this.resolvedLetters < this.letterGoal ||
+      this.fallingLetters.length > 0
+    ) {
       return;
     }
 

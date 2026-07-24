@@ -2,7 +2,7 @@ import { animate } from 'motion';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { getAllKeys, getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -11,10 +11,13 @@ import { HUD } from '../../../ui/hud';
 import { KeyboardLayout, type KeyboardColorOptions } from '../../../ui/keyboard-layout';
 import { TypingLetter } from '../../../ui/typing-letter';
 import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
+import {
+  findMapUnitForLevel,
+  getLevelType,
+  getTypedLevel,
+  type TLevel,
+} from '../../level-map/units';
 
-const NOTE_COUNT = 20;
-const QUEUE_SIZE = 4;
 const SLOT_WIDTH = 250;
 const SLOT_HEIGHT = 100;
 const SLOT_GAP = 80;
@@ -97,16 +100,16 @@ class NoteCard extends Container {
   }
 }
 
-function shuffledNotes() {
-  const notes = getAllKeys().map((entry) => entry.text);
-  const result: string[] = [];
+function shuffledNotes(letters: string[], noteCount: number) {
+  if (letters.length === 0) return [];
 
-  while (result.length < NOTE_COUNT) {
-    const shuffled = [...notes].sort(() => Math.random() - 0.5);
+  const result: string[] = [];
+  while (result.length < noteCount) {
+    const shuffled = [...letters].sort(() => Math.random() - 0.5);
     result.push(...shuffled);
   }
 
-  return result.slice(0, NOTE_COUNT);
+  return result.slice(0, noteCount);
 }
 
 export class TypingInstrumentScreen extends Container {
@@ -141,11 +144,9 @@ export class TypingInstrumentScreen extends Container {
     anchor: 0.5,
   });
   private target!: TypingLetter;
-  private readonly queueCards = Array.from(
-    { length: QUEUE_SIZE },
-    () => new NoteCard(SLOT_WIDTH, SLOT_HEIGHT, COLORS.queue),
-  );
-  private readonly notes = shuffledNotes();
+  private readonly queueCards: NoteCard[];
+  private readonly notes: string[];
+  private readonly queueSize: number;
   private feedbackTimer?: number;
   private noteIndex = 0;
   private paused = true;
@@ -158,9 +159,16 @@ export class TypingInstrumentScreen extends Container {
   private readonly level: TLevel;
 
   constructor(level: TLevel) {
-    const mapUnit = findMapUnitForLevel(level);
+    const typedLevel = getTypedLevel(level, 'typing-instrument');
+    const mapUnit = findMapUnitForLevel(typedLevel);
     super();
-    this.level = level;
+    this.level = typedLevel;
+    this.queueSize = typedLevel.props.queueSize;
+    this.notes = shuffledNotes(typedLevel.props.letters, typedLevel.props.noteCount);
+    this.queueCards = Array.from(
+      { length: this.queueSize },
+      () => new NoteCard(SLOT_WIDTH, SLOT_HEIGHT, COLORS.queue),
+    );
 
     this.background = new Sprite({
       texture: Texture.from('typing-levels/typing-level/background-tangri-tah.png'),
@@ -174,7 +182,7 @@ export class TypingInstrumentScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: getLevelType(level),
+          type: getLevelType(typedLevel),
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
@@ -231,7 +239,7 @@ export class TypingInstrumentScreen extends Container {
         { duration: 0.4, ease: 'backOut' },
       ),
       ...this.queueCards.flatMap((card, index) => {
-        const delay = (QUEUE_SIZE - 1 - index) * ENTER_STAGGER_MS;
+        const delay = (this.queueSize - 1 - index) * ENTER_STAGGER_MS;
         return [
           animate(card, { alpha: 1 }, { duration: 0.35, ease: 'backOut', delay }),
           animate(card.scale, { x: 1, y: 1 }, { duration: 0.35, ease: 'backOut', delay }),
@@ -256,7 +264,7 @@ export class TypingInstrumentScreen extends Container {
         { duration: 0.2, ease: 'backIn' },
       ),
       ...this.queueCards.flatMap((card, index) => {
-        const delay = (QUEUE_SIZE - 1 - index) * EXIT_STAGGER_MS;
+        const delay = (this.queueSize - 1 - index) * EXIT_STAGGER_MS;
         return [
           animate(card, { alpha: 0 }, { duration: 0.2, ease: 'backIn', delay }),
           animate(card.scale, { x: 0.85, y: 0.85 }, { duration: 0.2, ease: 'backIn', delay }),
@@ -285,7 +293,7 @@ export class TypingInstrumentScreen extends Container {
   }
 
   private renderNotes() {
-    const batchStart = Math.floor(this.noteIndex / QUEUE_SIZE) * QUEUE_SIZE;
+    const batchStart = Math.floor(this.noteIndex / this.queueSize) * this.queueSize;
     const completedInBatch = this.noteIndex - batchStart;
     this.queueCards.forEach((card, index) => {
       const isSuccess = index < completedInBatch;
@@ -336,7 +344,7 @@ export class TypingInstrumentScreen extends Container {
     void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
     this.keyboard.setKeyFeedback(code, 'success');
     this.target.setFeedback('success');
-    this.queueCards[this.noteIndex % QUEUE_SIZE]?.setState(
+    this.queueCards[this.noteIndex % this.queueSize]?.setState(
       'success',
       this.notes[this.noteIndex] ?? '',
     );

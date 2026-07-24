@@ -1,5 +1,5 @@
 import { useForm } from '@tanstack/react-form';
-import { educationLetterGridPropsSchema, type EducationLetterGridProps } from '@utg/level-types';
+import { educationSheepPropsSchema, type EducationSheepProps } from '@utg/level-types';
 
 import { EducationLetterSelector } from '~/components/education-letter-selector';
 import {
@@ -9,14 +9,14 @@ import {
 } from '~/components/level-type-forms/shared';
 import { Field, FieldError, FieldGroup, FieldLabel } from '~/components/ui/field';
 
-export function EducationLetterGridPropsForm({
+export function EducationSheepPropsForm({
   defaultValues,
   onSubmit,
   onDirtyChange,
-}: LevelPropsFormProps<EducationLetterGridProps>) {
+}: LevelPropsFormProps<EducationSheepProps>) {
   const form = useForm({
     defaultValues,
-    validators: { onSubmit: educationLetterGridPropsSchema },
+    validators: { onSubmit: educationSheepPropsSchema },
     onSubmit: ({ value }) => onSubmit(value),
   });
 

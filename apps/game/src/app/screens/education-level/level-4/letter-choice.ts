@@ -4,12 +4,13 @@ import { animate } from 'motion';
 import { Container, HTMLText, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import {
-  createExampleWordStyle,
-  EXAMPLE_WORDS,
-  getCompletedWordMarkup,
-} from '../../../../utils/example-words';
+import { createExampleWordStyle, getCompletedWordMarkup } from '../../../../utils/example-words';
 import useSessionStore from '../../../../zustandStores/sessionStore';
+import {
+  getWordAudioAlias,
+  getWordImageAlias,
+  type WordSimple,
+} from '../../../../zustandStores/wordStore';
 
 const DISPLAY_SIZE = 280;
 const WORD_FONT_SIZE = 72;
@@ -20,17 +21,21 @@ export class LetterChoice extends Container {
   private readonly imageButton: FancyButton;
   private readonly isCorrect: boolean;
   private readonly onCorrect?: () => void;
+  private readonly word: WordSimple;
   private clicked = false;
 
-  constructor(letter: string, correctLetter: string, onCorrect?: () => void) {
+  constructor(word: WordSimple, correctLetter: string, onCorrect?: () => void) {
     super();
 
+    const letter = word.target_letter ?? '';
+    this.word = word;
     this.letter = letter;
     this.isCorrect = letter === correctLetter;
     this.onCorrect = onCorrect;
 
+    const imageAlias = getWordImageAlias(word.id);
     this.imageButton = new FancyButton({
-      defaultView: Texture.from(`education-levels/education-letter-images/${letter}.png`),
+      defaultView: Texture.from(imageAlias),
       anchor: 0.5,
       animations: {
         hover: {
@@ -44,17 +49,16 @@ export class LetterChoice extends Container {
       },
     });
 
-    const word = EXAMPLE_WORDS.get(letter)?.trim() ?? '';
+    const wordText = word.word.trim();
     const wordLabel = new HTMLText({
-      text: getCompletedWordMarkup(letter, word),
+      text: getCompletedWordMarkup(letter, wordText),
       style: createExampleWordStyle(WORD_FONT_SIZE),
     });
     wordLabel.anchor.set(0.5, 0);
 
     this.addChild(this.imageButton, wordLabel);
 
-    // Scale the image
-    const texture = Texture.from(`education-levels/education-letter-images/${letter}.png`);
+    const texture = Texture.from(imageAlias);
     if (!texture?.width || !texture?.height) return;
 
     const naturalHeight = texture.height;
@@ -87,7 +91,7 @@ export class LetterChoice extends Container {
       { duration: 0.4, ease: 'easeOut' },
     );
     this.imageButton.tint = 0xffffff;
-    const wordAudioAlias = `education-levels/education-words-audio/${this.letter}.mp3`;
+    const wordAudioAlias = getWordAudioAlias(this.word.id);
     if (sound.exists(wordAudioAlias)) {
       const audio: IMediaInstance = await engine().audio.sfx.play(wordAudioAlias);
       await new Promise<void>((resolve) => {
@@ -95,7 +99,6 @@ export class LetterChoice extends Container {
         audio.once('stop', resolve);
       });
     }
-    // await waitFor(0.65);
     this.onCorrect?.();
   }
 

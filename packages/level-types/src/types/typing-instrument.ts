@@ -1,8 +1,8 @@
 import { defineLevelType } from '../define';
-import { defaultEmptyProps, emptyPropsSchema } from '../schemas/empty-props';
+import { defaultTypingInstrumentProps, typingInstrumentPropsSchema } from '../schemas/typing-game';
 
 export const typingInstrument = defineLevelType({
   label: 'Typing instrument',
-  propsSchema: emptyPropsSchema,
-  defaultProps: defaultEmptyProps,
+  propsSchema: typingInstrumentPropsSchema,
+  defaultProps: defaultTypingInstrumentProps,
 });

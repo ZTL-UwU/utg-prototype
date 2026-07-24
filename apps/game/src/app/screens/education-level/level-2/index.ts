@@ -3,7 +3,6 @@ import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { randomShuffle } from '../../../../engine/utils/random';
-import { pickRandomEducationLetters } from '../../../../utils/example-words';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -22,8 +21,6 @@ import { LetterBubble } from './letter-bubble';
 
 // bubble slots, matches xSlots in resize()
 const NUM_CHOICES = 3;
-// only used when level.props.letters is empty
-const FALLBACK_LETTER_COUNT = 8;
 
 export class EducationBubbleScreen extends Container {
   public static assetBundles = [
@@ -92,11 +89,7 @@ export class EducationBubbleScreen extends Container {
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
-    const configuredLetters = typedLevel.props.letters;
-    const letterPool: string[] =
-      configuredLetters.length > 0
-        ? configuredLetters
-        : pickRandomEducationLetters(FALLBACK_LETTER_COUNT);
+    const letterPool: string[] = typedLevel.props.letters;
     if (EducationBubbleScreen.rounds === 0) {
       EducationBubbleScreen.roundOrder = randomShuffle([...letterPool]);
     }

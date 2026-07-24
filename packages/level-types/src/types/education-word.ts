@@ -1,11 +1,8 @@
 import { defineLevelType } from '../define';
-import {
-  defaultEducationLettersProps,
-  educationLettersPropsSchema,
-} from '../schemas/education-letters';
+import { defaultEducationWordsProps, educationWordsPropsSchema } from '../schemas/education-words';
 
 export const educationWord = defineLevelType({
   label: 'Education word',
-  propsSchema: educationLettersPropsSchema,
-  defaultProps: defaultEducationLettersProps,
+  propsSchema: educationWordsPropsSchema,
+  defaultProps: defaultEducationWordsProps,
 });

@@ -6,9 +6,20 @@ import {
 } from '@utg/level-types';
 import type { ComponentType } from 'react';
 
+import { EducationBubblePropsForm } from '~/components/level-type-forms/education-bubble';
+import { EducationImagePropsForm } from '~/components/level-type-forms/education-image';
 import { EducationLetterGridPropsForm } from '~/components/level-type-forms/education-letter-grid';
-import { EmptyPropsForm } from '~/components/level-type-forms/empty-props';
+import { EducationSheepPropsForm } from '~/components/level-type-forms/education-sheep';
+import { EducationSheepJumpPropsForm } from '~/components/level-type-forms/education-sheep-jump';
+import { EducationWhackAMolePropsForm } from '~/components/level-type-forms/education-whack-a-mole';
+import { EducationWordPropsForm } from '~/components/level-type-forms/education-word';
+import { GameTandoorRushPropsForm } from '~/components/level-type-forms/game-tandoor-rush';
 import { type LevelPropsFormProps } from '~/components/level-type-forms/shared';
+import { TypingDesertPropsForm } from '~/components/level-type-forms/typing-desert';
+import { TypingInstrumentPropsForm } from '~/components/level-type-forms/typing-instrument';
+import { TypingMarketPropsForm } from '~/components/level-type-forms/typing-market';
+import { TypingSandstormPropsForm } from '~/components/level-type-forms/typing-sandstorm';
+import { TypingWordPropsForm } from '~/components/level-type-forms/typing-word';
 import type { Level } from '~/lib/game';
 
 export { DirtyStateBridge, LEVEL_PROPS_FORM_ID } from '~/components/level-type-forms/shared';
@@ -21,21 +32,20 @@ type LevelPropsFormComponent<T extends LevelTypeId> = ComponentType<
  * Register a props form for each level type here.
  * Adding a type: create the form component, then add one entry.
  */
-// TODO: most of these forms are placeholder, should be replaced with the actual forms
 const levelTypePropsForms = {
   'education-letter-grid': EducationLetterGridPropsForm,
-  'education-bubble': EducationLetterGridPropsForm,
-  'education-sheep': EducationLetterGridPropsForm,
-  'education-image': EducationLetterGridPropsForm,
-  'education-word': EducationLetterGridPropsForm,
-  'education-sheep-jump': EducationLetterGridPropsForm,
-  'education-whack-a-mole': EducationLetterGridPropsForm,
-  'typing-desert': EmptyPropsForm,
-  'typing-sandstorm': EmptyPropsForm,
-  'typing-instrument': EmptyPropsForm,
-  'typing-word': EmptyPropsForm,
-  'typing-market': EmptyPropsForm,
-  'game-tandoor-rush': EmptyPropsForm,
+  'education-bubble': EducationBubblePropsForm,
+  'education-sheep': EducationSheepPropsForm,
+  'education-image': EducationImagePropsForm,
+  'education-word': EducationWordPropsForm,
+  'education-sheep-jump': EducationSheepJumpPropsForm,
+  'education-whack-a-mole': EducationWhackAMolePropsForm,
+  'typing-desert': TypingDesertPropsForm,
+  'typing-sandstorm': TypingSandstormPropsForm,
+  'typing-instrument': TypingInstrumentPropsForm,
+  'typing-word': TypingWordPropsForm,
+  'typing-market': TypingMarketPropsForm,
+  'game-tandoor-rush': GameTandoorRushPropsForm,
 } satisfies { [K in LevelTypeId]: LevelPropsFormComponent<K> };
 
 function resolveDefaultProps(level: Level | null, levelType: LevelTypeId) {

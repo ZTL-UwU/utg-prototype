@@ -41,6 +41,15 @@ export function getTutorialWordForLetter(letter: string): WordSimple | undefined
     .words.find((word) => word.is_tutorial_word && word.target_letter === letter);
 }
 
+/** Resolve backend word IDs to WordSimple entries (order preserved; missing IDs skipped). */
+export function resolveWordsByIds(wordIds: number[]): WordSimple[] {
+  const byId = new Map(useWordStore.getState().words.map((word) => [word.id, word]));
+  return wordIds.flatMap((id) => {
+    const word = byId.get(id);
+    return word ? [word] : [];
+  });
+}
+
 function registerWordsBundle(words: WordSimple[]): void {
   const entries: { alias: string; src: string }[] = [];
 
