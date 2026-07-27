@@ -19,7 +19,7 @@ export const PillInput = forwardRef<HTMLInputElement, PillInputProps>(function P
       aria-label={placeholder}
       className={cn(
         'mx-auto w-4/5 rounded-pill border-[3px] border-ink bg-cream px-5 py-4.5 text-center',
-        'font-body text-base text-ink',
+        'font-body text-2xl text-ink',
         'shadow-[0_3px_0_0_var(--color-ink)] transition outline-none placeholder:text-muted',
         'focus-visible:border-forest focus-visible:ring-4 focus-visible:ring-forest/30',
         'disabled:cursor-not-allowed disabled:opacity-60',

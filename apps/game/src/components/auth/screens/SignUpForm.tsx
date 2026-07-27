@@ -72,7 +72,7 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
       />
 
       {error !== null && (
-        <p role="alert" className="px-2 font-body text-sm text-alert">
+        <p role="alert" className="font-body text-lg text-alert justify-center flex">
           {error}
         </p>
       )}

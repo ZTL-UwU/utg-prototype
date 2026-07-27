@@ -60,7 +60,7 @@ export function ScreenOverlay() {
 
   const { mutateAsync: signUp } = useMutation({
     mutationFn: async (data: SignUpData) => {
-      await api<AuthUser>('/user/register', {
+      return api<AuthTokens>('/user/register', {
         method: 'POST',
         body: {
           name: data.username,
@@ -68,8 +68,6 @@ export function ScreenOverlay() {
           password: data.password,
         },
       });
-      // Register hands back the user
-      return loginRequest({ email: data.email, password: data.password });
     },
     onSuccess: (data) => {
       setAuth(data.access, data.refresh, data.user);
@@ -95,10 +93,7 @@ export function ScreenOverlay() {
           onClose={goToHomeScreen}
           onPlay={goToLayerSelectScreen}
           onLogin={async (credentials) => {
-            await login({
-              email: credentials.username,
-              password: credentials.password,
-            });
+            await login(credentials);
           }}
           onSignUp={async (data) => {
             // Rejecting here is what keeps AuthParent off the success screen.

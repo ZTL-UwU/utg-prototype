@@ -13,7 +13,7 @@ export interface LoginFormProps {
 }
 
 export function LoginForm({ onSubmit, onForgot, onSignUpNav }: LoginFormProps) {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -21,7 +21,7 @@ export function LoginForm({ onSubmit, onForgot, onSignUpNav }: LoginFormProps) {
     event.preventDefault();
     setSubmitting(true);
     try {
-      await onSubmit({ username, password });
+      await onSubmit({ email, password });
     } finally {
       setSubmitting(false);
     }
@@ -30,11 +30,11 @@ export function LoginForm({ onSubmit, onForgot, onSignUpNav }: LoginFormProps) {
   return (
     <form className="flex flex-col gap-4" onSubmit={(event) => void handleSubmit(event)}>
       <PillInput
-        name="username"
-        autoComplete="username"
-        placeholder="Username"
-        value={username}
-        onChange={(event) => setUsername(event.target.value)}
+        name="email"
+        autoComplete="email"
+        placeholder="Email"
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
       />
 
       <PillInput
@@ -46,7 +46,7 @@ export function LoginForm({ onSubmit, onForgot, onSignUpNav }: LoginFormProps) {
         onChange={(event) => setPassword(event.target.value)}
       />
 
-      <div className="-mt-1 flex justify-end">
+      <div className="flex justify-center">
         <LinkButton onClick={onForgot}>Forgot Password?</LinkButton>
       </div>
 
@@ -54,7 +54,7 @@ export function LoginForm({ onSubmit, onForgot, onSignUpNav }: LoginFormProps) {
         {submitting ? 'Logging in…' : 'Log in'}
       </PrimaryButton>
 
-      <p className="mt-2 text-center font-body text-sm text-muted">New to the game?</p>
+      <p className="mt-2 text-center font-body text-base text-muted">New to the game?</p>
 
       <PrimaryButton variant="ghost" onClick={onSignUpNav}>
         Sign up

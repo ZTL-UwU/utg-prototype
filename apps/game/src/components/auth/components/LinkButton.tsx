@@ -11,7 +11,7 @@ export function LinkButton({ children, className, type = 'button', ...props }: L
     <button
       type={type}
       className={cn(
-        'rounded-pill px-2 py-1 font-body text-sm font-semibold text-muted transition',
+        'rounded-pill px-2 py-1 font-body text-base font-semibold text-muted transition',
         'hover:text-forest hover:underline hover:underline-offset-4',
         'focus-visible:ring-4 focus-visible:ring-forest/40 focus-visible:outline-none',
         className,

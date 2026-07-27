@@ -30,7 +30,7 @@ export function PrimaryButton({
     <button
       type={type}
       className={cn(
-        'mx-auto w-4/5 rounded-pill px-6 py-4.5 font-display text-lg font-semibold',
+        'mx-auto w-4/5 rounded-pill px-6 py-4.5 font-display text-2xl font-semibold',
         'transition duration-100',
         'active:translate-y-[2px] active:scale-[0.97]',
         'focus-visible:ring-4 focus-visible:ring-forest/40 focus-visible:outline-none',

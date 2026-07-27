@@ -3,7 +3,7 @@ export type AuthView = 'login' | 'signup' | 'forgot' | 'success';
 export type AvatarVariant = 'outline' | 'filled';
 
 export interface LoginCredentials {
-  username: string;
+  email: string;
   password: string;
 }
 

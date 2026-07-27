@@ -26,9 +26,9 @@ export function ForgotPasswordForm({ onSubmit, onBack }: ForgotPasswordFormProps
 
   return (
     <form className="flex flex-col gap-4" onSubmit={(event) => void handleSubmit(event)}>
-      <h2 className="text-center font-display text-2xl font-semibold text-ink">Forgot Password?</h2>
+      <h2 className="text-center font-display text-4xl font-semibold text-ink">Forgot Password?</h2>
 
-      <p className="text-center font-body text-sm text-muted">
+      <p className="text-center font-body text-lg text-muted">
         Type your email and we'll send you a link to pick a new password.
       </p>
 
