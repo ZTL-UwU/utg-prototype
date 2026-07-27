@@ -9,6 +9,7 @@ import { ScreenOverlay } from './components/ScreenOverlay';
 import { CreationEngine } from './engine/engine';
 import { setEngine } from './engine/getEngine';
 import { bootstrapRemoteData } from './lib/bootstrapRemoteData';
+import { getPasswordResetParams } from './lib/passwordReset';
 
 export default function App() {
   const engineRef = useRef<CreationEngine | null>(null);
@@ -30,7 +31,10 @@ export default function App() {
 
       bootstrapRemoteData();
 
-      if (import.meta.env.DEV) {
+      if (getPasswordResetParams() !== null) {
+        const { AuthScreen } = await import('./app/screens/home/auth');
+        await engine.navigation.showScreen(AuthScreen);
+      } else if (import.meta.env.DEV) {
         const { debugScreenRouter } = await import('./debug/screen-router');
         await debugScreenRouter.start(engine.navigation);
       } else {
