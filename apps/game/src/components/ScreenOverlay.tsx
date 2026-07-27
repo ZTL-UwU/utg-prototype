@@ -31,6 +31,18 @@ function goToLayerSelectScreen() {
   );
 }
 
+/** A fresh signup picks an avatar before continuing into the game. */
+function goToAvatarSelectScreen() {
+  void import('../app/screens/avatar-select').then(({ AvatarSelectScreen }) =>
+    engine().navigation.showScreen(AvatarSelectScreen),
+  );
+}
+
+/** After auth, users without a chosen avatar must pick one before playing. */
+function continueAfterLogin(user: AuthUser) {
+  if (user.avatar == null) goToAvatarSelectScreen();
+  else goToLayerSelectScreen();
+}
 const loginSchema = z.object({
   email: z.string().min(1, 'Enter your email.').email('Enter a valid email address.'),
   password: z.string().min(1, 'Enter your password.'),
@@ -73,7 +85,7 @@ export function ScreenOverlay() {
     mutationFn: loginRequest,
     onSuccess: (data) => {
       setAuth(data.access, data.refresh, data.user);
-      goToLayerSelectScreen();
+      continueAfterLogin(data.user);
     },
     onError: () => {
       useAuthStore.getState().clearTokens();
@@ -144,7 +156,7 @@ export function ScreenOverlay() {
         <AuthParent
           initialView={resetParams !== null ? 'reset' : 'login'}
           onClose={goToHomeScreen}
-          onPlay={goToLayerSelectScreen}
+          onPlay={goToAvatarSelectScreen}
           onLogin={async (credentials) => {
             await login(credentials);
           }}

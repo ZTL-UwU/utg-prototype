@@ -2,6 +2,8 @@ import { animate } from 'motion';
 import { BlurFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { getAvatarPath } from '../../../utils/avatars';
+import { useAuthStore } from '../../../zustandStores/auth';
 import { getAccuracyPercent, useScoreManager } from '../../../zustandStores/scoreManager';
 import { BackButton } from '../../ui/back-button';
 
@@ -48,7 +50,7 @@ function createStatRow(label: string, valueText: Text) {
 }
 
 export class UserStatsPopup extends Container {
-  public static assetBundles = ['stats-popup', 'layer-select', 'ui'];
+  public static assetBundles = ['stats-popup', 'layer-select', 'avatar-select', 'ui'];
 
   private panel: Container;
   private backButton: BackButton;
@@ -71,9 +73,10 @@ export class UserStatsPopup extends Container {
       void engine().navigation.hidePopup();
     });
 
+    const user = useAuthStore.getState().user;
     const profileIcon = new Sprite({
-      texture: Texture.from('layer-select/user-icon.svg'),
-      layout: { width: 100, height: 100 },
+      texture: Texture.from(getAvatarPath(user?.avatar)),
+      layout: { width: 100, height: 100, objectFit: 'contain' },
     });
 
     const userName = new Text({
