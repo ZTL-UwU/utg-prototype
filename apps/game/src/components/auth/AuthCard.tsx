@@ -20,7 +20,7 @@ export function AuthCard({ avatarVariant, onClose, children }: AuthCardProps) {
     <div
       className={cn(
         'pointer-events-auto relative flex h-[62vh] w-[50vw] flex-col',
-        'min-h-[30rem] min-w-[20rem]',
+        'min-h-120 min-w-[20rem]',
         'rounded-3xl bg-cream px-24 pt-16 pb-8 shadow-2xl',
       )}
     >

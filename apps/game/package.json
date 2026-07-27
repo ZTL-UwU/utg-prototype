@@ -17,6 +17,7 @@
     "@pixi/sound": "^6.0.1",
     "@pixi/ui": "^2.3.2",
     "@tailwindcss/vite": "^4.3.0",
+    "@tanstack/react-query": "^5.101.2",
     "@utg/letters": "workspace:*",
     "@utg/level-types": "workspace:*",
     "motion": "^12.40.0",
