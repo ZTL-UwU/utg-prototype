@@ -4,6 +4,8 @@ import { Graphics, Sprite, Text, Texture, type TextDropShadow, type Ticker } fro
 import { Container } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { continueIntoGame } from '../../../utils/continueIntoGame';
+import { useAuthStore } from '../../../zustandStores/auth';
 import { AuthScreen } from './auth';
 import { Butterfly } from './butterfly';
 
@@ -127,7 +129,12 @@ export class HomeScreen extends Container {
 
     this.startButton.onPress.connect(() => {
       void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      void engine().navigation.showScreen(AuthScreen);
+      const { accessToken, user } = useAuthStore.getState();
+      if (accessToken && user) {
+        continueIntoGame(user);
+      } else {
+        void engine().navigation.showScreen(AuthScreen);
+      }
     });
 
     this.addChild(this.background, this.butterfly, this.titleContainer, this.startButton);
