@@ -1,8 +1,10 @@
+import { QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import '@pixi/layout';
 
 import './index.css';
 import { MobileBlockerBanner } from './components/MobileBlockerBanner';
+import { queryClient } from './components/queryClient';
 import { ScreenOverlay } from './components/ScreenOverlay';
 import { CreationEngine } from './engine/engine';
 import { setEngine } from './engine/getEngine';
@@ -52,7 +54,9 @@ export default function App() {
     <>
       <MobileBlockerBanner />
       <div id="pixi-container" />
-      <ScreenOverlay />
+      <QueryClientProvider client={queryClient}>
+        <ScreenOverlay />
+      </QueryClientProvider>
     </>
   );
 }

@@ -23,11 +23,21 @@ export function AuthParent({
   const [view, setView] = useState<AuthView>(initialView);
 
   const handleLogin = async (credentials: LoginCredentials) => {
-    await onLogin?.(credentials);
+    try {
+      await onLogin?.(credentials);
+    } catch {
+      // The caller reports the failure; swallowing keeps the form's submit
+      // state from unwinding through an unhandled rejection.
+    }
   };
 
   const handleSignUp = async (data: SignUpData) => {
-    await onSignUp?.(data);
+    try {
+      await onSignUp?.(data);
+    } catch {
+      // A rejected sign-up stays on the form instead of advancing to success.
+      return;
+    }
     setView('success');
   };
 
