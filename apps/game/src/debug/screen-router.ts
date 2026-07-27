@@ -1,3 +1,4 @@
+import { AvatarSelectScreen } from '../app/screens/avatar-select';
 import { EducationTutorialScreen } from '../app/screens/education-level/level-tutorial';
 import { HomeScreen } from '../app/screens/home';
 import { AuthScreen } from '../app/screens/home/auth';
@@ -67,6 +68,7 @@ function buildScreenRoutes(): ScreenRoute[] {
   return [
     route('/home', HomeScreen),
     route('/auth', AuthScreen),
+    route('/avatar-select', AvatarSelectScreen),
     route('/layers', LayerSelectScreen),
     ...mapRoutes('education', getLayerMaps('education')),
     ...mapRoutes('typing', getLayerMaps('typing')),
@@ -116,7 +118,13 @@ class DebugScreenRouter {
     if (this.pendingPath === path) return;
 
     // Map/level routes need the catalog; wait (or surface error) before resolving.
-    if (path !== '/home' && path !== '/auth' && path !== '/' && path !== '') {
+    if (
+      path !== '/home' &&
+      path !== '/auth' &&
+      path !== '/avatar-select' &&
+      path !== '/' &&
+      path !== ''
+    ) {
       if (!(await ensureCourseReady())) return;
     }
 

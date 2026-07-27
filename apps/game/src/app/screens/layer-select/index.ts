@@ -3,6 +3,8 @@ import { animate } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { getAvatarPath } from '../../../utils/avatars';
+import { useAuthStore } from '../../../zustandStores/auth';
 import { ensureCourseReady } from '../../../zustandStores/courseStore';
 import { UserStatsPopup } from '../../popups/user-stats';
 import { HomeScreen } from '../home';
@@ -11,7 +13,7 @@ import { getLayerMaps, type TLayer } from '../level-map/units';
 import { EducationLevelSelect } from '../level-select/education-level-select';
 
 export class LayerSelectScreen extends Container {
-  public static assetBundles = ['layer-select', 'home'];
+  public static assetBundles = ['layer-select', 'home', 'avatar-select'];
 
   private innerContainer: Container;
   private mapBackground: Sprite;
@@ -133,8 +135,9 @@ export class LayerSelectScreen extends Container {
       return button;
     });
 
+    const avatarId = useAuthStore.getState().user?.avatar;
     this.userStatsButton = new FancyButton({
-      defaultView: Texture.from('layer-select/user-icon.svg'),
+      defaultView: Texture.from(getAvatarPath(avatarId)),
       animations: {
         hover: {
           props: {
@@ -145,6 +148,9 @@ export class LayerSelectScreen extends Container {
       },
       anchor: 0.5,
     });
+
+    this.userStatsButton.width = 149;
+    this.userStatsButton.height = 149;
     this.userStatsButton.layout = {
       position: 'absolute',
       top: 120,
