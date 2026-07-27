@@ -32,6 +32,7 @@ const SHIFT_RADIUS = 35;
 const FEEDBACK_DURATION_MS = 350;
 const HANDS_BOTTOM_GAP = 8;
 const KEYBOARD_ABOVE_HANDS_GAP = 12;
+const RESET_DELAY_MS = 1000;
 
 type TutorialStep = {
   code: string;
@@ -115,14 +116,21 @@ function createArrow() {
   return new Sprite({ texture: Texture.from('typing-levels/typing-tutorial/arrow.svg') });
 }
 
+function getNextLetter(letter: string): string {
+  const index = EDUCATION_LETTERS.indexOf(letter as (typeof EDUCATION_LETTERS)[number]);
+  if (index < 0) return EDUCATION_LETTERS[0]!;
+  return EDUCATION_LETTERS[(index + 1) % EDUCATION_LETTERS.length]!;
+}
+
 export class LetterPopup extends Container {
-  public static assetBundles = ['typing-tutorial', 'end-screen'];
+  public static assetBundles = ['typing-tutorial', 'end-screen', 'ui'];
 
   private readonly letter: string;
   private readonly keyboard: KeyboardLayout;
   private readonly handGuide: HandGuide;
   private readonly background: Graphics;
   private readonly closeButton: FancyButton;
+  private readonly nextButton: FancyButton;
   private readonly guide = new Container();
   private readonly stars = new Sprite({
     texture: Texture.from('typing-levels/typing-tutorial/stars.svg'),
@@ -134,6 +142,7 @@ export class LetterPopup extends Container {
   private nextStepIndex = 0;
   private completed = false;
   private viewHeight = 0;
+  private resetTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
   constructor(letter: string) {
     super({ layout: { position: 'relative', width: '100%', height: '100%' } });
@@ -144,12 +153,20 @@ export class LetterPopup extends Container {
     this.background.layout = { position: 'absolute', width: '100%', height: '100%' };
 
     this.closeButton = this.createCloseButton();
+    this.nextButton = this.createNextButton();
     this.keyboard = new KeyboardLayout();
     this.handGuide = new HandGuide();
     this.stars.visible = false;
     this.buildGuide();
 
-    this.addChild(this.background, this.closeButton, this.guide, this.keyboard, this.handGuide);
+    this.addChild(
+      this.background,
+      this.closeButton,
+      this.nextButton,
+      this.guide,
+      this.keyboard,
+      this.handGuide,
+    );
   }
 
   resize(width: number, height: number) {
@@ -160,20 +177,31 @@ export class LetterPopup extends Container {
     this.layoutGuide(width);
   }
 
-  async show() {
+  async show(animated = true) {
     this.resetLesson();
-    this.y = this.viewHeight + 10;
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
-    await Promise.all([
-      animate(this.position, { y: 0 }, { duration: 0.6, ease: 'easeOut' }),
-      this.keyboard.playEnterAnimation(),
-    ]);
+    if (animated) {
+      this.y = this.viewHeight + 10;
+      await Promise.all([
+        animate(this.position, { y: 0 }, { duration: 0.6, ease: 'easeOut' }),
+        this.keyboard.playEnterAnimation(),
+      ]);
+      return;
+    }
+
+    this.y = 0;
+    await this.keyboard.playEnterAnimation(false);
   }
 
-  async hide() {
+  async hide(animated = true) {
+    this.clearResetTimeout();
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
+    if (!animated) {
+      await this.keyboard.playExitAnimation(false);
+      return;
+    }
     await Promise.all([
       animate(this.position, { y: this.viewHeight + 10 }, { duration: 0.4, ease: 'easeOut' }),
       this.keyboard.playExitAnimation(),
@@ -181,6 +209,7 @@ export class LetterPopup extends Container {
   }
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {
+    this.clearResetTimeout();
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
     super.destroy(options);
@@ -293,12 +322,18 @@ export class LetterPopup extends Container {
     return badge;
   }
 
+  private clearResetTimeout() {
+    if (this.resetTimeoutId !== undefined) {
+      clearTimeout(this.resetTimeoutId);
+      this.resetTimeoutId = undefined;
+    }
+  }
+
   private resetLesson() {
+    this.clearResetTimeout();
     this.nextStepIndex = 0;
     this.completed = false;
     this.stars.visible = false;
-    this.stars.alpha = 0;
-    this.stars.scale.set(0.7);
     this.refreshGuideState();
   }
 
@@ -382,6 +417,11 @@ export class LetterPopup extends Container {
       animate(this.stars, { alpha: 1 }, { duration: 0.2, ease: 'easeOut' }),
       animate(this.stars.scale, { x: 1, y: 1 }, { duration: 0.35, ease: 'backOut' }),
     ]);
+    this.clearResetTimeout();
+    this.resetTimeoutId = setTimeout(() => {
+      this.resetTimeoutId = undefined;
+      this.resetLesson();
+    }, RESET_DELAY_MS);
   }
 
   private createCloseButton(): FancyButton {
@@ -397,6 +437,25 @@ export class LetterPopup extends Container {
     button.onPress.connect(() => {
       void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
       void engine().navigation.hidePopup();
+    });
+    return button;
+  }
+
+  private createNextButton(): FancyButton {
+    const button = new FancyButton({
+      defaultView: 'ui/next-button.svg',
+      animations: {
+        hover: { props: { scale: { x: 1.03, y: 1.03 } }, duration: 100 },
+        pressed: { props: { scale: { x: 0.97, y: 0.97 } }, duration: 100 },
+      },
+    });
+    button.anchor.set(0.5);
+    button.layout = { position: 'absolute', top: '10%', left: '95%' };
+    button.onPress.connect(() => {
+      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+      void engine().navigation.showPopup(LetterPopup, getNextLetter(this.letter), {
+        animate: false,
+      });
     });
     return button;
   }

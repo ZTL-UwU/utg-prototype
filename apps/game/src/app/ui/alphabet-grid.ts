@@ -33,10 +33,10 @@ const DEFAULT_COLOR_OPTIONS: AlphabetGridColorOptions = {
 };
 
 const letters = [
-  EDUCATION_LETTERS.slice(0, 8),
-  EDUCATION_LETTERS.slice(8, 16),
-  EDUCATION_LETTERS.slice(16, 24),
-  EDUCATION_LETTERS.slice(24, 32),
+  EDUCATION_LETTERS.slice(0, 8).reverse(),
+  EDUCATION_LETTERS.slice(8, 16).reverse(),
+  EDUCATION_LETTERS.slice(16, 24).reverse(),
+  EDUCATION_LETTERS.slice(24, 32).reverse(),
 ];
 
 function drawButton(

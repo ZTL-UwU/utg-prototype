@@ -4,12 +4,17 @@ import { Assets, BigPool, Container } from 'pixi.js';
 import { ensureWordsReady, REMOTE_WORDS_BUNDLE } from '../../zustandStores/wordStore';
 import type { CreationEngine } from '../engine';
 
+export type TransitionOptions = {
+  /** When false, screens that support it skip enter/exit motion. Defaults to true. */
+  animate?: boolean;
+};
+
 /** Interface for app screens */
 export interface AppScreen extends Container {
-  /** Show the screen */
-  show?(): Promise<void>;
-  /** Hide the screen */
-  hide?(): Promise<void>;
+  /** Show the screen. Pass `false` to skip enter motion when supported. */
+  show?(animate?: boolean): Promise<void>;
+  /** Hide the screen. Pass `false` to skip exit motion when supported. */
+  hide?(animate?: boolean): Promise<void>;
   /** Pause the screen */
   pause?(): Promise<void>;
   /** Resume the screen */
@@ -93,7 +98,7 @@ export class Navigation {
   }
 
   /** Add screen to the stage, link update & resize functions */
-  private async addAndShowScreen(screen: AppScreen) {
+  private async addAndShowScreen(screen: AppScreen, animate = true) {
     // Add navigation container to stage if it does not have a parent yet
     if (!this.container.parent) {
       this.app.stage.addChild(this.container);
@@ -123,19 +128,19 @@ export class Navigation {
     // Show the new screen
     if (screen.show) {
       screen.interactiveChildren = false;
-      await screen.show();
+      await screen.show(animate);
       screen.interactiveChildren = true;
     }
   }
 
   /** Remove screen from the stage, unlink update & resize functions */
-  private async hideAndRemoveScreen(screen: AppScreen) {
+  private async hideAndRemoveScreen(screen: AppScreen, animate = true) {
     // Prevent interaction in the screen
     screen.interactiveChildren = false;
 
     // Hide screen if method is available
     if (screen.hide) {
-      await screen.hide();
+      await screen.hide(animate);
     }
 
     // Unlink update function if method is available
@@ -216,8 +221,14 @@ export class Navigation {
    * Show up a popup over current screen
    */
   public async showPopup(ctor: AppScreenConstructor): Promise<void>;
-  public async showPopup<P>(ctor: AppScreenConstructor<[P]>, props: P): Promise<void>;
-  public async showPopup(ctor: AppScreenConstructor, props?: unknown) {
+  public async showPopup<P>(
+    ctor: AppScreenConstructor<[P]>,
+    props: P,
+    options?: TransitionOptions,
+  ): Promise<void>;
+  public async showPopup(ctor: AppScreenConstructor, props?: unknown, options?: TransitionOptions) {
+    const animate = options?.animate ?? true;
+
     if (this.currentScreen) {
       this.currentScreen.interactiveChildren = false;
       await this.currentScreen.pause?.();
@@ -232,12 +243,12 @@ export class Navigation {
     }
 
     if (this.currentPopup) {
-      await this.hideAndRemoveScreen(this.currentPopup);
+      await this.hideAndRemoveScreen(this.currentPopup, animate);
     }
 
     this.currentPopup =
       props !== undefined ? new (ctor as AppScreenConstructor<[unknown]>)(props) : new ctor();
-    await this.addAndShowScreen(this.currentPopup);
+    await this.addAndShowScreen(this.currentPopup, animate);
   }
 
   /**

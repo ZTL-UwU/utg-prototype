@@ -1,5 +1,6 @@
 import { sound } from '@pixi/sound';
 import { FancyButton } from '@pixi/ui';
+import { EDUCATION_LETTERS, type EducationLetter } from '@utg/letters';
 import { animate } from 'motion';
 import { Assets, Container, Graphics, HTMLText, Sprite, Texture } from 'pixi.js';
 
@@ -21,11 +22,18 @@ const COLORS = {
 
 const WORD_STYLE = createExampleWordStyle(180);
 
+function getNextLetter(letter: string): string {
+  const index = EDUCATION_LETTERS.indexOf(letter as EducationLetter);
+  if (index < 0) return EDUCATION_LETTERS[0]!;
+  return EDUCATION_LETTERS[(index + 1) % EDUCATION_LETTERS.length]!;
+}
+
 export class LetterPopup extends Container {
   public static assetBundles = [
     'education-tutorial',
     'education-letter-variants',
     'education-letters-audio',
+    'ui',
     REMOTE_WORDS_BUNDLE,
   ];
   private isPlaying: boolean = false;
@@ -37,6 +45,7 @@ export class LetterPopup extends Container {
   private variantImage: Sprite;
   private background: Graphics;
   private closeButton: FancyButton;
+  private nextButton: FancyButton;
   private soundButton: SoundButton;
 
   constructor(letter: string) {
@@ -50,6 +59,7 @@ export class LetterPopup extends Container {
     this.background.layout = { position: 'absolute', width: '100%', height: '100%' };
 
     this.closeButton = this.createCloseButton();
+    this.nextButton = this.createNextButton();
     this.variantImage = new Sprite({
       texture: Texture.from(`education-levels/education-letter-variants/${this.letter}.png`),
       anchor: 0.5,
@@ -72,7 +82,13 @@ export class LetterPopup extends Container {
     this.soundButton.anchor.set(0.5);
     this.soundButton.layout = { position: 'absolute', left: '75%', top: '72%' };
 
-    this.addChild(this.background, this.closeButton, this.variantImage, this.soundButton);
+    this.addChild(
+      this.background,
+      this.closeButton,
+      this.nextButton,
+      this.variantImage,
+      this.soundButton,
+    );
 
     if (this.exampleWord && this.remoteWord) {
       this.wordText = new HTMLText({
@@ -112,13 +128,18 @@ export class LetterPopup extends Container {
     return `education-levels/education-letters-audio/${this.letter}.mp3`;
   }
 
-  async show() {
-    this.y = screen.height + 10;
-    await animate(this.position, { y: 0 }, { duration: 0.6, ease: 'easeOut' });
+  async show(animated = true) {
+    if (animated) {
+      this.y = screen.height + 10;
+      await animate(this.position, { y: 0 }, { duration: 0.6, ease: 'easeOut' });
+    } else {
+      this.y = 0;
+    }
     void this.playSound(this.getSoundAlias());
   }
 
-  async hide() {
+  async hide(animated = true) {
+    if (!animated) return;
     await animate(this.position, { y: screen.height + 10 }, { duration: 0.4, ease: 'easeOut' });
   }
 
@@ -135,6 +156,25 @@ export class LetterPopup extends Container {
     button.onPress.connect(() => {
       engine().audio.sfx.stop(this.getSoundAlias());
       void engine().navigation.hidePopup();
+    });
+    return button;
+  }
+
+  private createNextButton(): FancyButton {
+    const button = new FancyButton({
+      defaultView: 'ui/next-button.svg',
+      animations: {
+        hover: { props: { scale: { x: 1.03, y: 1.03 } }, duration: 100 },
+        pressed: { props: { scale: { x: 0.97, y: 0.97 } }, duration: 100 },
+      },
+    });
+    button.anchor.set(0.5);
+    button.layout = { position: 'absolute', top: '10%', left: '95%' };
+    button.onPress.connect(() => {
+      engine().audio.sfx.stop(this.getSoundAlias());
+      void engine().navigation.showPopup(LetterPopup, getNextLetter(this.letter), {
+        animate: false,
+      });
     });
     return button;
   }

@@ -287,8 +287,14 @@ export class KeyboardLayout extends Container {
     this.setListening(true);
   }
 
-  public async playEnterAnimation() {
+  public async playEnterAnimation(animated = true) {
     this.enterExitAnimation?.stop();
+    if (!animated) {
+      this.panel.alpha = 1;
+      this.panel.y = 0;
+      return;
+    }
+
     this.applyHiddenPose();
 
     this.enterExitAnimation = animate(
@@ -299,8 +305,12 @@ export class KeyboardLayout extends Container {
     await this.enterExitAnimation.finished;
   }
 
-  public async playExitAnimation() {
+  public async playExitAnimation(animated = true) {
     this.enterExitAnimation?.stop();
+    if (!animated) {
+      this.applyHiddenPose();
+      return;
+    }
 
     this.enterExitAnimation = animate(
       this.panel,
