@@ -146,7 +146,7 @@ export class TypingInstrumentScreen extends Container {
   private target!: TypingLetter;
   private readonly queueCards: NoteCard[];
   private readonly notes: string[];
-  private readonly queueSize: number;
+  private readonly queueSize = 4;
   private feedbackTimer?: number;
   private noteIndex = 0;
   private paused = true;
@@ -163,7 +163,6 @@ export class TypingInstrumentScreen extends Container {
     const mapUnit = findMapUnitForLevel(typedLevel);
     super();
     this.level = typedLevel;
-    this.queueSize = typedLevel.props.queueSize;
     this.notes = shuffledNotes(typedLevel.props.letters, typedLevel.props.noteCount);
     this.queueCards = Array.from(
       { length: this.queueSize },

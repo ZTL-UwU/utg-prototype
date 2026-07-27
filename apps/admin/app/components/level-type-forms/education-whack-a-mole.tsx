@@ -8,7 +8,7 @@ import {
   LEVEL_PROPS_FORM_ID,
   type LevelPropsFormProps,
 } from '~/components/level-type-forms/shared';
-import { Field, FieldError, FieldGroup, FieldLabel } from '~/components/ui/field';
+import { Field, FieldDescription, FieldError, FieldLabel } from '~/components/ui/field';
 
 export function EducationWhackAMolePropsForm({
   defaultValues,
@@ -40,32 +40,43 @@ export function EducationWhackAMolePropsForm({
         {(field) => {
           const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
           return (
-            <FieldGroup>
+            <Field data-invalid={isInvalid}>
               <FieldLabel>Letters</FieldLabel>
-              <Field data-invalid={isInvalid}>
-                <EducationLetterSelector
-                  value={field.state.value}
-                  onChange={(letters) => {
-                    field.setValue(letters);
-                    field.handleBlur();
-                  }}
-                />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            </FieldGroup>
+              <FieldDescription>Letters used in this level.</FieldDescription>
+              <EducationLetterSelector
+                value={field.state.value}
+                onChange={(letters) => {
+                  field.setValue(letters);
+                  field.handleBlur();
+                }}
+              />
+              {isInvalid && <FieldError errors={field.state.meta.errors} />}
+            </Field>
           );
         }}
       </form.Field>
 
       <form.Field name="moleTurnDelayMs">
         {(field) => (
-          <NumberPropsField field={field} label="Mole turn delay (ms)" min={1} step={50} />
+          <NumberPropsField
+            field={field}
+            label="Mole turn delay (ms)"
+            description="Delay before the next mole turn after an answer."
+            min={1}
+            step={50}
+          />
         )}
       </form.Field>
 
       <form.Field name="initialMoleDelayMs">
         {(field) => (
-          <NumberPropsField field={field} label="Initial mole delay (ms)" min={1} step={50} />
+          <NumberPropsField
+            field={field}
+            label="Initial mole delay (ms)"
+            description="Delay before the first mole appears when the round starts."
+            min={1}
+            step={50}
+          />
         )}
       </form.Field>
     </form>

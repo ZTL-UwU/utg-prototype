@@ -47,13 +47,12 @@ export function defaultTypingSandstormProps(): TypingSandstormProps {
 export const typingInstrumentPropsSchema = z.object({
   letters: z.array(z.string().min(1)),
   noteCount: z.number().int().positive(),
-  queueSize: z.number().int().min(1).max(8),
 });
 
 export type TypingInstrumentProps = z.infer<typeof typingInstrumentPropsSchema>;
 
 export function defaultTypingInstrumentProps(): TypingInstrumentProps {
-  return { letters: [], noteCount: 20, queueSize: 4 };
+  return { letters: [], noteCount: 20 };
 }
 
 export const typingWordsPropsSchema = z.object({

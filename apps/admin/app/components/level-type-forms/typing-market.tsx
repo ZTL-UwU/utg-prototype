@@ -7,7 +7,7 @@ import {
   LEVEL_PROPS_FORM_ID,
   type LevelPropsFormProps,
 } from '~/components/level-type-forms/shared';
-import { Field, FieldError, FieldGroup, FieldLabel } from '~/components/ui/field';
+import { Field, FieldDescription, FieldError, FieldLabel } from '~/components/ui/field';
 import { WordIdsSelector } from '~/components/word-ids-selector';
 
 export function TypingMarketPropsForm({
@@ -40,26 +40,32 @@ export function TypingMarketPropsForm({
         {(field) => {
           const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
           return (
-            <FieldGroup>
+            <Field data-invalid={isInvalid}>
               <FieldLabel>Words</FieldLabel>
-              <Field data-invalid={isInvalid}>
-                <WordIdsSelector
-                  value={field.state.value}
-                  onChange={(wordIds) => {
-                    field.setValue(wordIds);
-                    field.handleBlur();
-                  }}
-                  requireTargetLetter={false}
-                />
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            </FieldGroup>
+              <FieldDescription>Words used in this level.</FieldDescription>
+              <WordIdsSelector
+                value={field.state.value}
+                onChange={(wordIds) => {
+                  field.setValue(wordIds);
+                  field.handleBlur();
+                }}
+                requireTargetLetter={false}
+              />
+              {isInvalid && <FieldError errors={field.state.meta.errors} />}
+            </Field>
           );
         }}
       </form.Field>
 
       <form.Field name="roundCount">
-        {(field) => <NumberPropsField field={field} label="Round count" min={1} />}
+        {(field) => (
+          <NumberPropsField
+            field={field}
+            label="Round count"
+            description="Number of rounds played in this level."
+            min={1}
+          />
+        )}
       </form.Field>
     </form>
   );

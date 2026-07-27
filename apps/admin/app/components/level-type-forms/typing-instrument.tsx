@@ -45,15 +45,20 @@ export function TypingInstrumentPropsForm({
             }}
             isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
             errors={field.state.meta.errors}
+            description="Keyboard letters used for the note sequence."
           />
         )}
       </form.Field>
 
       <form.Field name="noteCount">
-        {(field) => <NumberPropsField field={field} label="Note count" min={1} />}
-      </form.Field>
-      <form.Field name="queueSize">
-        {(field) => <NumberPropsField field={field} label="Queue size" min={1} max={8} />}
+        {(field) => (
+          <NumberPropsField
+            field={field}
+            label="Note count"
+            description="Total notes the player must type."
+            min={1}
+          />
+        )}
       </form.Field>
     </form>
   );

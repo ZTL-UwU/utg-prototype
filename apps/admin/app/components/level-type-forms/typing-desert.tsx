@@ -50,7 +50,15 @@ export function TypingDesertPropsForm({
       </form.Field>
 
       <form.Field name="rowSize">
-        {(field) => <NumberPropsField field={field} label="Row size" min={1} max={12} />}
+        {(field) => (
+          <NumberPropsField
+            field={field}
+            label="Row size"
+            description="Number of letter cards shown in each row."
+            min={1}
+            max={12}
+          />
+        )}
       </form.Field>
     </form>
   );

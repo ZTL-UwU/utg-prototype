@@ -50,11 +50,24 @@ export function GameTandoorRushPropsForm({
       </form.Field>
 
       <form.Field name="targetCount">
-        {(field) => <NumberPropsField field={field} label="Target count" min={1} />}
+        {(field) => (
+          <NumberPropsField
+            field={field}
+            label="Target count"
+            description="How many correct hits are needed to finish the level."
+            min={1}
+          />
+        )}
       </form.Field>
       <form.Field name="roundDurationMs">
         {(field) => (
-          <NumberPropsField field={field} label="Round duration (ms)" min={1} step={1000} />
+          <NumberPropsField
+            field={field}
+            label="Level duration (ms)"
+            description="Time limit for the level in milliseconds."
+            min={1}
+            step={1000}
+          />
         )}
       </form.Field>
     </form>

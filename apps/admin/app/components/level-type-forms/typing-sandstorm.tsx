@@ -45,31 +45,72 @@ export function TypingSandstormPropsForm({
             }}
             isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
             errors={field.state.meta.errors}
+            description="Keyboard letters that can fall during the storm."
           />
         )}
       </form.Field>
 
       <form.Field name="letterGoal">
-        {(field) => <NumberPropsField field={field} label="Letter goal" min={1} />}
+        {(field) => (
+          <NumberPropsField
+            field={field}
+            label="Letter goal"
+            description="How many letters must be typed to finish the level."
+            min={1}
+          />
+        )}
       </form.Field>
       <form.Field name="maxActiveLetters">
-        {(field) => <NumberPropsField field={field} label="Max active letters" min={1} />}
+        {(field) => (
+          <NumberPropsField
+            field={field}
+            label="Max active letters"
+            description="Maximum number of letters falling at the same time."
+            min={1}
+          />
+        )}
       </form.Field>
       <form.Field name="minSpawnDelayMs">
         {(field) => (
-          <NumberPropsField field={field} label="Min spawn delay (ms)" min={0} step={50} />
+          <NumberPropsField
+            field={field}
+            label="Min spawn delay (ms)"
+            description="Shortest wait between letter spawns."
+            min={0}
+            step={50}
+          />
         )}
       </form.Field>
       <form.Field name="maxSpawnDelayMs">
         {(field) => (
-          <NumberPropsField field={field} label="Max spawn delay (ms)" min={0} step={50} />
+          <NumberPropsField
+            field={field}
+            label="Max spawn delay (ms)"
+            description="Longest wait between letter spawns."
+            min={0}
+            step={50}
+          />
         )}
       </form.Field>
       <form.Field name="fallSpeedMin">
-        {(field) => <NumberPropsField field={field} label="Fall speed min" min={1} />}
+        {(field) => (
+          <NumberPropsField
+            field={field}
+            label="Fall speed min"
+            description="Slowest fall speed for letters."
+            min={1}
+          />
+        )}
       </form.Field>
       <form.Field name="fallSpeedMax">
-        {(field) => <NumberPropsField field={field} label="Fall speed max" min={1} />}
+        {(field) => (
+          <NumberPropsField
+            field={field}
+            label="Fall speed max"
+            description="Fastest fall speed for letters."
+            min={1}
+          />
+        )}
       </form.Field>
     </form>
   );
