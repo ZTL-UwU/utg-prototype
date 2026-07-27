@@ -3,7 +3,9 @@ import { useState } from 'react';
 import { AuthCard } from './AuthCard';
 import { AuthSuccess } from './screens/AuthSuccess';
 import { ForgotPasswordForm } from './screens/ForgotPasswordForm';
+import { ForgotPasswordSent } from './screens/ForgotPasswordSent';
 import { LoginForm } from './screens/LoginForm';
+import { ResetPasswordForm } from './screens/ResetPasswordForm';
 import { SignUpForm } from './screens/SignUpForm';
 import type { AuthParentProps, AuthView, LoginCredentials, SignUpData } from './types';
 
@@ -17,6 +19,7 @@ export function AuthParent({
   onLogin,
   onSignUp,
   onForgotPassword,
+  onResetPassword,
   onPlay,
   backdrop = false,
 }: AuthParentProps) {
@@ -42,7 +45,21 @@ export function AuthParent({
   };
 
   const handleForgotPassword = async (email: string) => {
-    await onForgotPassword?.(email);
+    try {
+      await onForgotPassword?.(email);
+    } catch {
+      return;
+    }
+    setView('forgot-sent');
+  };
+
+  const handleResetPassword = async (password: string) => {
+    try {
+      await onResetPassword?.(password);
+    } catch {
+      return;
+    }
+    setView('success');
   };
 
   const handlePlay = onPlay ?? onClose ?? (() => {});
@@ -55,6 +72,10 @@ export function AuthParent({
         return (
           <ForgotPasswordForm onSubmit={handleForgotPassword} onBack={() => setView('login')} />
         );
+      case 'forgot-sent':
+        return <ForgotPasswordSent onBack={() => setView('login')} />;
+      case 'reset':
+        return <ResetPasswordForm onSubmit={handleResetPassword} />;
       case 'success':
         return <AuthSuccess onPlay={handlePlay} />;
       case 'login':
@@ -77,7 +98,10 @@ export function AuthParent({
           : 'pointer-events-none fixed inset-0 grid place-items-center p-4'
       }
     >
-      <AuthCard avatarVariant={view === 'success' ? 'filled' : 'outline'} onClose={onClose}>
+      <AuthCard
+        avatarVariant={view === 'success' || view === 'forgot-sent' ? 'filled' : 'outline'}
+        onClose={onClose}
+      >
         <div key={view} className="auth-screen-enter">
           {renderScreen()}
         </div>

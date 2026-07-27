@@ -1,4 +1,4 @@
-export type AuthView = 'login' | 'signup' | 'forgot' | 'success';
+export type AuthView = 'login' | 'signup' | 'forgot' | 'forgot-sent' | 'reset' | 'success';
 
 export type AvatarVariant = 'outline' | 'filled';
 
@@ -21,6 +21,7 @@ export interface AuthParentProps {
   onLogin?: (credentials: LoginCredentials) => void | Promise<void>;
   onSignUp?: (data: SignUpData) => void | Promise<void>;
   onForgotPassword?: (email: string) => void | Promise<void>;
+  onResetPassword?: (password: string) => void | Promise<void>;
   /** Success CTA. Falls back to `onClose`. */
   onPlay?: () => void;
   /** Dim the game behind the card. Defaults to `false`. */

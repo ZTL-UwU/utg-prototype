@@ -1,15 +1,23 @@
 import { useMutation } from '@tanstack/react-query';
 import { FetchError } from 'ofetch';
+import { useEffect, useState } from 'react';
 import { z } from 'zod';
 
 import { engine } from '../engine/getEngine';
 import { api } from '../lib/api';
+import {
+  clearPasswordResetUrl,
+  getPasswordResetParams,
+  type PasswordResetParams,
+} from '../lib/passwordReset';
 import { useAuthStore, type AuthUser } from '../zustandStores/auth';
 import { useOverlayStore } from '../zustandStores/overlayStore';
 import { AuthParent, type SignUpData } from './auth';
 import { YoutubeEmbedOverlay } from './YoutubeEmbedOverlay';
+
 /** Backing out of auth returns to the regular home screen. */
 function goToHomeScreen() {
+  clearPasswordResetUrl();
   void import('../app/screens/home').then(({ HomeScreen }) =>
     engine().navigation.showScreen(HomeScreen),
   );
@@ -17,10 +25,12 @@ function goToHomeScreen() {
 
 /** Getting through auth continues into the game. */
 function goToLayerSelectScreen() {
+  clearPasswordResetUrl();
   void import('../app/screens/layer-select').then(({ LayerSelectScreen }) =>
     engine().navigation.showScreen(LayerSelectScreen),
   );
 }
+
 const loginSchema = z.object({
   email: z.string().min(1, 'Enter your email.').email('Enter a valid email address.'),
   password: z.string().min(1, 'Enter your password.'),
@@ -41,9 +51,23 @@ function loginRequest(values: LoginValues) {
   });
 }
 
+function alertApiError(error: unknown, fallback: string) {
+  const detail = error instanceof FetchError ? error.data?.detail : undefined;
+  window.alert(typeof detail === 'string' ? detail : fallback);
+}
+
 export function ScreenOverlay() {
   const activeOverlay = useOverlayStore((state) => state.activeOverlay);
   const setAuth = useAuthStore((state) => state.setAuth);
+  const [resetParams, setResetParams] = useState<PasswordResetParams | null>(() =>
+    getPasswordResetParams(),
+  );
+
+  useEffect(() => {
+    if (resetParams !== null) {
+      useOverlayStore.getState().show('auth');
+    }
+  }, [resetParams]);
 
   const { mutateAsync: login } = useMutation({
     mutationFn: loginRequest,
@@ -73,8 +97,36 @@ export function ScreenOverlay() {
       setAuth(data.access, data.refresh, data.user);
     },
     onError: (error) => {
-      const detail = error instanceof FetchError ? error.data?.detail : undefined;
-      window.alert(typeof detail === 'string' ? detail : 'Sign up failed. Please try again.');
+      alertApiError(error, 'Sign up failed. Please try again.');
+    },
+  });
+
+  const { mutateAsync: requestPasswordReset } = useMutation({
+    mutationFn: async (email: string) => {
+      return api<{ detail: string }>('/user/password-reset/request', {
+        method: 'POST',
+        body: { email },
+      });
+    },
+    onError: (error) => {
+      alertApiError(error, 'Could not send reset email. Please try again.');
+    },
+  });
+
+  const { mutateAsync: confirmPasswordReset } = useMutation({
+    mutationFn: async ({ uid, token, password }: PasswordResetParams & { password: string }) => {
+      return api<AuthTokens>('/user/password-reset/confirm', {
+        method: 'POST',
+        body: { uid, token, password },
+      });
+    },
+    onSuccess: (data) => {
+      setAuth(data.access, data.refresh, data.user);
+      clearPasswordResetUrl();
+      setResetParams(null);
+    },
+    onError: (error) => {
+      alertApiError(error, 'Could not reset password. Please try again.');
     },
   });
 
@@ -90,6 +142,7 @@ export function ScreenOverlay() {
     return (
       <div className="pointer-events-none absolute inset-0 z-10">
         <AuthParent
+          initialView={resetParams !== null ? 'reset' : 'login'}
           onClose={goToHomeScreen}
           onPlay={goToLayerSelectScreen}
           onLogin={async (credentials) => {
@@ -99,8 +152,14 @@ export function ScreenOverlay() {
             // Rejecting here is what keeps AuthParent off the success screen.
             await signUp(data);
           }}
-          onForgotPassword={(email) => {
-            console.log('forgot password', email);
+          onForgotPassword={async (email) => {
+            await requestPasswordReset(email);
+          }}
+          onResetPassword={async (password) => {
+            if (resetParams === null) {
+              throw new Error('Missing reset link.');
+            }
+            await confirmPasswordReset({ ...resetParams, password });
           }}
         />
       </div>
