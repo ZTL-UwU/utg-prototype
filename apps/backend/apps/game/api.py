@@ -31,6 +31,19 @@ def _unit_with_levels(unit_id: int) -> Unit:
     return Unit.objects.prefetch_related(Prefetch("levels", queryset=levels)).get(id=unit_id)
 
 
+def _apply_unit_payload(unit: Unit, payload: UnitUpdateIn) -> None:
+    unit.layer = payload.layer
+    unit.title = payload.title
+    unit.title_font_size = payload.title_font_size
+    unit.title_font_color = payload.title_font_color
+    unit.title_is_curved = payload.title_is_curved
+    unit.subtitle_text = payload.subtitle_text
+    unit.subtitle_font_size = payload.subtitle_font_size
+    unit.subtitle_font_color = payload.subtitle_font_color
+    unit.background_asset_path = payload.background_asset_path
+    unit.is_published = payload.is_published
+
+
 def _apply_level_payload(level: Level, payload: LevelWriteIn) -> None:
     level.title = payload.title
     level.level_type = payload.level_type
@@ -110,6 +123,28 @@ def list_units_by_layer(request, layer: Layer):
     )
 
 
+@router.post(
+    "/units",
+    auth=jwt_auth,
+    response={200: UnitByIdOut, 403: ErrorOut},
+    summary="[Admin] Create a unit",
+)
+@require_perm("game.add_unit", message="You do not have permission to create units")
+def create_unit(request, payload: UnitUpdateIn):
+    next_sort_order = (
+        Unit.objects.filter(layer=payload.layer).aggregate(max_sort_order=Max("sort_order"))[
+            "max_sort_order"
+        ]
+        or 0
+    ) + 1
+    unit = Unit(sort_order=next_sort_order)
+    _apply_unit_payload(unit, payload)
+    unit.created_by = request.auth
+    unit.updated_by = request.auth
+    unit.save()
+    return _unit_with_levels(unit.id)
+
+
 @router.get(
     "/units/{unit_id}",
     auth=jwt_auth,
@@ -134,16 +169,7 @@ def update_unit(request, unit_id: int, payload: UnitUpdateIn):
     except Unit.DoesNotExist:
         return Status(404, {"detail": "Unit not found."})
 
-    unit.layer = payload.layer
-    unit.title = payload.title
-    unit.title_font_size = payload.title_font_size
-    unit.title_font_color = payload.title_font_color
-    unit.title_is_curved = payload.title_is_curved
-    unit.subtitle_text = payload.subtitle_text
-    unit.subtitle_font_size = payload.subtitle_font_size
-    unit.subtitle_font_color = payload.subtitle_font_color
-    unit.background_asset_path = payload.background_asset_path
-    unit.is_published = payload.is_published
+    _apply_unit_payload(unit, payload)
     unit.updated_by = request.auth
     unit.save()
     return unit
