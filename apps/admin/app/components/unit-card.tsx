@@ -1,5 +1,5 @@
 import { formatDistanceToNow } from 'date-fns';
-import { Edit2, GripVerticalIcon } from 'lucide-react';
+import { Edit2, GripVerticalIcon, PlusIcon } from 'lucide-react';
 import type { Ref } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -82,6 +82,26 @@ export function UnitCard({
         </Button>
       </CardFooter>
     </Card>
+  );
+}
+
+export function NewUnitCard({ layer }: { layer: string }) {
+  const navigate = useNavigate();
+
+  return (
+    <button
+      type="button"
+      onClick={() => navigate(`/${layer}/new`)}
+      className="group h-full text-left outline-none"
+      aria-label="Add level"
+    >
+      <Card className="h-full min-h-40 border-0 bg-transparent hover:ring-foreground/20 hover:bg-muted/40 transition-colors">
+        <CardContent className="flex flex-1 flex-col items-center justify-center gap-2 text-muted-foreground group-hover:text-foreground">
+          <PlusIcon className="size-6" />
+          <span className="font-heading text-base font-bold">Add level</span>
+        </CardContent>
+      </Card>
+    </button>
   );
 }
 

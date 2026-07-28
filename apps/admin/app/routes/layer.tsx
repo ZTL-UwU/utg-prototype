@@ -6,7 +6,7 @@ import { FetchError } from 'ofetch';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { UnitCard, UnitCardSkeleton } from '~/components/unit-card';
+import { NewUnitCard, UnitCard, UnitCardSkeleton } from '~/components/unit-card';
 import { api } from '~/lib/api';
 import { LAYER_TITLES, isLayer, type Unit } from '~/lib/game';
 import { pageTitle } from '~/lib/page-title';
@@ -90,7 +90,7 @@ export default function LayerPage({ params }: Route.ComponentProps) {
             <UnitCardSkeleton key={index} />
           ))}
         </div>
-      ) : units.length > 0 ? (
+      ) : (
         <DragDropProvider onDragEnd={handleDragEnd}>
           <div
             aria-label="Unit order"
@@ -104,10 +104,9 @@ export default function LayerPage({ params }: Route.ComponentProps) {
                 isReordering={reorderUnits.isPending}
               />
             ))}
+            <NewUnitCard layer={layer} />
           </div>
         </DragDropProvider>
-      ) : (
-        <p className="text-muted-foreground">No units in this layer yet.</p>
       )}
     </div>
   );
