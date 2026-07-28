@@ -1,5 +1,7 @@
+import { ofetch } from 'ofetch';
+
 import { useAuthStore } from '../zustandStores/auth';
-import { api } from './api';
+import { backendUrl } from './env';
 
 const CLOCK_SKEW_MS = 30_000;
 /** Reject entry if refresh would die during a long play session. */
@@ -55,7 +57,8 @@ export async function ensureValidSession(): Promise<boolean> {
   }
 
   try {
-    const data = await api<RefreshResponse>('/user/token/refresh', {
+    const data = await ofetch<RefreshResponse>('/user/token/refresh', {
+      baseURL: backendUrl,
       method: 'POST',
       body: { refresh: refreshToken },
     });

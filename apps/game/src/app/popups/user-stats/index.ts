@@ -80,7 +80,7 @@ export class UserStatsPopup extends Container {
     });
 
     const userName = new Text({
-      text: `${user?.name}`,
+      text: user?.name ?? 'Player',
       style: HEADER_NAME_STYLE,
       layout: true,
     });

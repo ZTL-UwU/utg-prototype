@@ -15,9 +15,14 @@ import { useOverlayStore } from '../zustandStores/overlayStore';
 import { AuthParent, type SignUpData } from './auth';
 import { YoutubeEmbedOverlay } from './YoutubeEmbedOverlay';
 
+function dismissAuthOverlay() {
+  useOverlayStore.getState().hide();
+}
+
 /** Backing out of auth returns to the regular home screen. */
 function goToHomeScreen() {
   clearPasswordResetUrl();
+  dismissAuthOverlay();
   void import('../app/screens/home').then(({ HomeScreen }) =>
     engine().navigation.showScreen(HomeScreen),
   );
@@ -26,6 +31,7 @@ function goToHomeScreen() {
 /** Getting through auth continues into the game. */
 function goToLayerSelectScreen() {
   clearPasswordResetUrl();
+  dismissAuthOverlay();
   void import('../app/screens/layer-select').then(({ LayerSelectScreen }) =>
     engine().navigation.showScreen(LayerSelectScreen),
   );
@@ -33,6 +39,7 @@ function goToLayerSelectScreen() {
 
 /** A fresh signup picks an avatar before continuing into the game. */
 function goToAvatarSelectScreen() {
+  dismissAuthOverlay();
   void import('../app/screens/avatar-select').then(({ AvatarSelectScreen }) =>
     engine().navigation.showScreen(AvatarSelectScreen),
   );
@@ -155,6 +162,7 @@ export function ScreenOverlay() {
       <div className="pointer-events-none absolute inset-0 z-10">
         <AuthParent
           initialView={resetParams !== null ? 'reset' : 'login'}
+          backdrop
           onClose={goToHomeScreen}
           onPlay={goToAvatarSelectScreen}
           onLogin={async (credentials) => {
