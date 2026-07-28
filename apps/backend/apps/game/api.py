@@ -175,6 +175,20 @@ def update_unit(request, unit_id: int, payload: UnitUpdateIn):
     return unit
 
 
+@router.delete(
+    "/units/{unit_id}",
+    auth=jwt_auth,
+    response={204: None, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Delete a unit",
+)
+@require_perm("game.delete_unit", message="You do not have permission to delete units")
+def delete_unit(request, unit_id: int):
+    deleted, _ = Unit.objects.filter(id=unit_id).delete()
+    if not deleted:
+        return Status(404, {"detail": "Unit not found."})
+    return Status(204, None)
+
+
 @router.post(
     "/units/{unit_id}/levels",
     auth=jwt_auth,
