@@ -1,7 +1,6 @@
 import { ofetch } from 'ofetch';
 
 import { useAuthStore } from '../zustandStores/auth';
-import { useOverlayStore } from '../zustandStores/overlayStore';
 import { backendUrl } from './env';
 
 const AUTH_ENDPOINTS = ['/user/login', '/user/register', '/user/token/refresh'];
@@ -57,7 +56,6 @@ export const api = ofetch.create({
     // Refresh token expired or revoked; retrying would just 401 again.
     if (!access) {
       options.retry = false;
-      useOverlayStore.getState().show('auth');
     }
   },
 });
