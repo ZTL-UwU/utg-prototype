@@ -12,6 +12,9 @@ async function refreshAccessToken(): Promise<string | null> {
   const { refreshToken, setTokens, clearTokens } = useAuthStore.getState();
   if (!refreshToken) {
     clearTokens();
+    // [TODO]:
+    // Although this is unlikely to happen since we have the 12h refresh token expiry check on startup, we should still handle this better.
+    // we need to show the auth overlay, and somehow retry the request (w/ a game result queue for game result reporting for example).
     return null;
   }
 
@@ -25,6 +28,7 @@ async function refreshAccessToken(): Promise<string | null> {
     return access;
   } catch {
     clearTokens();
+    // TODO: same as above
     return null;
   }
 }
@@ -56,6 +60,7 @@ export const api = ofetch.create({
     // Refresh token expired or revoked; retrying would just 401 again.
     if (!access) {
       options.retry = false;
+      // TODO: same as above
     }
   },
 });

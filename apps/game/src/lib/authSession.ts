@@ -1,15 +1,8 @@
-import { ofetch } from 'ofetch';
-
 import { useAuthStore } from '../zustandStores/auth';
-import { backendUrl } from './env';
+import { api } from './api';
 
-const CLOCK_SKEW_MS = 30_000;
 /** Reject entry if refresh would die during a long play session. */
 const MIN_REFRESH_REMAINING_MS = 12 * 60 * 60 * 1000;
-
-type RefreshResponse = {
-  access: string;
-};
 
 /** Read `exp` from a JWT without verifying — used only for client-side runway checks. */
 function remainingMsFromJwt(token: string): number | null {
@@ -26,20 +19,13 @@ function remainingMsFromJwt(token: string): number | null {
   }
 }
 
-function isJwtExpired(token: string | null | undefined, skewMs = CLOCK_SKEW_MS): boolean {
-  if (!token) return true;
-  const remaining = remainingMsFromJwt(token);
-  if (remaining == null) return true;
-  return remaining <= skewMs;
-}
-
 /**
  * Ensures the persisted session is usable before entering the game.
  * Requires ≥12h left on the refresh token so a long session won't force re-login mid-play.
- * Refreshes the access token when needed; returns false if the user must log in.
+ * Returns false if the user must log in.
  */
 export async function ensureValidSession(): Promise<boolean> {
-  const { accessToken, refreshToken, user, setTokens, clearTokens } = useAuthStore.getState();
+  const { refreshToken, user, clearTokens } = useAuthStore.getState();
 
   if (!refreshToken || !user) {
     return false;
@@ -52,17 +38,12 @@ export async function ensureValidSession(): Promise<boolean> {
     return false;
   }
 
-  if (accessToken && !isJwtExpired(accessToken)) {
-    return true;
-  }
-
+  // Call the profile api to check if the session is truly valid
+  // If the access token is expired, the api will auto refresh it
   try {
-    const data = await ofetch<RefreshResponse>('/user/token/refresh', {
-      baseURL: backendUrl,
-      method: 'POST',
-      body: { refresh: refreshToken },
+    await api('/user/profile', {
+      method: 'GET',
     });
-    setTokens(data.access, refreshToken);
     return true;
   } catch {
     clearTokens();
