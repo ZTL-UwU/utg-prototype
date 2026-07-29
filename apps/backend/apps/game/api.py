@@ -126,7 +126,7 @@ def list_units_by_layer(request, layer: Layer):
 @router.post(
     "/units",
     auth=jwt_auth,
-    response={200: UnitByIdOut, 403: ErrorOut},
+    response={200: UnitByIdOut, 400: ErrorOut, 403: ErrorOut},
     summary="[Admin] Create a unit",
 )
 @require_perm("game.add_unit", message="You do not have permission to create units")
@@ -192,7 +192,7 @@ def delete_unit(request, unit_id: int):
 @router.post(
     "/units/{unit_id}/levels",
     auth=jwt_auth,
-    response={200: LevelOut, 403: ErrorOut, 404: ErrorOut},
+    response={200: LevelOut, 400: ErrorOut, 403: ErrorOut, 404: ErrorOut},
     summary="[Admin] Create a level in a unit",
 )
 @require_perm("game.add_level", message="You do not have permission to create levels")
@@ -222,7 +222,7 @@ def create_level(request, unit_id: int, payload: LevelWriteIn):
 @router.patch(
     "/levels/{level_id}",
     auth=jwt_auth,
-    response={200: LevelOut, 403: ErrorOut, 404: ErrorOut},
+    response={200: LevelOut, 400: ErrorOut, 403: ErrorOut, 404: ErrorOut},
     summary="[Admin] Update a level",
 )
 @require_perm("game.change_level", message="You do not have permission to edit levels")
