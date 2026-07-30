@@ -65,7 +65,7 @@ export function GameTandoorRushPropsForm({
             field={field}
             label="Level duration (ms)"
             description="Time limit for the level in milliseconds."
-            min={1}
+            min={1000}
             step={1000}
           />
         )}

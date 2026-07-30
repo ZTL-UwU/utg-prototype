@@ -93,7 +93,7 @@ export function defaultGameNaanStackProps(): GameNaanStackProps {
     letters: [],
     plateCapacity: 6,
     maxLives: 5,
-    spawnDelayMs: 1200,
-    moveSpeed: 220,
+    spawnDelayMs: 3000,
+    moveSpeed: 100,
   };
 }

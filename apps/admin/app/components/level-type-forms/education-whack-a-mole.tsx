@@ -62,7 +62,7 @@ export function EducationWhackAMolePropsForm({
             field={field}
             label="Mole turn delay (ms)"
             description="Delay before the next mole turn after an answer."
-            min={1}
+            min={0}
             step={50}
           />
         )}
@@ -74,7 +74,7 @@ export function EducationWhackAMolePropsForm({
             field={field}
             label="Initial mole delay (ms)"
             description="Delay before the first mole appears when the round starts."
-            min={1}
+            min={0}
             step={50}
           />
         )}
