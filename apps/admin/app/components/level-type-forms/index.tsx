@@ -13,6 +13,7 @@ import { EducationSheepPropsForm } from '~/components/level-type-forms/education
 import { EducationSheepJumpPropsForm } from '~/components/level-type-forms/education-sheep-jump';
 import { EducationWhackAMolePropsForm } from '~/components/level-type-forms/education-whack-a-mole';
 import { EducationWordPropsForm } from '~/components/level-type-forms/education-word';
+import { GameNaanStackPropsForm } from '~/components/level-type-forms/game-naan-stack';
 import { GameTandoorRushPropsForm } from '~/components/level-type-forms/game-tandoor-rush';
 import { type LevelPropsFormProps } from '~/components/level-type-forms/shared';
 import { TypingDesertPropsForm } from '~/components/level-type-forms/typing-desert';
@@ -46,6 +47,7 @@ const levelTypePropsForms = {
   'typing-word': TypingWordPropsForm,
   'typing-market': TypingMarketPropsForm,
   'game-tandoor-rush': GameTandoorRushPropsForm,
+  'game-naan-stack': GameNaanStackPropsForm,
 } satisfies { [K in LevelTypeId]: LevelPropsFormComponent<K> };
 
 function resolveDefaultProps(level: Level | null, levelType: LevelTypeId) {
