@@ -105,3 +105,14 @@ class Word(AuditingMixin, models.Model):
 
     def __str__(self) -> str:
         return self.word
+
+
+class Sentence(AuditingMixin, models.Model):
+    sentence = models.TextField()
+    translation = models.TextField(null=True, blank=True)
+
+    class Meta:
+        db_table = "sentences"
+
+    def __str__(self) -> str:
+        return self.sentence

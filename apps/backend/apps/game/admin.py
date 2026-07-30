@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps.game.models import Level, Mascot, Unit, Word
+from apps.game.models import Level, Mascot, Sentence, Unit, Word
 
 
 @admin.register(Unit)
@@ -38,3 +38,10 @@ class WordAdmin(admin.ModelAdmin):
     list_display = ("word", "target_letter", "image", "audio")
     list_filter = ("target_letter",)
     search_fields = ("word", "target_letter")
+
+
+@admin.register(Sentence)
+class SentenceAdmin(admin.ModelAdmin):
+    list_display = ("sentence", "translation", "is_published", "is_active")
+    list_filter = ("is_published", "is_active")
+    search_fields = ("sentence", "translation")

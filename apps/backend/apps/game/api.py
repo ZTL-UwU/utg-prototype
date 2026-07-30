@@ -5,13 +5,16 @@ from ninja import File, Form, Router, Status, UploadedFile
 
 from apps.common.auth import jwt_auth
 from apps.common.permissions import require_perm
-from apps.game.models import Layer, Level, LevelType, Mascot, Unit, Word
+from apps.game.models import Layer, Level, LevelType, Mascot, Sentence, Unit, Word
 from apps.game.schemas import (
     ErrorOut,
     LevelOrderIn,
     LevelOut,
     LevelWriteIn,
     MascotOut,
+    SentenceIn,
+    SentenceOut,
+    SentenceSimpleOut,
     SidebarUnitOut,
     UnitByIdOut,
     UnitByLayerOut,
@@ -417,4 +420,77 @@ def delete_word(request, word_id: int):
     deleted, _ = Word.objects.filter(id=word_id).delete()
     if not deleted:
         return Status(404, {"detail": "Word not found."})
+    return Status(204, None)
+
+
+@router.post(
+    "/sentences",
+    auth=jwt_auth,
+    response={200: SentenceOut, 403: ErrorOut},
+    summary="[Admin] Create a sentence",
+)
+@require_perm("game.add_sentence", message="You do not have permission to create sentences")
+def create_sentence(request, data: SentenceIn):
+    sentence = Sentence.objects.create(
+        sentence=data.sentence,
+        translation=data.translation or None,
+        created_by=request.auth,
+        updated_by=request.auth,
+    )
+    return 200, sentence
+
+
+@router.get(
+    "/sentences/list",
+    auth=jwt_auth,
+    response={200: list[SentenceOut], 403: ErrorOut},
+    summary="[Admin] List all sentences",
+)
+@require_perm("game.view_sentence", message="You do not have permission to view sentences")
+def list_sentences(request):
+    return Sentence.objects.order_by("-updated_at", "-id")
+
+
+@router.get(
+    "/sentences/list-simple",
+    response=list[SentenceSimpleOut],
+    summary="[Public] List published sentences (simple version)",
+)
+def list_sentences_simple(request):
+    return Sentence.objects.filter(is_active=True, is_published=True).only(
+        "id", "sentence"
+    )
+
+
+@router.patch(
+    "/sentences/{sentence_id}",
+    auth=jwt_auth,
+    response={200: SentenceOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Update a sentence",
+)
+@require_perm("game.change_sentence", message="You do not have permission to update sentences")
+def update_sentence(request, sentence_id: int, data: SentenceIn):
+    try:
+        sentence = Sentence.objects.get(id=sentence_id)
+    except Sentence.DoesNotExist:
+        return Status(404, {"detail": "Sentence not found."})
+
+    sentence.sentence = data.sentence
+    sentence.translation = data.translation or None
+    sentence.updated_by = request.auth
+    sentence.save()
+    return sentence
+
+
+@router.delete(
+    "/sentences/{sentence_id}",
+    auth=jwt_auth,
+    response={204: None, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Delete a sentence",
+)
+@require_perm("game.delete_sentence", message="You do not have permission to delete sentences")
+def delete_sentence(request, sentence_id: int):
+    deleted, _ = Sentence.objects.filter(id=sentence_id).delete()
+    if not deleted:
+        return Status(404, {"detail": "Sentence not found."})
     return Status(204, None)

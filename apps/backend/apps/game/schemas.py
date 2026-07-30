@@ -201,6 +201,23 @@ class WordSimpleOut(Schema):
     def resolve_audio_url(obj) -> str | None:
         return obj.audio.url if obj.audio else None
 
+
+class SentenceIn(Schema):
+    sentence: str
+    translation: str | None = None
+
+
+class SentenceOut(Schema):
+    id: int
+    sentence: str
+    translation: str | None
+
+
+class SentenceSimpleOut(Schema):
+    id: int
+    sentence: str
+
+
 class LevelOrderIn(Schema):
     level_ids: list[int]
 
