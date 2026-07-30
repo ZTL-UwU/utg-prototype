@@ -22,6 +22,7 @@ class LevelType(models.TextChoices):
     TYPING_INSTRUMENT = "typing-instrument", "Typing instrument"
     TYPING_WORD = "typing-word", "Typing word"
     TYPING_MARKET = "typing-market", "Typing market"
+    TYPING_STORY = "typing-story", "Typing story"
     GAME_TANDOOR_RUSH = "game-tandoor-rush", "Game tandoor rush"
     GAME_NAAN_STACK = "game-naan-stack", "Game stack the naan"
 
