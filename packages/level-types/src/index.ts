@@ -41,6 +41,11 @@ export {
 } from './schemas/education-words';
 export { defaultEmptyProps, emptyPropsSchema, type EmptyProps } from './schemas/empty-props';
 export {
+  defaultGameFruitFallProps,
+  gameFruitFallPropsSchema,
+  type GameFruitFallProps,
+} from './schemas/game-fruit-fall';
+export {
   defaultGameTandoorRushProps,
   defaultTypingDesertProps,
   defaultTypingInstrumentProps,
@@ -64,6 +69,7 @@ export { educationSheep } from './types/education-sheep';
 export { educationSheepJump } from './types/education-sheep-jump';
 export { educationWhackAMole } from './types/education-whack-a-mole';
 export { educationWord } from './types/education-word';
+export { gameFruitFall } from './types/game-fruit-fall';
 export { gameTandoorRush } from './types/game-tandoor-rush';
 export { typingDesert } from './types/typing-desert';
 export { typingInstrument } from './types/typing-instrument';
