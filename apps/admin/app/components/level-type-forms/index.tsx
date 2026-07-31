@@ -20,6 +20,7 @@ import { TypingDesertPropsForm } from '~/components/level-type-forms/typing-dese
 import { TypingInstrumentPropsForm } from '~/components/level-type-forms/typing-instrument';
 import { TypingMarketPropsForm } from '~/components/level-type-forms/typing-market';
 import { TypingSandstormPropsForm } from '~/components/level-type-forms/typing-sandstorm';
+import { TypingStoryPropsForm } from '~/components/level-type-forms/typing-story';
 import { TypingWordPropsForm } from '~/components/level-type-forms/typing-word';
 import type { Level } from '~/lib/game';
 
@@ -46,6 +47,7 @@ const levelTypePropsForms = {
   'typing-instrument': TypingInstrumentPropsForm,
   'typing-word': TypingWordPropsForm,
   'typing-market': TypingMarketPropsForm,
+  'typing-story': TypingStoryPropsForm,
   'game-tandoor-rush': GameTandoorRushPropsForm,
   'game-naan-stack': GameNaanStackPropsForm,
 } satisfies { [K in LevelTypeId]: LevelPropsFormComponent<K> };

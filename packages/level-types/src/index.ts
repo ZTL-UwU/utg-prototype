@@ -46,18 +46,21 @@ export {
   defaultTypingDesertProps,
   defaultTypingInstrumentProps,
   defaultTypingSandstormProps,
+  defaultTypingStoryProps,
   defaultTypingWordsProps,
   gameNaanStackPropsSchema,
   gameTandoorRushPropsSchema,
   typingDesertPropsSchema,
   typingInstrumentPropsSchema,
   typingSandstormPropsSchema,
+  typingStoryPropsSchema,
   typingWordsPropsSchema,
   type GameNaanStackProps,
   type GameTandoorRushProps,
   type TypingDesertProps,
   type TypingInstrumentProps,
   type TypingSandstormProps,
+  type TypingStoryProps,
   type TypingWordsProps,
 } from './schemas/typing-game';
 export { educationBubble } from './types/education-bubble';
@@ -73,4 +76,5 @@ export { typingDesert } from './types/typing-desert';
 export { typingInstrument } from './types/typing-instrument';
 export { typingMarket } from './types/typing-market';
 export { typingSandstorm } from './types/typing-sandstorm';
+export { typingStory } from './types/typing-story';
 export { typingWord } from './types/typing-word';

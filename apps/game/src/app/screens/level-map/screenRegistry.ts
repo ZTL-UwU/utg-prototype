@@ -14,6 +14,7 @@ import { TypingSandstormScreen } from '../typing-level/level-2';
 import { TypingInstrumentScreen } from '../typing-level/level-3';
 import { TypingWordScreen } from '../typing-level/level-4';
 import { TypingMarketScreen } from '../typing-level/level-5';
+import { TypingSentenceScreen } from '../typing-level/level-6';
 import type { LevelScreenConstructor } from './units';
 
 /** Maps backend `level_type` ids to Pixi screen constructors. */
@@ -30,6 +31,7 @@ export const LEVEL_TYPE_SCREENS: Record<LevelTypeId, LevelScreenConstructor> = {
   'typing-instrument': TypingInstrumentScreen,
   'typing-word': TypingWordScreen,
   'typing-market': TypingMarketScreen,
+  'typing-story': TypingSentenceScreen,
   'game-tandoor-rush': GameLevelOneScreen,
   'game-naan-stack': GameNaanStackScreen,
 };

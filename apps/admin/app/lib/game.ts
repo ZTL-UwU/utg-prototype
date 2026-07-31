@@ -123,6 +123,19 @@ export const wordsQueryOptions = queryOptions({
   staleTime: Infinity,
 });
 
+/** Mirrors SentenceOut from apps/game/schemas.py. */
+export interface Sentence {
+  id: number;
+  sentence: string;
+  translation: string | null;
+}
+
+export const sentencesQueryOptions = queryOptions({
+  queryKey: ['sentences', 'list'],
+  queryFn: () => api<Sentence[]>('/sentences/list'),
+  staleTime: Infinity,
+});
+
 export function unitsByLayer(units: SidebarUnit[]): Record<Layer, SidebarUnit[]> {
   const grouped: Record<Layer, SidebarUnit[]> = { education: [], typing: [], game: [] };
   for (const unit of units) {

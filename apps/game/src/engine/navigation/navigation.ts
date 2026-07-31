@@ -1,6 +1,7 @@
 import type { Ticker } from 'pixi.js';
 import { Assets, BigPool, Container } from 'pixi.js';
 
+import { ensureSentencesReady, REMOTE_SENTENCES_BUNDLE } from '../../zustandStores/sentenceStore';
 import { ensureWordsReady, REMOTE_WORDS_BUNDLE } from '../../zustandStores/wordStore';
 import type { CreationEngine } from '../engine';
 
@@ -77,12 +78,16 @@ export class Navigation {
   }
 
   /**
-   * Screens that list `REMOTE_WORDS_BUNDLE` need the word catalog registered
-   * before Pixi can load that bundle.
+   * Screens that list remote catalog bundles need those catalogs registered
+   * before Pixi can load the (possibly empty) bundle.
    */
   private async ensureBundlesReady(assetBundles?: string[]) {
-    if (!assetBundles?.includes(REMOTE_WORDS_BUNDLE)) return;
-    await ensureWordsReady();
+    if (assetBundles?.includes(REMOTE_WORDS_BUNDLE)) {
+      await ensureWordsReady();
+    }
+    if (assetBundles?.includes(REMOTE_SENTENCES_BUNDLE)) {
+      await ensureSentencesReady();
+    }
   }
 
   /** Subscribe to completed screen changes. */

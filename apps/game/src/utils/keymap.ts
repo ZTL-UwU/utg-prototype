@@ -54,7 +54,7 @@ const DEFAULT_LAYER: Record<string, string> = {
   Period: '.',
   Slash: 'ئ',
   AltLeft: '*Menu*',
-  Space: '',
+  Space: ' ',
   Enter: '*Enter*',
 };
 
@@ -91,7 +91,7 @@ const SHIFT_LAYER: Record<string, string> = {
   Period: '<',
   Slash: '؟',
   AltLeft: '*Menu*',
-  Space: '',
+  Space: ' ',
   Enter: '*Enter*',
 };
 
@@ -130,7 +130,7 @@ export function formatKeyboardLabel(text: string): string {
 
 export function getKeyboardLabel(code: string, shift: boolean): string {
   const mapped = getMappedFromKeyCode(code, shift);
-  if (mapped.length > 0) {
+  if (mapped.trim().length > 0) {
     return formatKeyboardLabel(mapped);
   }
   return AUXILIARY_LABELS[code] ?? '';

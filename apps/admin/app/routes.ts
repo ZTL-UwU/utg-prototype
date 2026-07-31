@@ -5,6 +5,7 @@ export default [
   layout('routes/app-layout.tsx', [
     index('routes/home.tsx'),
     route('words', 'routes/words.tsx'),
+    route('sentences', 'routes/sentences.tsx'),
     route(':layer', 'routes/layer.tsx'),
     route(':layer/new', 'routes/unit-new.tsx'),
     route(':layer/:unitId', 'routes/unit.tsx'),

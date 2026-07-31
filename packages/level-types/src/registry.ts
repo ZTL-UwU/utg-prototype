@@ -14,6 +14,7 @@ import { typingDesert } from './types/typing-desert';
 import { typingInstrument } from './types/typing-instrument';
 import { typingMarket } from './types/typing-market';
 import { typingSandstorm } from './types/typing-sandstorm';
+import { typingStory } from './types/typing-story';
 import { typingWord } from './types/typing-word';
 
 /**
@@ -38,6 +39,7 @@ export const LEVEL_TYPES = {
   'typing-instrument': typingInstrument,
   'typing-word': typingWord,
   'typing-market': typingMarket,
+  'typing-story': typingStory,
   'game-tandoor-rush': gameTandoorRush,
   'game-naan-stack': gameNaanStack,
 } as const satisfies Record<string, LevelTypeConfig>;
