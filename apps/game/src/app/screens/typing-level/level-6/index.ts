@@ -280,7 +280,6 @@ export class TypingSentenceScreen extends Container {
     const matched = typedLetter.length > 0 && sentence.startsWith(typedLetter, activeLetterIdx);
     if (matched) {
       this.keyboard.setKeyFeedback(event.code, 'success');
-      void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
       setTimeout(() => this.keyboard.clearKeyFeedback(event.code), FEEDBACK_DURATION_MS);
       useSessionStore.getState().recordCorrect();
       await this.advanceHighlightedLetter(typedLetter.length);
@@ -303,6 +302,7 @@ export class TypingSentenceScreen extends Container {
       this.resolving = true;
       this.timerRunning = false;
       this.completedRounds += 1;
+      void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
       await this.playSuccessFlash();
       this.popAndStartRound();
       this.resolving = false;
