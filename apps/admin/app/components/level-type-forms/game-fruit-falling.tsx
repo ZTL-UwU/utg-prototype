@@ -93,6 +93,17 @@ export function GameFruitFallingPropsForm({
           />
         )}
       </form.Field>
+      <form.Field name="totalFruits">
+        {(field) => (
+          <NumberPropsField
+            field={field}
+            label="Total Fruits"
+            description="Total fruits to complete the level. Leaving this as 0 ensures each selected letter is one fruit"
+            min={0}
+            step={1}
+          />
+        )}
+      </form.Field>
     </form>
   );
 }

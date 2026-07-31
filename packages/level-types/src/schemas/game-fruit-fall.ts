@@ -7,6 +7,7 @@ export const gameFruitFallPropsSchema = z
     minSpawnDelayMs: z.number().nonnegative(),
     maxSpawnDelayMs: z.number().nonnegative(),
     fallVelocity: z.number().positive(),
+    totalFruits: z.number().int().nonnegative(),
   })
   .refine((v) => v.minSpawnDelayMs <= v.maxSpawnDelayMs, {
     message: 'minSpawnDelayMs must be ≤ maxSpawnDelayMs',
@@ -22,5 +23,6 @@ export function defaultGameFruitFallProps(): GameFruitFallProps {
     minSpawnDelayMs: 1000,
     maxSpawnDelayMs: 2000,
     fallVelocity: 0.05,
+    totalFruits: 0,
   };
 }

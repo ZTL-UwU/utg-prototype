@@ -41,9 +41,14 @@ export class GameLevelFruitScreen extends Container {
   private keyboardLayout: KeyboardLayout;
   private hud: HUD;
   private basketAnimation?: AnimationPlaybackControls;
+  private totalFruits: number;
 
   constructor(level: TLevel) {
     super();
+    this.background = new Sprite({
+      texture: Texture.from('game-levels/game-level-fruit/background.png'),
+      layout: { position: 'absolute', width: '100%', height: '100%' },
+    });
     const typedLevel = getTypedLevel(level, 'game-fruit-fall');
     this.level = typedLevel;
     const props = typedLevel.props;
@@ -51,15 +56,16 @@ export class GameLevelFruitScreen extends Container {
     this.minSpawnDelayMs = props.minSpawnDelayMs;
     this.maxSpawnDelayMs = props.maxSpawnDelayMs;
     this.fallVelocity = props.fallVelocity;
+    this.totalFruits = props.totalFruits;
 
-    this.background = new Sprite({
-      texture: Texture.from('game-levels/game-level-fruit/background.png'),
-      layout: { position: 'absolute', width: '100%', height: '100%' },
-    });
-    // build all fruits from the level's letters
-    this.allFruits = props.letters.map((letter: string) => {
+    const bufferFruits = props.letters.map((letter: string) => {
       return new Fruit({ letter });
     });
+    bufferFruits.sort(() => Math.random() - 0.5);
+
+    // build all fruits from the level's letters
+    this.allFruits =
+      this.totalFruits === 0 ? bufferFruits : bufferFruits.splice(0, this.totalFruits);
     this.fallingFruits = [];
     this.keyboardLayout = new KeyboardLayout(GREEN_KB_COLOR_OPTIONS);
     this.spawnTimer = 0; // spawnTimer at 0 indicates new fruit should be spawned.
