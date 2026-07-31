@@ -25,7 +25,7 @@ class LevelType(models.TextChoices):
     TYPING_STORY = "typing-story", "Typing story"
     GAME_TANDOOR_RUSH = "game-tandoor-rush", "Game tandoor rush"
     GAME_NAAN_STACK = "game-naan-stack", "Game stack the naan"
-
+    GAME_FRUIT_FALL = "game-fruit-fall", "Game fruit fall"
 
 
 class Unit(AuditingMixin, models.Model):
