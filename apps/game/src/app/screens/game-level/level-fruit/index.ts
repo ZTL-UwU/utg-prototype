@@ -180,7 +180,7 @@ export class GameLevelFruitScreen extends Container {
     this.basketAnimation?.stop();
     this.basketAnimation = animate(this.basket, { x: targetX }, { duration: 0.3, ease: 'backOut' });
 
-    // pop the fruit into the basket: drop to the basket, brief scale-up then collapse
+    // pop the fruit into the basket
     await Promise.all([
       animate(fruit, { x: targetX, y: this.basket.position.y }, { duration: 0.35, ease: 'backIn' }),
       animate(
@@ -203,7 +203,7 @@ export class GameLevelFruitScreen extends Container {
       f.position.y += deltaMs * this.fallVelocity;
       if (f.isPlayable && f.position.y > basketY) f.isPlayable = false;
       if (f.position.y - f.height > bottom) {
-        // fell past the basket without being caught — count it as a miss
+        // fell past the basket without being caught
         useSessionStore.getState().recordMistake();
         this.removeChild(f);
         this.fallingFruits.splice(i, 1);

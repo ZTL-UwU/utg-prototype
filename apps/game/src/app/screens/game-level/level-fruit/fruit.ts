@@ -3,20 +3,27 @@ import { Container, Sprite, Text, Texture } from 'pixi.js';
 export type FruitProps = {
   letter: string;
 };
+
+const FRUIT_NAMES = ['almond', 'grape', 'pomegranate', 'walnut'] as const;
+
+// folder + filename define the assetpack alias; keep in sync with assets/.../fruits/{fresh,rotten}/
+const fruitTexturePath = (fruit: string, state: 'fresh' | 'rotten') =>
+  `game-levels/game-level-fruit/${state}/${fruit}.png`;
+
 export class Fruit extends Container {
   public static assetBundles = ['game-level-fruit'];
 
   private fruitAsset: Sprite;
+  private readonly fruitName: string;
   public letter: string;
-  public isPlayable = true;
+  private _isPlayable = true;
   private text: Text;
   constructor({ letter }: FruitProps) {
     super();
     this.letter = letter;
-    //random asset
-    this.fruitAsset = new Sprite(
-      Texture.from(`game-levels/game-level-fruit/fruits/${Math.floor(12 * Math.random())}.png`),
-    );
+    // random fruit, spawned fresh
+    this.fruitName = FRUIT_NAMES[Math.floor(FRUIT_NAMES.length * Math.random())];
+    this.fruitAsset = new Sprite(Texture.from(fruitTexturePath(this.fruitName, 'fresh')));
     this.text = new Text({
       text: letter,
       style: {
@@ -31,7 +38,19 @@ export class Fruit extends Container {
     this.addChild(this.fruitAsset, this.text);
   }
 
+  get isPlayable() {
+    return this._isPlayable;
+  }
+  set isPlayable(value: boolean) {
+    if (this._isPlayable === value) return;
+    this._isPlayable = value;
+    if (!value) {
+      // fell past the basket — show the rotten variant
+      this.fruitAsset.texture = Texture.from(fruitTexturePath(this.fruitName, 'rotten'));
+    }
+  }
+
   public markCorrect() {
-    this.fruitAsset.tint = 0x8ec24d; // standard success green used across the game
+    this.fruitAsset.tint = 0x8ec24d;
   }
 }
