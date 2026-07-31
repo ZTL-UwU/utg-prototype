@@ -22,7 +22,7 @@ import {
   getTypedLevel,
   type TLevel,
 } from '../../level-map/units';
-import { generateRoundsDictionary, type Round } from '../level-4';
+import { generateRoundsDictionary, type Round } from '../level-word';
 
 const FONT_SIZE = 100;
 const PAD_Y = 75;
@@ -37,14 +37,16 @@ const CARD_COLORS = {
 };
 
 function randomTouristTexture() {
-  return Texture.from(`typing-levels/typing-level-5/tourist-${Math.ceil(Math.random() * 2)}.png`);
+  return Texture.from(
+    `typing-levels/typing-level-market/tourist-${Math.ceil(Math.random() * 2)}.png`,
+  );
 }
 
 export class TypingMarketScreen extends Container {
-  public static assetBundles = ['typing-level', 'typing-level-5', REMOTE_WORDS_BUNDLE];
+  public static assetBundles = ['typing-level', 'typing-level-market', REMOTE_WORDS_BUNDLE];
   public static helpAssets = [
-    'tutorial-popups/typing-level-5-1.png',
-    'tutorial-popups/typing-level-5-2.png',
+    'tutorial-popups/typing-level-market-1.png',
+    'tutorial-popups/typing-level-market-2.png',
   ];
 
   private background: Sprite;
@@ -71,7 +73,7 @@ export class TypingMarketScreen extends Container {
     this.level = typedLevel;
 
     this.background = new Sprite({
-      texture: Texture.from('typing-levels/typing-level-5/background.png'),
+      texture: Texture.from('typing-levels/typing-level-market/background.png'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
 
@@ -94,7 +96,7 @@ export class TypingMarketScreen extends Container {
     this.rounds = generateRoundsDictionary(typedLevel.props.wordIds, typedLevel.props.roundCount);
 
     this.card = new Sprite({
-      texture: Texture.from('typing-levels/typing-level-5/card-background.png'),
+      texture: Texture.from('typing-levels/typing-level-market/card-background.png'),
       layout: { position: 'absolute', width: '100%', height: '100%' },
     });
     this.wordText = new HTMLText({ style: this.wordStyle });
