@@ -4,7 +4,17 @@ export type FruitProps = {
   letter: string;
 };
 
-const FRUIT_NAMES = ['almond', 'grape', 'pomegranate', 'walnut'] as const;
+const FRUIT_NAMES = [
+  'almond',
+  'grape',
+  'pomegranate',
+  'walnut',
+  'apple',
+  'fig',
+  'mulberry',
+  'pear',
+  'date',
+] as const;
 
 // folder + filename define the assetpack alias; keep in sync with assets/.../fruits/{fresh,rotten}/
 const fruitTexturePath = (fruit: string, state: 'fresh' | 'rotten') =>
