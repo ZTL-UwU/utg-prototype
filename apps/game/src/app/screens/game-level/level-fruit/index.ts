@@ -20,6 +20,7 @@ const GREEN_KB_COLOR_OPTIONS: KeyboardColorOptions = {
   SHIFT_HINT_COLOR: 0xffde59,
 };
 
+const SPAWN_X_PADDING = 100;
 const FEEDBACK_DURATION_MS: number = 350;
 
 export class GameLevelFruitScreen extends Container {
@@ -126,7 +127,10 @@ export class GameLevelFruitScreen extends Container {
   private spawnFruit() {
     const nextFruit = this.allFruits.pop();
     if (!nextFruit) return;
-    nextFruit.position.set(randomBetween(50, this.background.width - 50), 0);
+    nextFruit.position.set(
+      randomBetween(SPAWN_X_PADDING, this.background.width - SPAWN_X_PADDING),
+      0,
+    );
     // keep fruits below the HUD so the back button stays clickable
     this.addChildAt(nextFruit, this.getChildIndex(this.hud));
     this.fallingFruits.push(nextFruit);
