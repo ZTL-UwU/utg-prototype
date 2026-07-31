@@ -7,8 +7,10 @@ import { engine } from '../../../engine/getEngine';
 import { ensureValidSession } from '../../../lib/authSession';
 import { continueIntoGame } from '../../../utils/continueIntoGame';
 import { useAuthStore } from '../../../zustandStores/auth';
+import type { ORTHO_ENUM } from '../../../zustandStores/scriptState';
 import { AuthScreen } from './auth';
 import { Butterfly } from './butterfly';
+import { ScriptButton } from './script-button';
 
 const TITLE_ENTER_OFFSET = 60;
 const BUTTON_ENTER_OFFSET = 40;
@@ -22,6 +24,7 @@ export class HomeScreen extends Container {
   private butterfly: Butterfly;
   private startButton: FancyButton;
   private titleContainer: Container;
+  private scriptButtonContainer: Container;
   private title: Text;
   private subtitle: Text;
 
@@ -31,7 +34,8 @@ export class HomeScreen extends Container {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 150,
+        // gap: 150,
+        gap: 60,
       },
     });
 
@@ -54,6 +58,21 @@ export class HomeScreen extends Container {
         gap: 24,
       },
     });
+    this.scriptButtonContainer = new Container({
+      layout: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 40,
+      },
+    });
+
+    const scripts: ORTHO_ENUM[] = ['ug-ab', 'ug-cy', 'ug-la'];
+    for (const s of scripts) {
+      const btn = new ScriptButton(s);
+      btn.layout = { width: ScriptButton.BTN_WIDTH, height: ScriptButton.BTN_HEIGHT, isLeaf: true };
+      this.scriptButtonContainer.addChild(btn);
+    }
 
     const textDropShadow: Partial<TextDropShadow> = {
       color: 0x000000,
@@ -148,8 +167,12 @@ export class HomeScreen extends Container {
         }
       })();
     });
+    const bottomGroup = new Container({
+      layout: { flexDirection: 'column', alignItems: 'center', gap: 30 }, // tight gap here
+    });
+    bottomGroup.addChild(this.startButton, this.scriptButtonContainer);
 
-    this.addChild(this.background, this.butterfly, this.titleContainer, this.startButton);
+    this.addChild(this.background, this.butterfly, this.titleContainer, bottomGroup);
   }
 
   /** Prepare the screen just before showing */
