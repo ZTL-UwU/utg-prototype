@@ -75,7 +75,7 @@ export class HomeScreen extends Container {
     });
 
     this.subtitle = new Text({
-      text: 'A TYPICAL ADVENTURE!',
+      text: 'A TYPING ADVENTURE!',
       style: {
         fill: 0xffffff,
         fontFamily: 'Concert One',
