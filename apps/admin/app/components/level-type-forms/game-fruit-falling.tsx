@@ -98,7 +98,7 @@ export function GameFruitFallingPropsForm({
           <NumberPropsField
             field={field}
             label="Total Fruits"
-            description="Total fruits to complete the level. Leaving this as 0 ensures each selected letter is one fruit"
+            description="Total fruits to complete the level. Leaving this as 0 plays every selected letter exactly once"
             min={0}
             step={1}
           />
