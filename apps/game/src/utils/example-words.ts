@@ -38,6 +38,28 @@ export function createTypingWordStyle(fontSize: number, color: number): HTMLText
   });
 }
 
+const SENTENCE_COLORS = {
+  COMPLETED: 0x3d3d3d,
+  REMAINING: 0xb0b0b0,
+} as const;
+
+export function createTypingSentenceStyle(fontSize: number): HTMLTextStyle {
+  return new HTMLTextStyle({
+    fontSize,
+    fill: SENTENCE_COLORS.REMAINING,
+    fontFamily: 'Noto Naskh Arabic Bold',
+    padding: 16,
+    wordWrap: true,
+    wordWrapWidth: 900,
+    align: 'center',
+    cssOverrides: ['direction: rtl'],
+    tagStyles: {
+      completed: { fill: SENTENCE_COLORS.COMPLETED },
+      remaining: { fill: SENTENCE_COLORS.REMAINING },
+    },
+  });
+}
+
 export function createAdvancedTypingWordStyle(fontSize: number): HTMLTextStyle {
   return new HTMLTextStyle({
     fontSize,
@@ -71,5 +93,13 @@ export function getAdvancedWordMarkup(word: string, offset: number, length: numb
     word.slice(0, offset) +
     `<active>${word.slice(offset, offset + length)}</active>` +
     word.slice(offset + length)
+  );
+}
+
+/** Completed (dark) + remaining (gray). No mid-text cursor so Arabic ligatures stay intact. */
+export function getSentenceMarkup(sentence: string, offset: number): string {
+  return (
+    `<completed>${sentence.slice(0, offset)}</completed>` +
+    `<remaining>${sentence.slice(offset)}</remaining>`
   );
 }

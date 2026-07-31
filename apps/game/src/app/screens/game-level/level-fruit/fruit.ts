@@ -27,10 +27,11 @@ export class Fruit extends Container {
     this.text = new Text({
       text: letter,
       style: {
-        fontFamily: 'Concert One',
+        fontFamily: 'Noto Naskh Arabic Bold',
         fontSize: 80,
-        fontWeight: 'bold',
+        fontWeight: '700',
         fill: 0xffffff,
+        padding: 30,
       },
     });
     this.fruitAsset.anchor.set(0.5);

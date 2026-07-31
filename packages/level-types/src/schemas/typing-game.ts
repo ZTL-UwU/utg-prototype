@@ -66,6 +66,18 @@ export function defaultTypingWordsProps(): TypingWordsProps {
   return { wordIds: [], roundCount: 5 };
 }
 
+export const typingStoryPropsSchema = z.object({
+  sentenceIds: z.array(z.number().int().positive()),
+  roundCount: z.number().int().positive(),
+  sentenceDurationMs: z.number().int().positive(),
+});
+
+export type TypingStoryProps = z.infer<typeof typingStoryPropsSchema>;
+
+export function defaultTypingStoryProps(): TypingStoryProps {
+  return { sentenceIds: [], roundCount: 3, sentenceDurationMs: 60_000 };
+}
+
 export const gameTandoorRushPropsSchema = z.object({
   letters: z.array(z.string().min(1)),
   targetCount: z.number().int().positive(),
