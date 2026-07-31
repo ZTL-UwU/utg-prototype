@@ -1,5 +1,5 @@
 import { useForm } from '@tanstack/react-form';
-import { gameTandoorRushPropsSchema, type GameTandoorRushProps } from '@utg/level-types';
+import { gameFruitFallPropsSchema, type GameFruitFallProps } from '@utg/level-types';
 
 import { KeyboardLettersField } from '~/components/level-type-forms/keyboard-letters-field';
 import { NumberPropsField } from '~/components/level-type-forms/number-props-field';
@@ -9,14 +9,14 @@ import {
   type LevelPropsFormProps,
 } from '~/components/level-type-forms/shared';
 
-export function GameTandoorRushPropsForm({
+export function GameFruitFallingPropsForm({
   defaultValues,
   onSubmit,
   onDirtyChange,
-}: LevelPropsFormProps<GameTandoorRushProps>) {
+}: LevelPropsFormProps<GameFruitFallProps>) {
   const form = useForm({
     defaultValues,
-    validators: { onSubmit: gameTandoorRushPropsSchema },
+    validators: { onSubmit: gameFruitFallPropsSchema },
     onSubmit: ({ value }) => onSubmit(value),
   });
 
@@ -45,28 +45,51 @@ export function GameTandoorRushPropsForm({
             }}
             isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
             errors={field.state.meta.errors}
+            description="Keyboard letters that appear on falling fruit."
           />
         )}
       </form.Field>
 
-      <form.Field name="targetCount">
+      <form.Field name="maxActiveFruits">
         {(field) => (
           <NumberPropsField
             field={field}
-            label="Target count"
-            description="How many correct hits are needed to finish the level."
+            label="Max active fruits"
+            description="How many fruit can be falling at once."
             min={1}
           />
         )}
       </form.Field>
-      <form.Field name="roundDurationMs">
+      <form.Field name="minSpawnDelayMs">
         {(field) => (
           <NumberPropsField
             field={field}
-            label="Level duration (ms)"
-            description="Time limit for the level in milliseconds."
-            min={1000}
-            step={1000}
+            label="Min spawn delay (ms)"
+            description="Shortest wait between fruit spawns."
+            min={0}
+            step={50}
+          />
+        )}
+      </form.Field>
+      <form.Field name="maxSpawnDelayMs">
+        {(field) => (
+          <NumberPropsField
+            field={field}
+            label="Max spawn delay (ms)"
+            description="Longest wait between fruit spawns."
+            min={0}
+            step={50}
+          />
+        )}
+      </form.Field>
+      <form.Field name="fallVelocity">
+        {(field) => (
+          <NumberPropsField
+            field={field}
+            label="Fall velocity"
+            description="How fast fruit fall (pixels per millisecond)."
+            min={0.01}
+            step={0.01}
           />
         )}
       </form.Field>

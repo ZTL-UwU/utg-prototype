@@ -1,4 +1,4 @@
-import type { LevelTypeId } from '@utg/level-types';
+import { type LevelTypeId } from '@utg/level-types';
 
 import { EducationLevelScreen } from '../education-level/level-1';
 import { EducationBubbleScreen } from '../education-level/level-2';
@@ -8,6 +8,7 @@ import { EducationWordScreen } from '../education-level/level-5';
 import { EducationSheepJumpScreen } from '../education-level/level-6';
 import { EducationWhackAMoleScreen } from '../education-level/level-7';
 import { GameLevelOneScreen } from '../game-level/level-1';
+import { GameNaanStackScreen } from '../game-level/level-2';
 import { GameLevelFruitScreen } from '../game-level/level-fruit';
 import { TypingLevelScreen } from '../typing-level/level-1';
 import { TypingSandstormScreen } from '../typing-level/level-2';
@@ -31,5 +32,6 @@ export const LEVEL_TYPE_SCREENS: Record<LevelTypeId, LevelScreenConstructor> = {
   'typing-word': TypingWordScreen,
   'typing-market': TypingMarketScreen,
   'game-tandoor-rush': GameLevelOneScreen,
+  'game-naan-stack': GameNaanStackScreen,
   'game-fruit-fall': GameLevelFruitScreen,
 };

@@ -77,3 +77,23 @@ export type GameTandoorRushProps = z.infer<typeof gameTandoorRushPropsSchema>;
 export function defaultGameTandoorRushProps(): GameTandoorRushProps {
   return { letters: [], targetCount: 8, roundDurationMs: 30_000 };
 }
+
+export const gameNaanStackPropsSchema = z.object({
+  letters: z.array(z.string().min(1)),
+  plateCapacity: z.number().int().positive(),
+  maxLives: z.number().int().min(1).max(10),
+  spawnDelayMs: z.number().nonnegative(),
+  moveSpeed: z.number().positive(),
+});
+
+export type GameNaanStackProps = z.infer<typeof gameNaanStackPropsSchema>;
+
+export function defaultGameNaanStackProps(): GameNaanStackProps {
+  return {
+    letters: [],
+    plateCapacity: 6,
+    maxLives: 5,
+    spawnDelayMs: 3000,
+    moveSpeed: 100,
+  };
+}

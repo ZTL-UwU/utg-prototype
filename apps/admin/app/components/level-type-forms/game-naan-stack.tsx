@@ -1,5 +1,5 @@
 import { useForm } from '@tanstack/react-form';
-import { gameTandoorRushPropsSchema, type GameTandoorRushProps } from '@utg/level-types';
+import { gameNaanStackPropsSchema, type GameNaanStackProps } from '@utg/level-types';
 
 import { KeyboardLettersField } from '~/components/level-type-forms/keyboard-letters-field';
 import { NumberPropsField } from '~/components/level-type-forms/number-props-field';
@@ -9,14 +9,14 @@ import {
   type LevelPropsFormProps,
 } from '~/components/level-type-forms/shared';
 
-export function GameTandoorRushPropsForm({
+export function GameNaanStackPropsForm({
   defaultValues,
   onSubmit,
   onDirtyChange,
-}: LevelPropsFormProps<GameTandoorRushProps>) {
+}: LevelPropsFormProps<GameNaanStackProps>) {
   const form = useForm({
     defaultValues,
-    validators: { onSubmit: gameTandoorRushPropsSchema },
+    validators: { onSubmit: gameNaanStackPropsSchema },
     onSubmit: ({ value }) => onSubmit(value),
   });
 
@@ -45,28 +45,50 @@ export function GameTandoorRushPropsForm({
             }}
             isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
             errors={field.state.meta.errors}
+            description="Keyboard letters that appear on moving naan."
           />
         )}
       </form.Field>
 
-      <form.Field name="targetCount">
+      <form.Field name="plateCapacity">
         {(field) => (
           <NumberPropsField
             field={field}
-            label="Target count"
-            description="How many correct hits are needed to finish the level."
+            label="Plate capacity"
+            description="How many naan fill a plate. The level ends when both plates are full."
             min={1}
           />
         )}
       </form.Field>
-      <form.Field name="roundDurationMs">
+      <form.Field name="maxLives">
         {(field) => (
           <NumberPropsField
             field={field}
-            label="Level duration (ms)"
-            description="Time limit for the level in milliseconds."
-            min={1000}
-            step={1000}
+            label="Lives"
+            description="Hearts lost when a naan leaves the screen."
+            min={1}
+            max={10}
+          />
+        )}
+      </form.Field>
+      <form.Field name="spawnDelayMs">
+        {(field) => (
+          <NumberPropsField
+            field={field}
+            label="Spawn delay (ms)"
+            description="Wait between naan spawns."
+            min={0}
+            step={50}
+          />
+        )}
+      </form.Field>
+      <form.Field name="moveSpeed">
+        {(field) => (
+          <NumberPropsField
+            field={field}
+            label="Move speed"
+            description="Horizontal speed for naan (px/s)."
+            min={1}
           />
         )}
       </form.Field>

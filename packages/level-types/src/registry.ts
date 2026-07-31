@@ -9,6 +9,7 @@ import { educationSheepJump } from './types/education-sheep-jump';
 import { educationWhackAMole } from './types/education-whack-a-mole';
 import { educationWord } from './types/education-word';
 import { gameFruitFall } from './types/game-fruit-fall';
+import { gameNaanStack } from './types/game-naan-stack';
 import { gameTandoorRush } from './types/game-tandoor-rush';
 import { typingDesert } from './types/typing-desert';
 import { typingInstrument } from './types/typing-instrument';
@@ -40,6 +41,7 @@ export const LEVEL_TYPES = {
   'typing-market': typingMarket,
   'game-tandoor-rush': gameTandoorRush,
   'game-fruit-fall': gameFruitFall,
+  'game-naan-stack': gameNaanStack,
 } as const satisfies Record<string, LevelTypeConfig>;
 
 export type LevelTypeId = keyof typeof LEVEL_TYPES;
