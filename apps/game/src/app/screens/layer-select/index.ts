@@ -167,6 +167,11 @@ export class LayerSelectScreen extends Container {
     this.addChild(this.background, this.innerContainer, this.userStatsButton);
   }
 
+  private refreshUserStatsAvatar() {
+    const avatarId = useAuthStore.getState().user?.avatar;
+    this.userStatsButton.defaultView = Texture.from(getAvatarPath(avatarId));
+  }
+
   public resize(width: number, height: number) {
     this.layout = {
       width,
@@ -175,6 +180,7 @@ export class LayerSelectScreen extends Container {
   }
 
   public async show() {
+    this.refreshUserStatsAvatar();
     if (this.skipShowAnimation) return;
 
     const currentEngine = engine();
@@ -204,5 +210,9 @@ export class LayerSelectScreen extends Container {
       animate(this.userStatsButton.position, { x: 200 }, { duration, ease: 'easeOut' }),
       animate(this.background, { alpha: 1 }, { duration, ease: 'easeOut' }),
     ]);
+  }
+
+  public async resume() {
+    this.refreshUserStatsAvatar();
   }
 }

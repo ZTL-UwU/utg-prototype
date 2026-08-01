@@ -5,6 +5,7 @@ import { engine } from '../../../engine/getEngine';
 import { getAvatarPath } from '../../../utils/avatars';
 import { useAuthStore } from '../../../zustandStores/auth';
 import { getAccuracyPercent, useScoreManager } from '../../../zustandStores/scoreManager';
+import { AvatarSelectScreen } from '../../screens/avatar-select';
 import { BackButton } from '../../ui/back-button';
 
 const POPUP_WIDTH = 1481;
@@ -58,6 +59,7 @@ export class UserStatsPopup extends Container {
   private averageAccuracyValue: Text;
   private correctAttemptsValue: Text;
   private incorrectAttemptsValue: Text;
+  private profileIcon: Sprite;
   private unsubscribeScore: () => void;
 
   constructor() {
@@ -74,9 +76,15 @@ export class UserStatsPopup extends Container {
     });
 
     const user = useAuthStore.getState().user;
-    const profileIcon = new Sprite({
+    this.profileIcon = new Sprite({
       texture: Texture.from(getAvatarPath(user?.avatar)),
       layout: { width: 100, height: 100, objectFit: 'contain' },
+    });
+
+    this.profileIcon.eventMode = 'static';
+    this.profileIcon.cursor = 'pointer';
+    this.profileIcon.on('pointertap', () => {
+      void engine().navigation.showNestedPopup(AvatarSelectScreen, { mode: 'profile' });
     });
 
     const userName = new Text({
@@ -92,7 +100,7 @@ export class UserStatsPopup extends Container {
         alignItems: 'center',
         gap: 20,
       },
-      children: [profileIcon, userName],
+      children: [this.profileIcon, userName],
     });
 
     this.totalStarsValue = new Text({ text: '0', style: VALUE_STYLE, layout: true });
@@ -196,7 +204,14 @@ export class UserStatsPopup extends Container {
     this.incorrectAttemptsValue.text = String(mistakeCount);
   }
 
+  private refreshAvatar() {
+    const user = useAuthStore.getState().user;
+    this.profileIcon.texture = Texture.from(getAvatarPath(user?.avatar));
+  }
+
   public async show() {
+    this.refreshAvatar();
+
     const currentEngine = engine();
     if (!currentEngine.navigation.currentScreen) return;
     void currentEngine.audio.sfx.play('preload-audio/sfx/popup.mp3');
@@ -218,6 +233,10 @@ export class UserStatsPopup extends Container {
         { duration, ease: 'easeOut' },
       ),
     ]);
+  }
+
+  public async resume() {
+    this.refreshAvatar();
   }
 
   public async hide() {
