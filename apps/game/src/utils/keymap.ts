@@ -190,6 +190,121 @@ const LATIN_SHIFT_LAYER: Record<string, string> = {
   Enter: '*Enter*',
 };
 
+/**
+ * Windows Uzbek Cyrillic (KBDUZB / KLID 00000843) default layer.
+ * @see https://learn.microsoft.com/en-us/globalization/keyboards/kbduzb
+ */
+const CYRILLIC_DEFAULT_LAYER: Record<string, string> = {
+  Digit1: '1',
+  Digit2: '2',
+  Digit3: '3',
+  Digit4: '4',
+  Digit5: '5',
+  Digit6: '6',
+  Digit7: '7',
+  Digit8: '8',
+  Digit9: '9',
+  Digit0: '0',
+  Minus: 'ғ',
+  Equal: 'ҳ',
+  Backspace: '⌫',
+  KeyQ: 'й',
+  KeyW: 'ц',
+  KeyE: 'у',
+  KeyR: 'к',
+  KeyT: 'е',
+  KeyY: 'н',
+  KeyU: 'г',
+  KeyI: 'ш',
+  KeyO: 'ў',
+  KeyP: 'з',
+  BracketLeft: 'х',
+  BracketRight: 'ъ',
+  Backquote: 'ё',
+  KeyA: 'ф',
+  KeyS: 'қ',
+  KeyD: 'в',
+  KeyF: 'а',
+  KeyG: 'п',
+  KeyH: 'р',
+  KeyJ: 'о',
+  KeyK: 'л',
+  KeyL: 'д',
+  Semicolon: 'ж',
+  Quote: 'э',
+  Backslash: '\\',
+  ShiftLeft: '*Shift*',
+  KeyZ: 'я',
+  KeyX: 'ч',
+  KeyC: 'с',
+  KeyV: 'м',
+  KeyB: 'и',
+  KeyN: 'т',
+  KeyM: 'ь',
+  Comma: 'б',
+  Period: 'ю',
+  Slash: '.',
+  AltLeft: '*Menu*',
+  Space: ' ',
+  Enter: '*Enter*',
+};
+
+/** Shifted Uzbek Cyrillic layer: uppercase letters plus digit-row symbols. */
+const CYRILLIC_SHIFT_LAYER: Record<string, string> = {
+  Digit1: '!',
+  Digit2: '"',
+  Digit3: '№',
+  Digit4: ';',
+  Digit5: '%',
+  Digit6: ':',
+  Digit7: '?',
+  Digit8: '*',
+  Digit9: '(',
+  Digit0: ')',
+  Minus: 'Ғ',
+  Equal: 'Ҳ',
+  Backspace: '⌫',
+  KeyQ: 'Й',
+  KeyW: 'Ц',
+  KeyE: 'У',
+  KeyR: 'К',
+  KeyT: 'Е',
+  KeyY: 'Н',
+  KeyU: 'Г',
+  KeyI: 'Ш',
+  KeyO: 'Ў',
+  KeyP: 'З',
+  BracketLeft: 'Х',
+  BracketRight: 'Ъ',
+  Backquote: 'Ё',
+  KeyA: 'Ф',
+  KeyS: 'Қ',
+  KeyD: 'В',
+  KeyF: 'А',
+  KeyG: 'П',
+  KeyH: 'Р',
+  KeyJ: 'О',
+  KeyK: 'Л',
+  KeyL: 'Д',
+  Semicolon: 'Ж',
+  Quote: 'Э',
+  Backslash: '/',
+  ShiftLeft: '*Shift*',
+  KeyZ: 'Я',
+  KeyX: 'Ч',
+  KeyC: 'С',
+  KeyV: 'М',
+  KeyB: 'И',
+  KeyN: 'Т',
+  KeyM: 'Ь',
+  Comma: 'Б',
+  Period: 'Ю',
+  Slash: ',',
+  AltLeft: '*Menu*',
+  Space: ' ',
+  Enter: '*Enter*',
+};
+
 const ARABIC_LAYERS: LayerMap = {
   default: ARABIC_DEFAULT_LAYER,
   shift: ARABIC_SHIFT_LAYER,
@@ -199,6 +314,67 @@ const LATIN_LAYERS: LayerMap = {
   default: LATIN_DEFAULT_LAYER,
   shift: LATIN_SHIFT_LAYER,
 };
+
+const CYRILLIC_LAYERS: LayerMap = {
+  default: CYRILLIC_DEFAULT_LAYER,
+  shift: CYRILLIC_SHIFT_LAYER,
+};
+
+/** Modifier / chrome keys that are always styled as auxiliary. */
+const STRUCTURAL_AUXILIARY_KEYS = [
+  'Backspace',
+  'Tab',
+  'CapsLock',
+  'ShiftLeft',
+  'ShiftRight',
+  'ControlLeft',
+  'ControlRight',
+  'AltLeft',
+  'AltRight',
+  'MetaLeft',
+  'MetaRight',
+  'Enter',
+  'Space',
+  'Digit1',
+  'Digit2',
+  'Digit3',
+  'Digit4',
+  'Digit5',
+  'Digit6',
+  'Digit7',
+  'Digit8',
+  'Digit9',
+  'Digit0',
+] as const;
+
+/** Digit + punctuation keys that are auxiliary on Arabic / Latin layouts. */
+const QWERTY_PUNCTUATION_AUXILIARY_KEYS = [
+  'Backquote',
+  'Minus',
+  'Equal',
+  'BracketLeft',
+  'BracketRight',
+  'Backslash',
+  'Semicolon',
+  'Quote',
+] as const;
+
+const ARABIC_AUXILIARY_KEYS = new Set<string>([
+  ...STRUCTURAL_AUXILIARY_KEYS,
+  ...QWERTY_PUNCTUATION_AUXILIARY_KEYS,
+]);
+
+const LATIN_AUXILIARY_KEYS = new Set<string>([
+  ...STRUCTURAL_AUXILIARY_KEYS,
+  ...QWERTY_PUNCTUATION_AUXILIARY_KEYS,
+]);
+
+/** Uzbek Cyrillic: many OEM keys are letters; only digits / leftover punctuation stay auxiliary. */
+const CYRILLIC_AUXILIARY_KEYS = new Set<string>([
+  ...STRUCTURAL_AUXILIARY_KEYS,
+  'Backslash',
+  'Slash',
+]);
 
 const AUXILIARY_LABELS: Record<string, string> = {
   Tab: 'TAB',
@@ -216,7 +392,30 @@ const AUXILIARY_LABELS: Record<string, string> = {
 };
 
 function getLayers(): LayerMap {
-  return getCurrentTargetScript() === 'Latin' ? LATIN_LAYERS : ARABIC_LAYERS;
+  switch (getCurrentTargetScript()) {
+    case 'Latin':
+      return LATIN_LAYERS;
+    case 'Cyrillic':
+      return CYRILLIC_LAYERS;
+    default:
+      return ARABIC_LAYERS;
+  }
+}
+
+function getAuxiliaryKeys(): ReadonlySet<string> {
+  switch (getCurrentTargetScript()) {
+    case 'Latin':
+      return LATIN_AUXILIARY_KEYS;
+    case 'Cyrillic':
+      return CYRILLIC_AUXILIARY_KEYS;
+    default:
+      return ARABIC_AUXILIARY_KEYS;
+  }
+}
+
+/** True when the key should use auxiliary (non-letter) styling for the active layout. */
+export function isAuxiliaryKey(code: string): boolean {
+  return getAuxiliaryKeys().has(code);
 }
 
 export function getMappedFromKeyCode(code: string, shift: boolean): string {
@@ -247,6 +446,8 @@ export function getShiftHintLabel(code: string): string {
   if (!shiftText || shiftText === defaultText) return '';
   // Letter keys only (Arabic shift letters, Latin é/ö/ü) — skip punctuation.
   if (!/\p{L}/u.test(shiftText)) return '';
+  // Skip Cyrillic uppercase counterparts of the same letter.
+  if (shiftText.toLocaleLowerCase() === defaultText.toLocaleLowerCase()) return '';
   return formatKeyboardLabel(shiftText);
 }
 

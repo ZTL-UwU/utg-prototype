@@ -1,7 +1,12 @@
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Graphics, Text } from 'pixi.js';
 
-import { getKeyFromChar, getKeyboardLabel, getShiftHintLabel } from '../../utils/keymap';
+import {
+  getKeyFromChar,
+  getKeyboardLabel,
+  getShiftHintLabel,
+  isAuxiliaryKey,
+} from '../../utils/keymap';
 import { getScriptFontFamily } from '../../utils/script';
 
 export type KeyFeedback = 'none' | 'hint' | 'error' | 'success';
@@ -9,7 +14,6 @@ export type KeyFeedback = 'none' | 'hint' | 'error' | 'success';
 type Key = {
   code: string;
   width?: number;
-  auxiliary?: boolean;
 };
 
 export type KeyboardColorOptions = {
@@ -23,23 +27,23 @@ export type KeyboardColorOptions = {
 
 const keyboardLayout: Key[][] = [
   [
-    { code: 'Backquote', auxiliary: true },
-    { code: 'Digit1', auxiliary: true },
-    { code: 'Digit2', auxiliary: true },
-    { code: 'Digit3', auxiliary: true },
-    { code: 'Digit4', auxiliary: true },
-    { code: 'Digit5', auxiliary: true },
-    { code: 'Digit6', auxiliary: true },
-    { code: 'Digit7', auxiliary: true },
-    { code: 'Digit8', auxiliary: true },
-    { code: 'Digit9', auxiliary: true },
-    { code: 'Digit0', auxiliary: true },
-    { code: 'Minus', auxiliary: true },
-    { code: 'Equal', auxiliary: true },
-    { code: 'Backspace', width: 1.7, auxiliary: true },
+    { code: 'Backquote' },
+    { code: 'Digit1' },
+    { code: 'Digit2' },
+    { code: 'Digit3' },
+    { code: 'Digit4' },
+    { code: 'Digit5' },
+    { code: 'Digit6' },
+    { code: 'Digit7' },
+    { code: 'Digit8' },
+    { code: 'Digit9' },
+    { code: 'Digit0' },
+    { code: 'Minus' },
+    { code: 'Equal' },
+    { code: 'Backspace', width: 1.7 },
   ],
   [
-    { code: 'Tab', width: 1.7, auxiliary: true },
+    { code: 'Tab', width: 1.7 },
     { code: 'KeyQ' },
     { code: 'KeyW' },
     { code: 'KeyE' },
@@ -50,12 +54,12 @@ const keyboardLayout: Key[][] = [
     { code: 'KeyI' },
     { code: 'KeyO' },
     { code: 'KeyP' },
-    { code: 'BracketLeft', auxiliary: true },
-    { code: 'BracketRight', auxiliary: true },
-    { code: 'Backslash', auxiliary: true },
+    { code: 'BracketLeft' },
+    { code: 'BracketRight' },
+    { code: 'Backslash' },
   ],
   [
-    { code: 'CapsLock', width: 2.05, auxiliary: true },
+    { code: 'CapsLock', width: 2.05 },
     { code: 'KeyA' },
     { code: 'KeyS' },
     { code: 'KeyD' },
@@ -65,12 +69,12 @@ const keyboardLayout: Key[][] = [
     { code: 'KeyJ' },
     { code: 'KeyK' },
     { code: 'KeyL' },
-    { code: 'Semicolon', auxiliary: true },
-    { code: 'Quote', auxiliary: true },
-    { code: 'Enter', width: 1.8, auxiliary: true },
+    { code: 'Semicolon' },
+    { code: 'Quote' },
+    { code: 'Enter', width: 1.8 },
   ],
   [
-    { code: 'ShiftLeft', width: 2.5, auxiliary: true },
+    { code: 'ShiftLeft', width: 2.5 },
     { code: 'KeyZ' },
     { code: 'KeyX' },
     { code: 'KeyC' },
@@ -81,14 +85,14 @@ const keyboardLayout: Key[][] = [
     { code: 'Comma' },
     { code: 'Period' },
     { code: 'Slash' },
-    { code: 'ShiftRight', width: 2.45, auxiliary: true },
+    { code: 'ShiftRight', width: 2.45 },
   ],
   [
     { code: '' },
     { code: '' },
     { code: '' },
     { code: '' },
-    { code: 'Space', width: 6, auxiliary: true },
+    { code: 'Space', width: 6 },
     { code: '' },
     { code: '' },
     { code: '' },
@@ -347,11 +351,11 @@ export class KeyboardLayout extends Container {
     let maxRowWidth = 0;
 
     const rows = keyboardLayout.map((row) => {
-      const caps = row.map(({ code, width, auxiliary }) => {
+      const caps = row.map(({ code, width }) => {
         const cap = new KeyCap(
           code,
           width,
-          auxiliary,
+          isAuxiliaryKey(code),
           this.keyboardColorOptions.TEXT_COLOR,
           this.keyboardColorOptions.KEY_COLOR,
           this.keyboardColorOptions.KEY_PRESSED_COLOR,
