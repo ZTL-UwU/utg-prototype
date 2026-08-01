@@ -6,6 +6,7 @@ export default defineConfig({
     'apps/admin/**': 'vp run --filter @utg/admin lint:fix',
     'packages/level-types/**': 'vp run --filter @utg/level-types lint:fix',
     'packages/letters/**': 'vp run --filter @utg/letters lint:fix',
+    'packages/script-converter/**': 'vp run --filter @utg/script-converter lint:fix',
     '*': 'vp check --fix',
   },
   fmt: {
@@ -19,5 +20,8 @@ export default defineConfig({
       typeAware: true,
       typeCheck: true,
     },
+  },
+  test: {
+    include: ['packages/script-converter/tests/**/*.test.ts'],
   },
 });

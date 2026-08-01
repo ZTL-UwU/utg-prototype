@@ -2,12 +2,13 @@
 
 pnpm / Vite+ monorepo for the UTG prototype.
 
-| Package            | Path                   | Description                          |
-| ------------------ | ---------------------- | ------------------------------------ |
-| `@utg/game`        | `apps/game`            | PixiJS game client (GitHub Pages)    |
-| `@utg/admin`       | `apps/admin`           | React Router admin app               |
-| `@utg/level-types` | `packages/level-types` | Level type ids and Zod props schemas |
-| `@utg/letters`     | `packages/letters`     | Education/keyboard letter constants  |
+| Package                 | Path                        | Description                          |
+| ----------------------- | --------------------------- | ------------------------------------ |
+| `@utg/game`             | `apps/game`                 | PixiJS game client (GitHub Pages)    |
+| `@utg/admin`            | `apps/admin`                | React Router admin app               |
+| `@utg/level-types`      | `packages/level-types`      | Level type ids and Zod props schemas |
+| `@utg/letters`          | `packages/letters`          | Education/keyboard letter constants  |
+| `@utg/script-converter` | `packages/script-converter` | Uyghur Arabic → Latin / Cyrillic     |
 
 ## Setup
 

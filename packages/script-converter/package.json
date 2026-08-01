@@ -1,0 +1,25 @@
+{
+  "name": "@utg/script-converter",
+  "version": "0.0.0",
+  "private": true,
+  "files": [
+    "src"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "lint": "vp check src",
+    "lint:fix": "vp check --fix src",
+    "typecheck": "tsc --noEmit",
+    "test": "vp test"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite-plus": "catalog:"
+  }
+}
