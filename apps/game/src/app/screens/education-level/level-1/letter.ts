@@ -3,6 +3,7 @@ import { Container, Graphics, Text } from 'pixi.js';
 
 import { EducationLevelScreen } from '.';
 import { engine } from '../../../../engine/getEngine';
+import { convertToCurrentScript, getScriptFontFamily } from '../../../../utils/script';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import type { TLevel } from '../../level-map/units';
 import { LetterGrid } from './letter-grid';
@@ -71,12 +72,12 @@ export class Letter extends Container {
     };
 
     const letterLabel = new Text({
-      text: letter,
+      text: convertToCurrentScript(letter),
       resolution: 2,
       style: {
         align: 'center',
         fill: 0xffffff,
-        fontFamily: 'Noto Naskh Arabic Bold',
+        fontFamily: getScriptFontFamily(),
         fontSize: cardSize * 0.48,
         fontWeight: '700',
         padding: 20,

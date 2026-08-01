@@ -1,6 +1,7 @@
 import { Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 
 import { waitFor } from '../../../../engine/utils/waitFor';
+import { convertToCurrentScript, getScriptFontFamily } from '../../../../utils/script';
 
 export const MOLE_UP_Y = 60;
 const MOLE_HEIGHT = 276;
@@ -35,7 +36,7 @@ export class MoleTarget extends Container {
     this.letter = new Text({
       text: '',
       style: {
-        fontFamily: 'Noto Naskh Arabic Bold',
+        fontFamily: getScriptFontFamily(),
         fontSize: 90,
         fill: 0x56331f,
         align: 'center',
@@ -80,7 +81,7 @@ export class MoleTarget extends Container {
   }
 
   public setLetter(letter: string) {
-    this.letter.text = letter;
+    this.letter.text = convertToCurrentScript(letter);
   }
 
   public setEnabled(enabled: boolean) {

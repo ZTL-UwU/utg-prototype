@@ -1,6 +1,8 @@
 import { FancyButton } from '@pixi/ui';
 import { Text, Texture } from 'pixi.js';
 
+import { convertToCurrentScript, getScriptFontFamily } from '../../../../utils/script';
+
 const WRONG_TILE_TINT = 0x888888;
 
 export class LetterTile extends FancyButton {
@@ -10,9 +12,9 @@ export class LetterTile extends FancyButton {
     super({
       defaultView: Texture.from(`education-levels/education-level-6/tile.png`),
       text: new Text({
-        text: letter ?? '',
+        text: letter ? convertToCurrentScript(letter) : '',
         style: {
-          fontFamily: 'Noto Naskh Arabic Bold',
+          fontFamily: getScriptFontFamily(),
           fontWeight: '700',
           fontSize: 100,
           padding: 30,

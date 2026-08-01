@@ -3,6 +3,7 @@ import { animate } from 'motion';
 import { Container, Graphics, Sprite, Text, Texture, type TextDropShadow } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { convertToCurrentScript, getScriptFontFamily } from '../../../../utils/script';
 import { HUD } from '../../../ui/hud';
 import { LayerSelectScreen } from '../../layer-select';
 import { EducationMapRow } from './education-map-row';
@@ -105,9 +106,9 @@ export class EducationLevelSelect extends Container {
     };
 
     this.subtitle = new Text({
-      text: 'ھەرپلەر',
+      text: convertToCurrentScript('ھەرپلەر'),
       style: {
-        fontFamily: 'Noto Naskh Arabic Bold',
+        fontFamily: getScriptFontFamily(),
         fontSize: 100,
         fontWeight: '700',
         fill: 0xffffff,

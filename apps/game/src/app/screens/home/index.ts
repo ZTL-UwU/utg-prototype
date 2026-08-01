@@ -67,7 +67,7 @@ export class HomeScreen extends Container {
       },
     });
 
-    const scripts: ORTHO_ENUM[] = ['ug-ab', 'ug-cy', 'ug-la'];
+    const scripts: ORTHO_ENUM[] = ['Arabic', 'Cyrillic', 'Latin'];
     for (const s of scripts) {
       const btn = new ScriptButton(s);
       btn.layout = { width: ScriptButton.BTN_WIDTH, height: ScriptButton.BTN_HEIGHT, isLeaf: true };

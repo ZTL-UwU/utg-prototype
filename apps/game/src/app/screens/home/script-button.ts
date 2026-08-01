@@ -4,9 +4,9 @@ import { Graphics, HTMLText } from 'pixi.js';
 import { scriptState, type ORTHO_ENUM } from '../../../zustandStores/scriptState';
 
 const LABELS: Record<ORTHO_ENUM, string> = {
-  'ug-ab': 'ئۇيغۇر',
-  'ug-cy': 'КИР',
-  'ug-la': 'LATIN',
+  Arabic: 'ئۇيغۇر',
+  Cyrillic: 'КИР',
+  Latin: 'LATIN',
 };
 
 const RADIUS = 18;

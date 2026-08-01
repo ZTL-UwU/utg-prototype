@@ -2,6 +2,8 @@ import { FancyButton } from '@pixi/ui';
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Graphics, Text, type Container } from 'pixi.js';
 
+import { convertToCurrentScript, getScriptFontFamily } from '../../utils/script';
+
 const CARD_COLORS = {
   default: 0x5a8cd4,
   success: 0x8ec24d,
@@ -65,12 +67,12 @@ export class LetterChoice extends FancyButton {
         },
       },
       text: new Text({
-        text: letter,
+        text: convertToCurrentScript(letter),
         resolution: 2,
         style: {
           align: 'center',
           fill: 0xffffff,
-          fontFamily: 'Noto Naskh Arabic Bold',
+          fontFamily: getScriptFontFamily(),
           fontSize: size * 0.48,
           fontWeight: '700',
           padding: 30,

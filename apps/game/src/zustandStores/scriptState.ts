@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-export type ORTHO_ENUM = 'ug-ab' | 'ug-la' | 'ug-cy';
+export type ORTHO_ENUM = 'Arabic' | 'Latin' | 'Cyrillic';
 
 interface ScriptState {
   currentScript: ORTHO_ENUM;
@@ -11,7 +11,7 @@ interface ScriptState {
 export const scriptState = create<ScriptState>()(
   persist(
     (set) => ({
-      currentScript: 'ug-ab',
+      currentScript: 'Arabic',
       setCurrentScript: (script) => set({ currentScript: script }),
     }),
     {

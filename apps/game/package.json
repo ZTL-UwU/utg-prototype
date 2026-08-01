@@ -20,6 +20,7 @@
     "@tanstack/react-query": "^5.101.2",
     "@utg/letters": "workspace:*",
     "@utg/level-types": "workspace:*",
+    "@utg/script-converter": "workspace:*",
     "motion": "^12.40.0",
     "ofetch": "^1.5.1",
     "pixi-filters": "^6.1.5",

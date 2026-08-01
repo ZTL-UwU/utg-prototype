@@ -1,5 +1,7 @@
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
+import { convertToCurrentScript, getScriptFontFamily } from '../../../../utils/script';
+
 export type FruitProps = {
   letter: string;
 };
@@ -35,9 +37,9 @@ export class Fruit extends Container {
     this.fruitName = FRUIT_NAMES[Math.floor(FRUIT_NAMES.length * Math.random())];
     this.fruitAsset = new Sprite(Texture.from(fruitTexturePath(this.fruitName, 'fresh')));
     this.text = new Text({
-      text: letter,
+      text: convertToCurrentScript(letter),
       style: {
-        fontFamily: 'Noto Naskh Arabic Bold',
+        fontFamily: getScriptFontFamily(),
         fontSize: 80,
         fontWeight: '700',
         fill: 0xffffff,

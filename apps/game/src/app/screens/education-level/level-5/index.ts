@@ -10,6 +10,7 @@ import {
   getCompletedWordMarkup,
   getMissingWordMarkup,
 } from '../../../../utils/example-words';
+import { convertToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import {
@@ -62,7 +63,7 @@ function getRound(
     .filter(Boolean);
 
   return {
-    word: correctWord.word.trim(),
+    word: convertToCurrentScript(correctWord.word.trim()),
     letter,
     choices: randomShuffle([letter, ...distractors]),
   };
@@ -87,6 +88,7 @@ export class EducationWordScreen extends Container {
   private readonly wordText: HTMLText;
   private readonly choices: LetterChoice[];
   private readonly correctLetter: string;
+  private readonly displayLetter: string;
   private readonly correctWordId: number;
   private readonly word: string;
   private isResolving = false;
@@ -109,6 +111,7 @@ export class EducationWordScreen extends Container {
       ? getRound(words, correctWord)
       : { word: '', letter: '', choices: [] as string[] };
     this.correctLetter = round.letter;
+    this.displayLetter = convertToCurrentScript(round.letter);
     this.correctWordId = correctWord?.id ?? 0;
     this.word = round.word;
 
@@ -137,7 +140,7 @@ export class EducationWordScreen extends Container {
     image.position.set(IMAGE_X, 220);
 
     this.wordText = new HTMLText({
-      text: getMissingWordMarkup(this.correctLetter, this.word),
+      text: getMissingWordMarkup(this.displayLetter, this.word),
       style: createExampleWordStyle(180),
       anchor: 0.5,
     });
@@ -256,7 +259,7 @@ export class EducationWordScreen extends Container {
     void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
     useSessionStore.getState().recordCorrect();
     this.choices.forEach((item) => item.setInteractive(false));
-    this.wordText.text = getCompletedWordMarkup(this.correctLetter, this.word);
+    this.wordText.text = getCompletedWordMarkup(this.displayLetter, this.word);
     this.fitWordText();
     this.feedback.visible = true;
     this.feedback.alpha = 0;

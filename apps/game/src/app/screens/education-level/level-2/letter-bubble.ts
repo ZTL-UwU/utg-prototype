@@ -3,6 +3,7 @@ import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Sprite, Text, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { convertToCurrentScript, getScriptFontFamily } from '../../../../utils/script';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 
 const SIZE = 140;
@@ -34,12 +35,12 @@ export class LetterBubble extends FancyButton {
         },
       },
       text: new Text({
-        text: letter,
+        text: convertToCurrentScript(letter),
         resolution: 2,
         style: {
           align: 'center',
           fill: 0x000000,
-          fontFamily: 'Noto Naskh Arabic Bold',
+          fontFamily: getScriptFontFamily(),
           fontSize: SIZE * 0.4,
           fontWeight: '700',
           padding: 20,

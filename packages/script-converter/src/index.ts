@@ -189,13 +189,14 @@ export function arabicToCyrillic(text: string): string {
   return autoCapitalize(replaceViaTable(cts, CTS_CHARS, UCS_CHARS));
 }
 
-export type TargetScript = 'Latin' | 'Cyrillic';
+export type TargetScript = 'Arabic' | 'Latin' | 'Cyrillic';
 
 /**
  * Convert Uyghur Arabic Script to the given target.
  * Thin wrapper mirroring the upstream converter call style.
  */
 export function convertArabic(text: string, target: TargetScript): string {
+  if (target === 'Arabic') return text;
   if (target === 'Latin') return arabicToLatin(text);
   return arabicToCyrillic(text);
 }

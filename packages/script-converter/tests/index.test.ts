@@ -32,3 +32,11 @@ describe('arabicToCyrillic', () => {
     }
   });
 });
+
+describe('convertArabic', () => {
+  it('dose nothing for Arabic', () => {
+    for (const [input, _expectedULY, _expectedUCS] of elipbeExamples) {
+      expect(convertArabic(input, 'Arabic')).toBe(input);
+    }
+  });
+});

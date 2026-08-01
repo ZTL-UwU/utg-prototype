@@ -1,5 +1,7 @@
 import { HTMLTextStyle } from 'pixi.js';
 
+import { isCurrentScriptRtl, getScriptFontFamily } from './script';
+
 const WORD_COLORS = {
   BASE_BLUE: 0x1b427a,
   BASE_WHITE: 0xffffff,
@@ -9,13 +11,20 @@ const WORD_COLORS = {
   ACTIVE_BROWN: 0xffde59,
 } as const;
 
+function scriptTextOptions() {
+  const rtl = isCurrentScriptRtl();
+  return {
+    fontFamily: getScriptFontFamily(),
+    cssOverrides: [`direction: ${rtl ? 'rtl' : 'ltr'}`],
+  };
+}
+
 export function createExampleWordStyle(fontSize: number): HTMLTextStyle {
   return new HTMLTextStyle({
     fontSize,
     fill: WORD_COLORS.BASE_BLUE,
-    fontFamily: 'Noto Naskh Arabic Bold',
     padding: 40,
-    cssOverrides: ['direction: rtl'],
+    ...scriptTextOptions(),
     tagStyles: {
       span: {
         fill: WORD_COLORS.CORRECT,
@@ -28,9 +37,8 @@ export function createTypingWordStyle(fontSize: number, color: number): HTMLText
   return new HTMLTextStyle({
     fontSize,
     fill: color,
-    fontFamily: 'Noto Naskh Arabic Bold',
     padding: 40,
-    cssOverrides: ['direction: rtl'],
+    ...scriptTextOptions(),
     tagStyles: {
       completed: { fill: WORD_COLORS.CORRECT },
       active: { fill: WORD_COLORS.ACTIVE_BROWN },
@@ -47,12 +55,11 @@ export function createTypingSentenceStyle(fontSize: number): HTMLTextStyle {
   return new HTMLTextStyle({
     fontSize,
     fill: SENTENCE_COLORS.REMAINING,
-    fontFamily: 'Noto Naskh Arabic Bold',
     padding: 16,
     wordWrap: true,
     wordWrapWidth: 900,
     align: 'center',
-    cssOverrides: ['direction: rtl'],
+    ...scriptTextOptions(),
     tagStyles: {
       completed: { fill: SENTENCE_COLORS.COMPLETED },
       remaining: { fill: SENTENCE_COLORS.REMAINING },
@@ -64,9 +71,8 @@ export function createAdvancedTypingWordStyle(fontSize: number): HTMLTextStyle {
   return new HTMLTextStyle({
     fontSize,
     fill: WORD_COLORS.BASE_WHITE,
-    fontFamily: 'Noto Naskh Arabic Bold',
     padding: 40,
-    cssOverrides: ['direction: rtl'],
+    ...scriptTextOptions(),
     tagStyles: {
       active: { fill: WORD_COLORS.ACTIVE },
     },

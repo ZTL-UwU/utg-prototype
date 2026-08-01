@@ -3,6 +3,7 @@ import { EDUCATION_LETTERS } from '@utg/letters';
 import { animate } from 'motion';
 import { Container, Graphics, Text } from 'pixi.js';
 
+import { convertToCurrentScript, getScriptFontFamily } from '../../utils/script';
 import alphabetTimings from './alphabet-timings.json';
 
 export type AlphabetGridColorOptions = {
@@ -91,12 +92,12 @@ export class AlphabetKey extends FancyButton {
         },
       },
       text: new Text({
-        text: letter,
+        text: convertToCurrentScript(letter),
         resolution: 2,
         style: {
           align: 'center',
           fill: colors.textColor,
-          fontFamily: 'Noto Naskh Arabic Bold',
+          fontFamily: getScriptFontFamily(),
           fontSize: size * 0.4,
           fontWeight: '700',
           padding: 20,

@@ -166,6 +166,9 @@ importers:
       '@utg/level-types':
         specifier: workspace:*
         version: link:../../packages/level-types
+      '@utg/script-converter':
+        specifier: workspace:*
+        version: link:../../packages/script-converter
       motion:
         specifier: ^12.40.0
         version: 12.40.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)

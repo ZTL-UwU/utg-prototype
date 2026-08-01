@@ -4,6 +4,7 @@ import { DropShadowFilter } from 'pixi-filters';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { convertToCurrentScript, getScriptFontFamily } from '../../../utils/script';
 import { HUD } from '../../ui/hud';
 import { LayerSelectScreen } from '../layer-select';
 import { EducationLevelSelect } from '../level-select/education-level-select';
@@ -91,9 +92,9 @@ export class LevelMapScreen extends Container {
 
     if (mapUnit.subtitle) {
       this.subtitle = new Text({
-        text: mapUnit.subtitle.text,
+        text: convertToCurrentScript(mapUnit.subtitle.text),
         style: {
-          fontFamily: 'Noto Naskh Arabic Bold',
+          fontFamily: getScriptFontFamily(),
           fontSize: mapUnit.subtitle.fontSize,
           fontWeight: '700',
           fill: mapUnit.subtitle.fontColor,

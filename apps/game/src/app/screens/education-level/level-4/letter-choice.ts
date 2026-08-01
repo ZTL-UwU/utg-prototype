@@ -5,6 +5,7 @@ import { Container, HTMLText, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { createExampleWordStyle, getCompletedWordMarkup } from '../../../../utils/example-words';
+import { convertToCurrentScript } from '../../../../utils/script';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import {
   getWordAudioAlias,
@@ -49,9 +50,10 @@ export class LetterChoice extends Container {
       },
     });
 
-    const wordText = word.word.trim();
+    const wordText = convertToCurrentScript(word.word.trim());
+    const displayLetter = convertToCurrentScript(letter);
     const wordLabel = new HTMLText({
-      text: getCompletedWordMarkup(letter, wordText),
+      text: getCompletedWordMarkup(displayLetter, wordText),
       style: createExampleWordStyle(WORD_FONT_SIZE),
     });
     wordLabel.anchor.set(0.5, 0);

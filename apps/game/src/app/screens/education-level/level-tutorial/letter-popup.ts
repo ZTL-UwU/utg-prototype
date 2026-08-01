@@ -6,6 +6,7 @@ import { Assets, Container, Graphics, HTMLText, Sprite, Texture } from 'pixi.js'
 
 import { engine } from '../../../../engine/getEngine';
 import { createExampleWordStyle, getCompletedWordMarkup } from '../../../../utils/example-words';
+import { convertToCurrentScript } from '../../../../utils/script';
 import {
   getTutorialWordForLetter,
   getWordAudioAlias,
@@ -19,8 +20,6 @@ import { MissingWordNotice } from './missing-word-notice';
 const COLORS = {
   BACKGROUND: 0xe8eef8,
 } as const;
-
-const WORD_STYLE = createExampleWordStyle(180);
 
 function getNextLetter(letter: string): string {
   const index = EDUCATION_LETTERS.indexOf(letter as EducationLetter);
@@ -53,7 +52,9 @@ export class LetterPopup extends Container {
     this.letter = letter;
 
     this.remoteWord = getTutorialWordForLetter(letter);
-    this.exampleWord = this.remoteWord?.word.trim();
+    this.exampleWord = this.remoteWord
+      ? convertToCurrentScript(this.remoteWord.word.trim())
+      : undefined;
 
     this.background = new Graphics();
     this.background.layout = { position: 'absolute', width: '100%', height: '100%' };
@@ -92,8 +93,8 @@ export class LetterPopup extends Container {
 
     if (this.exampleWord && this.remoteWord) {
       this.wordText = new HTMLText({
-        text: getCompletedWordMarkup(this.letter, this.exampleWord),
-        style: WORD_STYLE,
+        text: getCompletedWordMarkup(convertToCurrentScript(this.letter), this.exampleWord),
+        style: createExampleWordStyle(180),
         anchor: 0.5,
         layout: { position: 'absolute', left: '20%', top: '25%' },
       });
