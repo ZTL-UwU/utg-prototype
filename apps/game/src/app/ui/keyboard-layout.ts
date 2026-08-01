@@ -2,6 +2,7 @@ import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Graphics, Text } from 'pixi.js';
 
 import { getKeyFromChar, getKeyboardLabel, getShiftHintLabel } from '../../utils/keymap';
+import { getScriptFontFamily } from '../../utils/script';
 
 export type KeyFeedback = 'none' | 'hint' | 'error' | 'success';
 
@@ -162,7 +163,7 @@ class KeyCap extends Container {
       style: {
         align: 'center',
         fill: isShift ? shiftHintColor : textColor,
-        fontFamily: isAuxiliary ? 'Concert One' : 'Noto Naskh Arabic Bold',
+        fontFamily: isAuxiliary ? 'Concert One' : getScriptFontFamily(),
         fontSize: isAuxiliary ? 26 : 30,
         fontWeight: '700',
         lineHeight: isAuxiliary ? 26 : 30,
@@ -178,7 +179,7 @@ class KeyCap extends Container {
       style: {
         align: 'left',
         fill: shiftHintColor,
-        fontFamily: 'Noto Naskh Arabic Bold',
+        fontFamily: getScriptFontFamily(),
         fontSize: SHIFT_HINT_FONT_SIZE,
         fontWeight: '700',
         lineHeight: SHIFT_HINT_FONT_SIZE,

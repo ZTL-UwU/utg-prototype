@@ -1,3 +1,4 @@
+import { getKeyboardLettersForScript } from '@utg/letters';
 import { convertArabic, type TargetScript } from '@utg/script-converter';
 
 import { scriptState } from '../zustandStores/scriptState';
@@ -7,6 +8,11 @@ const LATIN_CYRILLIC_FONT = 'Nunito';
 
 export function getCurrentTargetScript(): TargetScript {
   return scriptState.getState().currentScript;
+}
+
+/** Full keyboard letter pool for the player's selected orthography. */
+export function getCurrentKeyboardLetters(): readonly string[] {
+  return getKeyboardLettersForScript(getCurrentTargetScript());
 }
 
 /** True when the active orthography is written right-to-left (Arabic). */

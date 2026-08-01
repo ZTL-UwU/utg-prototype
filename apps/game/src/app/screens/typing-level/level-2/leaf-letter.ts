@@ -1,6 +1,8 @@
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
+import { getScriptFontFamily } from '../../../../utils/script';
+
 const LEAF_FONT_COLORS: Record<string, number> = {
   'typing-levels/typing-level-2/leaf-1.svg': 0x502d1a,
   'typing-levels/typing-level-2/leaf-2.svg': 0xfbf0de,
@@ -37,7 +39,7 @@ export class LeafLetter extends Container {
       style: {
         align: 'center',
         fill: LEAF_FONT_COLORS[leafAsset] ?? 0xfbf0de,
-        fontFamily: 'Noto Naskh Arabic Bold',
+        fontFamily: getScriptFontFamily(),
         fontSize: size * 0.3,
         fontWeight: '700',
         padding: 30,

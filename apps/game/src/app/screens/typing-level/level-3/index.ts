@@ -3,6 +3,7 @@ import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { getCurrentKeyboardLetters, getScriptFontFamily } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -55,7 +56,7 @@ class NoteCard extends Container {
     resolution: 2,
     style: {
       fill: COLORS.white,
-      fontFamily: 'Noto Naskh Arabic Bold',
+      fontFamily: getScriptFontFamily(),
       fontSize: 42,
       fontWeight: '700',
       padding: 20,
@@ -100,7 +101,7 @@ class NoteCard extends Container {
   }
 }
 
-function shuffledNotes(letters: string[], noteCount: number) {
+function shuffledNotes(letters: readonly string[], noteCount: number) {
   if (letters.length === 0) return [];
 
   const result: string[] = [];
@@ -163,7 +164,7 @@ export class TypingInstrumentScreen extends Container {
     const mapUnit = findMapUnitForLevel(typedLevel);
     super();
     this.level = typedLevel;
-    this.notes = shuffledNotes(typedLevel.props.letters, typedLevel.props.noteCount);
+    this.notes = shuffledNotes(getCurrentKeyboardLetters(), typedLevel.props.noteCount);
     this.queueCards = Array.from(
       { length: this.queueSize },
       () => new NoteCard(SLOT_WIDTH, SLOT_HEIGHT, COLORS.queue),

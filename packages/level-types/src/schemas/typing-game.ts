@@ -1,19 +1,17 @@
 import { z } from 'zod';
 
 export const typingDesertPropsSchema = z.object({
-  letters: z.array(z.string().min(1)),
   rowSize: z.number().int().min(1).max(12),
 });
 
 export type TypingDesertProps = z.infer<typeof typingDesertPropsSchema>;
 
 export function defaultTypingDesertProps(): TypingDesertProps {
-  return { letters: [], rowSize: 6 };
+  return { rowSize: 6 };
 }
 
 export const typingSandstormPropsSchema = z
   .object({
-    letters: z.array(z.string().min(1)),
     letterGoal: z.number().int().positive(),
     maxActiveLetters: z.number().int().min(1),
     minSpawnDelayMs: z.number().nonnegative(),
@@ -34,7 +32,6 @@ export type TypingSandstormProps = z.infer<typeof typingSandstormPropsSchema>;
 
 export function defaultTypingSandstormProps(): TypingSandstormProps {
   return {
-    letters: [],
     letterGoal: 18,
     maxActiveLetters: 3,
     minSpawnDelayMs: 1000,
@@ -45,14 +42,13 @@ export function defaultTypingSandstormProps(): TypingSandstormProps {
 }
 
 export const typingInstrumentPropsSchema = z.object({
-  letters: z.array(z.string().min(1)),
   noteCount: z.number().int().positive(),
 });
 
 export type TypingInstrumentProps = z.infer<typeof typingInstrumentPropsSchema>;
 
 export function defaultTypingInstrumentProps(): TypingInstrumentProps {
-  return { letters: [], noteCount: 20 };
+  return { noteCount: 20 };
 }
 
 export const typingWordsPropsSchema = z.object({

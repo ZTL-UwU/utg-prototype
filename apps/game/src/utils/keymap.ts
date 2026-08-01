@@ -1,9 +1,12 @@
+import { getCurrentTargetScript } from './script';
+
 export type KeyEntry = { text: string; layerId: string };
 
 type LayerId = 'default' | 'shift';
+type LayerMap = Record<LayerId, Record<string, string>>;
 
-/** Physical key code → glyph for the unshifted Uyghur keyboard layer. */
-const DEFAULT_LAYER: Record<string, string> = {
+/** Physical key code → glyph for the unshifted Uyghur Arabic keyboard layer. */
+const ARABIC_DEFAULT_LAYER: Record<string, string> = {
   Digit1: '1',
   Digit2: '2',
   Digit3: '3',
@@ -58,8 +61,8 @@ const DEFAULT_LAYER: Record<string, string> = {
   Enter: '*Enter*',
 };
 
-/** Physical key code → glyph for the shifted Uyghur keyboard layer. */
-const SHIFT_LAYER: Record<string, string> = {
+/** Physical key code → glyph for the shifted Uyghur Arabic keyboard layer. */
+const ARABIC_SHIFT_LAYER: Record<string, string> = {
   Digit1: '!',
   Digit2: '@',
   Digit3: '#',
@@ -95,9 +98,106 @@ const SHIFT_LAYER: Record<string, string> = {
   Enter: '*Enter*',
 };
 
-const LAYERS: Record<LayerId, Record<string, string>> = {
-  default: DEFAULT_LAYER,
-  shift: SHIFT_LAYER,
+/**
+ * Uyghur Latin (ULY) QWERTY layer.
+ * Digraphs (ch, sh, gh, ng, zh) are typed as separate base letters.
+ */
+const LATIN_DEFAULT_LAYER: Record<string, string> = {
+  Digit1: '1',
+  Digit2: '2',
+  Digit3: '3',
+  Digit4: '4',
+  Digit5: '5',
+  Digit6: '6',
+  Digit7: '7',
+  Digit8: '8',
+  Digit9: '9',
+  Digit0: '0',
+  Minus: '-',
+  Equal: '=',
+  Backspace: '⌫',
+  KeyQ: 'q',
+  KeyW: 'w',
+  KeyE: 'e',
+  KeyR: 'r',
+  KeyT: 't',
+  KeyY: 'y',
+  KeyU: 'u',
+  KeyI: 'i',
+  KeyO: 'o',
+  KeyP: 'p',
+  BracketLeft: '[',
+  BracketRight: ']',
+  Backquote: '`',
+  KeyA: 'a',
+  KeyS: 's',
+  KeyD: 'd',
+  KeyF: 'f',
+  KeyG: 'g',
+  KeyH: 'h',
+  KeyJ: 'j',
+  KeyK: 'k',
+  KeyL: 'l',
+  Semicolon: ';',
+  Quote: "'",
+  Backslash: '\\',
+  ShiftLeft: '*Shift*',
+  KeyZ: 'z',
+  KeyX: 'x',
+  KeyC: 'c',
+  KeyV: 'v',
+  KeyB: 'b',
+  KeyN: 'n',
+  KeyM: 'm',
+  Comma: ',',
+  Period: '.',
+  Slash: '/',
+  AltLeft: '*Menu*',
+  Space: ' ',
+  Enter: '*Enter*',
+};
+
+/** Shifted ULY layer: symbols plus é / ö / ü on their base vowel keys. */
+const LATIN_SHIFT_LAYER: Record<string, string> = {
+  Digit1: '!',
+  Digit2: '@',
+  Digit3: '#',
+  Digit4: '$',
+  Digit5: '%',
+  Digit6: '^',
+  Digit7: '&',
+  Digit8: '*',
+  Digit9: '(',
+  Digit0: ')',
+  Minus: '_',
+  Equal: '+',
+  Backspace: '⌫',
+  KeyE: 'é',
+  KeyU: 'ü',
+  KeyO: 'ö',
+  BracketLeft: '{',
+  BracketRight: '}',
+  Backquote: '~',
+  Semicolon: ':',
+  Quote: '"',
+  Backslash: '|',
+  ShiftLeft: '*Shift*',
+  Comma: '<',
+  Period: '>',
+  Slash: '?',
+  AltLeft: '*Menu*',
+  Space: ' ',
+  Enter: '*Enter*',
+};
+
+const ARABIC_LAYERS: LayerMap = {
+  default: ARABIC_DEFAULT_LAYER,
+  shift: ARABIC_SHIFT_LAYER,
+};
+
+const LATIN_LAYERS: LayerMap = {
+  default: LATIN_DEFAULT_LAYER,
+  shift: LATIN_SHIFT_LAYER,
 };
 
 const AUXILIARY_LABELS: Record<string, string> = {
@@ -115,8 +215,12 @@ const AUXILIARY_LABELS: Record<string, string> = {
   Space: '',
 };
 
+function getLayers(): LayerMap {
+  return getCurrentTargetScript() === 'Latin' ? LATIN_LAYERS : ARABIC_LAYERS;
+}
+
 export function getMappedFromKeyCode(code: string, shift: boolean): string {
-  const layer = LAYERS[shift ? 'shift' : 'default'];
+  const layer = getLayers()[shift ? 'shift' : 'default'];
   return layer[code] ?? '';
 }
 
@@ -136,12 +240,13 @@ export function getKeyboardLabel(code: string, shift: boolean): string {
   return AUXILIARY_LABELS[code] ?? '';
 }
 
-/** Shift-layer Arabic letter shown as a corner hint when Shift is not held. */
+/** Shift-layer letter shown as a corner hint when Shift is not held. */
 export function getShiftHintLabel(code: string): string {
   const defaultText = getMappedFromKeyCode(code, false);
   const shiftText = getMappedFromKeyCode(code, true);
   if (!shiftText || shiftText === defaultText) return '';
-  if (!/\p{Script=Arabic}/u.test(shiftText)) return '';
+  // Letter keys only (Arabic shift letters, Latin é/ö/ü) — skip punctuation.
+  if (!/\p{L}/u.test(shiftText)) return '';
   return formatKeyboardLabel(shiftText);
 }
 
@@ -150,7 +255,7 @@ export function getMappedFromKeyboardEvent(event: KeyboardEvent): string {
 }
 
 export function getKeyFromChar(char: string): string {
-  for (const layer of Object.values(LAYERS)) {
+  for (const layer of Object.values(getLayers())) {
     for (const [code, text] of Object.entries(layer)) {
       if (text === char) return code;
     }

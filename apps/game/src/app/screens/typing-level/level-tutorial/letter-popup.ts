@@ -5,6 +5,7 @@ import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { getKeyFromChar } from '../../../../utils/keymap';
+import { getScriptFontFamily } from '../../../../utils/script';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { HandGuide } from './hand-guide';
 
@@ -60,7 +61,7 @@ function createGuideKey(label: string) {
     resolution: 2,
     style: {
       fill: COLORS.keyText,
-      fontFamily: 'Noto Naskh Arabic Bold',
+      fontFamily: getScriptFontFamily(),
       fontSize: 60,
       fontWeight: '700',
       padding: 20,

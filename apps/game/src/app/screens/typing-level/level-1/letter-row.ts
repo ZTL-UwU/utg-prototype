@@ -2,6 +2,7 @@ import { Container } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { getCurrentKeyboardLetters } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -13,7 +14,7 @@ const CARD_SIZE = 140;
 const CARD_GAP = 40;
 const STEP = CARD_SIZE + CARD_GAP;
 
-function makeRow(letters: string[], rowSize: number): string[] {
+function makeRow(letters: readonly string[], rowSize: number): string[] {
   return Array.from({ length: rowSize }, () => {
     const pick = letters[Math.floor(Math.random() * letters.length)];
     return pick ?? '';
@@ -31,7 +32,7 @@ export class LetterRow extends Container {
 
   constructor(keyboard: KeyboardLayout, level: TLevel) {
     const typedLevel = getTypedLevel(level, 'typing-desert');
-    const { letters, rowSize } = typedLevel.props;
+    const { rowSize } = typedLevel.props;
     const rowWidth = rowSize * CARD_SIZE + (rowSize - 1) * CARD_GAP;
 
     super({
@@ -45,7 +46,7 @@ export class LetterRow extends Container {
 
     this.keyboard = keyboard;
     this.level = typedLevel;
-    this.letters = makeRow(letters, rowSize);
+    this.letters = makeRow(getCurrentKeyboardLetters(), rowSize);
     this.lettersContainer = new Container({
       layout: {
         width: rowWidth,

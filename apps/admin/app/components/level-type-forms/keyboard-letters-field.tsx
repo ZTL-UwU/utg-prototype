@@ -1,4 +1,4 @@
-import { KEYBOARD_LETTERS } from '@utg/letters';
+import { KEYBOARD_LETTERS_ARABIC } from '@utg/letters';
 
 import { EducationLetterSelector } from '~/components/education-letter-selector';
 import { Field, FieldDescription, FieldError, FieldLabel } from '~/components/ui/field';
@@ -20,7 +20,11 @@ export function KeyboardLettersField({
     <Field data-invalid={isInvalid}>
       <FieldLabel>Letters</FieldLabel>
       <FieldDescription>{description}</FieldDescription>
-      <EducationLetterSelector value={value} onChange={onChange} letters={KEYBOARD_LETTERS} />
+      <EducationLetterSelector
+        value={value}
+        onChange={onChange}
+        letters={KEYBOARD_LETTERS_ARABIC}
+      />
       {isInvalid && <FieldError errors={errors as ({ message?: string } | undefined)[]} />}
     </Field>
   );

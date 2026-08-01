@@ -3,6 +3,7 @@ import { Container, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { getCurrentKeyboardLetters } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -87,7 +88,7 @@ export class TypingSandstormScreen extends Container {
       },
     });
     this.level = typedLevel;
-    this.letterPool = typedLevel.props.letters;
+    this.letterPool = [...getCurrentKeyboardLetters()];
     this.letterGoal = typedLevel.props.letterGoal;
     this.maxActiveLetters = typedLevel.props.maxActiveLetters;
     this.minSpawnDelayMs = typedLevel.props.minSpawnDelayMs;

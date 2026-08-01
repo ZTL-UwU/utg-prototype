@@ -1,7 +1,6 @@
 import { useForm } from '@tanstack/react-form';
 import { typingSandstormPropsSchema, type TypingSandstormProps } from '@utg/level-types';
 
-import { KeyboardLettersField } from '~/components/level-type-forms/keyboard-letters-field';
 import { NumberPropsField } from '~/components/level-type-forms/number-props-field';
 import {
   DirtyStateBridge,
@@ -34,21 +33,6 @@ export function TypingSandstormPropsForm({
         selector={(state) => !state.isDefaultValue}
         children={(dirty) => <DirtyStateBridge dirty={dirty} onDirtyChange={onDirtyChange} />}
       />
-
-      <form.Field name="letters" mode="array">
-        {(field) => (
-          <KeyboardLettersField
-            value={field.state.value}
-            onChange={(letters) => {
-              field.setValue(letters);
-              field.handleBlur();
-            }}
-            isInvalid={field.state.meta.isTouched && !field.state.meta.isValid}
-            errors={field.state.meta.errors}
-            description="Keyboard letters that can fall during the storm."
-          />
-        )}
-      </form.Field>
 
       <form.Field name="letterGoal">
         {(field) => (

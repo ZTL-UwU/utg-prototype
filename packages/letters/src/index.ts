@@ -73,7 +73,7 @@ export const TYPING_SEQUENCE = new Map<EducationLetter, readonly string[]>([
 ]);
 
 /** Uyghur keyboard letter pool for typing-level configuration. */
-export const KEYBOARD_LETTERS = [
+export const KEYBOARD_LETTERS_ARABIC = [
   'چ',
   'ۋ',
   'ې',
@@ -110,4 +110,84 @@ export const KEYBOARD_LETTERS = [
   'لا',
 ] as const;
 
-export type KeyboardLetter = (typeof KEYBOARD_LETTERS)[number];
+/** Uyghur Latin Script (ULS) keyboard letter pool for typing-level configuration. */
+export const KEYBOARD_LETTERS_LATIN = [
+  'c',
+  'h',
+  'w',
+  'é',
+  'r',
+  't',
+  'y',
+  'u',
+  'n',
+  'g',
+  'o',
+  'p',
+  's',
+  'd',
+  'a',
+  'e',
+  'i',
+  'q',
+  'k',
+  'l',
+  'z',
+  'ü',
+  'b',
+  'm',
+  'f',
+  'x',
+  'j',
+  'ö',
+] as const;
+
+/** Uyghur Cyrillic Script (UCS) keyboard letter pool for typing-level configuration. */
+export const KEYBOARD_LETTERS_CYRILLIC = [
+  'ч',
+  'в',
+  'е',
+  'р',
+  'т',
+  'й',
+  'у',
+  'ң',
+  'о',
+  'п',
+  'һ',
+  'с',
+  'д',
+  'а',
+  'ә',
+  'и',
+  'қ',
+  'к',
+  'л',
+  'з',
+  'ш',
+  'ғ',
+  'ү',
+  'б',
+  'н',
+  'м',
+  'ж',
+  'ф',
+  'г',
+  'х',
+  'җ',
+  'ө',
+] as const;
+
+export type KeyboardScript = 'Arabic' | 'Latin' | 'Cyrillic';
+
+/** Full keyboard letter pool for the given orthography. */
+export function getKeyboardLettersForScript(script: KeyboardScript): readonly string[] {
+  switch (script) {
+    case 'Latin':
+      return KEYBOARD_LETTERS_LATIN;
+    case 'Cyrillic':
+      return KEYBOARD_LETTERS_CYRILLIC;
+    default:
+      return KEYBOARD_LETTERS_ARABIC;
+  }
+}

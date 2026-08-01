@@ -1,6 +1,8 @@
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Graphics, Text } from 'pixi.js';
 
+import { getScriptFontFamily } from '../../utils/script';
+
 export type TypingLetterFeedback = 'none' | 'error' | 'success';
 
 type TypingLetterOptions = {
@@ -69,7 +71,7 @@ export class TypingLetter extends Container {
       style: {
         align: 'center',
         fill: 0xffffff,
-        fontFamily: 'Noto Naskh Arabic Bold',
+        fontFamily: getScriptFontFamily(),
         fontSize: cardSize * 0.48,
         fontWeight: '700',
         padding: 30,
