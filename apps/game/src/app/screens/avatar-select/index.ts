@@ -9,14 +9,19 @@ import { useAuthStore } from '../../../zustandStores/auth';
 const CELL_SIZE = 200;
 const GRID_GAP = 48;
 
+type AvatarSelectMode = {
+  mode?: 'onboarding' | 'profile';
+};
+
 export class AvatarSelectScreen extends Container {
   public static assetBundles = ['avatar-select', 'home'];
 
   private background: Sprite;
   private card: Container;
   private title: Text;
+  private mode: 'onboarding' | 'profile';
 
-  constructor() {
+  constructor({ mode = 'onboarding' }: AvatarSelectMode = {}) {
     super({
       layout: {
         flexDirection: 'column',
@@ -24,6 +29,8 @@ export class AvatarSelectScreen extends Container {
         justifyContent: 'center',
       },
     });
+
+    this.mode = mode;
 
     this.background = new Sprite({
       texture: Texture.from('home/background.png'),
@@ -149,10 +156,16 @@ export class AvatarSelectScreen extends Container {
     });
   }
 
-  /** Persist the chosen avatar id on the user, then continue into the game. */
+  /** Persist the chosen avatar id on the user, then continue or close the selector based on mode. */
   private selectAvatar(id: number) {
     const { user, setUser } = useAuthStore.getState();
+
     if (user) setUser({ ...user, avatar: id });
+
+    if (this.mode === 'profile') {
+      void engine().navigation.hidePopup();
+      return;
+    }
 
     void import('../layer-select').then(({ LayerSelectScreen }) =>
       engine().navigation.showScreen(LayerSelectScreen),
