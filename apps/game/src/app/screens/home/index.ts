@@ -1,20 +1,17 @@
-import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
-import { Graphics, Sprite, Text, Texture, type TextDropShadow, type Ticker } from 'pixi.js';
+import { Sprite, Text, Texture, type TextDropShadow, type Ticker } from 'pixi.js';
 import { Container } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { ensureValidSession } from '../../../lib/authSession';
 import { continueIntoGame } from '../../../utils/continueIntoGame';
 import { useAuthStore } from '../../../zustandStores/auth';
-import type { ORTHO_ENUM } from '../../../zustandStores/scriptState';
+import { scriptState, type ORTHO_ENUM } from '../../../zustandStores/scriptState';
 import { AuthScreen } from './auth';
 import { Butterfly } from './butterfly';
 import { ScriptButton } from './script-button';
 
 const TITLE_ENTER_OFFSET = 60;
-const BUTTON_ENTER_OFFSET = 40;
-
 /** The screen that holds the app */
 export class HomeScreen extends Container {
   /** Assets bundles required by this screen */
@@ -22,11 +19,11 @@ export class HomeScreen extends Container {
 
   private background: Sprite;
   private butterfly: Butterfly;
-  private startButton: FancyButton;
   private titleContainer: Container;
   private scriptButtonContainer: Container;
   private title: Text;
   private subtitle: Text;
+  private isStarting = false;
 
   constructor() {
     super({
@@ -34,7 +31,6 @@ export class HomeScreen extends Container {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        // gap: 150,
         gap: 60,
       },
     });
@@ -69,7 +65,9 @@ export class HomeScreen extends Container {
 
     const scripts: ORTHO_ENUM[] = ['Arabic', 'Cyrillic', 'Latin'];
     for (const s of scripts) {
-      const btn = new ScriptButton(s);
+      const btn = new ScriptButton(s, () => {
+        void this.start(s);
+      });
       btn.layout = { width: ScriptButton.BTN_WIDTH, height: ScriptButton.BTN_HEIGHT, isLeaf: true };
       this.scriptButtonContainer.addChild(btn);
     }
@@ -106,73 +104,37 @@ export class HomeScreen extends Container {
 
     this.titleContainer.addChild(this.title, this.subtitle);
 
-    const buttonHeight = 180;
-    const buttonWidth = 400;
-    this.startButton = new FancyButton({
-      defaultView: new Graphics()
-        .roundRect(0, 15, buttonWidth, buttonHeight, 40)
-        .fill({ color: 0x000000, alpha: 0.7 })
-        .roundRect(0, 0, buttonWidth, buttonHeight, 40)
-        .fill(0x2a523c),
-      padding: 20,
-      text: new Text({
-        text: 'START',
-        style: {
-          fill: 0xfdf7e7,
-          fontSize: 80,
-          fontFamily: 'Concert One',
-          fontWeight: '700',
-        },
-      }),
-      animations: {
-        hover: {
-          props: {
-            scale: { x: 1.1, y: 1.1 },
-          },
-          duration: 100,
-        },
-        pressed: {
-          props: {
-            scale: { x: 0.9, y: 0.9 },
-          },
-          duration: 100,
-        },
-      },
-      anchor: 0.5,
-    });
-
-    this.startButton.layout = {
-      width: buttonWidth,
-      height: buttonHeight,
-      isLeaf: true, // Fixes the position issue of the button
-    };
-
-    this.startButton.onPress.connect(() => {
-      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      if (!this.startButton.enabled) return;
-      this.startButton.enabled = false;
-      void (async () => {
-        try {
-          const ok = await ensureValidSession();
-          if (ok) {
-            const { user } = useAuthStore.getState();
-            if (user) {
-              continueIntoGame(user);
-              return;
-            }
-          }
-          void engine().navigation.showScreen(AuthScreen);
-        } finally {
-          this.startButton.enabled = true;
-        }
-      })();
-    });
     const bottomGroup = new Container({
       layout: { flexDirection: 'column', alignItems: 'center', gap: 30 }, // tight gap here
     });
-    bottomGroup.addChild(this.startButton, this.scriptButtonContainer);
+    bottomGroup.addChild(this.scriptButtonContainer);
 
     this.addChild(this.background, this.butterfly, this.titleContainer, bottomGroup);
+  }
+
+  private async start(script: ORTHO_ENUM) {
+    void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+
+    if (this.isStarting) return;
+
+    this.isStarting = true;
+    this.scriptButtonContainer.interactiveChildren = false;
+
+    scriptState.getState().setCurrentScript(script);
+    try {
+      const ok = await ensureValidSession();
+      if (ok) {
+        const { user } = useAuthStore.getState();
+        if (user) {
+          continueIntoGame(user);
+          return;
+        }
+      }
+      await engine().navigation.showScreen(AuthScreen);
+    } finally {
+      this.isStarting = false;
+      this.scriptButtonContainer.interactiveChildren = true;
+    }
   }
 
   /** Prepare the screen just before showing */
@@ -205,41 +167,20 @@ export class HomeScreen extends Container {
     this.butterfly.alpha = 0;
     this.titleContainer.alpha = 0;
     this.titleContainer.y = TITLE_ENTER_OFFSET;
-    this.startButton.alpha = 0;
-    this.startButton.y = BUTTON_ENTER_OFFSET;
-    this.startButton.scale.set(0.92);
 
     await Promise.all([
       animate(this.butterfly, { alpha: 1 }, { duration: 0.5, ease: 'easeOut' }),
       animate(this.titleContainer, { alpha: 1, y: 0 }, { duration: 0.45, ease: 'backOut' }),
-      animate(
-        this.startButton,
-        { alpha: 1, y: 0 },
-        { duration: 0.4, ease: 'backOut', delay: 0.15 },
-      ),
-      animate(
-        this.startButton.scale,
-        { x: 1, y: 1 },
-        { duration: 0.4, ease: 'backOut', delay: 0.15 },
-      ),
     ]);
   }
 
   /** Hide screen with animations */
   public async hide(): Promise<void> {
-    await Promise.all([
-      animate(
-        this.titleContainer,
-        { alpha: 0, y: -TITLE_ENTER_OFFSET },
-        { duration: 0.2, ease: 'backIn' },
-      ),
-      animate(
-        this.startButton,
-        { alpha: 0, y: BUTTON_ENTER_OFFSET },
-        { duration: 0.2, ease: 'backIn' },
-      ),
-      animate(this.startButton.scale, { x: 0.92, y: 0.92 }, { duration: 0.2, ease: 'backIn' }),
-    ]);
+    await animate(
+      this.titleContainer,
+      { alpha: 0, y: -TITLE_ENTER_OFFSET },
+      { duration: 0.2, ease: 'backIn' },
+    );
   }
 
   /** Auto pause the app when window go out of focus */
