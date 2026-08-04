@@ -36,8 +36,8 @@ export const EDUCATION_LETTERS = [
 
 export type EducationLetter = (typeof EDUCATION_LETTERS)[number];
 
-/** Physical key sequence required to type each education letter. */
-export const TYPING_SEQUENCE = new Map<EducationLetter, readonly string[]>([
+/** Physical key sequence required to type each education letter on the Arabic keyboard. */
+export const TYPING_SEQUENCE_ARABIC = new Map<EducationLetter, readonly string[]>([
   ['ئا', ['ئ', 'ا']],
   ['ئە', ['ئ', 'ە']],
   ['ب', ['ب']],
@@ -71,6 +71,87 @@ export const TYPING_SEQUENCE = new Map<EducationLetter, readonly string[]>([
   ['ئى', ['ئ', 'ى']],
   ['ي', ['ي']],
 ]);
+
+/**
+ * Physical key sequence required to type each education letter on the Latin (ULY) keyboard.
+ * Digraphs are separate base letters; é / ö / ü require Shift.
+ */
+export const TYPING_SEQUENCE_LATIN = new Map<EducationLetter, readonly string[]>([
+  ['ئا', ['a']],
+  ['ئە', ['e']],
+  ['ب', ['b']],
+  ['پ', ['p']],
+  ['ت', ['t']],
+  ['ج', ['j']],
+  ['چ', ['c', 'h']],
+  ['خ', ['x']],
+  ['د', ['d']],
+  ['ر', ['r']],
+  ['ز', ['z']],
+  ['ژ', ['z', 'h']],
+  ['س', ['s']],
+  ['ش', ['s', 'h']],
+  ['غ', ['g', 'h']],
+  ['ف', ['f']],
+  ['ق', ['q']],
+  ['ك', ['k']],
+  ['گ', ['g']],
+  ['ڭ', ['n', 'g']],
+  ['ل', ['l']],
+  ['م', ['m']],
+  ['ن', ['n']],
+  ['ھ', ['h']],
+  ['ئو', ['o']],
+  ['ئۇ', ['u']],
+  ['ئۆ', ['shift', 'o']],
+  ['ئۈ', ['shift', 'u']],
+  ['ۋ', ['w']],
+  ['ئې', ['shift', 'e']],
+  ['ئى', ['i']],
+  ['ي', ['y']],
+]);
+
+/**
+ * Physical key sequence required to type each education letter on the Cyrillic keyboard.
+ * Layout mirrors Arabic key positions (phonetic); no hamza prefix.
+ */
+export const TYPING_SEQUENCE_CYRILLIC = new Map<EducationLetter, readonly string[]>([
+  ['ئا', ['а']],
+  ['ئە', ['ә']],
+  ['ب', ['б']],
+  ['پ', ['п']],
+  ['ت', ['т']],
+  ['ج', ['shift', 'қ']],
+  ['چ', ['ч']],
+  ['خ', ['shift', 'и']],
+  ['د', ['д']],
+  ['ر', ['р']],
+  ['ز', ['з']],
+  ['ژ', ['shift', 'д']],
+  ['س', ['с']],
+  ['ش', ['ш']],
+  ['غ', ['ғ']],
+  ['ف', ['shift', 'а']],
+  ['ق', ['қ']],
+  ['ك', ['к']],
+  ['گ', ['shift', 'ә']],
+  ['ڭ', ['ң']],
+  ['ل', ['л']],
+  ['م', ['м']],
+  ['ن', ['н']],
+  ['ھ', ['һ']],
+  ['ئو', ['о']],
+  ['ئۇ', ['у']],
+  ['ئۆ', ['shift', 'к']],
+  ['ئۈ', ['ү']],
+  ['ۋ', ['в']],
+  ['ئې', ['е']],
+  ['ئى', ['и']],
+  ['ي', ['й']],
+]);
+
+/** Aliases Arabic sequences; prefer {@link getTypingSequenceForScript}. */
+export const TYPING_SEQUENCE = TYPING_SEQUENCE_ARABIC;
 
 /** Uyghur keyboard letter pool for typing-level configuration. */
 export const KEYBOARD_LETTERS_ARABIC = [
@@ -189,5 +270,19 @@ export function getKeyboardLettersForScript(script: KeyboardScript): readonly st
       return KEYBOARD_LETTERS_CYRILLIC;
     default:
       return KEYBOARD_LETTERS_ARABIC;
+  }
+}
+
+/** Typing key sequence map for the given orthography. */
+export function getTypingSequenceForScript(
+  script: KeyboardScript,
+): Map<EducationLetter, readonly string[]> {
+  switch (script) {
+    case 'Latin':
+      return TYPING_SEQUENCE_LATIN;
+    case 'Cyrillic':
+      return TYPING_SEQUENCE_CYRILLIC;
+    default:
+      return TYPING_SEQUENCE_ARABIC;
   }
 }

@@ -1,11 +1,15 @@
 import { FancyButton } from '@pixi/ui';
-import { EDUCATION_LETTERS, TYPING_SEQUENCE } from '@utg/letters';
+import { EDUCATION_LETTERS, getTypingSequenceForScript, type EducationLetter } from '@utg/letters';
 import { animate } from 'motion';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { getKeyFromChar } from '../../../../utils/keymap';
-import { getScriptFontFamily } from '../../../../utils/script';
+import {
+  convertToCurrentScript,
+  getCurrentTargetScript,
+  getScriptFontFamily,
+} from '../../../../utils/script';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { HandGuide } from './hand-guide';
 
@@ -217,8 +221,8 @@ export class LetterPopup extends Container {
   }
 
   private createSteps(letter: string): TutorialStep[] {
-    const sequence: readonly string[] = TYPING_SEQUENCE.get(
-      letter as (typeof EDUCATION_LETTERS)[number],
+    const sequence: readonly string[] = getTypingSequenceForScript(getCurrentTargetScript()).get(
+      letter as EducationLetter,
     ) ?? [letter];
 
     return sequence.flatMap<TutorialStep>((part) => {
@@ -233,7 +237,11 @@ export class LetterPopup extends Container {
 
   private buildGuide() {
     const items: GuideItem[] = [
-      { container: createGuideKey(this.letter), width: GUIDE_KEY_WIDTH, y: 0 },
+      {
+        container: createGuideKey(convertToCurrentScript(this.letter)),
+        width: GUIDE_KEY_WIDTH,
+        y: 0,
+      },
       { container: createArrow(), width: 120, y: 34 },
     ];
 
