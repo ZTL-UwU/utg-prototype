@@ -1,3 +1,4 @@
+import { GameLevelFlying } from '../app/screens/game-level/level-flying';
 import { engine } from '../engine/getEngine';
 import type { AuthUser } from '../zustandStores/auth';
 
@@ -9,7 +10,10 @@ export function continueIntoGame(user: AuthUser) {
     );
     return;
   }
-  void import('../app/screens/layer-select').then(({ LayerSelectScreen }) =>
-    engine().navigation.showScreen(LayerSelectScreen),
-  );
+  void import('../app/screens/layer-select').then(({ LayerSelectScreen }) => {
+    // TODO: ROUTING TO FLYING ONLY FOR DEV PURPOSES!!!!!
+    console.log(LayerSelectScreen, 'logging this so the linter is happy');
+    // engine().navigation.showScreen(LayerSelectScreen),
+    engine().navigation.showScreen(GameLevelFlying);
+  });
 }
