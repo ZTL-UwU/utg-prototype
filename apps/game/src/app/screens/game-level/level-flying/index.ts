@@ -14,14 +14,18 @@ import { engine } from '../../../../engine/getEngine';
 import { createTypingWordStyle, getHighlightedWordMarkup } from '../../../../utils/example-words';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { convertToCurrentScript } from '../../../../utils/script';
+import { useScoreManager } from '../../../../zustandStores/scoreManager';
+import useSessionStore from '../../../../zustandStores/sessionStore';
+import { REMOTE_WORDS_BUNDLE, resolveWordsByIds } from '../../../../zustandStores/wordStore';
+import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
+import { getTypedLevel, type TLevel } from '../../level-map/units';
 import { blinkAlpha, HEART_WIDTH, LivesBar } from './lives-bar';
 
-// PHYSICS CONSTS
+// PHYSICS CONSTS (JUMP is now props.jumpHeight)
 const GRAVITY = 0.000495; // px/ms^2
-const JUMP = 100; //px
 const MAX_FRAME_MS = 50;
 
 // BIRD CONSTS
@@ -29,21 +33,14 @@ const BIRD_Y_CEIL = 10;
 const DEATH_SPIN = 0.004; // rad/ms
 const MAX_DEATH_ROTATION = Math.PI / 2;
 
-// LIVES CONSTS
-const MAX_LIVES = 5;
-const INVULNERABLE_MS = 1000;
+// LIVES CONSTS (max lives + invulnerable duration are now props)
 const LIVES_MARGIN = 40;
 
-// COLUMN CONSTS
-const COL_VX = 0.1; // px/ms
-const MAX_ACTIVE_COLUMNS = 3;
+// COLUMN CONSTS (velocity + max active are now props)
 const MIN_COLUMN_SPAWN_GAP_PX = 500;
 const MAX_COLUMN_SPAWN_GAP_PX = 700;
 
-// WORD CONSTS
-// TODO: replace by level props later
-const DUMMY_WORDS = ['ئالما', 'تاۋۇز', 'كىتاب', 'مەكتەپ', 'ياخشى'];
-const WORD_FONT_SIZE = 90;
+// WORD CONSTS (words + font size are now props)
 const WORD_BASE_COLOR = 0x333333; // remaining (untyped) letters
 const WORD_TOP_RATIO = 0.12; // vertical placement of the word
 const KEY_FEEDBACK_MS = 350;
@@ -56,11 +53,21 @@ function rectsOverlap(a: Bounds, b: Bounds) {
   return a.minX < b.maxX && a.maxX > b.minX && a.minY < b.maxY && a.maxY > b.minY;
 }
 
+/**
+ * Randomises the word order; `totalWords` of 0 (or ≥ the pool size) plays every word once,
+ * otherwise a random subset of that size. Mirrors the fruit-fall selection.
+ */
+function pickWords(words: string[], totalWords: number): string[] {
+  const shuffled = [...words].sort(() => Math.random() - 0.5);
+  return totalWords === 0 ? shuffled : shuffled.slice(0, totalWords);
+}
+
 // playing → dying (cosmetic fall after a hit) → over (gameOver already fired).
 type FlyingState = 'playing' | 'dying' | 'over';
 
 export class GameLevelFlying extends Container {
-  public static assetBundles = ['game-level', 'game-level-flying', 'ui'];
+  public static assetBundles = ['game-level', 'game-level-flying', 'ui', REMOTE_WORDS_BUNDLE];
+  public static helpAssets: string[] = [];
   private background: Sprite;
   private bird: Sprite;
   private birdVY = 0;
@@ -85,8 +92,20 @@ export class GameLevelFlying extends Container {
   private activeWord: string;
   private activeLetterIdx = 0;
   private feedbackTimeouts: number[] = [];
-  constructor() {
+  private readonly level: TLevel;
+  private readonly jumpHeight: number;
+  private readonly columnVelocity: number;
+  private readonly maxActiveColumns: number;
+  private readonly invulnerableDurationMs: number;
+  constructor(level: TLevel) {
     super();
+    const typedLevel = getTypedLevel(level, 'game-flying');
+    this.level = typedLevel;
+    const props = typedLevel.props;
+    this.jumpHeight = props.jumpHeight;
+    this.columnVelocity = props.columnVelocity;
+    this.maxActiveColumns = props.maxActiveColumns;
+    this.invulnerableDurationMs = props.invulnerableMs;
 
     this.background = new Sprite({
       texture: Texture.from('game-levels/game-level-flying/background.png'),
@@ -99,12 +118,13 @@ export class GameLevelFlying extends Container {
     this.elapsedDistance = 0;
     this.spawnDistanceThreshold = 0;
     this.activeColumns = [];
-    this.livesBar = new LivesBar(MAX_LIVES);
+    this.livesBar = new LivesBar(props.maxLives);
     this.bird.anchor.set(0.5);
 
-    this.words = DUMMY_WORDS.map(convertToCurrentScript);
+    const wordPool = resolveWordsByIds(props.wordIds).map((word) => word.word);
+    this.words = pickWords(wordPool, props.totalWords).map(convertToCurrentScript);
     this.activeWord = this.words[0];
-    this.wordStyle = createTypingWordStyle(WORD_FONT_SIZE, WORD_BASE_COLOR);
+    this.wordStyle = createTypingWordStyle(props.wordFontSize, WORD_BASE_COLOR);
     this.wordText = new HTMLText({ style: this.wordStyle });
     this.wordText.anchor.set(0.5);
 
@@ -163,7 +183,6 @@ export class GameLevelFlying extends Container {
     const overshoot = this.bird.getBounds().maxY - this.screenHeight;
     if (overshoot >= 0) {
       this.bird.y -= overshoot; // settle exactly on the floor
-      this.state = 'over';
       this.gameOver();
     }
   }
@@ -193,7 +212,7 @@ export class GameLevelFlying extends Container {
       return;
     }
     // keep flying, but invincible for a little bit
-    this.invulnerableMs = INVULNERABLE_MS;
+    this.invulnerableMs = this.invulnerableDurationMs;
     this.blinkAnim?.stop();
     this.bird.alpha = 1;
     this.blinkAnim = blinkAlpha(
@@ -205,8 +224,8 @@ export class GameLevelFlying extends Container {
       },
     );
   }
+  // sorry for the morbid name
   private die() {
-    // sorry for the morbid name
     if (this.state !== 'playing') return;
     this.state = 'dying';
     window.removeEventListener('keydown', this.handleKeyDown);
@@ -217,9 +236,13 @@ export class GameLevelFlying extends Container {
     this.birdVY = 0;
   }
 
-  // no TLevel/map unit yet, just returns home
   private gameOver() {
-    this.goHome();
+    if (this.state === 'over') return;
+    this.state = 'over';
+    window.removeEventListener('keydown', this.handleKeyDown);
+    const { correct, mistakes } = useSessionStore.getState();
+    useScoreManager.getState().addSession(correct, mistakes);
+    void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
   }
 
   // BIRD FLYING HELPERS
@@ -239,12 +262,14 @@ export class GameLevelFlying extends Container {
     if (!typed) return;
 
     if (typed === this.activeWord[this.activeLetterIdx]) {
+      useSessionStore.getState().recordCorrect();
       this.keyboard.setKeyFeedback(event.code, 'success');
       void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
       this.pushTimeout(() => this.keyboard.clearKeyFeedback(event.code), KEY_FEEDBACK_MS);
       this.jump();
       this.advanceLetter();
     } else {
+      useSessionStore.getState().recordMistake();
       this.keyboard.setKeyFeedback(event.code, 'error');
       void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
       this.pushTimeout(() => {
@@ -256,7 +281,7 @@ export class GameLevelFlying extends Container {
 
   private jump() {
     this.flapAnimation();
-    this.bird.y -= JUMP;
+    this.bird.y -= this.jumpHeight;
     this.birdVY = 0;
   }
 
@@ -272,11 +297,19 @@ export class GameLevelFlying extends Container {
 
   private advanceLetter() {
     this.activeLetterIdx += this.activeWord[this.activeLetterIdx].length;
-    if (this.activeLetterIdx >= this.activeWord.length) {
-      this.wordIndex = (this.wordIndex + 1) % this.words.length;
-      this.activeWord = this.words[this.wordIndex];
-      this.activeLetterIdx = 0;
+    if (this.activeLetterIdx < this.activeWord.length) {
+      this.renderWord();
+      return;
     }
+
+    // current word finished — move on, or end the run once every word has been played
+    this.wordIndex += 1;
+    if (this.wordIndex >= this.words.length) {
+      this.gameOver();
+      return;
+    }
+    this.activeWord = this.words[this.wordIndex];
+    this.activeLetterIdx = 0;
     this.renderWord();
   }
 
@@ -311,7 +344,7 @@ export class GameLevelFlying extends Container {
   private advanceExistingColumns(deltaMs: number) {
     for (let i = this.activeColumns.length - 1; i >= 0; i--) {
       let col = this.activeColumns[i];
-      col.x = col.x - COL_VX * deltaMs;
+      col.x = col.x - this.columnVelocity * deltaMs;
       if (col.x < 0) {
         this.activeColumns.splice(i, 1);
         col.destroy({ children: true });
@@ -319,9 +352,9 @@ export class GameLevelFlying extends Container {
     }
   }
   private spawnNewColumns(deltaMs: number) {
-    this.elapsedDistance += COL_VX * deltaMs;
+    this.elapsedDistance += this.columnVelocity * deltaMs;
     if (
-      this.activeColumns.length >= MAX_ACTIVE_COLUMNS ||
+      this.activeColumns.length >= this.maxActiveColumns ||
       this.elapsedDistance < this.spawnDistanceThreshold
     ) {
       return;
