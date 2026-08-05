@@ -17,10 +17,11 @@ export class ScriptButton extends FancyButton {
   private bg: Graphics;
   private script: ORTHO_ENUM;
   private unsubscribe: () => void;
+  private onSelected: () => void;
   public static BTN_WIDTH = 240; // larger
   public static BTN_HEIGHT = 90; // larger
 
-  constructor(script: ORTHO_ENUM) {
+  constructor(script: ORTHO_ENUM, onSelected: () => void) {
     const label = new HTMLText({
       text: LABELS[script],
       style: {
@@ -50,13 +51,15 @@ export class ScriptButton extends FancyButton {
 
     this.script = script;
     this.bg = bg;
-
     this.paint(scriptState.getState().currentScript);
+    this.onSelected = onSelected;
 
     this.onPress.connect(() => {
       const { currentScript, setCurrentScript } = scriptState.getState();
-      if (currentScript === this.script) return; // noop
-      setCurrentScript(this.script);
+      if (currentScript !== this.script) {
+        setCurrentScript(this.script);
+      }
+      this.onSelected();
     });
 
     this.unsubscribe = scriptState.subscribe((state) => this.paint(state.currentScript));
