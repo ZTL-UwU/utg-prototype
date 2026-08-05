@@ -1,6 +1,7 @@
 import { FancyButton } from '@pixi/ui';
 import { Graphics, HTMLText } from 'pixi.js';
 
+import { getFontFamilyForScript } from '../../../utils/script';
 import { scriptState, type ORTHO_ENUM } from '../../../zustandStores/scriptState';
 
 const LABELS: Record<ORTHO_ENUM, string> = {
@@ -26,10 +27,11 @@ export class ScriptButton extends FancyButton {
       text: LABELS[script],
       style: {
         fill: 0xffffff,
-        fontFamily: 'Concert One',
+        fontFamily: getFontFamilyForScript(script),
         fontSize: 40,
         fontWeight: 'bold',
         align: 'center',
+        cssOverrides: [`direction: ${script === 'Arabic' ? 'rtl' : 'ltr'}`],
       },
     });
 

@@ -20,9 +20,14 @@ export function isCurrentScriptRtl(): boolean {
   return getCurrentTargetScript() === 'Arabic';
 }
 
+/** Font for letter/word Text rendered in a given orthography. */
+export function getFontFamilyForScript(script: TargetScript): string {
+  return script === 'Arabic' ? ARABIC_FONT : LATIN_CYRILLIC_FONT;
+}
+
 /** Font for letter/word Text rendered in the current script. */
 export function getScriptFontFamily(): string {
-  return getCurrentTargetScript() === 'Arabic' ? ARABIC_FONT : LATIN_CYRILLIC_FONT;
+  return getFontFamilyForScript(getCurrentTargetScript());
 }
 
 /** Convert Arabic-script text to the player's selected orthography. */
