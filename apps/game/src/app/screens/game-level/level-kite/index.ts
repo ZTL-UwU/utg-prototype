@@ -3,8 +3,10 @@ import { Container, Sprite, Texture, type Ticker } from 'pixi.js';
 import { engine } from '../../../../engine/getEngine';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { convertToCurrentScript } from '../../../../utils/script';
+import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { REMOTE_WORDS_BUNDLE, resolveWordsByIds } from '../../../../zustandStores/wordStore';
+import { EndScreenPopup } from '../../../popups/end-screen';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { getTypedLevel, type TLevel } from '../../level-map/units';
 import { Gust } from './gust';
@@ -20,6 +22,7 @@ export class GameLevelKite extends Container {
   public static assetBundles = ['game-level', 'game-level-kite', REMOTE_WORDS_BUNDLE];
   public static helpAssets: string[] = [];
 
+  private readonly level: TLevel;
   private readonly pointsOnLetter: number;
   private readonly pointsOnWord: number;
   private readonly gustDurationMs: number;
@@ -56,7 +59,9 @@ export class GameLevelKite extends Container {
 
   constructor(level: TLevel) {
     super();
-    const props = getTypedLevel(level, 'game-kite').props;
+    const typedLevel = getTypedLevel(level, 'game-kite');
+    this.level = typedLevel;
+    const props = typedLevel.props;
     this.pointsOnLetter = props.pointsOnLetter;
     this.pointsOnWord = props.pointsOnWord;
     this.gustDurationMs = props.gustDurationSeconds * 1000;
@@ -130,7 +135,7 @@ export class GameLevelKite extends Container {
 
   private spawnGust() {
     const word = this.wordPool[this.activeWordIdx] ?? this.wordPool[0]; // carousel, game only ends on mistakes
-    if (!word) return; // no words configured — nothing to spawn
+    if (!word) return; // no words configured
     this.gust = new Gust({ word, fontSize: this.wordFontSize });
     this.gust.resize(this.screenWidth, this.screenHeight);
     this.addChild(this.gust);
@@ -222,8 +227,9 @@ export class GameLevelKite extends Container {
     window.removeEventListener('keydown', this.handleKeyDown);
     this.clearFeedbackTimeouts();
     this.gust?.stopAnimations();
-    // TODO: end-game behaviour (score submit + result screen).
-    // EndScreenPopup needs the TLevel — re-add a `level` field when wiring it up.
+    const { correct, mistakes } = useSessionStore.getState();
+    useScoreManager.getState().addSession(correct, mistakes);
+    void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
   }
   private pushTimeout(fn: () => void, ms: number) {
     this.feedbackTimeouts.push(window.setTimeout(fn, ms));
