@@ -64,7 +64,7 @@ export class Gust extends Container {
     if (this.isComplete) return false;
     if (typed !== this.word[this.activeLetterIdx]) return false;
     this.activeLetterIdx++;
-    if (!this.isComplete) this.renderWord();
+    this.renderWord(); // the last letter has to show as completed before the gust leaves
     return true;
   }
 

@@ -15,6 +15,7 @@ import { KITE_WIDTH, KitesBar } from './kites-bar';
 import { ScoreCounter } from './score-counter';
 
 const KEY_FEEDBACK_MS = 300;
+const WORD_COMPLETE_HOLD_MS = 350; // let the last letter read as completed before the gust exits
 const HUD_MARGIN = 40;
 const MAX_FRAME_MS = 50; // a backgrounded tab must not eat the timer
 
@@ -153,14 +154,18 @@ export class GameLevelKite extends Container {
     this.timerRunning = false;
     this.score += this.pointsOnWord;
     this.scoreCounter.setScore(this.score);
-    this.kite.playSoarAnimation().then(() => {
-      this.gust?.playExitAnimation().then(() => {
-        this.gust?.destroy({ children: true });
-        this.gust = undefined;
-        this.activeWordIdx++;
-        this.spawnGust();
+    this.keyboard.setHintedLetter(undefined);
+    this.pushTimeout(() => {
+      if (this.completed) return; // screen left while the completed word was held
+      this.kite.playSoarAnimation().then(() => {
+        this.gust?.playExitAnimation().then(() => {
+          this.gust?.destroy({ children: true });
+          this.gust = undefined;
+          this.activeWordIdx++;
+          this.spawnGust();
+        });
       });
-    });
+    }, WORD_COMPLETE_HOLD_MS);
   }
   // clock ran out
   private blowAwayGust() {
