@@ -78,6 +78,17 @@ export function GameFlyingPropsForm({
           />
         )}
       </form.Field>
+      <form.Field name="gravityPxPerSecondSquared">
+        {(field) => (
+          <NumberPropsField
+            field={field}
+            label="Gravity (px/s²)"
+            description="How fast the bird falls. Higher values make the bird heavier."
+            min={1}
+            step={5}
+          />
+        )}
+      </form.Field>
       <form.Field name="maxLives">
         {(field) => (
           <NumberPropsField
@@ -89,25 +100,25 @@ export function GameFlyingPropsForm({
           />
         )}
       </form.Field>
-      <form.Field name="invulnerableMs">
+      <form.Field name="invulnerableSeconds">
         {(field) => (
           <NumberPropsField
             field={field}
-            label="Invulnerability (ms)"
+            label="Invulnerability (seconds)"
             description="Invincibility window after a column hit."
             min={0}
-            step={50}
+            step={0.1}
           />
         )}
       </form.Field>
-      <form.Field name="columnVelocity">
+      <form.Field name="columnSpeedPxPerSecond">
         {(field) => (
           <NumberPropsField
             field={field}
-            label="Column velocity"
-            description="How fast columns scroll (pixels per millisecond)."
-            min={0.01}
-            step={0.01}
+            label="Column speed (px/s)"
+            description="How fast columns scroll across the screen."
+            min={1}
+            step={10}
           />
         )}
       </form.Field>

@@ -24,23 +24,26 @@ import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { getTypedLevel, type TLevel } from '../../level-map/units';
 import { blinkAlpha, HEART_WIDTH, LivesBar } from './lives-bar';
 
-// PHYSICS CONSTS (JUMP is now props.jumpHeight)
-const GRAVITY = 0.000495; // px/ms^2
 const MAX_FRAME_MS = 50;
+
+// unit conversion
+const MS_PER_SECOND = 1000;
+const perSecondToPerMs = (value: number) => value / MS_PER_SECOND;
+const perSecondSqToPerMsSq = (value: number) => value / (MS_PER_SECOND * MS_PER_SECOND);
 
 // BIRD CONSTS
 const BIRD_Y_CEIL = 10;
 const DEATH_SPIN = 0.004; // rad/ms
 const MAX_DEATH_ROTATION = Math.PI / 2;
 
-// LIVES CONSTS (max lives + invulnerable duration are now props)
+// LIVES CONSTS
 const LIVES_MARGIN = 40;
 
-// COLUMN CONSTS (velocity + max active are now props)
+// COLUMN CONSTS
 const MIN_COLUMN_SPAWN_GAP_PX = 500;
 const MAX_COLUMN_SPAWN_GAP_PX = 700;
 
-// WORD CONSTS (words + font size are now props)
+// WORD CONSTS
 const WORD_BASE_COLOR = 0x333333; // remaining (untyped) letters
 const WORD_TOP_RATIO = 0.12; // vertical placement of the word
 const KEY_FEEDBACK_MS = 350;
@@ -94,6 +97,7 @@ export class GameLevelFlying extends Container {
   private feedbackTimeouts: number[] = [];
   private readonly level: TLevel;
   private readonly jumpHeight: number;
+  private readonly gravity: number;
   private readonly columnVelocity: number;
   private readonly maxActiveColumns: number;
   private readonly invulnerableDurationMs: number;
@@ -103,9 +107,10 @@ export class GameLevelFlying extends Container {
     this.level = typedLevel;
     const props = typedLevel.props;
     this.jumpHeight = props.jumpHeight;
-    this.columnVelocity = props.columnVelocity;
+    this.gravity = perSecondSqToPerMsSq(props.gravityPxPerSecondSquared);
+    this.columnVelocity = perSecondToPerMs(props.columnSpeedPxPerSecond);
     this.maxActiveColumns = props.maxActiveColumns;
-    this.invulnerableDurationMs = props.invulnerableMs;
+    this.invulnerableDurationMs = props.invulnerableSeconds * MS_PER_SECOND;
 
     this.background = new Sprite({
       texture: Texture.from('game-levels/game-level-flying/background.png'),
@@ -163,7 +168,7 @@ export class GameLevelFlying extends Container {
 
   // ticker update fn's
   private updateBird(deltaMS: number) {
-    this.birdVY += GRAVITY * deltaMS;
+    this.birdVY += this.gravity * deltaMS;
 
     // Y CEILING SHOULD NOT BE BROKEN BY JUMPING BIRD
     const updatedBirdY = this.bird.y + this.birdVY;
@@ -176,7 +181,7 @@ export class GameLevelFlying extends Container {
 
   // cosmetic fall
   private updateDeathFall(deltaMs: number) {
-    this.birdVY += GRAVITY * deltaMs;
+    this.birdVY += this.gravity * deltaMs;
     this.bird.y += this.birdVY;
     this.bird.rotation = Math.min(this.bird.rotation + DEATH_SPIN * deltaMs, MAX_DEATH_ROTATION);
 
