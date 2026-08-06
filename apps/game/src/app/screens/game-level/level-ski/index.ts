@@ -96,6 +96,8 @@ const LAYOUT = {
   /** Barrier far (t=0) → near (t=1) in design coords. */
   barrierFar: { y: 430, scale: 0.35 },
   barrierNear: { y: 640, scale: 1.55 },
+  /** Cleared-jump end pose — passes under the leopard. */
+  barrierJump: { y: 950, scale: 1.75 },
   hitOffset: { x: -90, y: -40 },
 } as const;
 
@@ -714,8 +716,10 @@ export class GameLevelSki extends Container {
       el.alpha = 0;
       el.visible = true;
     }
+    // Keyframe [0, 1] so Motion doesn't reuse a settled alpha=1 from the prior round
+    // (which left these at the manual alpha=0 and never faded back in).
     this.raceHudAnims = targets.map((el) =>
-      animate(el, { alpha: 1 }, { duration: RACE_HUD_FADE_MS, ease: 'easeOut' }),
+      animate(el, { alpha: [0, 1] }, { duration: RACE_HUD_FADE_MS, ease: 'easeOut' }),
     );
   }
 
@@ -732,6 +736,14 @@ export class GameLevelSki extends Container {
     const startY = this.leopard.y;
     const peakY = startY - JUMP_PEAK_OFFSET;
     const approachT = Math.min(1, this.approachElapsedMs / this.approachDurationMs);
+    // Match applyBarrierProgress easing so the jump continues from the live pose.
+    const approachEased = approachT * approachT;
+    const barrierStartY = lerp(LAYOUT.barrierFar.y, LAYOUT.barrierNear.y, approachEased);
+    const barrierStartScale = lerp(
+      LAYOUT.barrierFar.scale,
+      LAYOUT.barrierNear.scale,
+      approachEased,
+    );
     this.anim = animate(0, 1, {
       duration: JUMP_MS / 1000,
       ease: 'easeInOut',
@@ -741,7 +753,9 @@ export class GameLevelSki extends Container {
         this.leopard.y = lerp(startY, peakY, arc);
         const scaleBoost = 1 + (JUMP_SCALE_PEAK - 1) * arc;
         this.leopard.scale.set(LAYOUT.leopardScale * scaleBoost);
-        this.applyBarrierProgress(Math.min(1, approachT + t * (1 - approachT)));
+        this.barrier.y = lerp(barrierStartY, LAYOUT.barrierJump.y, t);
+        this.barrier.scale.set(lerp(barrierStartScale, LAYOUT.barrierJump.scale, t));
+        this.barrier.x = DESIGN_WIDTH / 2;
       },
     });
     await this.anim.finished;
