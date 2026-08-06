@@ -5,12 +5,12 @@ import { createTypingWordStyle, getHighlightedWordMarkup } from '../../../../uti
 
 export type GustProps = {
   word: string;
+  fontSize: number;
 };
 
 export type GustState = 'happy' | 'default' | 'grey';
 
-const FONT_SIZE = 90;
-const FONT_COLOR = 0x000000;
+const FONT_COLOR = 0x000000; // font size is now props.wordFontSize
 const ENTRY_DURATION_S = 1.5;
 
 export class Gust extends Container {
@@ -18,7 +18,7 @@ export class Gust extends Container {
 
   private sprite: Sprite;
   private wordHTML: HTMLText;
-  private wordStyle: HTMLTextStyle = createTypingWordStyle(FONT_SIZE, FONT_COLOR);
+  private wordStyle: HTMLTextStyle;
   private readonly word: string;
   private activeLetterIdx: number = 0;
 
@@ -28,9 +28,10 @@ export class Gust extends Container {
 
   private idleAnim?: AnimationPlaybackControls;
 
-  constructor({ word }: GustProps) {
+  constructor({ word, fontSize }: GustProps) {
     super();
     this.word = word;
+    this.wordStyle = createTypingWordStyle(fontSize, FONT_COLOR);
 
     this.sprite = new Sprite();
     this.setState('happy');

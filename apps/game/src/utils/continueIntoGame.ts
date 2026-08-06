@@ -1,4 +1,3 @@
-import { GameLevelKite } from '../app/screens/game-level/level-kite';
 import { engine } from '../engine/getEngine';
 import type { AuthUser } from '../zustandStores/auth';
 
@@ -10,9 +9,7 @@ export function continueIntoGame(user: AuthUser) {
     );
     return;
   }
-  void import('../app/screens/layer-select').then(async ({ LayerSelectScreen }) => {
-    // engine().navigation.showScreen(LayerSelectScreen);
-    console.log(LayerSelectScreen, 'happy linter');
-    engine().navigation.showScreen(GameLevelKite);
-  });
+  void import('../app/screens/layer-select').then(({ LayerSelectScreen }) =>
+    engine().navigation.showScreen(LayerSelectScreen),
+  );
 }

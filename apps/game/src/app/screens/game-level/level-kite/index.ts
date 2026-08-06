@@ -2,24 +2,29 @@ import { Container, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { convertToCurrentScript } from '../../../../utils/script';
 import useSessionStore from '../../../../zustandStores/sessionStore';
+import { REMOTE_WORDS_BUNDLE, resolveWordsByIds } from '../../../../zustandStores/wordStore';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
+import { getTypedLevel, type TLevel } from '../../level-map/units';
 import { Gust } from './gust';
 import { Kite } from './kite';
 import { KITE_WIDTH, KitesBar } from './kites-bar';
 import { ScoreCounter } from './score-counter';
 
-const WORDS = ['ئاسمان', 'ئەينەك', 'پاختا'];
 const KEY_FEEDBACK_MS = 300;
-const MAX_LIVES = 3;
 const HUD_MARGIN = 40;
-const POINTS_PER_CORRECT = 10;
-const POINTS_PER_WORD = 20;
-const WORD_TIME_MS = 7000;
 const MAX_FRAME_MS = 50; // a backgrounded tab must not eat the timer
 
 export class GameLevelKite extends Container {
-  public static assetBundles = ['game-level', 'game-level-kite'];
+  public static assetBundles = ['game-level', 'game-level-kite', REMOTE_WORDS_BUNDLE];
+  public static helpAssets: string[] = [];
+
+  private readonly pointsOnLetter: number;
+  private readonly pointsOnWord: number;
+  private readonly gustDurationMs: number;
+  private readonly wordFontSize: number;
+
   private background: Sprite;
 
   // layout
@@ -49,8 +54,13 @@ export class GameLevelKite extends Container {
 
   private completed: boolean = false;
 
-  constructor() {
+  constructor(level: TLevel) {
     super();
+    const props = getTypedLevel(level, 'game-kite').props;
+    this.pointsOnLetter = props.pointsOnLetter;
+    this.pointsOnWord = props.pointsOnWord;
+    this.gustDurationMs = props.gustDurationSeconds * 1000;
+    this.wordFontSize = props.wordFontSize;
 
     this.background = new Sprite({
       texture: Texture.from('game-levels/game-level-kite/background.png'),
@@ -58,12 +68,14 @@ export class GameLevelKite extends Container {
     });
     this.keyboard = new KeyboardLayout();
 
-    this.wordPool = [...WORDS];
+    this.wordPool = resolveWordsByIds(props.wordIds)
+      .map((word) => word.word)
+      .map(convertToCurrentScript);
     this.wordPool.sort(() => Math.random() - 0.5);
 
     this.kite = new Kite();
 
-    this.kitesBar = new KitesBar(MAX_LIVES);
+    this.kitesBar = new KitesBar(props.maxLives);
     this.scoreCounter = new ScoreCounter();
 
     this.addChild(this.background, this.kite, this.keyboard, this.kitesBar, this.scoreCounter);
@@ -118,7 +130,8 @@ export class GameLevelKite extends Container {
 
   private spawnGust() {
     const word = this.wordPool[this.activeWordIdx] ?? this.wordPool[0]; // carousel, game only ends on mistakes
-    this.gust = new Gust({ word });
+    if (!word) return; // no words configured — nothing to spawn
+    this.gust = new Gust({ word, fontSize: this.wordFontSize });
     this.gust.resize(this.screenWidth, this.screenHeight);
     this.addChild(this.gust);
     this.keyboard.setHintedLetter(this.gust.currentLetter);
@@ -126,14 +139,14 @@ export class GameLevelKite extends Container {
     this.timerRunning = false;
     Promise.all([this.gust.playEntryAnimation(), this.kite.playEntryAnimation()]).then(() => {
       if (this.completed || this.resolving) return; // screen left, or already resolved
-      this.wordTimerMs = WORD_TIME_MS;
+      this.wordTimerMs = this.gustDurationMs;
       this.timerRunning = true;
     });
   }
   private advanceWord() {
     this.resolving = true;
     this.timerRunning = false;
-    this.score += POINTS_PER_WORD;
+    this.score += this.pointsOnWord;
     this.scoreCounter.setScore(this.score);
     this.kite.playSoarAnimation().then(() => {
       this.gust?.playExitAnimation().then(() => {
@@ -179,7 +192,7 @@ export class GameLevelKite extends Container {
     if (!gust) return;
     if (gust.typeLetter(typed)) {
       useSessionStore.getState().recordCorrect();
-      this.score += POINTS_PER_CORRECT;
+      this.score += this.pointsOnLetter;
       this.scoreCounter.setScore(this.score);
       this.keyboard.setKeyFeedback(event.code, 'success');
       void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
@@ -209,7 +222,8 @@ export class GameLevelKite extends Container {
     window.removeEventListener('keydown', this.handleKeyDown);
     this.clearFeedbackTimeouts();
     this.gust?.stopAnimations();
-    // TODO: end-game behaviour (score submit + result screen)
+    // TODO: end-game behaviour (score submit + result screen).
+    // EndScreenPopup needs the TLevel — re-add a `level` field when wiring it up.
   }
   private pushTimeout(fn: () => void, ms: number) {
     this.feedbackTimeouts.push(window.setTimeout(fn, ms));

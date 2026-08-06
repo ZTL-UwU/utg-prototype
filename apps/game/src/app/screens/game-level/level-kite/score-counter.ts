@@ -1,6 +1,5 @@
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
-// TODO: placeholder — swap for the final score frame art
 const SCORE_FRAME_ASSET = 'game-levels/game-level-kite/score-frame.png';
 const FRAME_WIDTH = 240;
 const FRAME_HEIGHT = 110;
