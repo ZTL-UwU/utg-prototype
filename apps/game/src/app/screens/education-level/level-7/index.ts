@@ -340,7 +340,7 @@ export class EducationWhackAMoleScreen extends Container {
     if (!round || this.isPlaying) return;
 
     this.isPlaying = true;
-    const alias = `education-levels/education-letters-audio/${round.letters[round.answer]}.mp3`;
+    const alias = `education-levels/education-letters-audio/${round.letters[round.answer]}.m4a`;
     this.currentAnswerAudio = alias;
     const durationMs = Math.max(250, (sound.find(alias)?.duration ?? 0) * 1000);
     void engine().audio.sfx.play(alias);

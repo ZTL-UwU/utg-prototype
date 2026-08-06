@@ -12,6 +12,7 @@ import { GameNaanStackScreen } from '../game-level/level-2';
 import { GameLevelFlying } from '../game-level/level-flying';
 import { GameLevelFruitScreen } from '../game-level/level-fruit';
 import { GameLevelKite } from '../game-level/level-kite';
+import { GameLevelSki } from '../game-level/level-ski';
 import { TypingLevelScreen } from '../typing-level/level-1';
 import { TypingSandstormScreen } from '../typing-level/level-2';
 import { TypingInstrumentScreen } from '../typing-level/level-3';
@@ -40,4 +41,5 @@ export const LEVEL_TYPE_SCREENS: Record<LevelTypeId, LevelScreenConstructor> = {
   'game-fruit-fall': GameLevelFruitScreen,
   'game-flying': GameLevelFlying,
   'game-kite': GameLevelKite,
+  'game-ski': GameLevelSki,
 };

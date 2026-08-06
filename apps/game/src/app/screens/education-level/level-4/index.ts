@@ -181,7 +181,7 @@ export class EducationImageScreen extends Container {
   private soundButtonClick() {
     if (this.isPlaying || !this.correctLetter) return;
     this.isPlaying = true;
-    const aliasString: string = `education-levels/education-letters-audio/${this.correctLetter}.mp3`;
+    const aliasString: string = `education-levels/education-letters-audio/${this.correctLetter}.m4a`;
     const durationMs = (sound.find(aliasString)?.duration ?? 0) * 1000;
     void engine().audio.sfx.play(aliasString);
     setTimeout(() => {

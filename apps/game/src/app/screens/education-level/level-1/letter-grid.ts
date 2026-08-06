@@ -158,7 +158,7 @@ export class LetterGrid extends Container {
   private readonly soundButtonClick = () => {
     if (this.isPlaying) return;
     this.isPlaying = true;
-    const aliasString: string = `education-levels/education-letters-audio/${this.correctLetterString}.mp3`;
+    const aliasString: string = `education-levels/education-letters-audio/${this.correctLetterString}.m4a`;
     const durationMs = (sound.find(aliasString)?.duration ?? 0) * 1000;
     void engine().audio.sfx.play(aliasString);
     setTimeout(() => {
