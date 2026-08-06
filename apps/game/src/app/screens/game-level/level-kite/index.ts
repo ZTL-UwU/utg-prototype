@@ -1,13 +1,22 @@
-import { Container, Sprite, Texture } from 'pixi.js';
+import { Container, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { Gust } from './gust';
+import { Kite } from './kite';
+import { KITE_WIDTH, KitesBar } from './kites-bar';
+import { ScoreCounter } from './score-counter';
 
 const WORDS = ['ئاسمان', 'ئەينەك', 'پاختا'];
 const KEY_FEEDBACK_MS = 300;
+const MAX_LIVES = 3;
+const HUD_MARGIN = 40;
+const POINTS_PER_CORRECT = 10;
+const POINTS_PER_WORD = 20;
+const WORD_TIME_MS = 7000;
+const MAX_FRAME_MS = 50; // a backgrounded tab must not eat the timer
 
 export class GameLevelKite extends Container {
   public static assetBundles = ['game-level', 'game-level-kite'];
@@ -21,10 +30,24 @@ export class GameLevelKite extends Container {
   private gust?: Gust;
   private wordPool: string[];
   private activeWordIdx: number = 0;
+  private wordTimerMs: number = 0;
+  private timerRunning: boolean = false;
+  private resolving: boolean = false; // gust is exiting, ignores input and the clock
+  private paused: boolean = false;
+
+  // kite
+  private kite: Kite;
+
+  // hud
+  private kitesBar: KitesBar;
+  private scoreCounter: ScoreCounter;
+  private score: number = 0;
 
   // keyboard
   private keyboard: KeyboardLayout;
   private feedbackTimeouts: number[] = [];
+
+  private completed: boolean = false;
 
   constructor() {
     super();
@@ -35,53 +58,119 @@ export class GameLevelKite extends Container {
     });
     this.keyboard = new KeyboardLayout();
 
-    this.wordPool = WORDS;
+    this.wordPool = [...WORDS];
     this.wordPool.sort(() => Math.random() - 0.5);
 
-    this.addChild(this.background, this.keyboard);
+    this.kite = new Kite();
+
+    this.kitesBar = new KitesBar(MAX_LIVES);
+    this.scoreCounter = new ScoreCounter();
+
+    this.addChild(this.background, this.kite, this.keyboard, this.kitesBar, this.scoreCounter);
   }
   resize(width: number, height: number) {
     this.layout = { width, height };
     this.screenHeight = height;
     this.screenWidth = width;
     this.gust?.resize(width, height);
+    this.kite.resize(width, height);
     this.keyboard.resize(width, height);
+    this.kitesBar.position.set(width - HUD_MARGIN, HUD_MARGIN + KITE_WIDTH / 2);
+    this.scoreCounter.position.set(HUD_MARGIN, HUD_MARGIN);
+  }
+  public update(ticker: Ticker) {
+    if (!this.timerRunning || this.paused || this.completed || this.resolving) return;
+    this.wordTimerMs -= Math.min(ticker.deltaMS, MAX_FRAME_MS);
+    if (this.wordTimerMs <= 0) this.blowAwayGust();
   }
   async pause() {
+    this.paused = true;
     this.gust?.pause();
+    this.kite.pauseIdle();
   }
   async resume() {
+    this.paused = false;
     this.gust?.resume();
+    this.kite.resumeIdle();
   }
   async show() {
+    this.completed = false;
+    this.resolving = false;
+    this.paused = false;
+    this.timerRunning = false;
+    this.wordTimerMs = 0;
+    this.kitesBar.reset();
+    this.score = 0;
+    this.scoreCounter.setScore(0);
+    this.kite.reset();
     window.addEventListener('keydown', this.handleKeyDown);
     this.keyboard.playEnterAnimation();
     this.spawnGust();
   }
   async hide() {
+    this.timerRunning = false;
     window.removeEventListener('keydown', this.handleKeyDown);
     this.gust?.stopAnimations();
+    this.kite.stopAnimations();
     this.clearFeedbackTimeouts();
     this.keyboard.playExitAnimation();
   }
 
   private spawnGust() {
-    const word = this.wordPool[this.activeWordIdx] ?? this.wordPool[0]; // TODO: set up end game behavior
+    const word = this.wordPool[this.activeWordIdx] ?? this.wordPool[0]; // carousel, game only ends on mistakes
     this.gust = new Gust({ word });
     this.gust.resize(this.screenWidth, this.screenHeight);
     this.addChild(this.gust);
     this.keyboard.setHintedLetter(this.gust.currentLetter);
-    void this.gust.playEntryAnimation();
+    this.resolving = false;
+    this.timerRunning = false;
+    Promise.all([this.gust.playEntryAnimation(), this.kite.playEntryAnimation()]).then(() => {
+      if (this.completed || this.resolving) return; // screen left, or already resolved
+      this.wordTimerMs = WORD_TIME_MS;
+      this.timerRunning = true;
+    });
   }
   private advanceWord() {
-    this.gust?.playExitAnimation().then(() => {
-      this.gust?.destroy({ children: true });
+    this.resolving = true;
+    this.timerRunning = false;
+    this.score += POINTS_PER_WORD;
+    this.scoreCounter.setScore(this.score);
+    this.kite.playSoarAnimation().then(() => {
+      this.gust?.playExitAnimation().then(() => {
+        this.gust?.destroy({ children: true });
+        this.gust = undefined;
+        this.activeWordIdx++;
+        this.spawnGust();
+      });
+    });
+  }
+  // clock ran out
+  private blowAwayGust() {
+    const gust = this.gust;
+    if (!gust || this.resolving) return;
+    this.resolving = true;
+    this.timerRunning = false;
+
+    useSessionStore.getState().recordMistake();
+    void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
+    gust.setState('grey');
+    this.keyboard.setHintedLetter(undefined);
+
+    const livesLeft = this.kitesBar.loseLife();
+    void this.kite.degrade(livesLeft);
+
+    void gust.playExitAnimation().then(() => {
+      gust.destroy({ children: true });
       this.gust = undefined;
+      if (this.completed) return; // out of lives
       this.activeWordIdx++;
       this.spawnGust();
     });
+
+    if (livesLeft <= 0) this.gameOver();
   }
   private handleKeyDown = (event: KeyboardEvent) => {
+    if (this.completed || this.resolving) return;
     if (event.repeat || event.key === 'Shift' || event.ctrlKey || event.metaKey || event.altKey)
       return;
     const typed = getMappedFromKeyboardEvent(event);
@@ -90,6 +179,8 @@ export class GameLevelKite extends Container {
     if (!gust) return;
     if (gust.typeLetter(typed)) {
       useSessionStore.getState().recordCorrect();
+      this.score += POINTS_PER_CORRECT;
+      this.scoreCounter.setScore(this.score);
       this.keyboard.setKeyFeedback(event.code, 'success');
       void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
       this.pushTimeout(() => this.keyboard.clearKeyFeedback(event.code), KEY_FEEDBACK_MS);
@@ -99,12 +190,27 @@ export class GameLevelKite extends Container {
       useSessionStore.getState().recordMistake();
       this.keyboard.setKeyFeedback(event.code, 'error');
       void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
+      const livesLeft = this.kitesBar.loseLife();
+      void this.kite.degrade(livesLeft);
+      if (livesLeft <= 0) {
+        this.gameOver();
+        return;
+      }
       this.pushTimeout(() => {
         this.keyboard.clearKeyFeedback(event.code);
         this.keyboard.setHintedLetter(this.gust?.currentLetter);
       }, KEY_FEEDBACK_MS);
     }
   };
+  private gameOver() {
+    if (this.completed) return;
+    this.completed = true;
+    this.timerRunning = false;
+    window.removeEventListener('keydown', this.handleKeyDown);
+    this.clearFeedbackTimeouts();
+    this.gust?.stopAnimations();
+    // TODO: end-game behaviour (score submit + result screen)
+  }
   private pushTimeout(fn: () => void, ms: number) {
     this.feedbackTimeouts.push(window.setTimeout(fn, ms));
   }
