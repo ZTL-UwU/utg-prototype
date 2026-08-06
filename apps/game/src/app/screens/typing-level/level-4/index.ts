@@ -4,6 +4,7 @@ import { Container, Graphics, HTMLText, HTMLTextStyle, Sprite, Texture } from 'p
 import { engine } from '../../../../engine/getEngine';
 import { createTypingWordStyle, getHighlightedWordMarkup } from '../../../../utils/example-words';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { convertToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import {
@@ -57,7 +58,7 @@ export function generateRoundsDictionary(wordIds: number[] = [], roundCount = 5)
     .filter((word) => word.image_url)
     .map((word) => ({
       wordId: word.id,
-      word: word.word.trim(),
+      word: convertToCurrentScript(word.word.trim()),
       activeLetterIdx: 0,
     }));
 
