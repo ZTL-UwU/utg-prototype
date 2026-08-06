@@ -15,6 +15,7 @@ import { EducationWhackAMolePropsForm } from '~/components/level-type-forms/educ
 import { EducationWordPropsForm } from '~/components/level-type-forms/education-word';
 import { GameFlyingPropsForm } from '~/components/level-type-forms/game-flying';
 import { GameFruitFallingPropsForm } from '~/components/level-type-forms/game-fruit-falling';
+import { GameKitePropsForm } from '~/components/level-type-forms/game-kite';
 import { GameNaanStackPropsForm } from '~/components/level-type-forms/game-naan-stack';
 import { GameSkiPropsForm } from '~/components/level-type-forms/game-ski';
 import { GameTandoorRushPropsForm } from '~/components/level-type-forms/game-tandoor-rush';
@@ -55,6 +56,7 @@ const levelTypePropsForms = {
   'game-fruit-fall': GameFruitFallingPropsForm,
   'game-naan-stack': GameNaanStackPropsForm,
   'game-flying': GameFlyingPropsForm,
+  'game-kite': GameKitePropsForm,
   'game-ski': GameSkiPropsForm,
 } satisfies { [K in LevelTypeId]: LevelPropsFormComponent<K> };
 function resolveDefaultProps(level: Level | null, levelType: LevelTypeId) {

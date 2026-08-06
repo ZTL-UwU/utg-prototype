@@ -9,7 +9,7 @@ export function continueIntoGame(user: AuthUser) {
     );
     return;
   }
-  void import('../app/screens/layer-select').then(async ({ LayerSelectScreen }) => {
-    engine().navigation.showScreen(LayerSelectScreen);
-  });
+  void import('../app/screens/layer-select').then(({ LayerSelectScreen }) =>
+    engine().navigation.showScreen(LayerSelectScreen),
+  );
 }

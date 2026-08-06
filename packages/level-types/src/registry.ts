@@ -10,6 +10,7 @@ import { educationWhackAMole } from './types/education-whack-a-mole';
 import { educationWord } from './types/education-word';
 import { gameFlying } from './types/game-flying';
 import { gameFruitFall } from './types/game-fruit-fall';
+import { gameKite } from './types/game-kite';
 import { gameNaanStack } from './types/game-naan-stack';
 import { gameSki } from './types/game-ski';
 import { gameTandoorRush } from './types/game-tandoor-rush';
@@ -47,6 +48,7 @@ export const LEVEL_TYPES = {
   'game-fruit-fall': gameFruitFall,
   'game-naan-stack': gameNaanStack,
   'game-flying': gameFlying,
+  'game-kite': gameKite,
   'game-ski': gameSki,
 } as const satisfies Record<string, LevelTypeConfig>;
 

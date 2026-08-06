@@ -50,6 +50,7 @@ export {
   gameFruitFallPropsSchema,
   type GameFruitFallProps,
 } from './schemas/game-fruit-fall';
+export { defaultGameKiteProps, gameKitePropsSchema, type GameKiteProps } from './schemas/game-kite';
 export { defaultGameSkiProps, gameSkiPropsSchema, type GameSkiProps } from './schemas/game-ski';
 export {
   defaultGameNaanStackProps,
@@ -83,6 +84,7 @@ export { educationWhackAMole } from './types/education-whack-a-mole';
 export { educationWord } from './types/education-word';
 export { gameFlying } from './types/game-flying';
 export { gameFruitFall } from './types/game-fruit-fall';
+export { gameKite } from './types/game-kite';
 export { gameNaanStack } from './types/game-naan-stack';
 export { gameSki } from './types/game-ski';
 export { gameTandoorRush } from './types/game-tandoor-rush';
