@@ -539,7 +539,7 @@ export class EducationSheepJumpScreen extends Container {
     const round = this.map[this.step];
     if (!round || this.isPlaying) return;
     this.isPlaying = true;
-    const aliasString = `education-levels/education-letters-audio/${round.letters[round.answer]}.mp3`;
+    const aliasString = `education-levels/education-letters-audio/${round.letters[round.answer]}.m4a`;
     const durationMs = (sound.find(aliasString)?.duration ?? 0) * 1000;
     void engine().audio.sfx.play(aliasString);
     setTimeout(() => (this.isPlaying = false), durationMs);

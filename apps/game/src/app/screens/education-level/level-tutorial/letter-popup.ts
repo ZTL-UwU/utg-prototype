@@ -126,7 +126,7 @@ export class LetterPopup extends Container {
       if (Assets.resolver.hasKey(remoteAlias)) return remoteAlias;
     }
 
-    return `education-levels/education-letters-audio/${this.letter}.mp3`;
+    return `education-levels/education-letters-audio/${this.letter}.m4a`;
   }
 
   async show(animated = true) {
