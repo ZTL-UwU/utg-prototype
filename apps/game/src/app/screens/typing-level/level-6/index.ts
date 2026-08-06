@@ -4,6 +4,7 @@ import { Container, HTMLText, HTMLTextStyle, Sprite, Texture, type Ticker } from
 import { engine } from '../../../../engine/getEngine';
 import { createTypingSentenceStyle, getSentenceMarkup } from '../../../../utils/example-words';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { convertToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import {
   REMOTE_SENTENCES_BUNDLE,
@@ -52,7 +53,7 @@ export function generateSentenceRounds(
   const pool = resolveSentencesByIds(sentenceIds)
     .map((entry) => ({
       sentenceId: entry.id,
-      sentence: entry.sentence.trim(),
+      sentence: convertToCurrentScript(entry.sentence.trim()),
       activeLetterIdx: 0,
     }))
     .filter((round) => round.sentence.length > 0);
