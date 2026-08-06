@@ -25,9 +25,10 @@ class LevelType(models.TextChoices):
     TYPING_STORY = "typing-story", "Typing story"
     GAME_TANDOOR_RUSH = "game-tandoor-rush", "Game tandoor rush"
     GAME_NAAN_STACK = "game-naan-stack", "Game stack the naan"
-    GAME_FRUIT_FALL = "game-fruit-fall", "Game fruit fall"
+    GAME_FRUIT_FALL = "game-fruit-fall", "Game fruit fall",
+    GAME_KITE = "game-kite", "Game kite",
     GAME_FLYING = "game-flying", "Game flying",
-GAME_KITE = "game-kite", "Game kite"
+    GAME_SKI = "game-ski", "Game ski racing"
 
 class Unit(AuditingMixin, models.Model):
     sort_order = models.IntegerField(db_index=True)
