@@ -28,7 +28,8 @@ class LevelType(models.TextChoices):
     GAME_FRUIT_FALL = "game-fruit-fall", "Game fruit fall",
     GAME_KITE = "game-kite", "Game kite",
     GAME_FLYING = "game-flying", "Game flying",
-    GAME_SKI = "game-ski", "Game ski racing"
+    GAME_SKI = "game-ski", "Game ski racing",
+    GAME_TROUT = "game-trout", "Game trout"
 
 
 class Unit(AuditingMixin, models.Model):
