@@ -30,6 +30,7 @@ class LevelType(models.TextChoices):
     GAME_FLYING = "game-flying", "Game flying",
     GAME_SKI = "game-ski", "Game ski racing"
 
+
 class Unit(AuditingMixin, models.Model):
     sort_order = models.IntegerField(db_index=True)
     layer = models.CharField(max_length=20, choices=Layer.choices)
@@ -110,12 +111,32 @@ class Word(AuditingMixin, models.Model):
         return self.word
 
 
+class Story(AuditingMixin, models.Model):
+    name = models.CharField(max_length=255)
+
+    class Meta:
+        db_table = "stories"
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class Sentence(AuditingMixin, models.Model):
     sentence = models.TextField()
     translation = models.TextField(null=True, blank=True)
+    audio = models.FileField(upload_to="sentences/audio/", null=True, blank=True)
+    story = models.ForeignKey(
+        Story,
+        on_delete=models.SET_NULL,
+        related_name="sentences",
+        null=True,
+        blank=True,
+    )
+    sort_order = models.IntegerField(db_index=True, null=True, blank=True)
 
     class Meta:
         db_table = "sentences"
+        ordering = ["story_id", "sort_order", "id"]
 
     def __str__(self) -> str:
         return self.sentence

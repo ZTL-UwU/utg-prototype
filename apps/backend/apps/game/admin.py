@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps.game.models import Level, Mascot, Sentence, Unit, Word
+from apps.game.models import Level, Mascot, Sentence, Story, Unit, Word
 
 
 @admin.register(Unit)
@@ -40,8 +40,26 @@ class WordAdmin(admin.ModelAdmin):
     search_fields = ("word", "target_letter")
 
 
+class SentenceInline(admin.TabularInline):
+    model = Sentence
+    extra = 0
+    fields = ("sentence", "translation", "audio", "sort_order", "is_published", "is_active")
+    ordering = ("sort_order", "id")
+    show_change_link = True
+
+
+@admin.register(Story)
+class StoryAdmin(admin.ModelAdmin):
+    list_display = ("name", "is_published", "is_active")
+    list_filter = ("is_published", "is_active")
+    search_fields = ("name",)
+    inlines = (SentenceInline,)
+
+
 @admin.register(Sentence)
 class SentenceAdmin(admin.ModelAdmin):
-    list_display = ("sentence", "translation", "is_published", "is_active")
-    list_filter = ("is_published", "is_active")
+    list_display = ("sentence", "story", "sort_order", "translation", "audio", "is_published")
+    list_filter = ("story", "is_published", "is_active")
     search_fields = ("sentence", "translation")
+    autocomplete_fields = ("story",)
+    ordering = ("story", "sort_order", "id")
