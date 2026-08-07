@@ -123,16 +123,40 @@ export const wordsQueryOptions = queryOptions({
   staleTime: Infinity,
 });
 
+/** Mirrors AudioOut from apps/game/schemas.py for sentences. */
+export interface SentenceAudio {
+  name: string;
+  url: string;
+  filename: string;
+}
+
 /** Mirrors SentenceOut from apps/game/schemas.py. */
 export interface Sentence {
   id: number;
   sentence: string;
   translation: string | null;
+  story_id: number | null;
+  sort_order: number | null;
+  audio: SentenceAudio | null;
 }
 
 export const sentencesQueryOptions = queryOptions({
   queryKey: ['sentences', 'list'],
   queryFn: () => api<Sentence[]>('/sentences/list'),
+  staleTime: Infinity,
+});
+
+/** Mirrors StoryOut from apps/game/schemas.py. */
+export interface Story {
+  id: number;
+  name: string;
+  is_published: boolean;
+  sentences: Sentence[];
+}
+
+export const storiesQueryOptions = queryOptions({
+  queryKey: ['stories', 'list'],
+  queryFn: () => api<Story[]>('/stories/list'),
   staleTime: Infinity,
 });
 

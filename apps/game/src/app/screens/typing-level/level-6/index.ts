@@ -8,7 +8,7 @@ import { convertToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import {
   REMOTE_SENTENCES_BUNDLE,
-  resolveSentencesByIds,
+  resolveSentencesByStoryId,
 } from '../../../../zustandStores/sentenceStore';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -47,10 +47,10 @@ export type SentenceRound = {
 };
 
 export function generateSentenceRounds(
-  sentenceIds: number[] = [],
+  storyId: number | null = null,
   roundCount = 3,
 ): SentenceRound[] {
-  const pool = resolveSentencesByIds(sentenceIds)
+  const pool = (storyId == null ? [] : resolveSentencesByStoryId(storyId))
     .map((entry) => ({
       sentenceId: entry.id,
       sentence: convertToCurrentScript(entry.sentence.trim()),
@@ -116,7 +116,7 @@ export class TypingSentenceScreen extends Container {
     });
 
     this.keyboard = new KeyboardLayout();
-    this.rounds = generateSentenceRounds(typedLevel.props.sentenceIds, typedLevel.props.roundCount);
+    this.rounds = generateSentenceRounds(typedLevel.props.storyId, typedLevel.props.roundCount);
 
     this.sentenceStyle = createTypingSentenceStyle(FONT_SIZE);
     this.sentenceText = new HTMLText({ style: this.sentenceStyle });
