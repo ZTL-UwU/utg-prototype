@@ -4,6 +4,8 @@ import { DropShadowFilter } from 'pixi-filters';
 import { Graphics, Text, Texture, type DestroyOptions } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { useLevelProgress } from '../../../../zustandStores/levelProgressStore';
+import { drawDashedRing, FILL_ANIM_DELAY, FILL_ANIM_DURATION } from '../../../ui/dashed-ring';
 import { LevelMapScreen } from '../../level-map';
 import type { TMapUnit } from '../../level-map/units';
 
@@ -12,30 +14,20 @@ const BUTTON_RADIUS = SIZE / 2;
 const RING_IDLE_RADIUS = BUTTON_RADIUS + 5;
 const RING_HOVER_RADIUS = BUTTON_RADIUS - 3;
 
-const RING_COLOR_UNFILLED = 0xa66129;
-
-function drawDashedRing(g: Graphics, r: number, color = RING_COLOR_UNFILLED, width = 15) {
-  g.clear();
-  const dashCount = 8;
-  const gapRatio = 0.1;
-  const segmentAngle = (Math.PI * 2) / dashCount;
-  const gapAngle = segmentAngle * gapRatio;
-  const dashAngle = segmentAngle - gapAngle;
-  const base = -Math.PI / 2;
-
-  g.setStrokeStyle({ width, color });
-  for (let i = 0; i < dashCount; i++) {
-    const dashStart = base + i * segmentAngle;
-    const dashEnd = dashStart + dashAngle;
-    g.arc(0, 0, r, dashStart, dashEnd);
-    g.stroke();
-  }
+function isLevelComplete(mapUnit: TMapUnit) {
+  const progress = useLevelProgress.getState();
+  return (
+    mapUnit.levels.length > 0 &&
+    mapUnit.levels.every((game) => progress.isAttempted(mapUnit.type, game.id))
+  );
 }
 
 export class MapUnitButton extends FancyButton {
   private ring: Graphics;
   private ringAnimation?: AnimationPlaybackControls;
+  private fillAnimation?: AnimationPlaybackControls;
   private currentRadius = RING_IDLE_RADIUS;
+  private currentFill = 0;
 
   constructor(mapUnit: TMapUnit, index: number) {
     super({
@@ -65,8 +57,25 @@ export class MapUnitButton extends FancyButton {
     };
 
     this.ring = new Graphics();
-    drawDashedRing(this.ring, this.currentRadius);
+    const progress = useLevelProgress.getState();
+    this.currentFill = isLevelComplete(mapUnit) ? 1 : 0;
+    drawDashedRing(this.ring, this.currentRadius, this.currentFill);
     this.addChild(this.ring);
+
+    if (progress.consumeMapUnitPendingAnimation(mapUnit.type, mapUnit.id)) {
+      this.currentFill = 0;
+      drawDashedRing(this.ring, this.currentRadius, 0);
+      this.fillAnimation = animate(0, 1, {
+        duration: FILL_ANIM_DURATION,
+        delay: FILL_ANIM_DELAY,
+        ease: 'easeOut',
+        onUpdate: (p) => {
+          if (this.destroyed || this.ring.destroyed) return;
+          this.currentFill = p;
+          drawDashedRing(this.ring, this.currentRadius, p);
+        },
+      });
+    }
 
     const defaultShadow = new DropShadowFilter({
       quality: 10,
@@ -90,7 +99,7 @@ export class MapUnitButton extends FancyButton {
         ease: 'easeOut',
         onUpdate: (r) => {
           this.currentRadius = r;
-          drawDashedRing(this.ring, r);
+          drawDashedRing(this.ring, r, this.currentFill);
         },
       });
     });
@@ -103,7 +112,7 @@ export class MapUnitButton extends FancyButton {
         ease: 'easeIn',
         onUpdate: (r) => {
           this.currentRadius = r;
-          drawDashedRing(this.ring, r);
+          drawDashedRing(this.ring, r, this.currentFill);
         },
       });
     });
@@ -115,6 +124,7 @@ export class MapUnitButton extends FancyButton {
   }
 
   public override destroy(options?: DestroyOptions) {
+    this.fillAnimation?.stop();
     this.ringAnimation?.stop();
     super.destroy(options);
   }
