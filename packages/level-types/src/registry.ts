@@ -15,6 +15,7 @@ import { gameNaanStack } from './types/game-naan-stack';
 import { gameSki } from './types/game-ski';
 import { gameTandoorRush } from './types/game-tandoor-rush';
 import { typingDesert } from './types/typing-desert';
+import { typingGoat } from './types/typing-goat';
 import { typingInstrument } from './types/typing-instrument';
 import { typingMarket } from './types/typing-market';
 import { typingSandstorm } from './types/typing-sandstorm';
@@ -44,6 +45,7 @@ export const LEVEL_TYPES = {
   'typing-word': typingWord,
   'typing-market': typingMarket,
   'typing-story': typingStory,
+  'typing-goat': typingGoat,
   'game-tandoor-rush': gameTandoorRush,
   'game-fruit-fall': gameFruitFall,
   'game-naan-stack': gameNaanStack,

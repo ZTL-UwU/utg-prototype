@@ -21,6 +21,7 @@ import { GameSkiPropsForm } from '~/components/level-type-forms/game-ski';
 import { GameTandoorRushPropsForm } from '~/components/level-type-forms/game-tandoor-rush';
 import { type LevelPropsFormProps } from '~/components/level-type-forms/shared';
 import { TypingDesertPropsForm } from '~/components/level-type-forms/typing-desert';
+import { TypingGoatPropsForm } from '~/components/level-type-forms/typing-goat';
 import { TypingInstrumentPropsForm } from '~/components/level-type-forms/typing-instrument';
 import { TypingMarketPropsForm } from '~/components/level-type-forms/typing-market';
 import { TypingSandstormPropsForm } from '~/components/level-type-forms/typing-sandstorm';
@@ -52,6 +53,7 @@ const levelTypePropsForms = {
   'typing-word': TypingWordPropsForm,
   'typing-market': TypingMarketPropsForm,
   'typing-story': TypingStoryPropsForm,
+  'typing-goat': TypingGoatPropsForm,
   'game-tandoor-rush': GameTandoorRushPropsForm,
   'game-fruit-fall': GameFruitFallingPropsForm,
   'game-naan-stack': GameNaanStackPropsForm,
