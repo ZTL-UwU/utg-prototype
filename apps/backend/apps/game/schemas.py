@@ -26,7 +26,6 @@ class LevelOut(AuditingOut):
     level_type: str
     level_props: Any
     mascot: MascotOut | None
-    splash_background_asset_path: str
     splash_button_color: int | None
     splash_button_text_color: int | None
     splash_level_font_color: int | None
@@ -122,7 +121,6 @@ class LevelWriteIn(Schema):
     level_type: str
     level_props: Any
     mascot_id: int | None = None
-    splash_background_asset_path: str
     splash_button_color: int | None = None
     splash_button_text_color: int | None = None
     splash_level_font_color: int | None = None

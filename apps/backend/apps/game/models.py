@@ -81,7 +81,6 @@ class Level(AuditingMixin, models.Model):
         null=True,
         blank=True,
     )
-    splash_background_asset_path = models.CharField(max_length=255)
     splash_button_color = models.BigIntegerField(null=True, blank=True)
     splash_button_text_color = models.BigIntegerField(null=True, blank=True)
     splash_level_font_color = models.BigIntegerField(null=True, blank=True)

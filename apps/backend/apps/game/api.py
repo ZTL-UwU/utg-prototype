@@ -55,7 +55,6 @@ def _apply_level_payload(level: Level, payload: LevelWriteIn) -> None:
     level.level_type = payload.level_type
     level.level_props = payload.level_props
     level.mascot_id = payload.mascot_id
-    level.splash_background_asset_path = payload.splash_background_asset_path
     level.splash_button_color = payload.splash_button_color
     level.splash_button_text_color = payload.splash_button_text_color
     level.splash_level_font_color = payload.splash_level_font_color
