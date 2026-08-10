@@ -61,6 +61,7 @@ export {
   defaultGameNaanStackProps,
   defaultGameTandoorRushProps,
   defaultTypingDesertProps,
+  defaultTypingGoatsProps,
   defaultTypingInstrumentProps,
   defaultTypingSandstormProps,
   defaultTypingStoryProps,
@@ -68,6 +69,7 @@ export {
   gameNaanStackPropsSchema,
   gameTandoorRushPropsSchema,
   typingDesertPropsSchema,
+  typingGoatsPropsSchema,
   typingInstrumentPropsSchema,
   typingSandstormPropsSchema,
   typingStoryPropsSchema,
@@ -75,6 +77,7 @@ export {
   type GameNaanStackProps,
   type GameTandoorRushProps,
   type TypingDesertProps,
+  type TypingGoatsProps,
   type TypingInstrumentProps,
   type TypingSandstormProps,
   type TypingStoryProps,
@@ -95,6 +98,7 @@ export { gameSki } from './types/game-ski';
 export { gameTandoorRush } from './types/game-tandoor-rush';
 export { gameTrout } from './types/game-trout';
 export { typingDesert } from './types/typing-desert';
+export { typingGoat } from './types/typing-goat';
 export { typingInstrument } from './types/typing-instrument';
 export { typingMarket } from './types/typing-market';
 export { typingSandstorm } from './types/typing-sandstorm';
