@@ -48,7 +48,8 @@ const SLOT_LAYOUT: Array<{ x: number; y: number }> = [
 ];
 
 export class GameLevelTrout extends Container {
-  public static assetBundles = ['game-level', 'game-level-trout', 'ui', REMOTE_WORDS_BUNDLE];
+  public static assetBundles = ['game-level-trout', 'ui', REMOTE_WORDS_BUNDLE];
+  public static splashBackgroundAsset = 'game-levels/game-level-trout/splash.png';
   public static helpAssets: string[] = [];
 
   private readonly level: TLevel;

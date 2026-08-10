@@ -66,10 +66,6 @@ const levelFormSchema = z.object({
   level_type: z.enum(LEVEL_TYPE_IDS, { error: 'Select a level type.' }),
 
   mascot_id: z.number().int().positive().nullable(),
-  splash_background_asset_path: z
-    .string()
-    .min(1, 'Splash background asset path is required.')
-    .max(255),
   splash_button_color: z.number().int().nullable(),
   splash_button_text_color: z.number().int().nullable(),
   splash_level_font_color: z.number().int().nullable(),
@@ -138,7 +134,6 @@ function defaultLevelValues(level: Level | null): LevelFormValues {
     title: level?.title ?? '',
     level_type: defaultLevelType(level),
     mascot_id: level?.mascot?.id ?? null,
-    splash_background_asset_path: level?.splash_background_asset_path ?? '',
     splash_button_color: level?.splash_button_color ?? null,
     splash_button_text_color: level?.splash_button_text_color ?? null,
     splash_level_font_color: level?.splash_level_font_color ?? null,
@@ -663,29 +658,6 @@ function LevelStaticFields({ form, mascots }: { form: LevelFormApi; mascots: Mas
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              {isInvalid && <FieldError errors={field.state.meta.errors} />}
-            </Field>
-          );
-        }}
-      />
-
-      <form.Field
-        name="splash_background_asset_path"
-        children={(field: any) => {
-          const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-
-          return (
-            <Field data-invalid={isInvalid}>
-              <FieldLabel htmlFor={field.name}>Splash background asset path</FieldLabel>
-              <Input
-                id={field.name}
-                name={field.name}
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                onChange={(event) => field.handleChange(event.target.value)}
-                aria-invalid={isInvalid}
-                required
-              />
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           );

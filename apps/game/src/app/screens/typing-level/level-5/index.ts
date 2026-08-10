@@ -41,7 +41,8 @@ function randomTouristTexture() {
 }
 
 export class TypingMarketScreen extends Container {
-  public static assetBundles = ['typing-level', 'typing-level-5', REMOTE_WORDS_BUNDLE];
+  public static assetBundles = ['typing-level-5', REMOTE_WORDS_BUNDLE];
+  public static splashBackgroundAsset = 'typing-levels/typing-level-5/splash.png';
   public static helpAssets = [
     'tutorial-popups/typing-level-5-1.png',
     'tutorial-popups/typing-level-5-2.png',

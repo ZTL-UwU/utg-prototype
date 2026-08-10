@@ -7,10 +7,13 @@ import useCourseStore from '../../../zustandStores/courseStore';
 export type TLayer = 'typing' | 'education' | 'game';
 
 /**
- * A level screen owns its own tutorial images, so they stay consistent everywhere
- * the screen is reused instead of being restated on each level entry below.
+ * A level screen owns its splash background and tutorial images, so they stay
+ * consistent everywhere the screen is reused instead of being restated per level.
  */
-export type LevelScreenConstructor = AppScreenConstructor<any[]> & { helpAssets: string[] };
+export type LevelScreenConstructor = AppScreenConstructor<any[]> & {
+  helpAssets: string[];
+  splashBackgroundAsset: string;
+};
 
 export type SplashColorScheme = {
   BUTTON_FILL: number;
@@ -25,7 +28,6 @@ type TLevelBase = {
   unlocked: boolean;
   mascot: 'sheep' | 'goat' | 'camel' | 'chef';
   screen?: LevelScreenConstructor;
-  splashScreenBg: string;
   backdropColor: number;
   splashColorScheme?: SplashColorScheme;
   mascotOnSplash: boolean;

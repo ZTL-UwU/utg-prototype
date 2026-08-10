@@ -20,7 +20,8 @@ const HUD_MARGIN = 40;
 const MAX_FRAME_MS = 50; // a backgrounded tab must not eat the timer
 
 export class GameLevelKite extends Container {
-  public static assetBundles = ['game-level', 'game-level-kite', REMOTE_WORDS_BUNDLE];
+  public static assetBundles = ['game-level-kite', REMOTE_WORDS_BUNDLE];
+  public static splashBackgroundAsset = 'game-levels/game-level-kite/splash.png';
   public static helpAssets: string[] = [];
 
   private readonly level: TLevel;

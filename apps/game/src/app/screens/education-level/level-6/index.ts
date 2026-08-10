@@ -109,6 +109,7 @@ function getClosestRotation(currentRotation: number, targetRotation: number) {
 
 export class EducationSheepJumpScreen extends Container {
   public static assetBundles = ['education-level-6', 'mascots', 'ui', 'education-letters-audio'];
+  public static splashBackgroundAsset = 'education-levels/education-level-6/background.png';
   public static helpAssets = ['tutorial-popups/education-level-6.png'];
   private isPlaying: boolean = false;
 

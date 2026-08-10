@@ -35,7 +35,6 @@ export interface Level {
   level_type: string;
   level_props: unknown;
   mascot: Mascot | null;
-  splash_background_asset_path: string;
   splash_button_color: number | null;
   splash_button_text_color: number | null;
   splash_level_font_color: number | null;

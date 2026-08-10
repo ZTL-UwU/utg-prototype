@@ -16,6 +16,7 @@ const TITLE_OFFSCREEN = 200;
 
 export class TypingLevelScreen extends Container {
   public static assetBundles = ['typing-level', 'typing-level-1', 'ui'];
+  public static splashBackgroundAsset = 'typing-levels/typing-level/background-taklamakan.png';
   public static helpAssets = ['tutorial-popups/typing-tutorial.png'];
 
   private background: Sprite;

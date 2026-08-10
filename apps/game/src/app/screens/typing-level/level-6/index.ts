@@ -62,7 +62,8 @@ export function generateSentenceRounds(
 }
 
 export class TypingSentenceScreen extends Container {
-  public static assetBundles = ['typing-level', 'typing-level-6', REMOTE_SENTENCES_BUNDLE];
+  public static assetBundles = ['typing-level-6', REMOTE_SENTENCES_BUNDLE];
+  public static splashBackgroundAsset = 'typing-levels/typing-level-6/background.png';
   public static helpAssets = [
     'tutorial-popups/typing-level-6-1.png',
     'tutorial-popups/typing-level-6-2.png',

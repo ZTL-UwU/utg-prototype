@@ -1,7 +1,7 @@
 import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
 import { DropShadowFilter } from 'pixi-filters';
-import { Container, Graphics, SplitText, Sprite, Text, Texture } from 'pixi.js';
+import { Assets, Container, Graphics, SplitText, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { curveSplitText } from '../../../utils/curve-split-text';
@@ -33,14 +33,15 @@ function getColorThemeFromMascot(mascot: TMascot) {
 }
 
 export class LevelSplashScreen extends Container {
-  public static assetBundles = [
-    'level-splash',
-    'typing-level',
-    'education-level',
-    'game-level',
-    'mascots',
-    'ui',
-  ];
+  public static assetBundles = ['level-splash', 'mascots', 'ui'];
+
+  public static async prepareAssets(props?: unknown) {
+    const level = (props as { level: TLevel } | undefined)?.level;
+    const asset = level?.screen?.splashBackgroundAsset;
+    if (asset) {
+      await Assets.load(asset);
+    }
+  }
 
   private background: Sprite;
   private levelNumber: SplitText;
@@ -58,8 +59,13 @@ export class LevelSplashScreen extends Container {
       },
     });
 
+    const splashBackgroundAsset = level.screen?.splashBackgroundAsset;
+    if (!splashBackgroundAsset) {
+      throw new Error(`Level ${level.id} has no splashBackgroundAsset on its screen class`);
+    }
+
     this.background = new Sprite({
-      texture: Texture.from(level.splashScreenBg),
+      texture: Texture.from(splashBackgroundAsset),
       layout: {
         width: '100%',
         height: '100%',

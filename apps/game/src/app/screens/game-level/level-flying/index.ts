@@ -69,7 +69,8 @@ function pickWords(words: string[], totalWords: number): string[] {
 type FlyingState = 'playing' | 'dying' | 'over';
 
 export class GameLevelFlying extends Container {
-  public static assetBundles = ['game-level', 'game-level-flying', 'ui', REMOTE_WORDS_BUNDLE];
+  public static assetBundles = ['game-level-flying', 'ui', REMOTE_WORDS_BUNDLE];
+  public static splashBackgroundAsset = 'game-levels/game-level-flying/background.png';
   public static helpAssets: string[] = [];
   private background: Sprite;
   private bird: Sprite;

@@ -41,6 +41,8 @@ export interface AppScreenConstructor<Args extends unknown[] = []> {
   new (...args: Args): AppScreen;
   /** List of assets bundles required by the screen */
   assetBundles?: string[];
+  /** Load extra assets that depend on constructor props (before the screen is created). */
+  prepareAssets?: (props?: unknown) => Promise<void>;
 }
 
 export class Navigation {
@@ -187,6 +189,10 @@ export class Navigation {
           this.currentScreen.onLoad(progress * 100);
         }
       });
+    }
+
+    if (ctor.prepareAssets) {
+      await ctor.prepareAssets(props);
     }
 
     if (this.currentScreen?.onLoad) {

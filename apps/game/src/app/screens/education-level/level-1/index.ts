@@ -11,6 +11,7 @@ import { MessageContainer } from './message-container';
 
 export class EducationLevelScreen extends Container {
   public static assetBundles = ['education-level', 'ui', 'education-letters-audio'];
+  public static splashBackgroundAsset = 'education-levels/education-level/background.png';
   public static helpAssets = ['tutorial-popups/education-level-1.png'];
   private background: Sprite;
   private hud: HUD;

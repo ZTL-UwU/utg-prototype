@@ -23,12 +23,8 @@ import { LetterBubble } from './letter-bubble';
 const NUM_CHOICES = 3;
 
 export class EducationBubbleScreen extends Container {
-  public static assetBundles = [
-    'education-level-2',
-    'education-level',
-    'ui',
-    'education-letters-audio',
-  ];
+  public static assetBundles = ['education-level-2', 'ui', 'education-letters-audio'];
+  public static splashBackgroundAsset = 'education-levels/education-level-2/background.png';
   public static helpAssets = ['tutorial-popups/education-level-2.png'];
   public static rounds = 0;
   private static roundOrder: string[] = [];
