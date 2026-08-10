@@ -61,12 +61,13 @@ export function generateSentenceRounds(
 }
 
 export class TypingGoatsScreen extends Container {
-  public static assetBundles = ['typing-level', 'typing-level-goats', REMOTE_SENTENCES_BUNDLE];
+  public static assetBundles = ['typing-level-goats', REMOTE_SENTENCES_BUNDLE];
   public static helpAssets = [
     'tutorial-popups/typing-level-goats-1.png',
     'tutorial-popups/typing-level-goats-2.png',
     'tutorial-popups/typing-level-goats-3.png',
   ];
+  public static splashBackgroundAsset = 'typing-levels/typing-level-goats/splash.png';
 
   private background: Sprite;
   private book: Sprite;
