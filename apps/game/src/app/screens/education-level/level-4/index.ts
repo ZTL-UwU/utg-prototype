@@ -54,6 +54,7 @@ export class EducationImageScreen extends Container {
     'education-letters-audio',
     REMOTE_WORDS_BUNDLE,
   ];
+  public static splashBackgroundAsset = 'education-levels/education-level/background.png';
   public static helpAssets = ['tutorial-popups/education-level-4.png'];
   public static rounds = 0;
   public static roundOrder: WordSimple[] = [];

@@ -66,7 +66,8 @@ export function generateRoundsDictionary(wordIds: number[] = [], roundCount = 5)
 }
 
 export class TypingWordScreen extends Container {
-  public static assetBundles = ['typing-level-4', 'typing-level', REMOTE_WORDS_BUNDLE];
+  public static assetBundles = ['typing-level-4', REMOTE_WORDS_BUNDLE];
+  public static splashBackgroundAsset = 'typing-levels/typing-level-4/background.png';
   public static helpAssets = ['tutorial-popups/typing-tutorial.png'];
   private background: Sprite;
   private hud: HUD;
@@ -91,7 +92,7 @@ export class TypingWordScreen extends Container {
     super();
     this.level = typedLevel;
     this.background = new Sprite({
-      texture: Texture.from('typing-levels/typing-level/background-farmers-harvest.png'),
+      texture: Texture.from('typing-levels/typing-level-4/background.png'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
     this.hud = new HUD({

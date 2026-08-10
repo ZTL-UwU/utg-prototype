@@ -24,7 +24,8 @@ const SPAWN_X_PADDING = 100;
 const FEEDBACK_DURATION_MS: number = 350;
 
 export class GameLevelFruitScreen extends Container {
-  public static assetBundles = ['game-level', 'game-level-fruit', 'ui'];
+  public static assetBundles = ['game-level-fruit', 'ui'];
+  public static splashBackgroundAsset = 'game-levels/game-level-fruit/background.png';
   public static helpAssets: string[] = [];
 
   private isFalling = true;

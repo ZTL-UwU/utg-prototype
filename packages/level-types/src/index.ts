@@ -53,6 +53,11 @@ export {
 export { defaultGameKiteProps, gameKitePropsSchema, type GameKiteProps } from './schemas/game-kite';
 export { defaultGameSkiProps, gameSkiPropsSchema, type GameSkiProps } from './schemas/game-ski';
 export {
+  defaultGameTroutProps,
+  gameTroutPropsSchema,
+  type GameTroutProps,
+} from './schemas/game-trout';
+export {
   defaultGameNaanStackProps,
   defaultGameTandoorRushProps,
   defaultTypingDesertProps,
@@ -91,6 +96,7 @@ export { gameKite } from './types/game-kite';
 export { gameNaanStack } from './types/game-naan-stack';
 export { gameSki } from './types/game-ski';
 export { gameTandoorRush } from './types/game-tandoor-rush';
+export { gameTrout } from './types/game-trout';
 export { typingDesert } from './types/typing-desert';
 export { typingGoat } from './types/typing-goat';
 export { typingInstrument } from './types/typing-instrument';

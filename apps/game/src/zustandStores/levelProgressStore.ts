@@ -7,13 +7,22 @@ function key(mapType: TLayer, levelId: number) {
   return `${mapType}-${levelId}`;
 }
 
+function unitKey(mapType: TLayer, mapUnitId: number) {
+  return `unit-${mapType}-${mapUnitId}`;
+}
+
 interface LevelProgressState {
   attemptedLevels: Record<string, boolean>;
   pendingAnimations: Record<string, boolean>;
+  pendingMapUnitAnimations: Record<string, boolean>;
 
   markAttempted: (mapType: TLayer, levelId: number) => void;
   isAttempted: (mapType: TLayer, levelId: number) => boolean;
   consumePendingAnimation: (mapType: TLayer, levelId: number) => boolean;
+
+  queueMapUnitAnimation: (mapType: TLayer, mapUnitId: number) => void;
+  consumeMapUnitPendingAnimation: (mapType: TLayer, mapUnitId: number) => boolean;
+
   resetAllAttempts: () => void;
 }
 
@@ -22,6 +31,7 @@ export const useLevelProgress = create<LevelProgressState>()(
     (set, get) => ({
       attemptedLevels: {},
       pendingAnimations: {},
+      pendingMapUnitAnimations: {},
 
       markAttempted: (mapType, levelId) => {
         const k = key(mapType, levelId);
@@ -45,7 +55,27 @@ export const useLevelProgress = create<LevelProgressState>()(
         return true;
       },
 
-      resetAllAttempts: () => set({ attemptedLevels: {}, pendingAnimations: {} }),
+      queueMapUnitAnimation: (mapType, mapUnitId) => {
+        const k = unitKey(mapType, mapUnitId);
+        if (get().pendingMapUnitAnimations[k]) return;
+        set((s) => ({
+          pendingMapUnitAnimations: { ...s.pendingMapUnitAnimations, [k]: true },
+        }));
+      },
+
+      consumeMapUnitPendingAnimation: (mapType, mapUnitId) => {
+        const k = unitKey(mapType, mapUnitId);
+        if (!get().pendingMapUnitAnimations[k]) return false;
+        set((s) => {
+          const next = { ...s.pendingMapUnitAnimations };
+          delete next[k];
+          return { pendingMapUnitAnimations: next };
+        });
+        return true;
+      },
+
+      resetAllAttempts: () =>
+        set({ attemptedLevels: {}, pendingAnimations: {}, pendingMapUnitAnimations: {} }),
     }),
     {
       name: 'utg-level-progress',

@@ -129,7 +129,19 @@ export class EndScreenPopup extends Container {
     this.currentMascot = getCurrentMascot(level);
     const { correct, mistakes, accuracy, starCount } = readSessionResults();
     this.starCount = starCount;
-    useLevelProgress.getState().markAttempted(getLevelType(level), level.id);
+    // useLevelProgress.getState().markAttempted(getLevelType(level), level.id);
+
+    const progress = useLevelProgress.getState();
+    progress.markAttempted(getLevelType(level), level.id);
+    const mapUnit = findMapUnitForLevel(level);
+    if (mapUnit?.type === 'education') {
+      const unitComplete =
+        mapUnit.levels.length > 0 &&
+        mapUnit.levels.every((game) => progress.isAttempted(mapUnit.type, game.id));
+      if (unitComplete) {
+        progress.queueMapUnitAnimation(mapUnit.type, mapUnit.id);
+      }
+    }
     this.background = createPopupBackground(POPUP_WIDTH, POPUP_HEIGHT, this.currentMascot);
     this.background.layout = {
       width: POPUP_WIDTH,

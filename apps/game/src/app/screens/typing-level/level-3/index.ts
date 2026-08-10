@@ -114,7 +114,8 @@ function shuffledNotes(letters: readonly string[], noteCount: number) {
 }
 
 export class TypingInstrumentScreen extends Container {
-  public static assetBundles = ['typing-level', 'typing-level-3', 'ui'];
+  public static assetBundles = ['typing-level-3', 'ui'];
+  public static splashBackgroundAsset = 'typing-levels/typing-level-3/background.png';
   public static helpAssets = ['tutorial-popups/typing-tutorial.png'];
 
   private readonly background: Sprite;
@@ -171,7 +172,7 @@ export class TypingInstrumentScreen extends Container {
     );
 
     this.background = new Sprite({
-      texture: Texture.from('typing-levels/typing-level/background-tangri-tah.png'),
+      texture: Texture.from('typing-levels/typing-level-3/background.png'),
       layout: { width: '100%', height: '100%', position: 'absolute', objectFit: 'cover' },
     });
     this.instrument = new Sprite({

@@ -5,6 +5,7 @@ import { Graphics, Texture, Text, type DestroyOptions } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { useLevelProgress } from '../../../zustandStores/levelProgressStore';
+import { drawDashedRing, FILL_ANIM_DELAY, FILL_ANIM_DURATION } from '../../ui/dashed-ring';
 import { LevelSplashScreen } from '../level-splash';
 import type { TLevel, TMapUnit } from './units';
 
@@ -12,43 +13,6 @@ const SIZE = 221;
 const BUTTON_RADIUS = SIZE / 2;
 const RING_IDLE_RADIUS = BUTTON_RADIUS + 5;
 const RING_HOVER_RADIUS = BUTTON_RADIUS - 3;
-
-const RING_COLOR_UNFILLED = 0xa66129;
-const RING_COLOR_FILLED = 0xffdf59;
-const FILL_ANIM_DURATION = 0.6;
-const FILL_ANIM_DELAY = 0.25;
-
-function drawDashedRing(
-  g: Graphics,
-  r: number,
-  fillProgress = 0,
-  filledColor = RING_COLOR_FILLED,
-  unfilledColor = RING_COLOR_UNFILLED,
-  width = 15,
-) {
-  g.clear();
-  const dashCount = 8;
-  const gapRatio = 0.1;
-  const segmentAngle = (Math.PI * 2) / dashCount;
-  const gapAngle = segmentAngle * gapRatio;
-  const dashAngle = segmentAngle - gapAngle;
-  const base = -Math.PI / 2;
-  const fillBoundary = base + fillProgress * Math.PI * 2;
-
-  const strokeArc = (start: number, end: number, color: number) => {
-    if (end <= start) return;
-    g.setStrokeStyle({ width, color });
-    g.arc(0, 0, r, start, end);
-    g.stroke();
-  };
-
-  for (let i = 0; i < dashCount; i++) {
-    const dashStart = base + i * segmentAngle;
-    const dashEnd = dashStart + dashAngle;
-    strokeArc(dashStart, Math.min(dashEnd, fillBoundary), filledColor);
-    strokeArc(Math.max(dashStart, fillBoundary), dashEnd, unfilledColor);
-  }
-}
 
 export class LevelButton extends FancyButton {
   private ring: Graphics;

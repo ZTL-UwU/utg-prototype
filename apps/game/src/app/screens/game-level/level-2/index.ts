@@ -40,7 +40,8 @@ type MovingNaan = {
 };
 
 export class GameNaanStackScreen extends Container {
-  public static assetBundles = ['game-level', 'game-level-2', 'ui'];
+  public static assetBundles = ['game-level-2', 'ui'];
+  public static splashBackgroundAsset = 'game-levels/game-level-2/background.png';
   public static helpAssets: string[] = ['tutorial-popups/game-level-2.png'];
 
   private readonly level: TLevel;
