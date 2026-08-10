@@ -26,7 +26,6 @@ class LevelOut(AuditingOut):
     level_type: str
     level_props: Any
     mascot: MascotOut | None
-    splash_background_asset_path: str
     splash_button_color: int | None
     splash_button_text_color: int | None
     splash_level_font_color: int | None
@@ -122,7 +121,6 @@ class LevelWriteIn(Schema):
     level_type: str
     level_props: Any
     mascot_id: int | None = None
-    splash_background_asset_path: str
     splash_button_color: int | None = None
     splash_button_text_color: int | None = None
     splash_level_font_color: int | None = None
@@ -205,17 +203,74 @@ class WordSimpleOut(Schema):
 class SentenceIn(Schema):
     sentence: str
     translation: str | None = None
+    story_id: int | None = None
+    clear_audio: bool = False
 
 
 class SentenceOut(Schema):
     id: int
     sentence: str
     translation: str | None
+    story_id: int | None = None
+    sort_order: int | None = None
+    audio: AudioOut | None = None
+
+    @staticmethod
+    def resolve_story_id(obj) -> int | None:
+        return obj.story_id
+
+    @staticmethod
+    def resolve_audio(obj) -> AudioOut | None:
+        audio = obj.audio
+        if not audio:
+            return None
+        return AudioOut(
+            name=audio.name,
+            url=audio.url,
+            filename=Path(audio.name).name,
+        )
 
 
 class SentenceSimpleOut(Schema):
     id: int
     sentence: str
+    story_id: int | None = None
+    sort_order: int | None = None
+    audio_url: str | None = None
+
+    @staticmethod
+    def resolve_story_id(obj) -> int | None:
+        return obj.story_id
+
+    @staticmethod
+    def resolve_audio_url(obj) -> str | None:
+        return obj.audio.url if obj.audio else None
+
+
+class StoryIn(Schema):
+    name: str
+    is_published: bool = True
+
+
+class StoryOut(Schema):
+    id: int
+    name: str
+    is_published: bool
+    sentences: list[SentenceOut]
+
+    @staticmethod
+    def resolve_sentences(obj) -> list:
+        return list(obj.sentences.all())
+
+
+class StorySimpleOut(Schema):
+    id: int
+    name: str
+    sentence_ids: list[int]
+
+    @staticmethod
+    def resolve_sentence_ids(obj) -> list[int]:
+        return [sentence.id for sentence in obj.sentences.all()]
 
 
 class LevelOrderIn(Schema):

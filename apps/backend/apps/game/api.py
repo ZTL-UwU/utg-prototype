@@ -5,7 +5,7 @@ from ninja import File, Form, Router, Status, UploadedFile
 
 from apps.common.auth import jwt_auth
 from apps.common.permissions import require_perm
-from apps.game.models import Layer, Level, LevelType, Mascot, Sentence, Unit, Word
+from apps.game.models import Layer, Level, LevelType, Mascot, Sentence, Story, Unit, Word
 from apps.game.schemas import (
     ErrorOut,
     LevelOrderIn,
@@ -16,6 +16,9 @@ from apps.game.schemas import (
     SentenceOut,
     SentenceSimpleOut,
     SidebarUnitOut,
+    StoryIn,
+    StoryOut,
+    StorySimpleOut,
     UnitByIdOut,
     UnitByLayerOut,
     UnitOrderIn,
@@ -52,7 +55,6 @@ def _apply_level_payload(level: Level, payload: LevelWriteIn) -> None:
     level.level_type = payload.level_type
     level.level_props = payload.level_props
     level.mascot_id = payload.mascot_id
-    level.splash_background_asset_path = payload.splash_background_asset_path
     level.splash_button_color = payload.splash_button_color
     level.splash_button_text_color = payload.splash_button_text_color
     level.splash_level_font_color = payload.splash_level_font_color
@@ -423,20 +425,60 @@ def delete_word(request, word_id: int):
     return Status(204, None)
 
 
+def _next_sentence_sort_order(story_id: int) -> int:
+    return (
+        Sentence.objects.filter(story_id=story_id).aggregate(max_sort_order=Max("sort_order"))[
+            "max_sort_order"
+        ]
+        or 0
+    ) + 1
+
+
+def _apply_sentence_story(sentence: Sentence, story_id: int | None) -> Status | None:
+    if story_id is None:
+        sentence.story_id = None
+        sentence.sort_order = None
+        return None
+    if not Story.objects.filter(id=story_id).exists():
+        return Status(404, {"detail": "Story not found."})
+    if sentence.story_id != story_id:
+        sentence.story_id = story_id
+        sentence.sort_order = _next_sentence_sort_order(story_id)
+    return None
+
+
+def _story_with_sentences(story_id: int) -> Story:
+    return Story.objects.prefetch_related(
+        Prefetch(
+            "sentences",
+            queryset=Sentence.objects.order_by("sort_order", "id"),
+        )
+    ).get(id=story_id)
+
+
 @router.post(
     "/sentences",
     auth=jwt_auth,
-    response={200: SentenceOut, 403: ErrorOut},
+    response={200: SentenceOut, 403: ErrorOut, 404: ErrorOut},
     summary="[Admin] Create a sentence",
 )
 @require_perm("game.add_sentence", message="You do not have permission to create sentences")
-def create_sentence(request, data: SentenceIn):
-    sentence = Sentence.objects.create(
+def create_sentence(
+    request,
+    data: Form[SentenceIn],
+    audio: File[UploadedFile] = None,
+):
+    sentence = Sentence(
         sentence=data.sentence,
         translation=data.translation or None,
+        audio=audio,
         created_by=request.auth,
         updated_by=request.auth,
     )
+    story_error = _apply_sentence_story(sentence, data.story_id)
+    if story_error:
+        return story_error
+    sentence.save()
     return 200, sentence
 
 
@@ -448,7 +490,7 @@ def create_sentence(request, data: SentenceIn):
 )
 @require_perm("game.view_sentence", message="You do not have permission to view sentences")
 def list_sentences(request):
-    return Sentence.objects.order_by("-updated_at", "-id")
+    return Sentence.objects.order_by("story_id", "sort_order", "id")
 
 
 @router.get(
@@ -458,7 +500,7 @@ def list_sentences(request):
 )
 def list_sentences_simple(request):
     return Sentence.objects.filter(is_active=True, is_published=True).only(
-        "id", "sentence"
+        "id", "sentence", "story_id", "sort_order", "audio"
     )
 
 
@@ -469,7 +511,12 @@ def list_sentences_simple(request):
     summary="[Admin] Update a sentence",
 )
 @require_perm("game.change_sentence", message="You do not have permission to update sentences")
-def update_sentence(request, sentence_id: int, data: SentenceIn):
+def update_sentence(
+    request,
+    sentence_id: int,
+    data: Form[SentenceIn],
+    audio: File[UploadedFile] = None,
+):
     try:
         sentence = Sentence.objects.get(id=sentence_id)
     except Sentence.DoesNotExist:
@@ -477,6 +524,15 @@ def update_sentence(request, sentence_id: int, data: SentenceIn):
 
     sentence.sentence = data.sentence
     sentence.translation = data.translation or None
+    story_error = _apply_sentence_story(sentence, data.story_id)
+    if story_error:
+        return story_error
+    if audio is not None:
+        sentence.audio = audio
+    elif data.clear_audio:
+        if sentence.audio:
+            sentence.audio.delete(save=False)
+        sentence.audio = None
     sentence.updated_by = request.auth
     sentence.save()
     return sentence
@@ -493,4 +549,103 @@ def delete_sentence(request, sentence_id: int):
     deleted, _ = Sentence.objects.filter(id=sentence_id).delete()
     if not deleted:
         return Status(404, {"detail": "Sentence not found."})
+    return Status(204, None)
+
+
+@router.post(
+    "/stories",
+    auth=jwt_auth,
+    response={200: StoryOut, 403: ErrorOut},
+    summary="[Admin] Create a story",
+)
+@require_perm("game.add_story", message="You do not have permission to create stories")
+def create_story(request, payload: StoryIn):
+    story = Story.objects.create(
+        name=payload.name,
+        is_published=payload.is_published,
+        created_by=request.auth,
+        updated_by=request.auth,
+    )
+    return _story_with_sentences(story.id)
+
+
+@router.get(
+    "/stories/list",
+    auth=jwt_auth,
+    response={200: list[StoryOut], 403: ErrorOut},
+    summary="[Admin] List all stories",
+)
+@require_perm("game.view_story", message="You do not have permission to view stories")
+def list_stories(request):
+    return Story.objects.prefetch_related(
+        Prefetch(
+            "sentences",
+            queryset=Sentence.objects.order_by("sort_order", "id"),
+        )
+    ).order_by("name", "id")
+
+
+@router.get(
+    "/stories/list-simple",
+    response=list[StorySimpleOut],
+    summary="[Public] List published stories (simple version)",
+)
+def list_stories_simple(request):
+    return (
+        Story.objects.filter(is_active=True, is_published=True)
+        .prefetch_related(
+            Prefetch(
+                "sentences",
+                queryset=Sentence.objects.order_by("sort_order", "id").only("id", "story_id"),
+            )
+        )
+        .order_by("name", "id")
+    )
+
+
+@router.get(
+    "/stories/{story_id}",
+    auth=jwt_auth,
+    response={200: StoryOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Get a story by ID",
+)
+@require_perm("game.view_story", message="You do not have permission to view stories")
+def get_story(request, story_id: int):
+    try:
+        return _story_with_sentences(story_id)
+    except Story.DoesNotExist:
+        return Status(404, {"detail": "Story not found."})
+
+
+@router.patch(
+    "/stories/{story_id}",
+    auth=jwt_auth,
+    response={200: StoryOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Update a story",
+)
+@require_perm("game.change_story", message="You do not have permission to update stories")
+def update_story(request, story_id: int, payload: StoryIn):
+    try:
+        story = Story.objects.get(id=story_id)
+    except Story.DoesNotExist:
+        return Status(404, {"detail": "Story not found."})
+
+    story.name = payload.name
+    story.is_published = payload.is_published
+    story.updated_by = request.auth
+    story.save()
+    return _story_with_sentences(story.id)
+
+
+@router.delete(
+    "/stories/{story_id}",
+    auth=jwt_auth,
+    response={204: None, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Delete a story",
+)
+@require_perm("game.delete_story", message="You do not have permission to delete stories")
+def delete_story(request, story_id: int):
+    deleted, _ = Story.objects.filter(id=story_id).delete()
+    if not deleted:
+        return Status(404, {"detail": "Story not found."})
     return Status(204, None)
