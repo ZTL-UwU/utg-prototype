@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 
-import { Avatar } from './components/Avatar';
-import { CloseButton } from './components/CloseButton';
+import { Avatar } from '../ui/Avatar';
+import { Card } from '../ui/Card';
+import { CloseButton } from '../ui/CloseButton';
 import type { AvatarVariant } from './types';
-import { cn } from './utils';
 
 export interface AuthCardProps {
   avatarVariant: AvatarVariant;
@@ -17,18 +17,13 @@ export interface AuthCardProps {
  */
 export function AuthCard({ avatarVariant, onClose, children }: AuthCardProps) {
   return (
-    <div
-      className={cn(
-        'pointer-events-auto relative flex max-w-4xl w-full min-h-[62vh] max-h-screen flex-col justify-center',
-        'rounded-3xl bg-cream px-5 md:px-10 pt-16 pb-8 shadow-2xl',
-      )}
-    >
+    <Card>
       <Avatar variant={avatarVariant} className="absolute -top-12 left-1/2 -translate-x-1/2" />
 
       <CloseButton className="absolute top-4 left-4" onClick={onClose} />
 
       {/* Scrolling lives here, not on the card — the avatar overhangs the card's edge. */}
       <div className="flex flex-col overflow-y-auto py-2">{children}</div>
-    </div>
+    </Card>
   );
 }

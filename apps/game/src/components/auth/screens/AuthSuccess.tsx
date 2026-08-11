@@ -1,5 +1,5 @@
-import { PrimaryButton } from '../components/PrimaryButton';
-import { StatusIcon } from '../components/StatusIcon';
+import { PrimaryButton } from '../../ui/PrimaryButton';
+import { StatusIcon } from '../../ui/StatusIcon';
 
 export interface AuthSuccessProps {
   onPlay: () => void;

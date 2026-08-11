@@ -1,5 +1,5 @@
-import { LinkButton } from '../components/LinkButton';
-import { StatusIcon } from '../components/StatusIcon';
+import { LinkButton } from '../../ui/LinkButton';
+import { StatusIcon } from '../../ui/StatusIcon';
 
 export interface ForgotPasswordSentProps {
   onBack: () => void;

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
-import { PillInput } from '../components/PillInput';
-import { PrimaryButton } from '../components/PrimaryButton';
+import { PillInput } from '../../ui/PillInput';
+import { PrimaryButton } from '../../ui/PrimaryButton';
 
 export interface ResetPasswordFormProps {
   onSubmit: (password: string) => void | Promise<void>;

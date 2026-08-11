@@ -1,9 +1,10 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-import { cn } from '../utils';
+import { cn } from './utils';
 
 export interface PrimaryButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
+  href?: string;
   /** `solid` is the forest CTA, `ghost` the outlined secondary action. */
   variant?: 'solid' | 'ghost';
 }
@@ -22,10 +23,32 @@ const VARIANTS = {
 export function PrimaryButton({
   children,
   className,
+  href,
   variant = 'solid',
   type = 'button',
   ...props
 }: PrimaryButtonProps) {
+  if (href) {
+    return (
+      <a
+        href={href}
+        className={cn(
+          'mx-auto w-4/5 rounded-pill px-6 py-4.5 font-display text-2xl font-semibold',
+          'transition duration-100',
+          'active:translate-y-[2px] active:scale-[0.97]',
+          'focus-visible:ring-4 focus-visible:ring-forest/40 focus-visible:outline-none',
+          'disabled:cursor-not-allowed disabled:opacity-60',
+          'disabled:active:translate-y-0 disabled:active:scale-100',
+          'text-center',
+          VARIANTS[variant],
+          className,
+        )}
+      >
+        {children}
+      </a>
+    );
+  }
+
   return (
     <button
       type={type}

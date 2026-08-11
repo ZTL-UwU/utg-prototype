@@ -1,14 +1,14 @@
 import type { ButtonHTMLAttributes } from 'react';
 
-import { cn } from '../utils';
+import { cn } from './utils';
 
-export type CloseButtonProps = ButtonHTMLAttributes<HTMLButtonElement>;
+export type BackButtonProps = ButtonHTMLAttributes<HTMLButtonElement>;
 
-export function CloseButton({ className, ...props }: CloseButtonProps) {
+export function BackButton({ className, ...props }: BackButtonProps) {
   return (
     <button
       type="button"
-      aria-label="Close"
+      aria-label="Back"
       className={cn(
         'grid size-10 place-items-center rounded-full text-ink transition duration-100',
         'hover:bg-ink/8 active:scale-90',
@@ -19,10 +19,11 @@ export function CloseButton({ className, ...props }: CloseButtonProps) {
     >
       <svg viewBox="0 0 24 24" className="size-6" fill="none" aria-hidden="true">
         <path
-          d="M5 5 19 19M19 5 5 19"
+          d="M15 5 7 12l8 7"
           stroke="currentColor"
           strokeWidth="6"
           strokeLinecap="round"
+          strokeLinejoin="round"
         />
       </svg>
     </button>

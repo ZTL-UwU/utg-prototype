@@ -94,8 +94,8 @@ export function AuthParent({
     <div
       className={
         backdrop
-          ? 'pointer-events-auto fixed inset-0 grid place-items-center bg-black/40 p-4'
-          : 'pointer-events-none fixed inset-0 grid place-items-center p-4'
+          ? 'fixed inset-0 grid place-items-center bg-black/40 p-4'
+          : 'fixed inset-0 grid place-items-center p-4'
       }
     >
       <AuthCard

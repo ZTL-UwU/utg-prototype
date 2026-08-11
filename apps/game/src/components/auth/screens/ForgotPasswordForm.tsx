@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
-import { LinkButton } from '../components/LinkButton';
-import { PillInput } from '../components/PillInput';
-import { PrimaryButton } from '../components/PrimaryButton';
+import { LinkButton } from '../../ui/LinkButton';
+import { PillInput } from '../../ui/PillInput';
+import { PrimaryButton } from '../../ui/PrimaryButton';
 
 export interface ForgotPasswordFormProps {
   onSubmit: (email: string) => void | Promise<void>;

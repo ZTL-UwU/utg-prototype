@@ -1,6 +1,8 @@
-export type AuthView = 'login' | 'signup' | 'forgot' | 'forgot-sent' | 'reset' | 'success';
+import type { AvatarVariant } from '../ui/Avatar';
 
-export type AvatarVariant = 'outline' | 'filled';
+export type { AvatarVariant };
+
+export type AuthView = 'login' | 'signup' | 'forgot' | 'forgot-sent' | 'reset' | 'success';
 
 export interface LoginCredentials {
   email: string;

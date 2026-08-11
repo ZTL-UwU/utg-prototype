@@ -13,6 +13,7 @@ import {
 import { useAuthStore, type AuthUser } from '../zustandStores/auth';
 import { useOverlayStore } from '../zustandStores/overlayStore';
 import { AuthParent, type SignUpData } from './auth';
+import { MenuParent } from './menu/MenuParent';
 import { YoutubeEmbedOverlay } from './YoutubeEmbedOverlay';
 
 /** Backing out of auth returns to the regular home screen. */
@@ -142,6 +143,14 @@ export function ScreenOverlay() {
     },
   });
 
+  if (activeOverlay === 'menu') {
+    return (
+      <div className="fixed inset-0 grid place-items-center bg-black/40 p-4">
+        <MenuParent />
+      </div>
+    );
+  }
+
   if (activeOverlay === 'youtube-embeds') {
     return (
       <div className="pointer-events-none absolute inset-0 z-10">
@@ -152,7 +161,7 @@ export function ScreenOverlay() {
 
   if (activeOverlay === 'auth') {
     return (
-      <div className="pointer-events-none absolute inset-0 z-10">
+      <div className="z-10">
         <AuthParent
           initialView={resetParams !== null ? 'reset' : 'login'}
           onClose={goToHomeScreen}

@@ -1,7 +1,7 @@
 import { forwardRef } from 'react';
 import type { InputHTMLAttributes } from 'react';
 
-import { cn } from '../utils';
+import { cn } from './utils';
 
 export interface PillInputProps extends InputHTMLAttributes<HTMLInputElement> {
   /** Doubles as the accessible name unless `aria-label` is passed explicitly. */

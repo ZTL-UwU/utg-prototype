@@ -1,3 +1,4 @@
+import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
 import { Sprite, Text, Texture, type TextDropShadow, type Ticker } from 'pixi.js';
 import { Container } from 'pixi.js';
@@ -6,6 +7,7 @@ import { engine } from '../../../engine/getEngine';
 import { ensureValidSession } from '../../../lib/authSession';
 import { continueIntoGame } from '../../../utils/continueIntoGame';
 import { useAuthStore } from '../../../zustandStores/auth';
+import { useOverlayStore } from '../../../zustandStores/overlayStore';
 import { scriptState, type ORTHO_ENUM } from '../../../zustandStores/scriptState';
 import { AuthScreen } from './auth';
 import { Butterfly } from './butterfly';
@@ -24,6 +26,7 @@ export class HomeScreen extends Container {
   private title: Text;
   private subtitle: Text;
   private isStarting = false;
+  private menuButton: FancyButton;
 
   constructor() {
     super({
@@ -109,7 +112,36 @@ export class HomeScreen extends Container {
     });
     bottomGroup.addChild(this.scriptButtonContainer);
 
-    this.addChild(this.background, this.butterfly, this.titleContainer, bottomGroup);
+    this.menuButton = new FancyButton({
+      defaultView: 'home/menu-button.png',
+      animations: {
+        hover: {
+          props: {
+            scale: { x: 1.1, y: 1.1 },
+          },
+          duration: 100,
+        },
+        pressed: {
+          props: {
+            scale: { x: 0.97, y: 0.97 },
+          },
+          duration: 100,
+        },
+      },
+      anchor: 0.5,
+    });
+    this.menuButton.layout = { position: 'absolute', bottom: 90, left: 90 };
+    this.menuButton.onPress.connect(() => {
+      useOverlayStore.getState().show('menu');
+    });
+
+    this.addChild(
+      this.background,
+      this.butterfly,
+      this.titleContainer,
+      bottomGroup,
+      this.menuButton,
+    );
   }
 
   private async start(script: ORTHO_ENUM) {

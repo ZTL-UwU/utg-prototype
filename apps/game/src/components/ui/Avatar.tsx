@@ -1,5 +1,6 @@
-import type { AvatarVariant } from '../types';
-import { cn } from '../utils';
+import { cn } from './utils';
+
+export type AvatarVariant = 'outline' | 'filled';
 
 export interface AvatarProps {
   variant?: AvatarVariant;

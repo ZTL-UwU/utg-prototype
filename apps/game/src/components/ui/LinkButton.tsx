@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-import { cn } from '../utils';
+import { cn } from './utils';
 
 export interface LinkButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
