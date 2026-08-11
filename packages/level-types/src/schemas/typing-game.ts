@@ -2,12 +2,16 @@ import { z } from 'zod';
 
 export const typingDesertPropsSchema = z.object({
   rowSize: z.number().int().min(1).max(12),
+  rounds: z.number().int().min(1).max(10),
 });
 
 export type TypingDesertProps = z.infer<typeof typingDesertPropsSchema>;
 
 export function defaultTypingDesertProps(): TypingDesertProps {
-  return { rowSize: 6 };
+  return {
+    rowSize: 6,
+    rounds: 5,
+  };
 }
 
 export const typingSandstormPropsSchema = z
