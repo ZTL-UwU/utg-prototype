@@ -281,5 +281,10 @@ class UnitOrderIn(Schema):
     unit_ids: list[int]
 
 
+class SentenceOrderIn(Schema):
+    story_id: int | None = None
+    sentence_ids: list[int]
+
+
 class ErrorOut(Schema):
     detail: str

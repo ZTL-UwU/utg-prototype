@@ -13,6 +13,7 @@ from apps.game.schemas import (
     LevelWriteIn,
     MascotOut,
     SentenceIn,
+    SentenceOrderIn,
     SentenceOut,
     SentenceSimpleOut,
     SidebarUnitOut,
@@ -550,6 +551,42 @@ def delete_sentence(request, sentence_id: int):
     if not deleted:
         return Status(404, {"detail": "Sentence not found."})
     return Status(204, None)
+
+
+@router.put(
+    "/sentences/order",
+    auth=jwt_auth,
+    response={200: list[SentenceOut], 400: ErrorOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Reorder sentences within a story or unassigned list",
+)
+@require_perm("game.change_sentence", message="You do not have permission to update sentences")
+def reorder_sentences(request, payload: SentenceOrderIn):
+    ordered_ids = payload.sentence_ids
+    if len(ordered_ids) != len(set(ordered_ids)):
+        return Status(400, {"detail": "Sentence order cannot contain duplicate ids."})
+
+    story_id = payload.story_id
+    if story_id is not None and not Story.objects.filter(id=story_id).exists():
+        return Status(404, {"detail": "Story not found."})
+
+    sentences = list(Sentence.objects.filter(id__in=ordered_ids))
+    if len(sentences) != len(ordered_ids):
+        return Status(404, {"detail": "One or more sentences were not found."})
+
+    sentences_by_id = {sentence.id: sentence for sentence in sentences}
+    now = timezone.now()
+    with transaction.atomic():
+        for sort_order, sentence_id in enumerate(ordered_ids, start=1):
+            sentence = sentences_by_id[sentence_id]
+            sentence.story_id = story_id
+            sentence.sort_order = sort_order
+            sentence.updated_by = request.auth
+            sentence.updated_at = now
+        Sentence.objects.bulk_update(
+            sentences, ["story_id", "sort_order", "updated_by", "updated_at"]
+        )
+
+    return [sentences_by_id[sentence_id] for sentence_id in ordered_ids]
 
 
 @router.post(
