@@ -45,6 +45,18 @@ export function TypingDesertPropsForm({
           />
         )}
       </form.Field>
+      <form.Field name="rounds">
+        {(field) => (
+          <NumberPropsField
+            field={field}
+            label="Rounds"
+            description="Number of rounds played before game ends (Min. 1, Max. 10)"
+            min={1}
+            max={10}
+            step={1}
+          />
+        )}
+      </form.Field>
     </form>
   );
 }
