@@ -1,12 +1,6 @@
 from django.db import models
 
-from apps.common.models import AuditingMixin
-
-
-class Layer(models.TextChoices):
-    TYPING = "typing", "Typing"
-    EDUCATION = "education", "Education"
-    GAMES = "game", "Game"
+from apps.common.models import AuditingMixin, Layer
 
 
 class LevelType(models.TextChoices):

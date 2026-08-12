@@ -1,6 +1,17 @@
+from pathlib import Path
+
 from ninja import Field, Schema
 
 from apps.common.schemas import AuditingOut
+from apps.game.schemas import ImageOut, LayerValue
+
+
+def _image_out(image) -> ImageOut:
+    return ImageOut(
+        name=image.name,
+        url=image.url,
+        filename=Path(image.name).name,
+    )
 
 
 class RegisterIn(Schema):
@@ -41,10 +52,57 @@ class RefreshedAccessTokenOut(Schema):
     access: str
 
 
-class RewardOut(AuditingOut):
+class RewardImageIn(Schema):
+    name: str
+    is_published: bool = True
+
+
+class RewardImageOut(AuditingOut):
     id: int
     name: str
-    asset_path: str
+    image: ImageOut
+
+    @staticmethod
+    def resolve_image(obj) -> ImageOut:
+        return _image_out(obj.image)
+
+
+class RewardIn(Schema):
+    type: str
+    layer: LayerValue
+    level: int | None = None
+    image_id: int
+    is_published: bool = True
+
+
+class RewardOut(AuditingOut):
+    id: int
+    type: str
+    layer: str
+    level: int | None
+    image: ImageOut
+
+    @staticmethod
+    def resolve_level(obj) -> int | None:
+        return obj.level_id
+
+    @staticmethod
+    def resolve_image_id(obj) -> int:
+        return obj.image_id
+
+    @staticmethod
+    def resolve_image(obj) -> ImageOut:
+        return _image_out(obj.image.image)
+
+
+class RewardSimpleOut(Schema):
+    id: int
+    type: str
+    image_url: str
+
+    @staticmethod
+    def resolve_image_url(obj) -> str:
+        return obj.image.image.url
 
 
 class LevelResultIn(Schema):

@@ -2,6 +2,12 @@ from django.conf import settings
 from django.db import models
 
 
+class Layer(models.TextChoices):
+    TYPING = "typing", "Typing"
+    EDUCATION = "education", "Education"
+    GAMES = "game", "Game"
+
+
 class AuditingMixin(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)

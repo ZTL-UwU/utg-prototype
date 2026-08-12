@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 from apps.users.forms import UserChangeForm, UserCreationForm
-from apps.users.models import LevelResult, Reward, User, UserReward
+from apps.users.models import LevelResult, Reward, RewardImage, User, UserReward
 
 
 class UserRewardInline(admin.TabularInline):
@@ -43,10 +43,18 @@ class UserAdmin(BaseUserAdmin):
     readonly_fields = ("last_login", "date_joined")
 
 
+@admin.register(RewardImage)
+class RewardImageAdmin(admin.ModelAdmin):
+    list_display = ("name", "image")
+    search_fields = ("name",)
+
+
 @admin.register(Reward)
 class RewardAdmin(admin.ModelAdmin):
-    list_display = ("name", "asset_path")
-    search_fields = ("name",)
+    list_display = ("type", "layer", "level", "image")
+    list_filter = ("type", "layer")
+    search_fields = ("type", "layer")
+    autocomplete_fields = ("level", "image")
 
 
 @admin.register(LevelResult)

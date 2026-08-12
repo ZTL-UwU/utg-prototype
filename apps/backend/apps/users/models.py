@@ -3,19 +3,70 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 
-from apps.common.models import AuditingMixin
+from apps.common.models import AuditingMixin, Layer
 from apps.users.managers import UserManager
 
 
-class Reward(AuditingMixin, models.Model):
+class RewardType(models.TextChoices):
+    LEVEL_COMPLETION_BADGE = "level_completion_badge", "Level completion badge"
+    LEVEL_THREE_STARS_BADGE = "level_three_stars_badge", "Level three stars badge"
+    LEVEL_PERFECT_BADGE = "level_perfect_badge", "Level perfect badge"
+    LAYER_THREE_CONSECUTIVE_THREE_STARS_TROPHY = (
+        "three_consecutive_three_stars_trophy",
+        "Three consecutive three stars trophy",
+    )
+
+
+class RewardImage(AuditingMixin, models.Model):
     name = models.CharField(max_length=255)
-    asset_path = models.CharField(max_length=255)
+    image = models.ImageField(upload_to="rewards/")
 
     class Meta:
-        db_table = "rewards"
+        db_table = "reward_images"
 
     def __str__(self) -> str:
         return self.name
+
+
+class Reward(AuditingMixin, models.Model):
+    type = models.CharField(max_length=255, choices=RewardType.choices)
+    layer = models.CharField(max_length=20, choices=Layer.choices)
+
+    # Only for level rewards
+    level = models.ForeignKey(
+        "game.Level",
+        on_delete=models.CASCADE,
+        related_name="rewards",
+        null=True,
+        blank=True,
+    )
+
+    image = models.ForeignKey(
+        RewardImage,
+        on_delete=models.PROTECT,
+        related_name="rewards",
+    )
+
+    class Meta:
+        db_table = "rewards"
+        constraints = [
+            # One level cannot have multiple rewards of the same type
+            models.UniqueConstraint(
+                fields=["type", "level"],
+                condition=Q(level__isnull=False),
+                name="unique_reward_type_level",
+            ),
+            # If level is null, this is a trophy reward for a layer
+            # One layer cannot have multiple rewards of the same type
+            models.UniqueConstraint(
+                fields=["type", "layer"],
+                condition=Q(level__isnull=True),
+                name="unique_reward_type_layer",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.type} - {self.layer} - {self.level}"
 
 
 class User(AbstractBaseUser, PermissionsMixin):
