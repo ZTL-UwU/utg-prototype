@@ -21,6 +21,7 @@ export class LayerSelectScreen extends Container {
   private layerButtons: FancyButton[];
   private closeButton: FancyButton;
   private userStatsButton: FancyButton;
+  private passportButton: FancyButton;
   private skipShowAnimation: boolean;
 
   constructor({ skipShowAnimation = false }: { skipShowAnimation?: boolean } = {}) {
@@ -160,11 +161,27 @@ export class LayerSelectScreen extends Container {
       void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
       void engine().navigation.showPopup(UserStatsPopup);
     });
-
+    this.passportButton = new FancyButton({
+      defaultView: Texture.from('layer-select/passport.png'),
+      animations: {
+        hover: {
+          props: {
+            scale: { x: 1.1, y: 1.1 },
+          },
+          duration: 100,
+        },
+      },
+      anchor: 0.5,
+    });
+    this.passportButton.layout = {
+      position: 'absolute',
+      top: 300,
+      right: 120,
+    };
     this.innerContainer = new Container({ layout: true });
     this.innerContainer.addChild(this.mapBackground, this.closeButton, ...this.layerButtons);
 
-    this.addChild(this.background, this.innerContainer, this.userStatsButton);
+    this.addChild(this.background, this.innerContainer, this.userStatsButton, this.passportButton);
   }
 
   private refreshUserStatsAvatar() {
