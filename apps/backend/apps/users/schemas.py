@@ -20,6 +20,11 @@ class UserOut(Schema):
     email: str
     total_score: int
     total_stars: int
+    reward_ids: list[int]
+
+    @staticmethod
+    def resolve_reward_ids(obj) -> list[int]:
+        return list(obj.rewards.order_by("id").values_list("id", flat=True))
 
 
 class LoginTokenPairOut(Schema):
@@ -61,6 +66,14 @@ class LevelResultOut(AuditingOut):
     @staticmethod
     def resolve_level(obj):
         return obj.level_id
+
+
+class LevelResultCreateOut(LevelResultOut):
+    reward_ids: list[int]
+
+    @staticmethod
+    def resolve_reward_ids(obj) -> list[int]:
+        return list(obj.user.rewards.order_by("id").values_list("id", flat=True))
 
 
 class ErrorOut(Schema):

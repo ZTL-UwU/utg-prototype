@@ -17,6 +17,7 @@ from apps.users.password_reset import send_password_reset_email
 from apps.users.schemas import (
     DetailOut,
     ErrorOut,
+    LevelResultCreateOut,
     LevelResultIn,
     LevelResultOut,
     LoginIn,
@@ -118,7 +119,7 @@ def password_reset_confirm(request, payload: PasswordResetConfirmIn):
     try:
         user_id = force_str(urlsafe_base64_decode(payload.uid))
         user = User.objects.get(pk=user_id, is_active=True)
-    except (User.DoesNotExist, ValueError, TypeError, OverflowError):
+    except User.DoesNotExist, ValueError, TypeError, OverflowError:
         return Status[dict[str, str]](400, {"detail": "Invalid or expired reset link."})
 
     if not default_token_generator.check_token(user, payload.token):
@@ -163,7 +164,7 @@ def rewards(request):
 @router.post(
     "/level-results",
     auth=jwt_auth,
-    response={201: LevelResultOut, 404: ErrorOut},
+    response={201: LevelResultCreateOut, 404: ErrorOut},
     summary="[Public] Record a completed level",
 )
 def create_level_result(request, payload: LevelResultIn):
