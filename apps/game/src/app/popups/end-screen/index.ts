@@ -15,6 +15,7 @@ import {
 import { LevelSplashScreen } from '../../screens/level-splash';
 import { BackButton } from '../../ui/back-button';
 import { NextButton } from '../../ui/next-button';
+import { hasPostcard, PostcardPopup, toPostcardSlug } from '../postcard';
 import { Stars } from './stars';
 
 const POPUP_WIDTH = 940;
@@ -118,6 +119,8 @@ export class EndScreenPopup extends Container {
   private stars: Stars;
   private starCount: number;
 
+  private postcardSlug?: string;
+
   constructor({ level }: EndScreenPopupProps) {
     super({
       layout: {
@@ -140,6 +143,12 @@ export class EndScreenPopup extends Container {
         mapUnit.levels.every((game) => progress.isAttempted(mapUnit.type, game.id));
       if (unitComplete) {
         progress.queueMapUnitAnimation(mapUnit.type, mapUnit.id);
+      }
+    }
+    if (mapUnit?.type === 'typing') {
+      const slug = toPostcardSlug(level.title);
+      if (slug && hasPostcard(slug)) {
+        this.postcardSlug = slug;
       }
     }
     this.background = createPopupBackground(POPUP_WIDTH, POPUP_HEIGHT, this.currentMascot);
@@ -284,6 +293,10 @@ export class EndScreenPopup extends Container {
       ),
       this.stars.playShowAnimation(),
     ]);
+
+    if (this.postcardSlug) {
+      await currentEngine.navigation.showNestedPopup(PostcardPopup, this.postcardSlug);
+    }
   }
 
   public async hide() {
