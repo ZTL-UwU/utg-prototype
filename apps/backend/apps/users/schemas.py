@@ -128,10 +128,15 @@ class LevelResultOut(AuditingOut):
 
 class LevelResultCreateOut(LevelResultOut):
     reward_ids: list[int]
+    new_reward_ids: list[int]
 
     @staticmethod
     def resolve_reward_ids(obj) -> list[int]:
         return list(obj.user.rewards.order_by("id").values_list("id", flat=True))
+
+    @staticmethod
+    def resolve_new_reward_ids(obj) -> list[int]:
+        return getattr(obj, "new_reward_ids", [])
 
 
 class ErrorOut(Schema):

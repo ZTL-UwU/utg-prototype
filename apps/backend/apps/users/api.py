@@ -177,7 +177,7 @@ def _has_three_consecutive_three_stars(user, layer: str) -> bool:
     return len(recent_stars) == 3 and all(star == 3 for star in recent_stars)
 
 
-def _grant_level_result_rewards(user, result: LevelResult, level: Level) -> None:
+def _grant_level_result_rewards(user, result: LevelResult, level: Level) -> list[int]:
     types = [RewardType.LEVEL_COMPLETION_BADGE]
     if result.star == 3:
         types.append(RewardType.LEVEL_THREE_STARS_BADGE)
@@ -205,12 +205,22 @@ def _grant_level_result_rewards(user, result: LevelResult, level: Level) -> None
             rewards.append(trophy)
 
     if not rewards:
-        return
+        return []
+
+    owned_ids = set(
+        UserReward.objects.filter(
+            user=user, reward_id__in=[reward.id for reward in rewards]
+        ).values_list("reward_id", flat=True)
+    )
+    new_rewards = [reward for reward in rewards if reward.id not in owned_ids]
+    if not new_rewards:
+        return []
 
     UserReward.objects.bulk_create(
-        [UserReward(user=user, reward=reward) for reward in rewards],
+        [UserReward(user=user, reward=reward) for reward in new_rewards],
         ignore_conflicts=True,
     )
+    return [reward.id for reward in new_rewards]
 
 
 @router.post(
@@ -234,7 +244,7 @@ def create_level_result(request, payload: LevelResultIn):
             correct=payload.correct,
             mistake=payload.mistake,
         )
-        _grant_level_result_rewards(request.auth, result, level)
+        result.new_reward_ids = _grant_level_result_rewards(request.auth, result, level)
 
     return Status(201, result)
 
@@ -434,7 +444,9 @@ def create_reward(request, payload: RewardIn):
         with transaction.atomic():
             reward.save()
     except IntegrityError:
-        return Status(400, {"detail": "A reward of this type already exists for this level or layer."})
+        return Status(
+            400, {"detail": "A reward of this type already exists for this level or layer."}
+        )
     return _reward_with_image(reward.id)
 
 
@@ -475,7 +487,9 @@ def update_reward(request, reward_id: int, payload: RewardIn):
         with transaction.atomic():
             reward.save()
     except IntegrityError:
-        return Status(400, {"detail": "A reward of this type already exists for this level or layer."})
+        return Status(
+            400, {"detail": "A reward of this type already exists for this level or layer."}
+        )
     return _reward_with_image(reward.id)
 
 
