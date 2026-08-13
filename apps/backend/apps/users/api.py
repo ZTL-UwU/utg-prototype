@@ -1,12 +1,14 @@
+from pathlib import Path
+
 from django.contrib.auth import authenticate, get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.tokens import default_token_generator
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import ProtectedError
+from django.db.models import Count, ProtectedError
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
-from ninja import File, Form, Router, Status, UploadedFile
+from ninja import File, Router, Status, UploadedFile
 from ninja.throttling import AnonRateThrottle
 from ninja_jwt.exceptions import TokenError
 from ninja_jwt.tokens import RefreshToken
@@ -30,7 +32,8 @@ from apps.users.schemas import (
     RefreshedAccessTokenOut,
     RefreshTokenIn,
     RegisterIn,
-    RewardImageIn,
+    RewardBulkIn,
+    RewardBulkOut,
     RewardImageOut,
     RewardIn,
     RewardOut,
@@ -290,6 +293,19 @@ def _reward_with_image(reward_id: int) -> Reward:
     return Reward.objects.select_related("image").get(id=reward_id)
 
 
+def _reward_images_qs():
+    return RewardImage.objects.annotate(reward_count=Count("rewards"))
+
+
+def _reward_image_name_from_file(uploaded: UploadedFile) -> str:
+    stem = Path(uploaded.name or "").stem.replace("-", " ").replace("_", " ").strip()
+    return (stem or "Reward image")[:255]
+
+
+def _reward_image_with_count(reward_image_id: int) -> RewardImage:
+    return _reward_images_qs().get(id=reward_image_id)
+
+
 def _apply_reward_payload(reward: Reward, payload: RewardIn) -> None:
     reward.type = payload.type
     reward.layer = payload.layer
@@ -323,6 +339,61 @@ def _validate_reward_payload(payload: RewardIn):
     return None
 
 
+def _reward_item_key(item: RewardIn) -> tuple:
+    if item.level is not None:
+        return ("level", item.type, item.level)
+    return ("layer", item.type, item.layer)
+
+
+def _validate_reward_bulk_items(items: list[RewardIn]):
+    if not items:
+        return None
+
+    seen_keys: set[tuple] = set()
+    level_ids: set[int] = set()
+    image_ids: set[int] = set()
+
+    for item in items:
+        if item.type not in RewardType.values:
+            return Status(400, {"detail": "Unknown reward type."})
+        if item.layer not in Layer.values:
+            return Status(400, {"detail": "Unknown layer."})
+
+        is_level_type = item.type in LEVEL_REWARD_TYPES
+        if is_level_type and item.level is None:
+            return Status(400, {"detail": "Level is required for this reward type."})
+        if not is_level_type and item.level is not None:
+            return Status(400, {"detail": "This reward type cannot be tied to a level."})
+
+        key = _reward_item_key(item)
+        if key in seen_keys:
+            return Status(400, {"detail": "Duplicate reward type for the same level or layer."})
+        seen_keys.add(key)
+
+        if item.level is not None:
+            level_ids.add(item.level)
+        image_ids.add(item.image_id)
+
+    levels = {
+        level.id: level for level in Level.objects.only("id", "layer").filter(pk__in=level_ids)
+    }
+    if len(levels) != len(level_ids):
+        return Status(404, {"detail": "Level not found."})
+
+    for item in items:
+        if item.level is None:
+            continue
+        if levels[item.level].layer != item.layer:
+            return Status(400, {"detail": "Reward layer must match the level layer."})
+
+    existing_image_ids = set(
+        RewardImage.objects.filter(pk__in=image_ids).values_list("id", flat=True)
+    )
+    if existing_image_ids != image_ids:
+        return Status(404, {"detail": "Reward image not found."})
+    return None
+
+
 @router.post(
     "/reward-images",
     auth=jwt_auth,
@@ -332,18 +403,18 @@ def _validate_reward_payload(payload: RewardIn):
 @require_perm("users.add_rewardimage", message="You do not have permission to create reward images")
 def create_reward_image(
     request,
-    data: Form[RewardImageIn],
     image: File[UploadedFile] = None,
 ):
     if image is None:
         return Status(400, {"detail": "Image file is required."})
-    return 200, RewardImage.objects.create(
-        name=data.name,
+    reward_image = RewardImage.objects.create(
+        name=_reward_image_name_from_file(image),
         image=image,
-        is_published=data.is_published,
+        is_published=True,
         created_by=request.auth,
         updated_by=request.auth,
     )
+    return 200, _reward_image_with_count(reward_image.id)
 
 
 @router.get(
@@ -354,7 +425,7 @@ def create_reward_image(
 )
 @require_perm("users.view_rewardimage", message="You do not have permission to view reward images")
 def list_reward_images(request):
-    return RewardImage.objects.order_by("name", "id")
+    return _reward_images_qs().order_by("name", "id")
 
 
 @router.get(
@@ -366,7 +437,7 @@ def list_reward_images(request):
 @require_perm("users.view_rewardimage", message="You do not have permission to view reward images")
 def get_reward_image(request, reward_image_id: int):
     try:
-        return RewardImage.objects.get(id=reward_image_id)
+        return _reward_image_with_count(reward_image_id)
     except RewardImage.DoesNotExist:
         return Status(404, {"detail": "Reward image not found."})
 
@@ -383,7 +454,6 @@ def get_reward_image(request, reward_image_id: int):
 def update_reward_image(
     request,
     reward_image_id: int,
-    data: Form[RewardImageIn],
     image: File[UploadedFile] = None,
 ):
     try:
@@ -391,15 +461,15 @@ def update_reward_image(
     except RewardImage.DoesNotExist:
         return Status(404, {"detail": "Reward image not found."})
 
-    reward_image.name = data.name
-    reward_image.is_published = data.is_published
+    reward_image.is_published = True
     if image is not None:
         if reward_image.image:
             reward_image.image.delete(save=False)
         reward_image.image = image
+        reward_image.name = _reward_image_name_from_file(image)
     reward_image.updated_by = request.auth
     reward_image.save()
-    return reward_image
+    return _reward_image_with_count(reward_image.id)
 
 
 @router.delete(
@@ -448,6 +518,83 @@ def create_reward(request, payload: RewardIn):
             400, {"detail": "A reward of this type already exists for this level or layer."}
         )
     return _reward_with_image(reward.id)
+
+
+@router.post(
+    "/rewards/bulk",
+    auth=jwt_auth,
+    response={200: RewardBulkOut, 400: ErrorOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Create or update rewards in bulk",
+)
+@require_perm(
+    "users.add_reward",
+    "users.change_reward",
+    message="You do not have permission to create or update rewards",
+)
+def bulk_upsert_rewards(request, payload: RewardBulkIn):
+    relation_error = _validate_reward_bulk_items(payload.items)
+    if relation_error:
+        return relation_error
+
+    if not payload.items:
+        return {"created": 0, "updated": 0, "skipped": 0, "rewards": []}
+
+    level_ids = [item.level for item in payload.items if item.level is not None]
+    types = {item.type for item in payload.items}
+    layers = {item.layer for item in payload.items}
+
+    existing_by_level: dict[tuple[str, int], Reward] = {}
+    if level_ids:
+        for reward in Reward.objects.filter(type__in=types, level_id__in=level_ids):
+            existing_by_level[(reward.type, reward.level_id)] = reward
+
+    existing_by_layer: dict[tuple[str, str], Reward] = {}
+    for reward in Reward.objects.filter(type__in=types, layer__in=layers, level__isnull=True):
+        existing_by_layer[(reward.type, reward.layer)] = reward
+
+    created_ids: list[int] = []
+    updated_ids: list[int] = []
+    skipped = 0
+
+    try:
+        with transaction.atomic():
+            for item in payload.items:
+                if item.level is not None:
+                    existing = existing_by_level.get((item.type, item.level))
+                else:
+                    existing = existing_by_layer.get((item.type, item.layer))
+
+                if existing is None:
+                    reward = Reward(created_by=request.auth, updated_by=request.auth)
+                    _apply_reward_payload(reward, item)
+                    reward.save()
+                    created_ids.append(reward.id)
+                    continue
+
+                if payload.mode == "fill_missing":
+                    skipped += 1
+                    continue
+
+                _apply_reward_payload(existing, item)
+                existing.updated_by = request.auth
+                existing.save()
+                updated_ids.append(existing.id)
+    except IntegrityError:
+        return Status(
+            400, {"detail": "A reward of this type already exists for this level or layer."}
+        )
+
+    result_ids = created_ids + updated_ids
+    rewards = (
+        list(Reward.objects.select_related("image").filter(id__in=result_ids)) if result_ids else []
+    )
+    rewards.sort(key=lambda reward: result_ids.index(reward.id))
+    return {
+        "created": len(created_ids),
+        "updated": len(updated_ids),
+        "skipped": skipped,
+        "rewards": rewards,
+    }
 
 
 @router.get(

@@ -38,6 +38,14 @@ def _unit_with_levels(unit_id: int) -> Unit:
     return Unit.objects.prefetch_related(Prefetch("levels", queryset=levels)).get(id=unit_id)
 
 
+def _admin_units_with_levels(*, layer: Layer | None = None):
+    levels = Level.objects.order_by("sort_order", "id")
+    qs = Unit.objects.prefetch_related(Prefetch("levels", queryset=levels))
+    if layer is not None:
+        qs = qs.filter(layer=layer)
+    return qs.order_by("sort_order", "id")
+
+
 def _apply_unit_payload(unit: Unit, payload: UnitUpdateIn) -> None:
     unit.layer = payload.layer
     unit.title = payload.title
@@ -114,6 +122,17 @@ def list_mascots(request):
 
 
 @router.get(
+    "/units/list-all",
+    auth=jwt_auth,
+    response={200: list[UnitByLayerOut], 403: ErrorOut},
+    summary="[Admin] List all units and their levels",
+)
+@require_perm("game.view_unit", message="You do not have permission to view units")
+def list_all_units(request):
+    return _admin_units_with_levels()
+
+
+@router.get(
     "/units/list-by-layer/{layer}",
     auth=jwt_auth,
     response={200: list[UnitByLayerOut], 403: ErrorOut},
@@ -121,12 +140,7 @@ def list_mascots(request):
 )
 @require_perm("game.view_unit", message="You do not have permission to view units")
 def list_units_by_layer(request, layer: Layer):
-    levels = Level.objects.order_by("sort_order", "id")
-    return (
-        Unit.objects.filter(layer=layer)
-        .prefetch_related(Prefetch("levels", queryset=levels))
-        .order_by("sort_order", "id")
-    )
+    return _admin_units_with_levels(layer=layer)
 
 
 @router.post(

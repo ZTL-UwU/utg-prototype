@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 
 from ninja import Field, Schema
 
@@ -52,19 +53,22 @@ class RefreshedAccessTokenOut(Schema):
     access: str
 
 
-class RewardImageIn(Schema):
-    name: str
-    is_published: bool = True
-
-
 class RewardImageOut(AuditingOut):
     id: int
     name: str
     image: ImageOut
+    reward_count: int
 
     @staticmethod
     def resolve_image(obj) -> ImageOut:
         return _image_out(obj.image)
+
+    @staticmethod
+    def resolve_reward_count(obj) -> int:
+        count = getattr(obj, "reward_count", None)
+        if count is not None:
+            return count
+        return obj.rewards.count()
 
 
 class RewardIn(Schema):
@@ -80,6 +84,7 @@ class RewardOut(AuditingOut):
     type: str
     layer: str
     level: int | None
+    image_id: int
     image: ImageOut
 
     @staticmethod
@@ -93,6 +98,21 @@ class RewardOut(AuditingOut):
     @staticmethod
     def resolve_image(obj) -> ImageOut:
         return _image_out(obj.image.image)
+
+
+RewardBulkMode = Literal["fill_missing", "overwrite"]
+
+
+class RewardBulkIn(Schema):
+    items: list[RewardIn]
+    mode: RewardBulkMode = "fill_missing"
+
+
+class RewardBulkOut(Schema):
+    created: int
+    updated: int
+    skipped: int
+    rewards: list[RewardOut]
 
 
 class RewardSimpleOut(Schema):
