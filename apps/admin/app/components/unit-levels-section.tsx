@@ -97,6 +97,7 @@ async function invalidateLevelQueries(queryClient: QueryClient, unit: Unit) {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: ['units', unit.id] }),
     queryClient.invalidateQueries({ queryKey: ['units', 'list'] }),
+    queryClient.invalidateQueries({ queryKey: ['units', 'list-all'] }),
     queryClient.invalidateQueries({ queryKey: ['units', 'list-by-layer', unit.layer] }),
   ]);
 }

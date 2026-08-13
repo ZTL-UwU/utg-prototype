@@ -1,4 +1,4 @@
-import { BookOpen, TextQuote } from 'lucide-react';
+import { BookOpen, TextQuote, Trophy } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 
 import {
@@ -12,6 +12,7 @@ import {
 const contentItems = [
   { title: 'Words', url: '/words', icon: BookOpen },
   { title: 'Sentences', url: '/sentences', icon: TextQuote },
+  { title: 'Rewards', url: '/rewards', icon: Trophy },
 ] as const;
 
 export function NavContent() {

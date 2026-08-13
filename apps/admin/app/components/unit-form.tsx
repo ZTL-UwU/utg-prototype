@@ -127,6 +127,7 @@ export function UnitForm(props: UnitFormProps) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['units', saved.id] }),
         queryClient.invalidateQueries({ queryKey: ['units', 'list'] }),
+        queryClient.invalidateQueries({ queryKey: ['units', 'list-all'] }),
         queryClient.invalidateQueries({ queryKey: ['units', 'sidebar'] }),
         queryClient.invalidateQueries({ queryKey: ['units', 'list-by-layer', saved.layer] }),
         ...(!isCreate && unit.layer !== saved.layer
@@ -153,6 +154,7 @@ export function UnitForm(props: UnitFormProps) {
       queryClient.removeQueries({ queryKey: ['units', unit.id] });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['units', 'list'] }),
+        queryClient.invalidateQueries({ queryKey: ['units', 'list-all'] }),
         queryClient.invalidateQueries({ queryKey: ['units', 'sidebar'] }),
         queryClient.invalidateQueries({ queryKey: ['units', 'list-by-layer', unit.layer] }),
       ]);

@@ -6,6 +6,7 @@ export default [
     index('routes/home.tsx'),
     route('words', 'routes/words.tsx'),
     route('sentences', 'routes/sentences.tsx'),
+    route('rewards', 'routes/rewards.tsx'),
     route(':layer', 'routes/layer.tsx'),
     route(':layer/new', 'routes/unit-new.tsx'),
     route(':layer/:unitId', 'routes/unit.tsx'),

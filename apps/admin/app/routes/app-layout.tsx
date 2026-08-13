@@ -19,6 +19,12 @@ import { useAuthStore } from '~/stores/auth';
 
 import type { Route } from './+types/app-layout';
 
+const CONTENT_TITLES: Record<string, string> = {
+  '/words': 'Words',
+  '/sentences': 'Sentences',
+  '/rewards': 'Rewards',
+};
+
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
   if (!useAuthStore.getState().accessToken) {
     const url = new URL(request.url);
@@ -94,9 +100,7 @@ export default function AppLayout() {
                   </>
                 ) : (
                   <BreadcrumbItem>
-                    <BreadcrumbPage>
-                      {location.pathname === '/words' ? 'Words' : 'Home'}
-                    </BreadcrumbPage>
+                    <BreadcrumbPage>{CONTENT_TITLES[location.pathname] ?? 'Home'}</BreadcrumbPage>
                   </BreadcrumbItem>
                 )}
               </BreadcrumbList>

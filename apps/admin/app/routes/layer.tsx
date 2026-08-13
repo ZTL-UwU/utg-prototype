@@ -57,6 +57,7 @@ export default function LayerPage({ params }: Route.ComponentProps) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['units', 'list-by-layer', layer] }),
         queryClient.invalidateQueries({ queryKey: ['units', 'list'] }),
+        queryClient.invalidateQueries({ queryKey: ['units', 'list-all'] }),
         queryClient.invalidateQueries({ queryKey: ['units', 'sidebar'] }),
       ]);
     },
