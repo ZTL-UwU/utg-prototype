@@ -1,3 +1,4 @@
+import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
 import { BlurFilter, Container, Graphics, Sprite, Text, TextStyle, Texture } from 'pixi.js';
 
@@ -15,6 +16,7 @@ import {
 import { LevelSplashScreen } from '../../screens/level-splash';
 import { BackButton } from '../../ui/back-button';
 import { NextButton } from '../../ui/next-button';
+import { PassportPopup } from '../passport';
 import { hasPostcard, PostcardPopup, toPostcardSlug } from '../postcard';
 import { Stars } from './stars';
 
@@ -110,7 +112,8 @@ function goToNextLevel(nextLevel: NonNullable<ReturnType<typeof getNextLevelAfte
 }
 
 export class EndScreenPopup extends Container {
-  public static assetBundles = ['end-screen', 'mascots', 'ui'];
+  // 'layer-select' is here for the passport button's texture
+  public static assetBundles = ['end-screen', 'mascots', 'ui', 'layer-select'];
   private currentMascot: Mascot;
 
   private innerContainer: Container;
@@ -120,6 +123,7 @@ export class EndScreenPopup extends Container {
   private starCount: number;
 
   private postcardSlug?: string;
+  private passportButton: FancyButton;
 
   constructor({ level }: EndScreenPopupProps) {
     super({
@@ -257,6 +261,27 @@ export class EndScreenPopup extends Container {
     nextButton.alpha = nextLevel ? 1 : 0.45;
     if (!nextLevel) nextButton.eventMode = 'none';
     nextButton.scale.set(0.7);
+    this.passportButton = new FancyButton({
+      defaultView: Texture.from('layer-select/passport.png'),
+      animations: {
+        hover: {
+          props: {
+            scale: { x: 1.1, y: 1.1 },
+          },
+          duration: 100,
+        },
+      },
+      anchor: 0.5,
+    });
+    this.passportButton.layout = {
+      position: 'absolute',
+      top: 300,
+      right: 120,
+    };
+    this.passportButton.onPress.connect(() => {
+      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+      void engine().navigation.showNestedPopup(PassportPopup);
+    });
 
     this.innerContainer = new Container({ layout: true });
     this.innerContainer.addChild(
@@ -267,7 +292,9 @@ export class EndScreenPopup extends Container {
       nextButton,
     );
 
-    this.addChild(this.innerContainer);
+    // Kept out of innerContainer so its absolute insets resolve against the full
+    // screen rather than the 940x600 panel. show()/hide() animate it separately.
+    this.addChild(this.innerContainer, this.passportButton);
   }
 
   public async show() {
@@ -281,11 +308,13 @@ export class EndScreenPopup extends Container {
     }
     this.innerContainer.alpha = 0;
     this.innerContainer.scale.set(0.7);
+    this.passportButton.alpha = 0;
 
     const duration = 0.4;
     await Promise.all([
       animate(this.innerContainer, { alpha: 1 }, { duration, ease: 'backOut' }),
       animate(this.innerContainer.scale, { x: 1, y: 1 }, { duration, ease: 'backOut' }),
+      animate(this.passportButton, { alpha: 1 }, { duration, ease: 'backOut' }),
       animate(
         currentEngine.navigation.currentScreen.filters[0] as BlurFilter,
         { strength: 9 },
@@ -307,6 +336,7 @@ export class EndScreenPopup extends Container {
     await Promise.all([
       animate(this.innerContainer, { alpha: 0 }, { duration, ease: 'easeOut' }),
       animate(this.innerContainer.scale, { x: 0.94, y: 0.94 }, { duration, ease: 'easeOut' }),
+      animate(this.passportButton, { alpha: 0 }, { duration, ease: 'easeOut' }),
       animate(
         currentEngine.navigation.currentScreen.filters[0] as BlurFilter,
         { strength: 0 },
