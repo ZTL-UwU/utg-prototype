@@ -21,10 +21,11 @@ const COLORS = {
   BACKGROUND: 0xe8eef8,
 } as const;
 
-function getNextLetter(letter: string): string {
+function getAdjacentLetter(letter: string, delta: number): string {
   const index = EDUCATION_LETTERS.indexOf(letter as EducationLetter);
   if (index < 0) return EDUCATION_LETTERS[0]!;
-  return EDUCATION_LETTERS[(index + 1) % EDUCATION_LETTERS.length]!;
+  const count = EDUCATION_LETTERS.length;
+  return EDUCATION_LETTERS[(index + delta + count) % count]!;
 }
 
 export class LetterPopup extends Container {
@@ -36,6 +37,7 @@ export class LetterPopup extends Container {
     REMOTE_WORDS_BUNDLE,
   ];
   private isPlaying: boolean = false;
+  private isNavigating = false;
   private letter: string;
   private remoteWord?: WordSimple;
   private exampleWord: string | undefined;
@@ -130,6 +132,7 @@ export class LetterPopup extends Container {
   }
 
   async show(animated = true) {
+    window.addEventListener('keydown', this.onKeyDown);
     if (animated) {
       this.y = screen.height + 10;
       await animate(this.position, { y: 0 }, { duration: 0.6, ease: 'easeOut' });
@@ -140,9 +143,31 @@ export class LetterPopup extends Container {
   }
 
   async hide(animated = true) {
+    window.removeEventListener('keydown', this.onKeyDown);
     if (!animated) return;
     await animate(this.position, { y: screen.height + 10 }, { duration: 0.4, ease: 'easeOut' });
   }
+
+  override destroy(options?: Parameters<Container['destroy']>[0]) {
+    window.removeEventListener('keydown', this.onKeyDown);
+    super.destroy(options);
+  }
+
+  private goToLetter(letter: string) {
+    if (this.isNavigating || letter === this.letter) return;
+    this.isNavigating = true;
+    engine().audio.sfx.stop(this.getSoundAlias());
+    void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+    void engine().navigation.showPopup(LetterPopup, letter, { animate: false });
+  }
+
+  private readonly onKeyDown = (event: KeyboardEvent) => {
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+    event.preventDefault();
+    if (event.repeat) return;
+    this.goToLetter(getAdjacentLetter(this.letter, event.key === 'ArrowRight' ? 1 : -1));
+  };
 
   private createCloseButton(): FancyButton {
     const button = new FancyButton({
@@ -172,10 +197,7 @@ export class LetterPopup extends Container {
     button.anchor.set(0.5);
     button.layout = { position: 'absolute', top: '10%', left: '95%' };
     button.onPress.connect(() => {
-      engine().audio.sfx.stop(this.getSoundAlias());
-      void engine().navigation.showPopup(LetterPopup, getNextLetter(this.letter), {
-        animate: false,
-      });
+      this.goToLetter(getAdjacentLetter(this.letter, 1));
     });
     return button;
   }
