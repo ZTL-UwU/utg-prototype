@@ -174,16 +174,7 @@ export class EducationTutorialScreen extends Container {
     ]);
   }
 
-  public async pause() {
-    this.letterGrid.pause();
-  }
-
-  public async resume() {
-    this.letterGrid.resume();
-  }
-
   public async hide() {
-    this.letterGrid.pause();
     void this.onStop();
     const currentScreen = engine().navigation.currentScreen;
     if (currentScreen) currentScreen.tint = 0xffffff;

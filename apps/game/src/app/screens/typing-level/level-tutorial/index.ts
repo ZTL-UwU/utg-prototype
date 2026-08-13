@@ -79,16 +79,7 @@ export class TypingTutorialScreen extends Container {
     ]);
   }
 
-  public async pause() {
-    this.letterGrid.pause();
-  }
-
-  public async resume() {
-    this.letterGrid.resume();
-  }
-
   public async hide() {
-    this.letterGrid.pause();
     const currentScreen = engine().navigation.currentScreen;
     if (currentScreen) currentScreen.tint = 0xffffff;
     await Promise.all([

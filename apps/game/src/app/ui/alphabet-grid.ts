@@ -111,10 +111,6 @@ export class AlphabetKey extends FancyButton {
     this.onPress.connect(() => onClick(letter));
   }
 
-  public setFocused(focused: boolean): void {
-    this.setState(focused ? 'hover' : 'default');
-  }
-
   public bounce(): void {
     const baseY = this.position.y;
     const bounceDepths = [30, 20, 5];
@@ -139,20 +135,15 @@ export class AlphabetKey extends FancyButton {
   }
 }
 
-const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']);
-
 export class AlphabetGrid extends Container {
   private readonly panel = new Container();
   private readonly panelWidth: number;
   private readonly panelHeight: number;
   private readonly keyMap = new Map<string, AlphabetKey>();
-  private readonly onLetterClick: (letter: string) => void;
   private songMode = false;
   private currentWidth = 0;
   private currentHeight = 0;
   private readonly colorOptions: AlphabetGridColorOptions;
-  private focusedLetter: string | null = null;
-  private listening = false;
 
   constructor(
     onClick: (letter: string) => void,
@@ -167,7 +158,6 @@ export class AlphabetGrid extends Container {
     });
 
     this.colorOptions = colorOptions;
-    this.onLetterClick = onClick;
 
     const columns = Math.max(...letters.map((row) => row.length));
     const rows = letters.length;
@@ -195,7 +185,6 @@ export class AlphabetGrid extends Container {
     });
 
     this.addChild(this.panel);
-    this.setListening(true);
   }
 
   public resize(width: number, height: number) {
@@ -207,25 +196,6 @@ export class AlphabetGrid extends Container {
   public setSongMode(enabled: boolean) {
     this.songMode = enabled;
     this.applyResize(true);
-    if (enabled) {
-      this.clearFocus();
-      this.setListening(false);
-    } else {
-      this.setListening(true);
-    }
-  }
-
-  public pause() {
-    this.setListening(false);
-  }
-
-  public resume() {
-    if (!this.songMode) this.setListening(true);
-  }
-
-  override destroy(options?: Parameters<Container['destroy']>[0]) {
-    this.setListening(false);
-    super.destroy(options);
   }
 
   public getLetterTimingOffsets(): { char: string; time: number }[] {
@@ -235,76 +205,6 @@ export class AlphabetGrid extends Container {
   public bounceKey(char: string): void {
     this.keyMap.get(char)?.bounce();
   }
-
-  private setListening(listening: boolean) {
-    if (this.listening === listening) return;
-    this.listening = listening;
-
-    if (listening) {
-      window.addEventListener('keydown', this.onKeyDown);
-    } else {
-      window.removeEventListener('keydown', this.onKeyDown);
-    }
-  }
-
-  private clearFocus() {
-    if (!this.focusedLetter) return;
-    this.keyMap.get(this.focusedLetter)?.setFocused(false);
-    this.focusedLetter = null;
-  }
-
-  private setFocus(letter: string) {
-    if (this.focusedLetter && this.focusedLetter !== letter) {
-      this.keyMap.get(this.focusedLetter)?.setFocused(false);
-    }
-    this.focusedLetter = letter;
-    this.keyMap.get(letter)?.setFocused(true);
-  }
-
-  private findPosition(letter: string): { row: number; col: number } | null {
-    for (let row = 0; row < letters.length; row += 1) {
-      const col = letters[row]?.indexOf(letter as (typeof EDUCATION_LETTERS)[number]);
-      if (col !== undefined && col >= 0) return { row, col };
-    }
-    return null;
-  }
-
-  private moveFocus(rowDelta: number, colDelta: number) {
-    if (!this.focusedLetter) {
-      this.setFocus(EDUCATION_LETTERS[0]!);
-      return;
-    }
-
-    const position = this.findPosition(this.focusedLetter);
-    if (!position) return;
-
-    const rowCount = letters.length;
-    const nextRow = (position.row + rowDelta + rowCount) % rowCount;
-    const nextRowLetters = letters[nextRow];
-    if (!nextRowLetters?.length) return;
-
-    const nextCol = (position.col + colDelta + nextRowLetters.length) % nextRowLetters.length;
-    const nextLetter = nextRowLetters[nextCol];
-    if (nextLetter) this.setFocus(nextLetter);
-  }
-
-  private readonly onKeyDown = (event: KeyboardEvent) => {
-    if (event.ctrlKey || event.metaKey || event.altKey) return;
-
-    if (ARROW_KEYS.has(event.key)) {
-      event.preventDefault();
-      if (event.key === 'ArrowLeft') this.moveFocus(0, -1);
-      if (event.key === 'ArrowRight') this.moveFocus(0, 1);
-      if (event.key === 'ArrowUp') this.moveFocus(-1, 0);
-      if (event.key === 'ArrowDown') this.moveFocus(1, 0);
-      return;
-    }
-
-    if (event.key !== 'Enter' && event.key !== ' ') return;
-    event.preventDefault();
-    if (event.repeat || !this.focusedLetter) return;
-    this.onLetterClick(this.focusedLetter);
-  };
 
   private applyResize(animated: boolean) {
     const wFactor = this.songMode ? 0.97 : 0.9;
