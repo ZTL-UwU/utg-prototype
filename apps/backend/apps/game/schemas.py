@@ -8,14 +8,63 @@ from apps.common.schemas import AuditingOut
 LayerValue = Literal["typing", "education", "game"]
 
 
+class ImageOut(Schema):
+    name: str
+    url: str
+    filename: str
+
+
+def _image_out(image) -> ImageOut:
+    return ImageOut(
+        name=image.name,
+        url=image.url,
+        filename=Path(image.name).name,
+    )
+
+
+def _optional_image_out(image) -> ImageOut | None:
+    if not image:
+        return None
+    return _image_out(image)
+
+
+class MascotIn(Schema):
+    name: str | None = None
+
+
 class MascotOut(AuditingOut):
     id: int
     name: str | None
-    idle_asset_path: str
-    zero_star_asset_path: str
-    one_star_asset_path: str
-    two_star_asset_path: str
-    three_star_asset_path: str
+    idle_image: ImageOut
+    sad_image: ImageOut
+    zero_star_image: ImageOut
+    one_star_image: ImageOut
+    two_star_image: ImageOut
+    three_star_image: ImageOut
+
+    @staticmethod
+    def resolve_idle_image(obj) -> ImageOut:
+        return _image_out(obj.idle_image)
+
+    @staticmethod
+    def resolve_sad_image(obj) -> ImageOut:
+        return _image_out(obj.sad_image)
+
+    @staticmethod
+    def resolve_zero_star_image(obj) -> ImageOut:
+        return _image_out(obj.zero_star_image)
+
+    @staticmethod
+    def resolve_one_star_image(obj) -> ImageOut:
+        return _image_out(obj.one_star_image)
+
+    @staticmethod
+    def resolve_two_star_image(obj) -> ImageOut:
+        return _image_out(obj.two_star_image)
+
+    @staticmethod
+    def resolve_three_star_image(obj) -> ImageOut:
+        return _image_out(obj.three_star_image)
 
 
 class LevelOut(AuditingOut):
@@ -139,12 +188,6 @@ class WordIn(Schema):
     clear_audio: bool = False
 
 
-class ImageOut(Schema):
-    name: str
-    url: str
-    filename: str
-
-
 class AudioOut(Schema):
     name: str
     url: str
@@ -162,14 +205,7 @@ class WordOut(Schema):
 
     @staticmethod
     def resolve_image(obj) -> ImageOut | None:
-        image = obj.image
-        if not image:
-            return None
-        return ImageOut(
-            name=image.name,
-            url=image.url,
-            filename=Path(image.name).name,
-        )
+        return _optional_image_out(obj.image)
 
     @staticmethod
     def resolve_audio(obj) -> AudioOut | None:

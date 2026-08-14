@@ -13,7 +13,7 @@ class UnitAdmin(admin.ModelAdmin):
 
 @admin.register(Mascot)
 class MascotAdmin(admin.ModelAdmin):
-    list_display = ("name", "idle_asset_path")
+    list_display = ("name", "idle_image")
     search_fields = ("name",)
 
 

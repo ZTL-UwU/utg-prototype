@@ -20,10 +20,22 @@ class LevelType(models.TextChoices):
     TYPING_GOAT = "typing-goat", "Typing goat"
     GAME_TANDOOR_RUSH = "game-tandoor-rush", "Game tandoor rush"
     GAME_NAAN_STACK = "game-naan-stack", "Game stack the naan"
-    GAME_FRUIT_FALL = "game-fruit-fall", "Game fruit fall",
-    GAME_KITE = "game-kite", "Game kite",
-    GAME_FLYING = "game-flying", "Game flying",
-    GAME_SKI = "game-ski", "Game ski racing",
+    GAME_FRUIT_FALL = (
+        "game-fruit-fall",
+        "Game fruit fall",
+    )
+    GAME_KITE = (
+        "game-kite",
+        "Game kite",
+    )
+    GAME_FLYING = (
+        "game-flying",
+        "Game flying",
+    )
+    GAME_SKI = (
+        "game-ski",
+        "Game ski racing",
+    )
     GAME_TROUT = "game-trout", "Game trout"
 
 
@@ -49,11 +61,12 @@ class Unit(AuditingMixin, models.Model):
 
 class Mascot(AuditingMixin, models.Model):
     name = models.CharField(max_length=255, null=True, blank=True)
-    idle_asset_path = models.CharField(max_length=255)
-    zero_star_asset_path = models.CharField(max_length=255, db_column="0_star_asset_path")
-    one_star_asset_path = models.CharField(max_length=255, db_column="1_star_asset_path")
-    two_star_asset_path = models.CharField(max_length=255, db_column="2_star_asset_path")
-    three_star_asset_path = models.CharField(max_length=255, db_column="3_star_asset_path")
+    idle_image = models.ImageField(upload_to="mascots/")
+    sad_image = models.ImageField(upload_to="mascots/")
+    zero_star_image = models.ImageField(upload_to="mascots/")
+    one_star_image = models.ImageField(upload_to="mascots/")
+    two_star_image = models.ImageField(upload_to="mascots/")
+    three_star_image = models.ImageField(upload_to="mascots/")
 
     class Meta:
         db_table = "mascots"

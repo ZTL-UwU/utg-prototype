@@ -11,6 +11,7 @@ from apps.game.schemas import (
     LevelOrderIn,
     LevelOut,
     LevelWriteIn,
+    MascotIn,
     MascotOut,
     SentenceIn,
     SentenceOrderIn,
@@ -110,6 +111,80 @@ def list_sidebar_units(request):
     return Unit.objects.only("id", "layer", "title", "sort_order").order_by("sort_order", "id")
 
 
+MASCOT_IMAGE_LABELS = {
+    "idle_image": "idle",
+    "sad_image": "sad",
+    "zero_star_image": "0-star",
+    "one_star_image": "1-star",
+    "two_star_image": "2-star",
+    "three_star_image": "3-star",
+}
+
+
+def _mascot_name(data: MascotIn) -> str | None:
+    name = (data.name or "").strip()
+    return name or None
+
+
+def _replace_image(instance, attr: str, uploaded: UploadedFile | None) -> None:
+    if uploaded is None:
+        return
+    current = getattr(instance, attr)
+    if current:
+        current.delete(save=False)
+    setattr(instance, attr, uploaded)
+
+
+def _missing_mascot_images(files: dict[str, UploadedFile | None]) -> Status | None:
+    missing = [MASCOT_IMAGE_LABELS[name] for name, uploaded in files.items() if uploaded is None]
+    if missing:
+        return Status(400, {"detail": f"Missing required images: {', '.join(missing)}."})
+    return None
+
+
+@router.post(
+    "/mascots",
+    auth=jwt_auth,
+    response={200: MascotOut, 400: ErrorOut, 403: ErrorOut},
+    summary="[Admin] Create a mascot",
+)
+@require_perm("game.add_mascot", message="You do not have permission to create mascots")
+def create_mascot(
+    request,
+    data: Form[MascotIn],
+    idle_image: File[UploadedFile] = None,
+    sad_image: File[UploadedFile] = None,
+    zero_star_image: File[UploadedFile] = None,
+    one_star_image: File[UploadedFile] = None,
+    two_star_image: File[UploadedFile] = None,
+    three_star_image: File[UploadedFile] = None,
+):
+    files = {
+        "idle_image": idle_image,
+        "sad_image": sad_image,
+        "zero_star_image": zero_star_image,
+        "one_star_image": one_star_image,
+        "two_star_image": two_star_image,
+        "three_star_image": three_star_image,
+    }
+    missing = _missing_mascot_images(files)
+    if missing:
+        return missing
+
+    mascot = Mascot.objects.create(
+        name=_mascot_name(data),
+        idle_image=idle_image,
+        sad_image=sad_image,
+        zero_star_image=zero_star_image,
+        one_star_image=one_star_image,
+        two_star_image=two_star_image,
+        three_star_image=three_star_image,
+        created_by=request.auth,
+        updated_by=request.auth,
+    )
+    return 200, mascot
+
+
 @router.get(
     "/mascots/list",
     auth=jwt_auth,
@@ -119,6 +194,59 @@ def list_sidebar_units(request):
 @require_perm("game.view_mascot", message="You do not have permission to view mascots")
 def list_mascots(request):
     return Mascot.objects.order_by("name", "id")
+
+
+@router.patch(
+    "/mascots/{mascot_id}",
+    auth=jwt_auth,
+    response={200: MascotOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Update a mascot",
+)
+@require_perm("game.change_mascot", message="You do not have permission to update mascots")
+def update_mascot(
+    request,
+    mascot_id: int,
+    data: Form[MascotIn],
+    idle_image: File[UploadedFile] = None,
+    sad_image: File[UploadedFile] = None,
+    zero_star_image: File[UploadedFile] = None,
+    one_star_image: File[UploadedFile] = None,
+    two_star_image: File[UploadedFile] = None,
+    three_star_image: File[UploadedFile] = None,
+):
+    try:
+        mascot = Mascot.objects.get(id=mascot_id)
+    except Mascot.DoesNotExist:
+        return Status(404, {"detail": "Mascot not found."})
+
+    mascot.name = _mascot_name(data)
+    files = {
+        "idle_image": idle_image,
+        "sad_image": sad_image,
+        "zero_star_image": zero_star_image,
+        "one_star_image": one_star_image,
+        "two_star_image": two_star_image,
+        "three_star_image": three_star_image,
+    }
+    for attr, uploaded in files.items():
+        _replace_image(mascot, attr, uploaded)
+    mascot.updated_by = request.auth
+    mascot.save()
+    return mascot
+
+
+@router.delete(
+    "/mascots/{mascot_id}",
+    auth=jwt_auth,
+    response={204: None, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Delete a mascot",
+)
+@require_perm("game.delete_mascot", message="You do not have permission to delete mascots")
+def delete_mascot(request, mascot_id: int):
+    deleted, _ = Mascot.objects.filter(id=mascot_id).delete()
+    if not deleted:
+        return Status(404, {"detail": "Mascot not found."})
+    return Status(204, None)
 
 
 @router.get(
