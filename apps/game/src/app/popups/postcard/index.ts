@@ -1,3 +1,4 @@
+import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
 import { Assets, Container, Sprite, Texture } from 'pixi.js';
 
@@ -36,6 +37,9 @@ export class PostcardPopup extends Container {
   private isFlipping = false;
   private showingBack = false;
 
+  private closeButton: FancyButton;
+  private shareButton: FancyButton;
+
   constructor(slug: string) {
     super();
 
@@ -45,16 +49,58 @@ export class PostcardPopup extends Container {
       alpha: DIM_ALPHA,
     });
     this.dimOverlay.eventMode = 'static';
-    this.dimOverlay.on('pointertap', () => {
-      // handle mid flip taps
-      if (this.isFlipping) return;
-      void engine().navigation.hidePopup();
-    });
 
     this.cardFront = new Sprite({
       texture: Texture.from(`${POSTCARD_ROOT}/${slug}/front.png`),
     });
     this.cardFront.anchor.set(0.5);
+
+    this.closeButton = new FancyButton({
+      defaultView: 'typing-levels/postcards/x-button.svg',
+      animations: {
+        hover: {
+          props: {
+            scale: { x: 1.1, y: 1.1 },
+          },
+          duration: 100,
+        },
+        pressed: {
+          props: {
+            scale: { x: 0.97, y: 0.97 },
+          },
+          duration: 100,
+        },
+      },
+      anchor: 0.5,
+    });
+
+    this.closeButton.onPress.connect(() => {
+      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+      void engine().navigation.hidePopup();
+    });
+
+    this.shareButton = new FancyButton({
+      defaultView: 'typing-levels/postcards/share-button.svg',
+      animations: {
+        hover: {
+          props: {
+            scale: { x: 1.1, y: 1.1 },
+          },
+          duration: 100,
+        },
+        pressed: {
+          props: {
+            scale: { x: 0.97, y: 0.97 },
+          },
+          duration: 100,
+        },
+      },
+      anchor: 0.5,
+    });
+
+    this.shareButton.onPress.connect(() => {
+      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+    });
 
     // missing certain imgs
     const backAlias = `${POSTCARD_ROOT}/${slug}/back.png`;
@@ -78,13 +124,18 @@ export class PostcardPopup extends Container {
     this.cardScaler = new Container();
     this.cardScaler.addChild(this.cardFlipper);
 
-    this.addChild(this.dimOverlay, this.cardScaler);
+    this.addChild(this.dimOverlay, this.cardScaler, this.closeButton, this.shareButton);
+
+    this.updateButtonsVisibility();
   }
 
   /** Squash the card horizontally, swap faces at the midpoint, then expand it again */
   private async flip() {
     if (this.isFlipping || !this.cardBack) return;
     this.isFlipping = true;
+
+    this.closeButton.visible = false;
+    this.shareButton.visible = false;
 
     void engine().audio.sfx.play('typing-levels/postcards/paper-flip.mp3');
 
@@ -105,6 +156,7 @@ export class PostcardPopup extends Container {
     );
 
     this.isFlipping = false;
+    this.updateButtonsVisibility();
   }
 
   public async show() {
@@ -116,6 +168,7 @@ export class PostcardPopup extends Container {
     if (this.cardBack) {
       this.cardBack.visible = false;
     }
+    this.updateButtonsVisibility();
 
     this.dimOverlay.alpha = 0;
     this.cardScaler.alpha = 0;
@@ -156,6 +209,21 @@ export class PostcardPopup extends Container {
       (height * CARD_VIEWPORT_RATIO) / cardHeight,
       1,
     );
+
     this.cardScaler.scale.set(fit);
+    const cx = width / 2;
+    const cy = height / 2;
+    const halfW = (cardWidth * fit) / 2;
+    const halfH = (cardHeight * fit) / 2;
+    const insetX = 70 * fit;
+    const insetY = 55 * fit;
+    this.closeButton.position.set(cx - halfW + insetX, cy - halfH + insetY);
+    this.shareButton.position.set(cx + halfW - insetX, cy + halfH - insetY);
+  }
+
+  private updateButtonsVisibility() {
+    const cardBackExists = this.cardBack != null;
+    this.closeButton.visible = cardBackExists && this.showingBack;
+    this.shareButton.visible = cardBackExists && this.showingBack;
   }
 }
