@@ -11,12 +11,7 @@ import { KeyboardLayout, type KeyboardColorOptions } from '../../../ui/keyboard-
 import { RoundedProgressBar } from '../../../ui/rounded-progress-bar';
 import { TypingLetter } from '../../../ui/typing-letter';
 import { LevelMapScreen } from '../../level-map';
-import {
-  findMapUnitForLevel,
-  getLevelType,
-  getTypedLevel,
-  type TLevel,
-} from '../../level-map/units';
+import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
 
 const FEEDBACK_DURATION_MS = 350;
 const DESIGN_WIDTH = 1920;
@@ -143,7 +138,7 @@ export class GameLevelOneScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: getLevelType(typedLevel),
+          mascot: typedLevel.mascot,
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
     });

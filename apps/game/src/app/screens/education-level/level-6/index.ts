@@ -195,7 +195,7 @@ export class EducationSheepJumpScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: 'education',
+          mascot: typedLevel.mascot,
           onQuit: () => {
             void engine().navigation.showScreen(LevelMapScreen, mapUnit);
           },

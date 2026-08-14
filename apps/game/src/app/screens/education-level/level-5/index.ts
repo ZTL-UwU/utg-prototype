@@ -29,7 +29,6 @@ import { LevelMapScreen } from '../../level-map';
 import {
   getTypedLevel,
   findMapUnitForLevel,
-  getLevelType,
   type TLevel,
   type TLevelOf,
 } from '../../level-map/units';
@@ -184,7 +183,7 @@ export class EducationWordScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: getLevelType(level),
+          mascot: level.mascot,
           onQuit: () => {
             EducationWordScreen.rounds = 0;
             EducationWordScreen.roundOrder = [];

@@ -22,6 +22,7 @@ import type { Route } from './+types/app-layout';
 const CONTENT_TITLES: Record<string, string> = {
   '/words': 'Words',
   '/sentences': 'Sentences',
+  '/mascots': 'Mascots',
   '/rewards': 'Rewards',
 };
 

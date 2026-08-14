@@ -16,12 +16,7 @@ import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
 import { LevelMapScreen } from '../../level-map';
-import {
-  getTypedLevel,
-  findMapUnitForLevel,
-  getLevelType,
-  type TLevel,
-} from '../../level-map/units';
+import { getTypedLevel, findMapUnitForLevel, type TLevel } from '../../level-map/units';
 import { LetterChoice } from './letter-choice';
 
 // image choice slots, matches X_SLOTS
@@ -83,7 +78,7 @@ export class EducationImageScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: getLevelType(typedLevel),
+          mascot: typedLevel.mascot,
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },

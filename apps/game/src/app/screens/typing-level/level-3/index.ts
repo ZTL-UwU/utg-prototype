@@ -12,12 +12,7 @@ import { HUD } from '../../../ui/hud';
 import { KeyboardLayout, type KeyboardColorOptions } from '../../../ui/keyboard-layout';
 import { TypingLetter } from '../../../ui/typing-letter';
 import { LevelMapScreen } from '../../level-map';
-import {
-  findMapUnitForLevel,
-  getLevelType,
-  getTypedLevel,
-  type TLevel,
-} from '../../level-map/units';
+import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
 
 const SLOT_WIDTH = 250;
 const SLOT_HEIGHT = 100;
@@ -183,7 +178,7 @@ export class TypingInstrumentScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: getLevelType(typedLevel),
+          mascot: typedLevel.mascot,
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },

@@ -9,31 +9,27 @@ import useSessionStore from '../../../zustandStores/sessionStore';
 import { TutorialPopup } from '../../popups/tutorial';
 import { HUD } from '../../ui/hud';
 import { LevelMapScreen } from '../level-map';
-import type { SplashColorScheme, TLevel, TMapUnit } from '../level-map/units';
+import type { SplashColorScheme, TLayer, TLevel, TMapUnit } from '../level-map/units';
+import { REMOTE_MASCOTS_BUNDLE } from '../level-map/units';
 
-type TMascot = 'sheep' | 'camel' | 'goat' | 'chef';
+const LAYER_SPLASH_COLORS: Record<TLayer, number> = {
+  education: 0x0d8583,
+  typing: 0xc45a14,
+  game: 0x7e5433,
+};
 
-function getDefaultColorScheme(mascot: TMascot): SplashColorScheme {
+function getDefaultColorScheme(layer: TLayer): SplashColorScheme {
+  const fill = LAYER_SPLASH_COLORS[layer];
   return {
-    BUTTON_FILL: getColorThemeFromMascot(mascot),
+    BUTTON_FILL: fill,
     BUTTON_TEXT_FILL: 0xffffff,
-    LEVEL_FONT_FILL: getColorThemeFromMascot(mascot),
-    LEVEL_TITLE_FILL: getColorThemeFromMascot(mascot),
+    LEVEL_FONT_FILL: fill,
+    LEVEL_TITLE_FILL: fill,
   };
 }
 
-function getColorThemeFromMascot(mascot: TMascot) {
-  return mascot === 'camel'
-    ? 0xc45a14
-    : mascot === 'sheep'
-      ? 0x0d8583
-      : mascot === 'chef'
-        ? 0x7e5433
-        : 0x6e8539;
-}
-
 export class LevelSplashScreen extends Container {
-  public static assetBundles = ['level-splash', 'mascots', 'ui'];
+  public static assetBundles = ['level-splash', REMOTE_MASCOTS_BUNDLE, 'ui'];
 
   public static async prepareAssets(props?: unknown) {
     const level = (props as { level: TLevel } | undefined)?.level;
@@ -73,7 +69,7 @@ export class LevelSplashScreen extends Container {
         objectFit: 'cover',
       },
     });
-    this.colorScheme = level.splashColorScheme ?? getDefaultColorScheme(level.mascot);
+    this.colorScheme = level.splashColorScheme ?? getDefaultColorScheme(mapUnit.type);
     const levelIndex = mapUnit.levels.findIndex((entry) => entry.id === level.id) + 1;
     const levelTextEntry =
       mapUnit.type === 'education' ? `GAME ${levelIndex}` : `LEVEL ${levelIndex}`;
@@ -126,9 +122,9 @@ export class LevelSplashScreen extends Container {
     });
 
     this.mascot = null;
-    if (level.mascotOnSplash) {
+    if (level.mascotOnSplash && level.mascot) {
       this.mascot = new Sprite({
-        texture: Texture.from(this.getTexturePathForMascot(level.mascot)),
+        texture: Texture.from(level.mascot.idleAlias),
         scale: 0.8,
         layout: {
           position: 'absolute',
@@ -247,8 +243,5 @@ export class LevelSplashScreen extends Container {
         { duration: 0.2, ease: 'backIn' },
       ),
     ]);
-  }
-  private getTexturePathForMascot(mascot: TMascot) {
-    return `mascots/${mascot}/default.png`;
   }
 }

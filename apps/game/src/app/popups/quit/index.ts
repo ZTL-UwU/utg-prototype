@@ -4,26 +4,22 @@ import { DropShadowFilter } from 'pixi-filters';
 import { BlurFilter, Container, Graphics, Texture, Sprite, Text } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import type { TLayer } from '../../screens/level-map/units';
+import { REMOTE_MASCOTS_BUNDLE, type TMascotAssets } from '../../screens/level-map/units';
 
-const SAD_MASCOT_TEXTURES: Record<TLayer, string> = {
-  education: 'mascots/sheep/sad.png',
-  typing: 'mascots/camel/sad.png',
-  game: 'mascots/chef/sad.png',
-};
+const FALLBACK_SAD_TEXTURE = 'mascots/sheep/sad.png';
 
 export type QuitPopupProps = {
-  type: TLayer;
+  mascot?: TMascotAssets | null;
   onQuit: () => void;
 };
 
 export class QuitPopup extends Container {
-  public static assetBundles = ['quit', 'mascots'];
+  public static assetBundles = ['quit', REMOTE_MASCOTS_BUNDLE, 'mascots'];
 
   private popupMask: Sprite;
   private dialog: Dialog;
 
-  constructor({ type, onQuit }: QuitPopupProps) {
+  constructor({ mascot, onQuit }: QuitPopupProps) {
     super({
       layout: {
         flexDirection: 'column',
@@ -49,7 +45,7 @@ export class QuitPopup extends Container {
     const contentWidth = dialogWidth - 60;
 
     const sadMascot = new Sprite({
-      texture: Texture.from(SAD_MASCOT_TEXTURES[type]),
+      texture: Texture.from(mascot?.sadAlias ?? FALLBACK_SAD_TEXTURE),
       layout: true,
     });
     const sadMascotContainer = new Container({

@@ -1,6 +1,7 @@
 import type { Ticker } from 'pixi.js';
 import { Assets, BigPool, Container } from 'pixi.js';
 
+import { ensureMascotsReady, REMOTE_MASCOTS_BUNDLE } from '../../zustandStores/courseStore';
 import { ensureSentencesReady, REMOTE_SENTENCES_BUNDLE } from '../../zustandStores/sentenceStore';
 import { ensureWordsReady, REMOTE_WORDS_BUNDLE } from '../../zustandStores/wordStore';
 import type { CreationEngine } from '../engine';
@@ -89,6 +90,9 @@ export class Navigation {
     }
     if (assetBundles?.includes(REMOTE_SENTENCES_BUNDLE)) {
       await ensureSentencesReady();
+    }
+    if (assetBundles?.includes(REMOTE_MASCOTS_BUNDLE)) {
+      await ensureMascotsReady();
     }
   }
 
@@ -249,8 +253,11 @@ export class Navigation {
     // This is safe against multiple calls, since Repeated Loads Are Safe (https://pixijs.com/8.x/guides/components/assets#repeated-loads-are-safe)
     if (ctor.assetBundles) {
       await this.ensureBundlesReady(ctor.assetBundles);
-      // Load all assets required by this new screen
       await Assets.loadBundle(ctor.assetBundles);
+    }
+
+    if (ctor.prepareAssets) {
+      await ctor.prepareAssets(props);
     }
 
     if (this.currentPopup) {

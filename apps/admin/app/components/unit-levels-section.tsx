@@ -56,8 +56,8 @@ import {
 import { Separator } from '~/components/ui/separator';
 import { Switch } from '~/components/ui/switch';
 import { api } from '~/lib/api';
-import { mascotsQueryOptions, type Level, type Mascot, type Unit } from '~/lib/game';
-import { cn } from '~/lib/utils';
+import { mascotLabel, mascotsQueryOptions, type Level, type Mascot, type Unit } from '~/lib/game';
+import { cn, mediaUrl } from '~/lib/utils';
 
 const NO_MASCOT_VALUE = '__no_mascot__';
 
@@ -100,10 +100,6 @@ async function invalidateLevelQueries(queryClient: QueryClient, unit: Unit) {
     queryClient.invalidateQueries({ queryKey: ['units', 'list-all'] }),
     queryClient.invalidateQueries({ queryKey: ['units', 'list-by-layer', unit.layer] }),
   ]);
-}
-
-function mascotLabel(mascot: Mascot): string {
-  return mascot.name ?? `Mascot ${mascot.id}`;
 }
 
 function withDenseSortOrder(levels: Level[]): Level[] {
@@ -653,6 +649,11 @@ function LevelStaticFields({ form, mascots }: { form: LevelFormApi; mascots: Mas
                     <SelectItem value={NO_MASCOT_VALUE}>No mascot</SelectItem>
                     {mascots.map((mascot) => (
                       <SelectItem key={mascot.id} value={String(mascot.id)}>
+                        <img
+                          src={mediaUrl(mascot.idle_image.url)}
+                          alt=""
+                          className="size-6 rounded object-cover"
+                        />
                         {mascotLabel(mascot)}
                       </SelectItem>
                     ))}

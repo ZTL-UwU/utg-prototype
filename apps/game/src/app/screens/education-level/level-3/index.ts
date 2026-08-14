@@ -14,7 +14,6 @@ import { LevelMapScreen } from '../../level-map';
 import {
   getTypedLevel,
   findMapUnitForLevel,
-  getLevelType,
   type TLevel,
   type TLevelOf,
 } from '../../level-map/units';
@@ -80,7 +79,7 @@ export class EducationSheepScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: getLevelType(typedLevel),
+          mascot: typedLevel.mascot,
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },

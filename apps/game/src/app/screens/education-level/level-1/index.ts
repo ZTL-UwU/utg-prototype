@@ -5,7 +5,7 @@ import { engine } from '../../../../engine/getEngine';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
+import { findMapUnitForLevel, type TLevel } from '../../level-map/units';
 import { LetterGrid } from './letter-grid';
 import { MessageContainer } from './message-container';
 
@@ -35,7 +35,7 @@ export class EducationLevelScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: getLevelType(level),
+          mascot: level.mascot,
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },

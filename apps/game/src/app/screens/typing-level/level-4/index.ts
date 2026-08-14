@@ -17,12 +17,7 @@ import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
-import {
-  findMapUnitForLevel,
-  getLevelType,
-  getTypedLevel,
-  type TLevel,
-} from '../../level-map/units';
+import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
 
 const FONT_SIZE = 100;
 const CARD_WIDTH = 200;
@@ -98,7 +93,7 @@ export class TypingWordScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: getLevelType(typedLevel),
+          mascot: typedLevel.mascot,
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
