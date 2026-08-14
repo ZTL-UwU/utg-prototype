@@ -47,7 +47,7 @@ const IPA_BY_LETTER: Record<(typeof EDUCATION_LETTERS)[number], string> = {
   ئۈ: '/y/',
   ۋ: '/v/ ~ /w/',
   ئې: '/e/',
-  ئى: '/ɪ/ ~ /i/',
+  ئى: '/ɨ/ ~ /i/',
   ي: '/j/',
 };
 

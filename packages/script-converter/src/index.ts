@@ -1,8 +1,8 @@
 /**
- * Uyghur Arabic (UAS) → Latin (ULS) / Cyrillic (UCS) converter.
+ * Uyghur Arabic (UAS) ↔ Latin (ULS) ↔ Cyrillic (UCS) converter.
  *
  * Ported from https://github.com/neouyghur/Uyghur-Multi-Script-Converter
- * (Apache-2.0), keeping only Arabic→Latin and Arabic→Cyrillic.
+ * (Apache-2.0). Conversion goes through Common Turkic Script (CTS).
  */
 
 const UAS_CHARS = [
@@ -128,6 +128,11 @@ const UCS_CHARS = [
 /** Hamza (ئ) removed at word start / after non-CTS letters; otherwise becomes `'`. */
 const LEADING_HAMZA = /(?<=[^aeuoöübptcçxdzrjsşfñlmhvéiyqkgnğ]|^)\u0626/gu;
 
+/** Word-initial / post-non-consonant CTS vowels get a hamza when mapping to UAS. */
+const CTS_INITIAL_VOWEL = /(?<=[^bptcçxdrzjsşfñlmhvyqkgnğ]|^)[aeéiouöü]/gu;
+
+const UAS_VOWEL_PAIR = /(^|-|\s|[اەېىوۇۆۈ])([اەېىوۇۆۈ])/gu;
+
 function replaceViaTable(text: string, from: readonly string[], to: readonly string[]): string {
   let result = text;
   for (let i = 0; i < from.length; i++) {
@@ -138,12 +143,17 @@ function replaceViaTable(text: string, from: readonly string[], to: readonly str
 
 /**
  * After UAS→CTS letter mapping, normalize remaining hamza (ئ).
- * When `keepApostrophes` is true (UAS→ULS/UCS), medial hamza becomes `'`.
+ * Medial hamza after a vowel is dropped; other leftover hamza becomes `'`.
  */
 function reviseCts(text: string): string {
   let result = text.replace(LEADING_HAMZA, '');
   result = result.replace(/([aeéiouöü])\u0626/gu, '$1');
   return result.replaceAll('\u0626', "'");
+}
+
+/** Insert hamza before a UAS vowel that starts a word or follows another vowel. */
+function reviseUas(text: string): string {
+  return text.replace(UAS_VOWEL_PAIR, '$1ئ$2');
 }
 
 /** Common Turkic Script digraphs → Uyghur Latin Script. */
@@ -164,13 +174,44 @@ function ctsToUls(text: string): string {
     .replaceAll('v', 'w');
 }
 
+/** Uyghur Latin Script digraphs → Common Turkic Script. */
+function ulsToCts(text: string): string {
+  return text
+    .replaceAll('j', 'c')
+    .replaceAll('ng', 'ñ')
+    .replaceAll("n'g", 'ng')
+    .replaceAll("'ng", 'ñ')
+    .replaceAll('ch', 'ç')
+    .replaceAll('zh', 'j')
+    .replaceAll('sh', 'ş')
+    .replaceAll("'gh", 'ğ')
+    .replaceAll('gh', 'ğ')
+    .replaceAll('w', 'v');
+}
+
 function uasToCts(text: string): string {
   return reviseCts(replaceViaTable(text, UAS_CHARS, CTS_CHARS));
 }
 
+function ucsToCts(text: string): string {
+  return replaceViaTable(text.toLowerCase(), UCS_CHARS, CTS_CHARS)
+    .replaceAll('я', 'ya')
+    .replaceAll('ю', 'yu');
+}
+
+function ctsToUas(text: string): string {
+  const withHamza = text.replace(CTS_INITIAL_VOWEL, '\u0626$&');
+  return reviseUas(replaceViaTable(withHamza, CTS_CHARS, UAS_CHARS).replaceAll("'", ''));
+}
+
+function ctsToUcs(text: string): string {
+  const folded = text.replaceAll('ya', 'я').replaceAll('yu', 'ю');
+  return replaceViaTable(folded, CTS_CHARS, UCS_CHARS);
+}
+
 /**
  * Capitalize the first letter of the text and after sentence-ending punctuation.
- * Arabic has no case, so UAS→ULS/UCS results need this for sentence case.
+ * Arabic has no case, so outputs in Latin/Cyrillic need this for sentence case.
  */
 function autoCapitalize(text: string): string {
   return text.replace(/(^|[.?!]\s+)(\p{L})/gu, (_, prefix: string, letter: string) => {
@@ -185,18 +226,48 @@ export function arabicToLatin(text: string): string {
 
 /** Convert Uyghur Arabic Script (UAS) to Uyghur Cyrillic Script (UCS). */
 export function arabicToCyrillic(text: string): string {
-  const cts = uasToCts(text).toLowerCase().replaceAll('ya', 'я').replaceAll('yu', 'ю');
-  return autoCapitalize(replaceViaTable(cts, CTS_CHARS, UCS_CHARS));
+  return autoCapitalize(ctsToUcs(uasToCts(text).toLowerCase()));
+}
+
+/** Convert Uyghur Latin Script (ULS) to Uyghur Arabic Script (UAS). */
+export function latinToArabic(text: string): string {
+  return ctsToUas(ulsToCts(text.toLowerCase()));
+}
+
+/** Convert Uyghur Latin Script (ULS) to Uyghur Cyrillic Script (UCS). */
+export function latinToCyrillic(text: string): string {
+  return autoCapitalize(ctsToUcs(ulsToCts(text.toLowerCase())));
+}
+
+/** Convert Uyghur Cyrillic Script (UCS) to Uyghur Arabic Script (UAS). */
+export function cyrillicToArabic(text: string): string {
+  return ctsToUas(ucsToCts(text));
+}
+
+/** Convert Uyghur Cyrillic Script (UCS) to Uyghur Latin Script (ULS). */
+export function cyrillicToLatin(text: string): string {
+  return autoCapitalize(ctsToUls(ucsToCts(text)));
 }
 
 export type TargetScript = 'Arabic' | 'Latin' | 'Cyrillic';
+
+/** Convert between Uyghur Arabic, Latin, and Cyrillic scripts. */
+export function convert(text: string, from: TargetScript, to: TargetScript): string {
+  if (from === to) return text;
+  switch (from) {
+    case 'Arabic':
+      return to === 'Latin' ? arabicToLatin(text) : arabicToCyrillic(text);
+    case 'Latin':
+      return to === 'Arabic' ? latinToArabic(text) : latinToCyrillic(text);
+    case 'Cyrillic':
+      return to === 'Arabic' ? cyrillicToArabic(text) : cyrillicToLatin(text);
+  }
+}
 
 /**
  * Convert Uyghur Arabic Script to the given target.
  * Thin wrapper mirroring the upstream converter call style.
  */
 export function convertArabic(text: string, target: TargetScript): string {
-  if (target === 'Arabic') return text;
-  if (target === 'Latin') return arabicToLatin(text);
-  return arabicToCyrillic(text);
+  return convert(text, 'Arabic', target);
 }
