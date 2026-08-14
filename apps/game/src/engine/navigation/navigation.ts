@@ -1,6 +1,7 @@
 import type { Ticker } from 'pixi.js';
 import { Assets, BigPool, Container } from 'pixi.js';
 
+import { ensureRewardsReady, REMOTE_REWARDS_BUNDLE } from '../../zustandStores/rewardStore';
 import { ensureSentencesReady, REMOTE_SENTENCES_BUNDLE } from '../../zustandStores/sentenceStore';
 import { ensureWordsReady, REMOTE_WORDS_BUNDLE } from '../../zustandStores/wordStore';
 import type { CreationEngine } from '../engine';
@@ -89,6 +90,9 @@ export class Navigation {
     }
     if (assetBundles?.includes(REMOTE_SENTENCES_BUNDLE)) {
       await ensureSentencesReady();
+    }
+    if (assetBundles?.includes(REMOTE_REWARDS_BUNDLE)) {
+      await ensureRewardsReady();
     }
   }
 
