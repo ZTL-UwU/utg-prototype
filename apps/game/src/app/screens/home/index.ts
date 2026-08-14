@@ -130,7 +130,7 @@ export class HomeScreen extends Container {
       },
       anchor: 0.5,
     });
-    this.menuButton.layout = { position: 'absolute', bottom: 90, left: 90 };
+    this.menuButton.layout = { position: 'absolute', top: 90, right: 90 };
     this.menuButton.onPress.connect(() => {
       useOverlayStore.getState().show('menu');
     });
