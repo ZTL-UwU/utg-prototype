@@ -12,6 +12,12 @@ export type AuthUser = {
    * one on the avatar-select screen; consumers should fall back to `DEFAULT_AVATAR_ID`.
    */
   avatar: number | null;
+  /**
+   * Every reward the user owns, sent with login/register. Hydrates `useUserRewardStore`.
+   * Optional because sessions persisted before this field existed do not carry it;
+   * treat a missing value as "unknown", not "owns nothing".
+   */
+  reward_ids?: number[];
 };
 
 type AuthState = {

@@ -6,6 +6,7 @@ import { engine } from '../../../engine/getEngine';
 import { getAvatarPath } from '../../../utils/avatars';
 import { useAuthStore } from '../../../zustandStores/auth';
 import { ensureCourseReady } from '../../../zustandStores/courseStore';
+import { PassportPopup } from '../../popups/passport';
 import { UserStatsPopup } from '../../popups/user-stats';
 import { HomeScreen } from '../home';
 import { LevelMapScreen } from '../level-map';
@@ -178,6 +179,10 @@ export class LayerSelectScreen extends Container {
       top: 300,
       right: 120,
     };
+    this.passportButton.onPress.connect(() => {
+      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+      void engine().navigation.showPopup(PassportPopup);
+    });
     this.innerContainer = new Container({ layout: true });
     this.innerContainer.addChild(this.mapBackground, this.closeButton, ...this.layerButtons);
 
@@ -207,6 +212,8 @@ export class LayerSelectScreen extends Container {
     this.innerContainer.scale.set(0.7);
     this.userStatsButton.alpha = 0;
     this.userStatsButton.position.x = 200;
+    this.passportButton.alpha = 0;
+    this.passportButton.position.x = 200;
 
     const duration = 0.4;
     await Promise.all([
@@ -214,6 +221,8 @@ export class LayerSelectScreen extends Container {
       animate(this.innerContainer.scale, { x: 1, y: 1 }, { duration, ease: 'backOut' }),
       animate(this.userStatsButton, { alpha: 1 }, { duration, ease: 'backOut' }),
       animate(this.userStatsButton.position, { x: 0 }, { duration, ease: 'backOut' }),
+      animate(this.passportButton, { alpha: 1 }, { duration, ease: 'backOut' }),
+      animate(this.passportButton.position, { x: 0 }, { duration, ease: 'backOut' }),
       animate(this.background, { alpha: 0.5 }, { duration, ease: 'backOut' }),
     ]);
   }
