@@ -27,6 +27,7 @@ export class HomeScreen extends Container {
   private subtitle: Text;
   private isStarting = false;
   private menuButton: FancyButton;
+  private logo: Sprite;
 
   constructor() {
     super({
@@ -135,12 +136,25 @@ export class HomeScreen extends Container {
       useOverlayStore.getState().show('menu');
     });
 
+    this.logo = new Sprite({
+      texture: Texture.from('home/logo.svg'),
+      layout: {
+        position: 'absolute',
+        bottom: 0,
+        right: 36,
+        width: 140,
+        height: 67,
+        isLeaf: true,
+      },
+    });
+
     this.addChild(
       this.background,
       this.butterfly,
       this.titleContainer,
       bottomGroup,
       this.menuButton,
+      this.logo,
     );
   }
 
