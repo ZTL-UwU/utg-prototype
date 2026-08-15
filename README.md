@@ -8,7 +8,7 @@ pnpm / Vite+ monorepo for the UTG prototype.
 | `@utg/admin`            | `apps/admin`                | React Router admin app               |
 | `@utg/level-types`      | `packages/level-types`      | Level type ids and Zod props schemas |
 | `@utg/letters`          | `packages/letters`          | Education/keyboard letter constants  |
-| `@utg/script-converter` | `packages/script-converter` | Uyghur Arabic → Latin / Cyrillic     |
+| `@utg/script-converter` | `packages/script-converter` | Uyghur Arabic ↔ Latin ↔ Cyrillic     |
 
 ## Setup
 

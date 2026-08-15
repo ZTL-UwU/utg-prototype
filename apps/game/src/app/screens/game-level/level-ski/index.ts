@@ -29,12 +29,7 @@ import { HUD } from '../../../ui/hud';
 import { KeyboardLayout, type KeyboardColorOptions } from '../../../ui/keyboard-layout';
 import { RoundedProgressBar } from '../../../ui/rounded-progress-bar';
 import { LevelMapScreen } from '../../level-map';
-import {
-  findMapUnitForLevel,
-  getLevelType,
-  getTypedLevel,
-  type TLevel,
-} from '../../level-map/units';
+import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
 import { LivesBar } from './lives-bar';
 
 const DESIGN_WIDTH = 1920;
@@ -313,7 +308,7 @@ export class GameLevelSki extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: getLevelType(typedLevel),
+          mascot: typedLevel.mascot,
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },

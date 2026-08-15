@@ -17,14 +17,26 @@ export function isLayer(value: string | undefined): value is Layer {
   return LAYERS.includes(value as Layer);
 }
 
+/** Mirrors ImageOut from apps/game/schemas.py. */
+export interface MediaImage {
+  name: string;
+  url: string;
+  filename: string;
+}
+
 export interface Mascot {
   id: number;
   name: string | null;
-  idle_asset_path: string;
-  zero_star_asset_path: string;
-  one_star_asset_path: string;
-  two_star_asset_path: string;
-  three_star_asset_path: string;
+  idle_image: MediaImage;
+  sad_image: MediaImage;
+  zero_star_image: MediaImage;
+  one_star_image: MediaImage;
+  two_star_image: MediaImage;
+  three_star_image: MediaImage;
+}
+
+export function mascotLabel(mascot: Mascot): string {
+  return mascot.name ?? `Mascot ${mascot.id}`;
 }
 
 export interface Level {

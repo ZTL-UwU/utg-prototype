@@ -22,7 +22,7 @@ apps/game                  — PixiJS game client (@utg/game)
 apps/admin                 — React Router admin app (@utg/admin)
 packages/level-types       — Level type ids, labels, and Zod props schemas (@utg/level-types)
 packages/letters           — Education/keyboard letter constants (@utg/letters)
-packages/script-converter  — Uyghur Arabic → Latin / Cyrillic (@utg/script-converter)
+packages/script-converter  — Uyghur Arabic ↔ Latin ↔ Cyrillic (@utg/script-converter)
 ```
 
 Install once at the repo root with `vp install`.
@@ -46,4 +46,4 @@ Shared Uyghur education alphabet (`EDUCATION_LETTERS`), typing key sequences (`T
 
 ## Script converter (`@utg/script-converter`)
 
-Convert Uyghur Arabic Script to Latin (`arabicToLatin`) or Cyrillic (`arabicToCyrillic`). Ported from [Uyghur-Multi-Script-Converter](https://github.com/neouyghur/Uyghur-Multi-Script-Converter) (Arabic→Latin / Arabic→Cyrillic only).
+Convert between Uyghur Arabic, Latin, and Cyrillic (`convert(text, from, to)`). Ported from [Uyghur-Multi-Script-Converter](https://github.com/neouyghur/Uyghur-Multi-Script-Converter).

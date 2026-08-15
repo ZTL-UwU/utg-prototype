@@ -77,7 +77,7 @@ export class GameLevelFruitScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: 'game',
+          mascot: typedLevel.mascot,
           onQuit: () => this.goHome(),
         }),
     });

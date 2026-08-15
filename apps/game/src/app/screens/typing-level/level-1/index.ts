@@ -6,7 +6,7 @@ import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, getLevelType, type TLevel } from '../../level-map/units';
+import { findMapUnitForLevel, type TLevel } from '../../level-map/units';
 import { Camel } from './camel';
 import { Clouds } from './clouds';
 import { LetterRow } from './letter-row';
@@ -69,7 +69,7 @@ export class TypingLevelScreen extends Container {
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
-          type: getLevelType(level),
+          mascot: level.mascot,
           onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
         }),
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },

@@ -11,11 +11,11 @@ import { getStarCount } from '../../../zustandStores/scoreManager';
 import useSessionStore from '../../../zustandStores/sessionStore';
 import { useUserRewardStore } from '../../../zustandStores/userRewardStore';
 import { LevelMapScreen } from '../../screens/level-map';
-import type { TLevel } from '../../screens/level-map/units';
+import type { TLayer, TLevel } from '../../screens/level-map/units';
 import {
   findMapUnitForLevel,
-  getLevelType,
   getNextLevelAfter,
+  REMOTE_MASCOTS_BUNDLE,
 } from '../../screens/level-map/units';
 import { LevelSplashScreen } from '../../screens/level-splash';
 import { BackButton } from '../../ui/back-button';
@@ -32,50 +32,41 @@ const POPUP_RADIUS = 32;
 /** Hang guard on the level-result POST; under any normal network the result wins. */
 const RESULT_TIMEOUT = 10;
 
-// New mascot driven color selections, replace old type driven selection
-const MASCOT_BACKGROUND_COLORS = {
-  camel: 0x7e5433,
-  sheep: 0x5a8cd4,
-  goat: 0x5a8cd4,
-  chef: 0x7e5433,
-} as const;
+const LAYER_BACKGROUND_COLORS: Record<TLayer, number> = {
+  education: 0x5a8cd4,
+  typing: 0x7e5433,
+  game: 0x7e5433,
+};
 
-const MASCOT_TEXT_COLORS = {
-  camel: 0xfad68a,
-  sheep: 0xfdf7e7,
-  goat: 0xfdf7e7,
-  chef: 0xffe2bc,
-} as const;
+const LAYER_TEXT_COLORS: Record<TLayer, number> = {
+  education: 0xfdf7e7,
+  typing: 0xfad68a,
+  game: 0xffe2bc,
+};
 
-type Mascot = 'sheep' | 'goat' | 'camel' | 'chef';
-
-function createPopupBackground(width: number, height: number, mascot: Mascot) {
+function createPopupBackground(width: number, height: number, layer: TLayer) {
   return new Graphics()
     .roundRect(0, 0, width, height, POPUP_RADIUS)
-    .fill(MASCOT_BACKGROUND_COLORS[mascot]);
+    .fill(LAYER_BACKGROUND_COLORS[layer]);
 }
 
-function createScoreTitleStyle(mascot: Mascot) {
+function createScoreTitleStyle(layer: TLayer) {
   return new TextStyle({
     fontFamily: 'Concert One',
     fontSize: 48,
     fontWeight: '700',
-    fill: MASCOT_TEXT_COLORS[mascot],
+    fill: LAYER_TEXT_COLORS[layer],
     letterSpacing: 4,
   });
 }
 
-function createStatStyle(mascot: Mascot) {
+function createStatStyle(layer: TLayer) {
   return new TextStyle({
     fontFamily: 'Concert One',
     fontSize: 32,
     fontWeight: '700',
-    fill: MASCOT_TEXT_COLORS[mascot],
+    fill: LAYER_TEXT_COLORS[layer],
   });
-}
-
-function getMascotTexture(mascot: Mascot, starCount: number) {
-  return `mascots/${mascot}/dialog/${starCount}-star.png`;
 }
 
 function readSessionResults() {
@@ -96,10 +87,6 @@ function readSessionResults() {
 type EndScreenPopupProps = {
   level: TLevel;
 };
-
-function getCurrentMascot(level: TLevel): Mascot {
-  return level.mascot;
-}
 
 function goToLevelMap(level: TLevel) {
   const mapUnit = findMapUnitForLevel(level);
@@ -123,12 +110,11 @@ export class EndScreenPopup extends Container {
   // 'layer-select' is here for the passport button's texture
   public static assetBundles = [
     'end-screen',
-    'mascots',
+    REMOTE_MASCOTS_BUNDLE,
     'ui',
     'layer-select',
     REMOTE_REWARDS_BUNDLE,
   ];
-  private currentMascot: Mascot;
 
   private innerContainer: Container;
   private background: Graphics;
@@ -150,7 +136,6 @@ export class EndScreenPopup extends Container {
         justifyContent: 'center',
       },
     });
-    this.currentMascot = getCurrentMascot(level);
     const { correct, mistakes, accuracy, starCount } = readSessionResults();
     this.starCount = starCount;
     // useLevelProgress.getState().markAttempted(getLevelType(level), level.id);
@@ -167,8 +152,9 @@ export class EndScreenPopup extends Container {
     });
 
     const progress = useLevelProgress.getState();
-    progress.markAttempted(getLevelType(level), level.id);
     const mapUnit = findMapUnitForLevel(level);
+    const layer = mapUnit.type;
+    progress.markAttempted(layer, level.id);
     if (mapUnit?.type === 'education') {
       const unitComplete =
         mapUnit.levels.length > 0 &&
@@ -183,7 +169,7 @@ export class EndScreenPopup extends Container {
         this.postcardSlug = slug;
       }
     }
-    this.background = createPopupBackground(POPUP_WIDTH, POPUP_HEIGHT, this.currentMascot);
+    this.background = createPopupBackground(POPUP_WIDTH, POPUP_HEIGHT, layer);
     this.background.layout = {
       width: POPUP_WIDTH,
       height: POPUP_HEIGHT,
@@ -192,11 +178,11 @@ export class EndScreenPopup extends Container {
     this.stars = new Stars(starCount, POPUP_WIDTH);
     const scoreTitle = new Text({
       text: 'SCORE',
-      style: createScoreTitleStyle(this.currentMascot),
+      style: createScoreTitleStyle(layer),
       layout: true,
     });
 
-    const statStyle = createStatStyle(this.currentMascot);
+    const statStyle = createStatStyle(layer);
     const correctText = new Text({
       text: `Correct : ${correct}`,
       style: statStyle,
@@ -261,16 +247,19 @@ export class EndScreenPopup extends Container {
     });
     this.contentContainer.addChild(headerSection, bodySection);
 
-    const mascot = new Sprite({
-      texture: Texture.from(getMascotTexture(this.currentMascot, starCount)),
-      layout: {
-        position: 'absolute',
-        right: 20,
-        bottom: 20,
-        width: 310,
-        objectFit: 'contain',
-      },
-    });
+    const mascotAlias = level.mascot?.starAliases[starCount];
+    const mascot = mascotAlias
+      ? new Sprite({
+          texture: Texture.from(mascotAlias),
+          layout: {
+            position: 'absolute',
+            right: 20,
+            bottom: 20,
+            width: 310,
+            objectFit: 'contain',
+          },
+        })
+      : null;
 
     const backButton = new BackButton(() => goToLevelMap(level));
     backButton.anchor.set(0, 1);
@@ -315,7 +304,7 @@ export class EndScreenPopup extends Container {
     this.innerContainer.addChild(
       this.background,
       this.contentContainer,
-      mascot,
+      ...(mascot ? [mascot] : []),
       backButton,
       nextButton,
     );

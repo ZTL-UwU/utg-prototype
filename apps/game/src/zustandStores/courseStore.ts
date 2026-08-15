@@ -1,15 +1,21 @@
 import { isLevelTypeId, parseLevelProps } from '@utg/level-types';
-import type { TextDropShadow } from 'pixi.js';
+import { Assets, type TextDropShadow } from 'pixi.js';
 import { create } from 'zustand';
 
-import type {
-  LevelScreenConstructor,
-  SplashColorScheme,
-  TLayer,
-  TLevel,
-  TMapUnit,
+import {
+  getMascotIdleAlias,
+  getMascotSadAlias,
+  getMascotStarAlias,
+  REMOTE_MASCOTS_BUNDLE,
+  type LevelScreenConstructor,
+  type SplashColorScheme,
+  type TLayer,
+  type TLevel,
+  type TMapUnit,
+  type TMascotAssets,
 } from '../app/screens/level-map/units';
 import { api } from '../lib/api';
+import { mediaUrl } from '../lib/media';
 import { ensureRemoteReady, type RemoteStatus } from '../lib/remoteResource';
 
 /** Client-only shadow for non-curved unit titles (not sent by the API). */
@@ -20,9 +26,21 @@ const textDropShadow: Partial<TextDropShadow> = {
   alpha: 0.75,
 };
 
+interface ApiImage {
+  name: string;
+  url: string;
+  filename: string;
+}
+
 interface ApiMascot {
   id: number;
   name: string | null;
+  idle_image: ApiImage;
+  sad_image: ApiImage;
+  zero_star_image: ApiImage;
+  one_star_image: ApiImage;
+  two_star_image: ApiImage;
+  three_star_image: ApiImage;
 }
 
 interface ApiLevel {
@@ -69,15 +87,57 @@ const EMPTY_UNITS: Record<TLayer, TMapUnit[]> = {
   game: [],
 };
 
-const MASCOTS = new Set(['sheep', 'goat', 'camel', 'chef']);
-
 function isLayer(value: string): value is TLayer {
   return value === 'education' || value === 'typing' || value === 'game';
 }
 
-function mapMascot(name: string | null | undefined): TLevel['mascot'] {
-  const key = (name ?? 'sheep').toLowerCase();
-  return MASCOTS.has(key) ? (key as TLevel['mascot']) : 'sheep';
+function mapMascotAssets(mascot: ApiMascot | null): TMascotAssets | null {
+  if (
+    !mascot?.idle_image?.url ||
+    !mascot.sad_image?.url ||
+    !mascot.zero_star_image?.url ||
+    !mascot.one_star_image?.url ||
+    !mascot.two_star_image?.url ||
+    !mascot.three_star_image?.url
+  ) {
+    return null;
+  }
+  return {
+    idleAlias: getMascotIdleAlias(mascot.id),
+    sadAlias: getMascotSadAlias(mascot.id),
+    starAliases: [
+      getMascotStarAlias(mascot.id, 0),
+      getMascotStarAlias(mascot.id, 1),
+      getMascotStarAlias(mascot.id, 2),
+      getMascotStarAlias(mascot.id, 3),
+    ],
+  };
+}
+
+function registerMascotsBundle(units: ApiUnit[]): void {
+  const seen = new Set<number>();
+  const entries: { alias: string; src: string }[] = [];
+
+  for (const unit of units) {
+    for (const level of unit.levels) {
+      const mascot = level.mascot;
+      if (!mascot?.idle_image?.url || !mascot.sad_image?.url || seen.has(mascot.id)) continue;
+      seen.add(mascot.id);
+      entries.push(
+        { alias: getMascotIdleAlias(mascot.id), src: mediaUrl(mascot.idle_image.url) },
+        { alias: getMascotSadAlias(mascot.id), src: mediaUrl(mascot.sad_image.url) },
+        { alias: getMascotStarAlias(mascot.id, 0), src: mediaUrl(mascot.zero_star_image.url) },
+        { alias: getMascotStarAlias(mascot.id, 1), src: mediaUrl(mascot.one_star_image.url) },
+        { alias: getMascotStarAlias(mascot.id, 2), src: mediaUrl(mascot.two_star_image.url) },
+        { alias: getMascotStarAlias(mascot.id, 3), src: mediaUrl(mascot.three_star_image.url) },
+      );
+    }
+  }
+
+  Assets.addBundle(REMOTE_MASCOTS_BUNDLE, entries);
+  if (entries.length > 0) {
+    void Assets.backgroundLoadBundle(REMOTE_MASCOTS_BUNDLE);
+  }
 }
 
 function mapSplashColorScheme(level: ApiLevel): SplashColorScheme {
@@ -101,7 +161,7 @@ function mapLevel(
     id: level.id,
     title: level.title ?? undefined,
     unlocked: true,
-    mascot: mapMascot(level.mascot?.name),
+    mascot: mapMascotAssets(level.mascot),
     screen: screens[levelType],
     backdropColor: level.backdrop_color,
     splashColorScheme: mapSplashColorScheme(level),
@@ -183,6 +243,7 @@ const useCourseStore = create<CourseStore>((set, get) => ({
       // Lazy-load screens so this module does not cycle with screen → units → store.
       const { LEVEL_TYPE_SCREENS } = await import('../app/screens/level-map/screenRegistry');
       const units = await api<ApiUnit[]>('/units/list');
+      registerMascotsBundle(units);
       set({
         status: 'ready',
         error: undefined,
@@ -190,6 +251,7 @@ const useCourseStore = create<CourseStore>((set, get) => ({
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load course structure';
+      registerMascotsBundle([]);
       set({
         status: 'error',
         error: message,
@@ -221,3 +283,16 @@ export async function ensureCourseReady(): Promise<boolean> {
 }
 
 export default useCourseStore;
+
+export { REMOTE_MASCOTS_BUNDLE };
+
+/** Resolves when the remote mascots bundle has been registered with the course catalog. */
+export function ensureMascotsReady(): Promise<boolean> {
+  return ensureRemoteReady({
+    getStatus: () => useCourseStore.getState().status,
+    subscribe: (listener) => useCourseStore.subscribe((state) => listener(state.status)),
+    start: () => {
+      void useCourseStore.getState().fetchCourseStructure();
+    },
+  });
+}

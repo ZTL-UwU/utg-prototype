@@ -121,10 +121,11 @@ function createArrow() {
   return new Sprite({ texture: Texture.from('typing-levels/typing-tutorial/arrow.svg') });
 }
 
-function getNextLetter(letter: string): string {
-  const index = EDUCATION_LETTERS.indexOf(letter as (typeof EDUCATION_LETTERS)[number]);
+function getAdjacentLetter(letter: string, delta: number): string {
+  const index = EDUCATION_LETTERS.indexOf(letter as EducationLetter);
   if (index < 0) return EDUCATION_LETTERS[0]!;
-  return EDUCATION_LETTERS[(index + 1) % EDUCATION_LETTERS.length]!;
+  const count = EDUCATION_LETTERS.length;
+  return EDUCATION_LETTERS[(index + delta + count) % count]!;
 }
 
 export class LetterPopup extends Container {
@@ -146,6 +147,7 @@ export class LetterPopup extends Container {
 
   private nextStepIndex = 0;
   private completed = false;
+  private isNavigating = false;
   private viewHeight = 0;
   private resetTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
@@ -376,8 +378,29 @@ export class LetterPopup extends Container {
     });
   }
 
+  private goToLetter(letter: string) {
+    if (this.isNavigating || letter === this.letter) return;
+    this.isNavigating = true;
+    void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+    void engine().navigation.showPopup(LetterPopup, letter, { animate: false });
+  }
+
   private readonly onKeyDown = (event: KeyboardEvent) => {
-    if (this.completed || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+      event.preventDefault();
+      if (event.repeat) return;
+      this.goToLetter(getAdjacentLetter(this.letter, event.key === 'ArrowRight' ? 1 : -1));
+      return;
+    }
+
+    if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+      event.preventDefault();
+      return;
+    }
+
+    if (this.completed || event.repeat) return;
 
     const expectedStep = this.steps[this.nextStepIndex];
     if (!expectedStep) return;
@@ -461,10 +484,7 @@ export class LetterPopup extends Container {
     button.anchor.set(0.5);
     button.layout = { position: 'absolute', top: '10%', left: '95%' };
     button.onPress.connect(() => {
-      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      void engine().navigation.showPopup(LetterPopup, getNextLetter(this.letter), {
-        animate: false,
-      });
+      this.goToLetter(getAdjacentLetter(this.letter, 1));
     });
     return button;
   }

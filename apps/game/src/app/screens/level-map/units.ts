@@ -6,6 +6,26 @@ import useCourseStore from '../../../zustandStores/courseStore';
 
 export type TLayer = 'typing' | 'education' | 'game';
 
+export const REMOTE_MASCOTS_BUNDLE = 'remote-mascots';
+
+export type TMascotAssets = {
+  idleAlias: string;
+  sadAlias: string;
+  starAliases: readonly [string, string, string, string];
+};
+
+export function getMascotIdleAlias(mascotId: number): string {
+  return `${REMOTE_MASCOTS_BUNDLE}/${mascotId}/idle`;
+}
+
+export function getMascotSadAlias(mascotId: number): string {
+  return `${REMOTE_MASCOTS_BUNDLE}/${mascotId}/sad`;
+}
+
+export function getMascotStarAlias(mascotId: number, stars: 0 | 1 | 2 | 3): string {
+  return `${REMOTE_MASCOTS_BUNDLE}/${mascotId}/${stars}-star`;
+}
+
 /**
  * A level screen owns its splash background and tutorial images, so they stay
  * consistent everywhere the screen is reused instead of being restated per level.
@@ -26,7 +46,7 @@ type TLevelBase = {
   id: number;
   title?: string;
   unlocked: boolean;
-  mascot: 'sheep' | 'goat' | 'camel' | 'chef';
+  mascot: TMascotAssets | null;
   screen?: LevelScreenConstructor;
   backdropColor: number;
   splashColorScheme?: SplashColorScheme;
@@ -104,10 +124,6 @@ export function findMapUnitForLevel(level: TLevel): TMapUnit {
     throw new Error(`No map unit found for level ${level.id}`);
   }
   return mapUnit;
-}
-
-export function getLevelType(level: TLevel): TLayer {
-  return findMapUnitForLevel(level).type;
 }
 
 export function getNextLevelAfter(

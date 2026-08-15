@@ -14,10 +14,10 @@ function getSessionAccuracy(correct: number, mistakes: number) {
   return getAccuracyPercent(correct, mistakes);
 }
 
-export function getStarCount(accuracy: number) {
-  if (accuracy > 90) return 3;
-  if (accuracy > 70) return 2;
-  if (accuracy > 50) return 1;
+export function getStarCount(accuracy: number): 0 | 1 | 2 | 3 {
+  if (accuracy >= 85) return 3;
+  if (accuracy >= 60) return 2;
+  if (accuracy >= 35) return 1;
   return 0;
 }
 
