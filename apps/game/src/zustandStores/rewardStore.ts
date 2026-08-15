@@ -8,13 +8,21 @@ import { ensureRemoteReady, type RemoteStatus } from '../lib/remoteResource';
 /** Pixi Assets bundle name for remote reward images. */
 export const REMOTE_REWARDS_BUNDLE = 'remote-rewards';
 
+function imageStoragePath(imageUrl: string): string {
+  try {
+    return new URL(imageUrl, 'http://relative.invalid').pathname;
+  } catch {
+    return `/${imageUrl}`;
+  }
+}
+
 /**
- * Alias used with `Texture.from` / `Assets.load` for a reward image.
- * Keyed on the reward image rather than the reward: several rewards can share
- * one image, and it should only be registered and downloaded once.
+ * Alias for a reward image, keyed on its storage path so rewards sharing an image
+ * share one entry. The path, not the URL: the signed query string is regenerated
+ * per request.
  */
-export function getRewardImageAlias(imageId: number): string {
-  return `remote-rewards/${imageId}`;
+export function getRewardImageAlias(imageUrl: string): string {
+  return `remote-rewards${imageStoragePath(imageUrl)}`;
 }
 
 /** Reward types tied to a single level. */
@@ -31,13 +39,12 @@ export const LAYER_REWARD_TYPE = 'three_consecutive_three_stars_trophy' as const
 
 export type RewardType = LevelRewardType | typeof LAYER_REWARD_TYPE;
 
-/** Raw `/rewards/list-simple` row, before narrowing the backend's enum strings. */
+/** The deployed schema returns only `{ id, type, image_url }`. */
 interface ApiReward {
   id: number;
   type: string;
-  layer: string;
-  level: number | null;
-  image_id: number;
+  layer?: string;
+  level?: number | null;
   image_url: string;
 }
 
@@ -45,10 +52,9 @@ interface ApiReward {
 export interface RewardSimple {
   id: number;
   type: RewardType;
-  layer: TLayer;
-  /** Null for the layer trophy, which is not tied to a single level. */
+  layer: TLayer | null;
+  /** Null for the layer trophy, or when the backend omits it. */
   level: number | null;
-  image_id: number;
   image_url: string;
 }
 
@@ -61,24 +67,25 @@ interface RewardStore {
 
 const REWARD_TYPES = new Set<string>([...LEVEL_REWARD_TYPES, LAYER_REWARD_TYPE]);
 
-function isRewardType(value: string): value is RewardType {
+export function isRewardType(value: string): value is RewardType {
   return REWARD_TYPES.has(value);
 }
 
-function isLayer(value: string): value is TLayer {
+export function isLayer(value: string): value is TLayer {
   return value === 'education' || value === 'typing' || value === 'game';
 }
 
-/** Narrow an API row, or drop it if the backend added a type this build cannot place. */
+/** Drops only on an unknown type: a missing layer/level costs placement, not the image. */
 function mapReward(reward: ApiReward): RewardSimple | null {
-  if (!isRewardType(reward.type) || !isLayer(reward.layer)) return null;
+  if (!isRewardType(reward.type)) return null;
+
+  const layer = reward.layer;
 
   return {
     id: reward.id,
     type: reward.type,
-    layer: reward.layer,
-    level: reward.level,
-    image_id: reward.image_id,
+    layer: layer != null && isLayer(layer) ? layer : null,
+    level: reward.level ?? null,
     image_url: reward.image_url,
   };
 }
@@ -110,20 +117,17 @@ export function getLayerTrophy(layer: TLayer): RewardSimple | undefined {
 }
 
 function registerRewardsBundle(rewards: RewardSimple[]): void {
-  // Several rewards can point at one reward image, and duplicate aliases would
-  // collide in the resolver, so register each image exactly once.
-  const srcByImageId = new Map<number, string>();
+  // Duplicate aliases collide in the resolver, so register each image once.
+  const srcByAlias = new Map<string, string>();
 
   for (const reward of rewards) {
-    if (!srcByImageId.has(reward.image_id)) {
-      srcByImageId.set(reward.image_id, reward.image_url);
+    const alias = getRewardImageAlias(reward.image_url);
+    if (!srcByAlias.has(alias)) {
+      srcByAlias.set(alias, reward.image_url);
     }
   }
 
-  const entries = [...srcByImageId].map(([imageId, src]) => ({
-    alias: getRewardImageAlias(imageId),
-    src,
-  }));
+  const entries = [...srcByAlias].map(([alias, src]) => ({ alias, src }));
 
   // Always register so navigation can safely `loadBundle('remote-rewards')`.
   Assets.addBundle(REMOTE_REWARDS_BUNDLE, entries);
@@ -147,6 +151,12 @@ const useRewardStore = create<RewardStore>((set, get) => ({
       const rewards = apiRewards
         .map(mapReward)
         .filter((reward): reward is RewardSimple => reward != null);
+
+      const dropped = apiRewards.length - rewards.length;
+      if (dropped > 0) {
+        console.warn(`/rewards/list-simple: dropped ${dropped} reward(s) of unknown type`);
+      }
+
       registerRewardsBundle(rewards);
       set({ status: 'ready', error: undefined, rewards });
     } catch (err) {
@@ -161,10 +171,7 @@ const useRewardStore = create<RewardStore>((set, get) => ({
   },
 }));
 
-/**
- * Resolves when the rewards list is ready.
- * Returns false if the fetch failed.
- */
+/** Resolves when the rewards list is ready; false if the fetch failed. */
 export function ensureRewardsReady(): Promise<boolean> {
   return ensureRemoteReady({
     getStatus: () => useRewardStore.getState().status,

@@ -16,12 +16,11 @@ export interface LevelResultIn {
   mistake: number;
 }
 
-/** The fields of LevelResultCreateOut this module acts on. */
 interface LevelResultOut {
   id: number;
-  /** Every reward the user owns after this result. */
+  // every reward this user owns, after this level
   reward_ids: number[];
-  /** Only what this result just earned. */
+  // only what this level earned
   new_reward_ids: number[];
 }
 
@@ -30,12 +29,9 @@ export type LevelResultOutcome =
   | { status: 'skipped' }
   | { status: 'failed'; error: unknown };
 
-/**
- * Record a completed level and take ownership of whatever it earned.
- */
+/** Record a completed level and take ownership of whatever it earned. Never throws. */
 export async function submitLevelResult(result: LevelResultIn): Promise<LevelResultOutcome> {
-  // `/level-results` is authenticated, and a 401 inside `api` can clear the session
-  // without retrying, so check up front rather than through the error path.
+  // Authenticated: a 401 inside `api` can clear the session without retrying.
   if (!useAuthStore.getState().accessToken) {
     return { status: 'skipped' };
   }

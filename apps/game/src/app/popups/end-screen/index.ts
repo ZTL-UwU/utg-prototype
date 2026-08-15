@@ -3,9 +3,13 @@ import { animate } from 'motion';
 import { BlurFilter, Container, Graphics, Sprite, Text, TextStyle, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { waitFor } from '../../../engine/utils/waitFor';
+import { submitLevelResult, type LevelResultOutcome } from '../../../lib/levelResults';
 import { useLevelProgress } from '../../../zustandStores/levelProgressStore';
+import { REMOTE_REWARDS_BUNDLE, resolveRewardsByIds } from '../../../zustandStores/rewardStore';
 import { getStarCount } from '../../../zustandStores/scoreManager';
 import useSessionStore from '../../../zustandStores/sessionStore';
+import { useUserRewardStore } from '../../../zustandStores/userRewardStore';
 import { LevelMapScreen } from '../../screens/level-map';
 import type { TLevel } from '../../screens/level-map/units';
 import {
@@ -18,11 +22,15 @@ import { BackButton } from '../../ui/back-button';
 import { NextButton } from '../../ui/next-button';
 import { PassportPopup } from '../passport';
 import { hasPostcard, PostcardPopup, toPostcardSlug } from '../postcard';
+import { RewardCelebration } from './reward-celebration';
 import { Stars } from './stars';
 
 const POPUP_WIDTH = 940;
 const POPUP_HEIGHT = 600;
 const POPUP_RADIUS = 32;
+
+/** Hang guard on the level-result POST; under any normal network the result wins. */
+const RESULT_TIMEOUT = 10;
 
 // New mascot driven color selections, replace old type driven selection
 const MASCOT_BACKGROUND_COLORS = {
@@ -113,7 +121,13 @@ function goToNextLevel(nextLevel: NonNullable<ReturnType<typeof getNextLevelAfte
 
 export class EndScreenPopup extends Container {
   // 'layer-select' is here for the passport button's texture
-  public static assetBundles = ['end-screen', 'mascots', 'ui', 'layer-select'];
+  public static assetBundles = [
+    'end-screen',
+    'mascots',
+    'ui',
+    'layer-select',
+    REMOTE_REWARDS_BUNDLE,
+  ];
   private currentMascot: Mascot;
 
   private innerContainer: Container;
@@ -124,6 +138,9 @@ export class EndScreenPopup extends Container {
 
   private postcardSlug?: string;
   private passportButton: FancyButton;
+
+  private resultPromise: Promise<LevelResultOutcome>;
+  private rewardCelebration?: RewardCelebration;
 
   constructor({ level }: EndScreenPopupProps) {
     super({
@@ -137,6 +154,17 @@ export class EndScreenPopup extends Container {
     const { correct, mistakes, accuracy, starCount } = readSessionResults();
     this.starCount = starCount;
     // useLevelProgress.getState().markAttempted(getLevelType(level), level.id);
+
+    // readSessionResults() already reset the session store, so these are the only
+    // copies of the counts left. Unawaited, to overlap the show() animations.
+    this.resultPromise = submitLevelResult({
+      level: level.id,
+      star: starCount,
+      // No per-level score exists; the correct count stands in for one.
+      score: correct,
+      correct,
+      mistake: mistakes,
+    });
 
     const progress = useLevelProgress.getState();
     progress.markAttempted(getLevelType(level), level.id);
@@ -323,12 +351,70 @@ export class EndScreenPopup extends Container {
       this.stars.playShowAnimation(),
     ]);
 
+    await this.playRewardCelebration();
+
     if (this.postcardSlug) {
       await currentEngine.navigation.showNestedPopup(PostcardPopup, this.postcardSlug);
     }
   }
 
+  /** Celebrates the whole queue, so anything an earlier end screen missed catches up here. */
+  private async playRewardCelebration() {
+    this.interactiveChildren = false;
+    try {
+      // The outcome is unused; this only lets the POST land before the queue is read.
+      const outcome = await Promise.race([
+        this.resultPromise,
+        waitFor(RESULT_TIMEOUT).then((): LevelResultOutcome | null => null),
+      ]);
+      if (outcome === null) {
+        console.warn('Level result timed out; skipping reward celebration');
+      }
+
+      const rewardIds = useUserRewardStore.getState().consumeAllCelebrations();
+      const rewards = resolveRewardsByIds(rewardIds);
+      if (rewards.length === 0) {
+        if (rewardIds.length > 0) {
+          console.warn(
+            `Earned rewards ${rewardIds.join(', ')} are missing from the catalog; nothing to show`,
+          );
+        }
+        return;
+      }
+
+      const celebration = new RewardCelebration(rewards);
+      this.rewardCelebration = celebration;
+      // Last, so badges draw above both the panel and the passport button.
+      this.addChild(celebration);
+
+      // Resolved into the celebration's own space, since that is where the badges
+      // live. Bounds centre rather than getGlobalPosition: the button is anchored
+      // 0.5 and positioned by @pixi/layout, so its origin is not its centre.
+      const buttonBounds = this.passportButton.getBounds();
+      const origin = celebration.toLocal(
+        this.innerContainer.toGlobal({ x: POPUP_WIDTH / 2, y: POPUP_HEIGHT / 2 }),
+      );
+      const target = celebration.toLocal({
+        x: buttonBounds.x + buttonBounds.width / 2,
+        y: buttonBounds.y + buttonBounds.height / 2,
+      });
+
+      await celebration.play(origin, target, () => {
+        animate(
+          this.passportButton.scale,
+          { x: [1, 1.18, 1], y: [1, 1.18, 1] },
+          { duration: 0.25, ease: 'easeOut' },
+        );
+      });
+    } finally {
+      this.interactiveChildren = true;
+    }
+  }
+
   public async hide() {
+    // Not destroy(): Navigation never destroys popups, so that override would not fire.
+    this.rewardCelebration?.stop();
+
     const currentEngine = engine();
     if (!currentEngine.navigation.currentScreen) return;
 
