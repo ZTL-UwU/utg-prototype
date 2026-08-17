@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { api } from '../lib/api';
 import { ensureRemoteReady, type RemoteStatus } from '../lib/remoteResource';
 import { useAuthStore } from './auth';
+import { getAccuracyPercent } from './scoreManager';
 
 /** Mirrors LevelResultOut from the backend `/level-results/list` endpoint. */
 export interface LevelResult {
@@ -61,6 +62,34 @@ const useResultStore = create<ResultStore>((set, get) => ({
 
   clearResults: () => set({ status: 'idle', error: undefined, results: [] }),
 }));
+
+export interface ResultTotals {
+  totalStars: number;
+  correct: number;
+  mistake: number;
+  accuracy: number;
+}
+
+/**
+ * Lifetime totals for the stats surfaces. Stars take the best attempt per level, so a
+ * replay can only improve them; correct/mistake count every attempt.
+ */
+export function selectResultTotals(results: LevelResult[]): ResultTotals {
+  const bestStars = new Map<number, number>();
+  let correct = 0;
+  let mistake = 0;
+
+  for (const result of results) {
+    bestStars.set(result.level_id, Math.max(bestStars.get(result.level_id) ?? 0, result.star));
+    correct += result.correct;
+    mistake += result.mistake;
+  }
+
+  let totalStars = 0;
+  for (const star of bestStars.values()) totalStars += star;
+
+  return { totalStars, correct, mistake, accuracy: getAccuracyPercent(correct, mistake) };
+}
 
 /** Resolves when level results are loaded; false if the fetch failed or logged out. */
 export function ensureResultsReady(): Promise<boolean> {

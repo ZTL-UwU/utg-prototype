@@ -4,7 +4,7 @@ import { BlurFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js'
 import { engine } from '../../../engine/getEngine';
 import { getAvatarPath } from '../../../utils/avatars';
 import { useAuthStore } from '../../../zustandStores/auth';
-import { getAccuracyPercent, useScoreManager } from '../../../zustandStores/scoreManager';
+import useResultStore, { selectResultTotals } from '../../../zustandStores/resultStore';
 import { AvatarSelectScreen } from '../../screens/avatar-select';
 import { BackButton } from '../../ui/back-button';
 
@@ -186,7 +186,9 @@ export class UserStatsPopup extends Container {
     this.panel = new Container({ layout: true });
     this.panel.addChild(background, content);
 
-    this.unsubscribeScore = useScoreManager.subscribe(() => {
+    // No-op when already loading or ready; retries when the bootstrap fetch errored.
+    void useResultStore.getState().fetchResults();
+    this.unsubscribeScore = useResultStore.subscribe(() => {
       this.updateStats();
     });
     this.updateStats();
@@ -195,13 +197,14 @@ export class UserStatsPopup extends Container {
   }
 
   private updateStats() {
-    const { correctCount, mistakeCount, totalStars } = useScoreManager.getState();
-    const averageAccuracy = getAccuracyPercent(correctCount, mistakeCount);
+    const { totalStars, correct, mistake, accuracy } = selectResultTotals(
+      useResultStore.getState().results,
+    );
 
     this.totalStarsValue.text = String(totalStars);
-    this.averageAccuracyValue.text = `${averageAccuracy}%`;
-    this.correctAttemptsValue.text = String(correctCount);
-    this.incorrectAttemptsValue.text = String(mistakeCount);
+    this.averageAccuracyValue.text = `${accuracy}%`;
+    this.correctAttemptsValue.text = String(correct);
+    this.incorrectAttemptsValue.text = String(mistake);
   }
 
   private refreshAvatar() {

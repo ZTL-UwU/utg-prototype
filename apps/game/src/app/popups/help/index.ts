@@ -3,7 +3,7 @@ import { animate } from 'motion';
 import { BlurFilter, Container, Graphics, Text } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { useScoreManager } from '../../../zustandStores/scoreManager';
+import useResultStore, { selectResultTotals } from '../../../zustandStores/resultStore';
 import { AccuracyDisplay } from './accuracy-display';
 
 function formatScoreContent(correctCount: number, mistakeCount: number) {
@@ -49,8 +49,10 @@ export class HelpPopup extends Container {
 
     this.accuracyDisplay = new AccuracyDisplay();
 
+    // No-op when already loading or ready; retries when the bootstrap fetch errored.
+    void useResultStore.getState().fetchResults();
     this.updateScoreContent();
-    this.unsubscribeScore = useScoreManager.subscribe(() => {
+    this.unsubscribeScore = useResultStore.subscribe(() => {
       this.updateScoreContent();
     });
 
@@ -101,10 +103,10 @@ export class HelpPopup extends Container {
   }
 
   private updateScoreContent() {
-    const { correctCount, mistakeCount } = useScoreManager.getState();
+    const { correct, mistake } = selectResultTotals(useResultStore.getState().results);
 
-    this.scoreContent.text = formatScoreContent(correctCount, mistakeCount);
-    this.accuracyDisplay.update(correctCount, mistakeCount);
+    this.scoreContent.text = formatScoreContent(correct, mistake);
+    this.accuracyDisplay.update(correct, mistake);
   }
 
   /** Present the popup, animated */
