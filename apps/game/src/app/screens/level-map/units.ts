@@ -45,6 +45,7 @@ export type SplashColorScheme = {
 type TLevelBase = {
   id: number;
   title?: string;
+  /** Catalog availability; play-order locks live in `lib/progression`. */
   unlocked: boolean;
   mascot: TMascotAssets | null;
   screen?: LevelScreenConstructor;
@@ -124,30 +125,4 @@ export function findMapUnitForLevel(level: TLevel): TMapUnit {
     throw new Error(`No map unit found for level ${level.id}`);
   }
   return mapUnit;
-}
-
-export function getNextLevelAfter(
-  currentLevel: TLevel,
-): { mapUnit: TMapUnit; level: TLevel } | undefined {
-  const mapUnit = findMapUnitForLevel(currentLevel);
-  const currentLevelIndex = mapUnit.levels.findIndex((entry) => entry.id === currentLevel.id);
-
-  if (currentLevelIndex === -1) return;
-
-  const maps = getMapCollection(mapUnit);
-  let mapIndex = maps.findIndex((map) => map.id === mapUnit.id);
-  let nextLevelIndex = currentLevelIndex + 1;
-
-  while (mapIndex >= 0 && mapIndex < maps.length) {
-    const nextMapUnit = maps[mapIndex];
-    const nextLevel = nextMapUnit.levels
-      .slice(nextLevelIndex)
-      .find((level) => level.unlocked && level.screen);
-    if (nextLevel?.screen) {
-      return { mapUnit: nextMapUnit, level: nextLevel };
-    }
-
-    mapIndex += 1;
-    nextLevelIndex = 0;
-  }
 }

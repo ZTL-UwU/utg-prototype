@@ -9,6 +9,7 @@ import { LevelSplashScreen } from '../app/screens/level-splash';
 import { TypingTutorialScreen } from '../app/screens/typing-level/level-tutorial';
 import type { AppScreenConstructor, Navigation } from '../engine/navigation/navigation';
 import { ensureCourseReady } from '../zustandStores/courseStore';
+import { ensureResultsReady } from '../zustandStores/resultStore';
 
 type ScreenConstructor = AppScreenConstructor<any[]>;
 
@@ -126,6 +127,7 @@ class DebugScreenRouter {
       path !== ''
     ) {
       if (!(await ensureCourseReady())) return;
+      await ensureResultsReady();
     }
 
     const target = buildScreenRoutes().find((candidate) => candidate.path === path);

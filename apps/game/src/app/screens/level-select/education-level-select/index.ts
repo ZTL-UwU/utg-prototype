@@ -132,6 +132,15 @@ export class EducationLevelSelect extends Container {
     );
   }
 
+  /** Pooled screen: rebuild unit buttons so unlocks and rings match latest results. */
+  public reset() {
+    const index = this.getChildIndex(this.mapRow);
+    this.removeChild(this.mapRow);
+    this.mapRow.destroy({ children: true });
+    this.mapRow = new EducationMapRow();
+    this.addChildAt(this.mapRow, index);
+  }
+
   private updateNavButtons() {
     this.prevMapButton.visible = this.mapRow.hasPrev;
     this.nextMapButton.visible = this.mapRow.hasNext;

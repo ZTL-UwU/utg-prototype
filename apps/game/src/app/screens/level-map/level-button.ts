@@ -4,6 +4,7 @@ import { DropShadowFilter } from 'pixi-filters';
 import { Graphics, Texture, Text, type DestroyOptions } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { hasCompletedLevel, isLevelUnlocked } from '../../../lib/progression';
 import { useLevelProgress } from '../../../zustandStores/levelProgressStore';
 import { drawDashedRing, FILL_ANIM_DELAY, FILL_ANIM_DURATION } from '../../ui/dashed-ring';
 import { LevelSplashScreen } from '../level-splash';
@@ -22,20 +23,21 @@ export class LevelButton extends FancyButton {
   private currentFill = 0;
 
   constructor(level: TLevel, mapUnit: TMapUnit, idx: number) {
+    const unlocked = isLevelUnlocked(level);
     super({
       defaultView: Texture.from(
-        level.unlocked ? 'ui/map-button-unlocked.png' : 'ui/map-button-locked.svg',
+        unlocked ? 'ui/map-button-unlocked.png' : 'ui/map-button-locked.svg',
       ),
       anchor: 0.5,
       animations: {
-        hover: level.unlocked
+        hover: unlocked
           ? {
               props: { scale: { x: 1.1, y: 1.1 } },
               duration: 200,
             }
           : undefined,
       },
-      text: level.unlocked
+      text: unlocked
         ? new Text({
             text: String(idx),
             style: {
@@ -55,9 +57,9 @@ export class LevelButton extends FancyButton {
     };
 
     this.ring = new Graphics();
-    if (level.unlocked) {
+    if (unlocked) {
       const progress = useLevelProgress.getState();
-      this.currentFill = progress.isAttempted(mapUnit.type, level.id) ? 1 : 0;
+      this.currentFill = hasCompletedLevel(level.id) ? 1 : 0;
       drawDashedRing(this.ring, this.currentRadius, this.currentFill);
       this.addChild(this.ring);
 
@@ -120,6 +122,8 @@ export class LevelButton extends FancyButton {
         void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
         void engine().navigation.showScreen(LevelSplashScreen, { level, mapUnit });
       });
+    } else {
+      this.enabled = false;
     }
   }
 

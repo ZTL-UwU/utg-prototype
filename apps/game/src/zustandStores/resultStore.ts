@@ -21,12 +21,24 @@ interface ResultStore {
   results: LevelResult[];
   fetchResults: () => Promise<void>;
   /**
-   * Replace the list from a backend response. The level-result POST returns the
-   * user's whole history, so this is a wholesale swap, not a merge.
+   * Apply a server snapshot (GET `/list` or POST `/level-results`). Server rows win;
+   * local-only optimistic completions are kept until a later snapshot includes them.
    */
   setResults: (results: LevelResult[]) => void;
+  /** Optimistic completion so the next level can unlock before the POST returns. */
+  markCompleted: (levelId: number) => void;
+  hasCompletedLevel: (levelId: number) => boolean;
+  /** Put a failed fetch back to `idle` so the next `ensureResultsReady` retries it. */
+  clearError: () => void;
   /** Drop the previous session's results and allow a refetch. */
   clearResults: () => void;
+}
+
+/** Server snapshot plus any optimistic rows the snapshot does not yet contain. */
+function applyServerResults(server: LevelResult[], local: LevelResult[]): LevelResult[] {
+  const serverLevelIds = new Set(server.map((result) => result.level_id));
+  const optimisticOnly = local.filter((result) => !serverLevelIds.has(result.level_id));
+  return optimisticOnly.length === 0 ? server : [...server, ...optimisticOnly];
 }
 
 const useResultStore = create<ResultStore>((set, get) => ({
@@ -37,10 +49,11 @@ const useResultStore = create<ResultStore>((set, get) => ({
     const { status } = get();
     if (status === 'loading' || status === 'ready') return;
 
-    // User-scoped. error status to keep ensureResultsReady trying
-    // `syncResultsWithSession` resets it to idle on success
+    // Signed out is a known-empty history, not a failure: `error` is reserved for
+    // "could not find out", which is what the progression locks fall open on.
+    // `syncResultsWithSession` refetches once a session exists.
     if (!useAuthStore.getState().accessToken) {
-      set({ status: 'error', error: 'Not signed in', results: [] });
+      set({ status: 'ready', error: undefined, results: [] });
       return;
     }
 
@@ -49,16 +62,42 @@ const useResultStore = create<ResultStore>((set, get) => ({
       const results = await api<LevelResult[]>('/level-results/list');
       // A level-result POST may have landed mid-flight with fresher data; it wins.
       if (get().status !== 'loading') return;
-      set({ status: 'ready', error: undefined, results });
+      set({
+        status: 'ready',
+        error: undefined,
+        results: applyServerResults(results, get().results),
+      });
     } catch (err) {
       if (get().status !== 'loading') return;
       const message = err instanceof Error ? err.message : 'Failed to load level results';
-      set({ status: 'error', error: message, results: [] });
+      console.warn('Failed to load level results', err);
+      set({ status: 'error', error: message });
     }
   },
 
-  // Ready even if the bootstrap fetch failed: a successful POST is authoritative.
-  setResults: (results) => set({ status: 'ready', error: undefined, results }),
+  setResults: (results) =>
+    set({
+      status: 'ready',
+      error: undefined,
+      results: applyServerResults(results, get().results),
+    }),
+
+  markCompleted: (levelId) => {
+    if (get().results.some((result) => result.level_id === levelId)) return;
+    set((state) => ({
+      results: [
+        ...state.results,
+        { id: -levelId, level_id: levelId, star: 0, score: 0, correct: 0, mistake: 0 },
+      ],
+    }));
+  },
+
+  hasCompletedLevel: (levelId) => get().results.some((result) => result.level_id === levelId),
+
+  clearError: () => {
+    if (get().status !== 'error') return;
+    set({ status: 'idle', error: undefined });
+  },
 
   clearResults: () => set({ status: 'idle', error: undefined, results: [] }),
 }));
@@ -91,8 +130,15 @@ export function selectResultTotals(results: LevelResult[]): ResultTotals {
   return { totalStars, correct, mistake, accuracy: getAccuracyPercent(correct, mistake) };
 }
 
-/** Resolves when level results are loaded; false if the fetch failed or logged out. */
+/**
+ * Resolves when level results are loaded, false when the fetch failed. A previous
+ * failure is retried rather than cached, so one bad request cannot strand a player
+ * on empty progression for the rest of the session. Callers may ignore the result:
+ * `lib/progression` reads the store's status directly and falls open on a failure, so
+ * unknown progression never presents as locked content.
+ */
 export function ensureResultsReady(): Promise<boolean> {
+  useResultStore.getState().clearError();
   return ensureRemoteReady({
     getStatus: () => useResultStore.getState().status,
     subscribe: (listener) => useResultStore.subscribe((state) => listener(state.status)),

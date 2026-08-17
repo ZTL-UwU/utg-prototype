@@ -4,6 +4,7 @@ import { DropShadowFilter } from 'pixi-filters';
 import { Graphics, Text, Texture, type DestroyOptions } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { isMapUnitComplete, isMapUnitUnlocked } from '../../../../lib/progression';
 import { useLevelProgress } from '../../../../zustandStores/levelProgressStore';
 import { drawDashedRing, FILL_ANIM_DELAY, FILL_ANIM_DURATION } from '../../../ui/dashed-ring';
 import { LevelMapScreen } from '../../level-map';
@@ -14,14 +15,6 @@ const BUTTON_RADIUS = SIZE / 2;
 const RING_IDLE_RADIUS = BUTTON_RADIUS + 5;
 const RING_HOVER_RADIUS = BUTTON_RADIUS - 3;
 
-function isLevelComplete(mapUnit: TMapUnit) {
-  const progress = useLevelProgress.getState();
-  return (
-    mapUnit.levels.length > 0 &&
-    mapUnit.levels.every((game) => progress.isAttempted(mapUnit.type, game.id))
-  );
-}
-
 export class MapUnitButton extends FancyButton {
   private ring: Graphics;
   private ringAnimation?: AnimationPlaybackControls;
@@ -30,24 +23,31 @@ export class MapUnitButton extends FancyButton {
   private currentFill = 0;
 
   constructor(mapUnit: TMapUnit, index: number) {
+    const unlocked = isMapUnitUnlocked(mapUnit);
     super({
-      defaultView: Texture.from('ui/map-button-unlocked.png'),
+      defaultView: Texture.from(
+        unlocked ? 'ui/map-button-unlocked.png' : 'ui/map-button-locked.svg',
+      ),
       anchor: 0.5,
       animations: {
-        hover: {
-          props: { scale: { x: 1.1, y: 1.1 } },
-          duration: 200,
-        },
+        hover: unlocked
+          ? {
+              props: { scale: { x: 1.1, y: 1.1 } },
+              duration: 200,
+            }
+          : undefined,
       },
-      text: new Text({
-        text: String(index + 1),
-        style: {
-          fontFamily: 'Concert One',
-          fontSize: 110,
-          fontWeight: 'bold',
-          fill: 0x8b4513,
-        },
-      }),
+      text: unlocked
+        ? new Text({
+            text: String(index + 1),
+            style: {
+              fontFamily: 'Concert One',
+              fontSize: 110,
+              fontWeight: 'bold',
+              fill: 0x8b4513,
+            },
+          })
+        : undefined,
     });
 
     this.layout = {
@@ -57,8 +57,13 @@ export class MapUnitButton extends FancyButton {
     };
 
     this.ring = new Graphics();
+    if (!unlocked) {
+      this.enabled = false;
+      return;
+    }
+
     const progress = useLevelProgress.getState();
-    this.currentFill = isLevelComplete(mapUnit) ? 1 : 0;
+    this.currentFill = isMapUnitComplete(mapUnit) ? 1 : 0;
     drawDashedRing(this.ring, this.currentRadius, this.currentFill);
     this.addChild(this.ring);
 

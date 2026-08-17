@@ -226,11 +226,15 @@ export class HomeScreen extends Container {
 
   /** Hide screen with animations */
   public async hide(): Promise<void> {
-    await animate(
-      this.titleContainer,
-      { alpha: 0, y: -TITLE_ENTER_OFFSET },
-      { duration: 0.2, ease: 'backIn' },
-    );
+    await Promise.all([
+      animate(
+        this.titleContainer,
+        { alpha: 0, y: -TITLE_ENTER_OFFSET },
+        { duration: 0.2, ease: 'backIn' },
+      ),
+      animate(this.scriptButtonContainer, { alpha: 0 }, { duration: 0.2, ease: 'backIn' }),
+      animate(this.scriptButtonContainer, { y: 100 }, { duration: 0.2, ease: 'backIn' }),
+    ]);
   }
 
   /** Auto pause the app when window go out of focus */

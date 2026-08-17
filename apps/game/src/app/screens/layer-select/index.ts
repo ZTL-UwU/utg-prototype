@@ -3,9 +3,11 @@ import { animate } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { isLayerUnlocked } from '../../../lib/progression';
 import { getAvatarPath } from '../../../utils/avatars';
 import { useAuthStore } from '../../../zustandStores/auth';
 import { ensureCourseReady } from '../../../zustandStores/courseStore';
+import { ensureResultsReady } from '../../../zustandStores/resultStore';
 import { PassportPopup } from '../../popups/passport';
 import { UserStatsPopup } from '../../popups/user-stats';
 import { HomeScreen } from '../home';
@@ -19,7 +21,7 @@ export class LayerSelectScreen extends Container {
   private innerContainer: Container;
   private mapBackground: Sprite;
   private background: Sprite;
-  private layerButtons: FancyButton[];
+  private layerButtons: { button: FancyButton; layer: TLayer; unlockedIcon: Texture }[];
   private closeButton: FancyButton;
   private userStatsButton: FancyButton;
   private passportButton: FancyButton;
@@ -82,22 +84,22 @@ export class LayerSelectScreen extends Container {
     const buttonData: {
       icon: Texture;
       layout: { left: number; top: number };
-      screenType?: TLayer;
+      layer: TLayer;
     }[] = [
       {
         icon: Texture.from('layer-select/education-icon.png'),
         layout: { left: 252, top: 604 },
-        screenType: 'education',
+        layer: 'education',
       },
       {
         icon: Texture.from('layer-select/typing-icon.png'),
         layout: { left: 640, top: 345 },
-        screenType: 'typing',
+        layer: 'typing',
       },
       {
         icon: Texture.from('layer-select/game-icon.png'),
         layout: { left: 1028, top: 604 },
-        screenType: 'game',
+        layer: 'game',
       },
     ];
 
@@ -118,23 +120,23 @@ export class LayerSelectScreen extends Container {
         position: 'absolute',
         ...data.layout,
       };
-      if (data.screenType) {
-        const layer = data.screenType;
-        button.onPress.connect(() => {
-          void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-          void (async () => {
-            if (!(await ensureCourseReady())) return;
-            if (layer === 'education') {
-              await engine().navigation.showScreen(EducationLevelSelect);
-              return;
-            }
-            const firstMap = getLayerMaps(layer)[0];
-            if (!firstMap) return;
-            await engine().navigation.showScreen(LevelMapScreen, firstMap);
-          })();
-        });
-      }
-      return button;
+      const layer = data.layer;
+      button.onPress.connect(() => {
+        void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+        void (async () => {
+          if (!(await ensureCourseReady())) return;
+          await ensureResultsReady();
+          if (!isLayerUnlocked(layer)) return;
+          if (layer === 'education') {
+            await engine().navigation.showScreen(EducationLevelSelect);
+            return;
+          }
+          const firstMap = getLayerMaps(layer)[0];
+          if (!firstMap) return;
+          await engine().navigation.showScreen(LevelMapScreen, firstMap);
+        })();
+      });
+      return { button, layer, unlockedIcon: data.icon };
     });
 
     const avatarId = useAuthStore.getState().user?.avatar;
@@ -184,14 +186,28 @@ export class LayerSelectScreen extends Container {
       void engine().navigation.showPopup(PassportPopup);
     });
     this.innerContainer = new Container({ layout: true });
-    this.innerContainer.addChild(this.mapBackground, this.closeButton, ...this.layerButtons);
+    this.innerContainer.addChild(
+      this.mapBackground,
+      this.closeButton,
+      ...this.layerButtons.map(({ button }) => button),
+    );
 
     this.addChild(this.background, this.innerContainer, this.userStatsButton, this.passportButton);
+    this.refreshLayerLocks();
   }
 
   private refreshUserStatsAvatar() {
     const avatarId = useAuthStore.getState().user?.avatar;
     this.userStatsButton.defaultView = Texture.from(getAvatarPath(avatarId));
+  }
+
+  private refreshLayerLocks() {
+    const lockedIcon = Texture.from('layer-select/locked-icon.png');
+    for (const { button, layer, unlockedIcon } of this.layerButtons) {
+      const unlocked = isLayerUnlocked(layer);
+      button.defaultView = unlocked ? unlockedIcon : lockedIcon;
+      button.enabled = unlocked;
+    }
   }
 
   public resize(width: number, height: number) {
@@ -203,6 +219,9 @@ export class LayerSelectScreen extends Container {
 
   public async show() {
     this.refreshUserStatsAvatar();
+    if (!(await ensureCourseReady())) return;
+    await ensureResultsReady();
+    this.refreshLayerLocks();
     if (this.skipShowAnimation) return;
 
     const currentEngine = engine();
@@ -242,5 +261,6 @@ export class LayerSelectScreen extends Container {
 
   public async resume() {
     this.refreshUserStatsAvatar();
+    this.refreshLayerLocks();
   }
 }
