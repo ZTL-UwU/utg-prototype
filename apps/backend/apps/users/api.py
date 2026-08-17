@@ -181,6 +181,9 @@ def _has_three_consecutive_three_stars(user, layer: str) -> bool:
 
 
 def _grant_level_result_rewards(user, result: LevelResult, level: Level) -> list[int]:
+    if result.star <= 0:
+        return []
+
     types = [RewardType.LEVEL_COMPLETION_BADGE]
     if result.star == 3:
         types.append(RewardType.LEVEL_THREE_STARS_BADGE)
