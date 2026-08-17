@@ -7,7 +7,7 @@ import { useAuthStore } from './auth';
 /** Mirrors LevelResultOut from the backend `/level-results/list` endpoint. */
 export interface LevelResult {
   id: number;
-  level: number;
+  level_id: number;
   star: number;
   score: number;
   correct: number;
@@ -19,6 +19,11 @@ interface ResultStore {
   error?: string;
   results: LevelResult[];
   fetchResults: () => Promise<void>;
+  /**
+   * Replace the list from a backend response. The level-result POST returns the
+   * user's whole history, so this is a wholesale swap, not a merge.
+   */
+  setResults: (results: LevelResult[]) => void;
   /** Drop the previous session's results and allow a refetch. */
   clearResults: () => void;
 }
@@ -41,12 +46,18 @@ const useResultStore = create<ResultStore>((set, get) => ({
     set({ status: 'loading', error: undefined });
     try {
       const results = await api<LevelResult[]>('/level-results/list');
+      // A level-result POST may have landed mid-flight with fresher data; it wins.
+      if (get().status !== 'loading') return;
       set({ status: 'ready', error: undefined, results });
     } catch (err) {
+      if (get().status !== 'loading') return;
       const message = err instanceof Error ? err.message : 'Failed to load level results';
       set({ status: 'error', error: message, results: [] });
     }
   },
+
+  // Ready even if the bootstrap fetch failed: a successful POST is authoritative.
+  setResults: (results) => set({ status: 'ready', error: undefined, results }),
 
   clearResults: () => set({ status: 'idle', error: undefined, results: [] }),
 }));

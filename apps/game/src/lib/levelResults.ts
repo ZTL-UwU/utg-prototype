@@ -1,4 +1,5 @@
 import { useAuthStore } from '../zustandStores/auth';
+import useResultStore, { type LevelResult } from '../zustandStores/resultStore';
 import {
   ensureRewardsReady,
   resolveRewardsByIds,
@@ -16,18 +17,10 @@ export interface LevelResultIn {
   mistake: number;
 }
 
-interface LevelResultOut {
-  id: number;
-  level_id: number;
-  star: number;
-  score: number;
-  correct: number;
-  mistake: number;
-}
-
 /** Mirrors LevelResultCreateOut from the backend `/level-results` POST. */
 interface LevelResultCreateOut {
-  results: LevelResultOut[];
+  // The user's whole history, not just the row just created.
+  results: LevelResult[];
   // every reward this user owns, after this level
   reward_ids: number[];
   // only what this level earned
@@ -53,6 +46,8 @@ export async function submitLevelResult(result: LevelResultIn): Promise<LevelRes
     });
 
     useUserRewardStore.getState().syncRewards(submitted.reward_ids, submitted.new_reward_ids);
+    // Before the await, so the results land even if the reward catalog is slow.
+    useResultStore.getState().setResults(submitted.results);
 
     await ensureRewardsReady();
 
