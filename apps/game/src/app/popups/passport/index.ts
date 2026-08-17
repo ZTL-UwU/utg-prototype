@@ -26,6 +26,10 @@ import {
 const ENTER_OFFSET = 1000;
 const EXIT_OFFSET = 300;
 
+// Book interior the page contents are tuned for; below this they scale down.
+const DESIGN_WIDTH = 1150;
+const DESIGN_HEIGHT = 830;
+
 const LAYER_TITLES: Record<TLayer, string> = {
   education: 'EDUCATIONAL',
   typing: 'TYPING',
@@ -43,7 +47,7 @@ interface SpreadSpec {
   pages: [PageSpec, PageSpec];
 }
 
-/** One type per page. Typing has no completion page — postcards serve that role. */
+// One type per page. Typing has no completion page — postcards serve that role.
 const SPREADS: SpreadSpec[] = [
   {
     title: LAYER_TITLES.education,
@@ -80,7 +84,7 @@ const SPREADS: SpreadSpec[] = [
   },
 ];
 
-/** Owned per-level rewards, keyed for slot lookup. */
+// Owned per-level rewards, keyed for slot lookup.
 function indexLevelRewards(rewards: UserReward[]): Map<string, UserReward> {
   const byKey = new Map<string, UserReward>();
   for (const reward of rewards) {
@@ -97,7 +101,7 @@ function toSlot(reward: UserReward | undefined) {
   };
 }
 
-/** One row per unit, one slot per level in that unit. */
+// One row per unit, one slot per level in that unit.
 function buildLevelRows(
   layer: TLayer,
   type: RewardType,
@@ -116,7 +120,7 @@ function buildLevelRows(
   }));
 }
 
-/** The trophy has no level, so it gets one labelled row per layer. */
+// The trophy has no level, so it gets one labelled row per layer.
 function buildTrophyRows(rewards: UserReward[]): PassportRow[] {
   return TROPHY_LAYERS.map((layer) => ({
     label: LAYER_TITLES[layer],
@@ -146,16 +150,45 @@ function buildPage(spec: PageSpec, rewards: UserReward[], byKey: Map<string, Use
   });
 }
 
+// Flipping inside a wrapper keeps FancyButton's hit area valid.
+function createArrowView(flip: boolean) {
+  const texture = Texture.from('passport/next-arrow.png');
+  const arrow = new Sprite({
+    texture,
+    anchor: 0.5,
+    position: { x: texture.width / 2, y: texture.height / 2 },
+  });
+  arrow.scale.x = flip ? -1 : 1;
+
+  return new Container({ children: [arrow] });
+}
+
+function createArrowButton(flip: boolean) {
+  return new FancyButton({
+    defaultView: createArrowView(flip),
+    animations: {
+      hover: {
+        props: {
+          scale: { x: 1.1, y: 1.1 },
+        },
+        duration: 100,
+      },
+    },
+    anchor: 0.5,
+  });
+}
+
 export class PassportPopup extends Container {
   public static assetBundles = ['passport', REMOTE_REWARDS_BUNDLE];
   private dismissOverlay: Sprite;
   private passportContainer: Container;
   private spread: Container;
+  private prevButton: FancyButton;
   private nextButton: FancyButton;
   private titleText: Text;
   private spreadIndex = 0;
   private pages: PassportPage[] = [];
-  /** Resting y of the book, set by resize(). The slide animates to and from it. */
+  // Resting y of the book, set by resize(). The slide animates to and from it.
   private restingY = 0;
 
   constructor() {
@@ -179,29 +212,21 @@ export class PassportPopup extends Container {
     });
     // Absorbs taps on the book so they never reach the overlay behind it.
     passportBackground.eventMode = 'static';
-    this.nextButton = new FancyButton({
-      defaultView: Texture.from('passport/next-arrow.png'),
-      animations: {
-        hover: {
-          props: {
-            scale: { x: 1.1, y: 1.1 },
-          },
-          duration: 100,
-        },
-      },
-      anchor: 0.5,
-    });
+    this.prevButton = createArrowButton(true);
+    this.prevButton.layout = {
+      position: 'absolute',
+      bottom: '10%',
+      left: '5%',
+    };
+    this.prevButton.onPress.connect(() => this.goToSpread(-1));
+
+    this.nextButton = createArrowButton(false);
     this.nextButton.layout = {
       position: 'absolute',
       bottom: '10%',
       right: '5%',
     };
-    this.nextButton.onPress.connect(() => {
-      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      this.spreadIndex = (this.spreadIndex + 1) % SPREADS.length;
-      this.buildSpread();
-      this.playNewRewardAnimations();
-    });
+    this.nextButton.onPress.connect(() => this.goToSpread(1));
     this.titleText = new Text({
       text: SPREADS[0].title,
       style: {
@@ -235,13 +260,22 @@ export class PassportPopup extends Container {
       passportBackground,
       this.spread,
       this.titleText,
+      this.prevButton,
       this.nextButton,
     );
 
     this.addChild(this.dismissOverlay, this.passportContainer);
   }
 
-  /** Rebuild both pages of the current spread from the store. */
+  // Pages by `delta`, wrapping in both directions.
+  private goToSpread(delta: number) {
+    void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+    this.spreadIndex = (this.spreadIndex + delta + SPREADS.length) % SPREADS.length;
+    this.buildSpread();
+    this.playNewRewardAnimations();
+  }
+
+  // Rebuild both pages of the current spread from the store.
   private buildSpread() {
     for (const page of this.pages) {
       page.stopAnimations();
@@ -303,8 +337,19 @@ export class PassportPopup extends Container {
     this.dismissOverlay.width = width;
     this.dismissOverlay.height = height;
 
+    const bookWidth = width * 0.6;
+    const bookHeight = height * 0.8;
+    // Page contents are fixed-pixel, so shrink the book interior instead of overflowing it.
+    const uiScale = Math.min(bookWidth / DESIGN_WIDTH, bookHeight / DESIGN_HEIGHT, 1);
+
     this.restingY = height * 0.1;
-    this.passportContainer.layout = { width: width * 0.6, height: height * 0.8 };
+    // Layout runs in unscaled units; origin 0 scales from the top-left so the book stays centred.
+    this.passportContainer.scale.set(uiScale);
+    this.passportContainer.layout = {
+      width: bookWidth / uiScale,
+      height: bookHeight / uiScale,
+      transformOrigin: 0,
+    };
     this.passportContainer.position.set(width * 0.2, this.restingY);
   }
 }
