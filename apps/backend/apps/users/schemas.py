@@ -30,8 +30,6 @@ class UserOut(Schema):
     id: int
     name: str | None
     email: str
-    total_score: int
-    total_stars: int
 
 
 class LoginTokenPairOut(Schema):

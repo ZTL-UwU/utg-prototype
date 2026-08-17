@@ -72,8 +72,6 @@ class Reward(AuditingMixin, models.Model):
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=255, null=True, blank=True)
-    total_score = models.PositiveIntegerField(default=0)
-    total_stars = models.PositiveIntegerField(default=0)
     rewards = models.ManyToManyField(
         Reward,
         through="UserReward",
