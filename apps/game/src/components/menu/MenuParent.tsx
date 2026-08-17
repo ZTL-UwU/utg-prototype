@@ -2,12 +2,12 @@ import { useState } from 'react';
 
 import { Card } from '../ui/Card';
 import { MenuHomeScreen } from './screens';
-import { MenuAboutScreen } from './screens/about';
 import { MenuAlphabetScreen } from './screens/alphabet';
 import { MenuConverterScreen } from './screens/converter';
-import { MenuReferencesScreen } from './screens/references';
+import { MenuProjectScreen } from './screens/project';
+import { MenuTeamScreen } from './screens/team';
 
-export type MenuView = 'home' | 'about' | 'reference' | 'alphabet' | 'converter';
+export type MenuView = 'home' | 'alphabet' | 'converter' | 'project' | 'team';
 
 export function MenuParent() {
   const [view, setView] = useState<MenuView>('home');
@@ -17,24 +17,20 @@ export function MenuParent() {
       case 'home':
         return (
           <MenuHomeScreen
-            onAbout={() => setView('about')}
-            onReference={() => setView('reference')}
-          />
-        );
-      case 'about':
-        return <MenuAboutScreen onBack={() => setView('home')} />;
-      case 'reference':
-        return (
-          <MenuReferencesScreen
-            onBack={() => setView('home')}
             onAlphabet={() => setView('alphabet')}
             onConverter={() => setView('converter')}
+            onProject={() => setView('project')}
+            onTeam={() => setView('team')}
           />
         );
       case 'alphabet':
-        return <MenuAlphabetScreen onBack={() => setView('reference')} />;
+        return <MenuAlphabetScreen onBack={() => setView('home')} />;
       case 'converter':
-        return <MenuConverterScreen onBack={() => setView('reference')} />;
+        return <MenuConverterScreen onBack={() => setView('home')} />;
+      case 'project':
+        return <MenuProjectScreen onBack={() => setView('home')} />;
+      case 'team':
+        return <MenuTeamScreen onBack={() => setView('home')} />;
       default:
         return null;
     }
@@ -45,7 +41,7 @@ export function MenuParent() {
       className={
         view === 'alphabet'
           ? 'max-w-5xl justify-start overflow-hidden'
-          : view === 'converter'
+          : view === 'converter' || view === 'project' || view === 'team'
             ? 'justify-start overflow-hidden px-10 md:px-16'
             : undefined
       }
