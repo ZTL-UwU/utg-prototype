@@ -247,9 +247,16 @@ def create_level_result(request, payload: LevelResultIn):
             correct=payload.correct,
             mistake=payload.mistake,
         )
-        result.new_reward_ids = _grant_level_result_rewards(request.auth, result, level)
+        new_reward_ids = _grant_level_result_rewards(request.auth, result, level)
 
-    return Status(201, result)
+    return Status(
+        201,
+        {
+            "results": list(request.auth.level_results.all()),
+            "reward_ids": list(request.auth.rewards.order_by("id").values_list("id", flat=True)),
+            "new_reward_ids": new_reward_ids,
+        },
+    )
 
 
 @router.get(

@@ -135,28 +135,21 @@ class LevelResultIn(Schema):
 
 class LevelResultOut(AuditingOut):
     id: int
-    level: int
+    level_id: int
     star: int
     score: int
     correct: int
     mistake: int
 
     @staticmethod
-    def resolve_level(obj):
+    def resolve_level_id(obj):
         return obj.level_id
 
 
-class LevelResultCreateOut(LevelResultOut):
+class LevelResultCreateOut(Schema):
+    results: list[LevelResultOut]
     reward_ids: list[int]
     new_reward_ids: list[int]
-
-    @staticmethod
-    def resolve_reward_ids(obj) -> list[int]:
-        return list(obj.user.rewards.order_by("id").values_list("id", flat=True))
-
-    @staticmethod
-    def resolve_new_reward_ids(obj) -> list[int]:
-        return getattr(obj, "new_reward_ids", [])
 
 
 class ErrorOut(Schema):
