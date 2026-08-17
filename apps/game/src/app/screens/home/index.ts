@@ -213,10 +213,14 @@ export class HomeScreen extends Container {
     this.butterfly.alpha = 0;
     this.titleContainer.alpha = 0;
     this.titleContainer.y = TITLE_ENTER_OFFSET;
+    this.scriptButtonContainer.alpha = 0;
+    this.scriptButtonContainer.y = 100;
 
     await Promise.all([
       animate(this.butterfly, { alpha: 1 }, { duration: 0.5, ease: 'easeOut' }),
       animate(this.titleContainer, { alpha: 1, y: 0 }, { duration: 0.45, ease: 'backOut' }),
+      animate(this.scriptButtonContainer, { alpha: 1 }, { duration: 0.45, ease: 'easeOut' }),
+      animate(this.scriptButtonContainer, { y: 0 }, { duration: 0.45, ease: 'backOut' }),
     ]);
   }
 

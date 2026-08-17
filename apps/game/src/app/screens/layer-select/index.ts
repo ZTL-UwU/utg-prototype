@@ -176,7 +176,7 @@ export class LayerSelectScreen extends Container {
     });
     this.passportButton.layout = {
       position: 'absolute',
-      top: 300,
+      top: 320,
       right: 120,
     };
     this.passportButton.onPress.connect(() => {
@@ -234,6 +234,8 @@ export class LayerSelectScreen extends Container {
       animate(this.innerContainer.scale, { x: 0.94, y: 0.94 }, { duration, ease: 'easeOut' }),
       animate(this.userStatsButton, { alpha: 0 }, { duration, ease: 'easeOut' }),
       animate(this.userStatsButton.position, { x: 200 }, { duration, ease: 'easeOut' }),
+      animate(this.passportButton, { alpha: 0 }, { duration, ease: 'easeOut' }),
+      animate(this.passportButton.position, { x: 200 }, { duration, ease: 'easeOut' }),
       animate(this.background, { alpha: 1 }, { duration, ease: 'easeOut' }),
     ]);
   }
