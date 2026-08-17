@@ -5,8 +5,6 @@ export type AuthUser = {
   id: number;
   name: string | null;
   email: string;
-  total_score: number;
-  total_stars: number;
   /**
    * Chosen avatar as an integer id (see `src/utils/avatars.ts`). `null` until the user picks
    * one on the avatar-select screen; consumers should fall back to `DEFAULT_AVATAR_ID`.

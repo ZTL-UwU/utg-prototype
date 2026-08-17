@@ -5,8 +5,6 @@ export type AuthUser = {
   id: number;
   name: string | null;
   email: string;
-  total_score: number;
-  total_stars: number;
 };
 
 type AuthState = {
