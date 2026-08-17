@@ -34,11 +34,12 @@ export type LevelResultOutcome =
 
 /**
  * Record a completed level and take ownership of whatever it earned. Never throws.
- * Marks the level complete immediately so the next one can unlock, then replaces
- * that stub with the POST's full result list when the server answers.
+ * A 0-star finish is still stored for stats, but does not mark the level complete
+ * or unlock the next one. Starred finishes unlock immediately, then the POST's
+ * full result list replaces that stub when the server answers.
  */
 export async function submitLevelResult(result: LevelResultIn): Promise<LevelResultOutcome> {
-  useResultStore.getState().markCompleted(result.level);
+  useResultStore.getState().markCompleted(result.level, result.star);
 
   // Authenticated: a 401 inside `api` can clear the session without retrying.
   if (!useAuthStore.getState().accessToken) {

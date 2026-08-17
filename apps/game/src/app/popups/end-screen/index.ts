@@ -160,9 +160,11 @@ export class EndScreenPopup extends Container {
     const progress = useLevelProgress.getState();
     const mapUnit = findMapUnitForLevel(level);
     const layer = mapUnit.type;
-    progress.markAttempted(layer, level.id);
-    if (mapUnit.type === 'education' && isMapUnitComplete(mapUnit)) {
-      progress.queueMapUnitAnimation(mapUnit.type, mapUnit.id);
+    if (starCount > 0) {
+      progress.markAttempted(layer, level.id);
+      if (mapUnit.type === 'education' && isMapUnitComplete(mapUnit)) {
+        progress.queueMapUnitAnimation(mapUnit.type, mapUnit.id);
+      }
     }
     if (mapUnit.type === 'typing') {
       const slug = toPostcardSlug(level.title);

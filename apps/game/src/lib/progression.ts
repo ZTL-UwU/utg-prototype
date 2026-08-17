@@ -36,7 +36,7 @@ export function hasCompletedLevel(levelId: number): boolean {
   return useResultStore.getState().hasCompletedLevel(levelId);
 }
 
-/** True when every playable level in the layer has a recorded result. */
+/** True when every playable level in the layer has a starred result. */
 export function isLayerComplete(layer: TLayer): boolean {
   const levels = playableLevelsInLayer(layer);
   return levels.length > 0 && levels.every((level) => hasCompletedLevel(level.id));

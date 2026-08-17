@@ -26,7 +26,7 @@ interface ResultStore {
    */
   setResults: (results: LevelResult[]) => void;
   /** Optimistic completion so the next level can unlock before the POST returns. */
-  markCompleted: (levelId: number) => void;
+  markCompleted: (levelId: number, star: number) => void;
   hasCompletedLevel: (levelId: number) => boolean;
   /** Put a failed fetch back to `idle` so the next `ensureResultsReady` retries it. */
   clearError: () => void;
@@ -82,17 +82,18 @@ const useResultStore = create<ResultStore>((set, get) => ({
       results: applyServerResults(results, get().results),
     }),
 
-  markCompleted: (levelId) => {
-    if (get().results.some((result) => result.level_id === levelId)) return;
+  markCompleted: (levelId, star) => {
+    if (star <= 0 || get().hasCompletedLevel(levelId)) return;
     set((state) => ({
       results: [
         ...state.results,
-        { id: -levelId, level_id: levelId, star: 0, score: 0, correct: 0, mistake: 0 },
+        { id: -levelId, level_id: levelId, star, score: 0, correct: 0, mistake: 0 },
       ],
     }));
   },
 
-  hasCompletedLevel: (levelId) => get().results.some((result) => result.level_id === levelId),
+  hasCompletedLevel: (levelId) =>
+    get().results.some((result) => result.level_id === levelId && result.star > 0),
 
   clearError: () => {
     if (get().status !== 'error') return;
