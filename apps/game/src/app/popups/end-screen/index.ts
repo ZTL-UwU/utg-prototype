@@ -5,18 +5,15 @@ import { BlurFilter, Container, Graphics, Sprite, Text, TextStyle, Texture } fro
 import { engine } from '../../../engine/getEngine';
 import { waitFor } from '../../../engine/utils/waitFor';
 import { submitLevelResult, type LevelResultOutcome } from '../../../lib/levelResults';
+import { getNextLevelAfter, isMapUnitComplete } from '../../../lib/progression';
 import { useLevelProgress } from '../../../zustandStores/levelProgressStore';
 import { REMOTE_REWARDS_BUNDLE, resolveRewardsByIds } from '../../../zustandStores/rewardStore';
 import { getStarCount } from '../../../zustandStores/scoreManager';
 import useSessionStore from '../../../zustandStores/sessionStore';
 import { useUserRewardStore } from '../../../zustandStores/userRewardStore';
 import { LevelMapScreen } from '../../screens/level-map';
+import { findMapUnitForLevel, REMOTE_MASCOTS_BUNDLE } from '../../screens/level-map/units';
 import type { TLayer, TLevel } from '../../screens/level-map/units';
-import {
-  findMapUnitForLevel,
-  getNextLevelAfter,
-  REMOTE_MASCOTS_BUNDLE,
-} from '../../screens/level-map/units';
 import { LevelSplashScreen } from '../../screens/level-splash';
 import { BackButton } from '../../ui/back-button';
 import { NextButton } from '../../ui/next-button';
@@ -164,15 +161,10 @@ export class EndScreenPopup extends Container {
     const mapUnit = findMapUnitForLevel(level);
     const layer = mapUnit.type;
     progress.markAttempted(layer, level.id);
-    if (mapUnit?.type === 'education') {
-      const unitComplete =
-        mapUnit.levels.length > 0 &&
-        mapUnit.levels.every((game) => progress.isAttempted(mapUnit.type, game.id));
-      if (unitComplete) {
-        progress.queueMapUnitAnimation(mapUnit.type, mapUnit.id);
-      }
+    if (mapUnit.type === 'education' && isMapUnitComplete(mapUnit)) {
+      progress.queueMapUnitAnimation(mapUnit.type, mapUnit.id);
     }
-    if (mapUnit?.type === 'typing') {
+    if (mapUnit.type === 'typing') {
       const slug = toPostcardSlug(level.title);
       if (slug && hasPostcard(slug)) {
         this.postcardSlug = slug;

@@ -4,6 +4,7 @@ import { DropShadowFilter } from 'pixi-filters';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { isMapUnitUnlocked } from '../../../lib/progression';
 import { convertToCurrentScript, getScriptFontFamily } from '../../../utils/script';
 import { HUD } from '../../ui/hud';
 import { LayerSelectScreen } from '../layer-select';
@@ -149,10 +150,15 @@ export class LevelMapScreen extends Container {
     const nextMap = getNextMap(mapUnit);
     if (nextMap) {
       this.nextMapButton = createMapNavButton('>>');
-      this.nextMapButton.onPress.connect(() => {
-        void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-        void engine().navigation.showScreen(LevelMapScreen, nextMap);
-      });
+      if (isMapUnitUnlocked(nextMap)) {
+        this.nextMapButton.onPress.connect(() => {
+          void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+          void engine().navigation.showScreen(LevelMapScreen, nextMap);
+        });
+      } else {
+        this.nextMapButton.alpha = 0.45;
+        this.nextMapButton.enabled = false;
+      }
     }
 
     this.addChild(

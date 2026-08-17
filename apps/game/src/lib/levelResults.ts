@@ -32,8 +32,14 @@ export type LevelResultOutcome =
   | { status: 'skipped' }
   | { status: 'failed'; error: unknown };
 
-/** Record a completed level and take ownership of whatever it earned. Never throws. */
+/**
+ * Record a completed level and take ownership of whatever it earned. Never throws.
+ * Marks the level complete immediately so the next one can unlock, then replaces
+ * that stub with the POST's full result list when the server answers.
+ */
 export async function submitLevelResult(result: LevelResultIn): Promise<LevelResultOutcome> {
+  useResultStore.getState().markCompleted(result.level);
+
   // Authenticated: a 401 inside `api` can clear the session without retrying.
   if (!useAuthStore.getState().accessToken) {
     return { status: 'skipped' };
@@ -45,9 +51,9 @@ export async function submitLevelResult(result: LevelResultIn): Promise<LevelRes
       body: result,
     });
 
-    useUserRewardStore.getState().syncRewards(submitted.reward_ids, submitted.new_reward_ids);
     // Before the await, so the results land even if the reward catalog is slow.
     useResultStore.getState().setResults(submitted.results);
+    useUserRewardStore.getState().syncRewards(submitted.reward_ids, submitted.new_reward_ids);
 
     await ensureRewardsReady();
 
