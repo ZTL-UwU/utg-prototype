@@ -18,6 +18,16 @@ export interface LevelResultIn {
 
 interface LevelResultOut {
   id: number;
+  level_id: number;
+  star: number;
+  score: number;
+  correct: number;
+  mistake: number;
+}
+
+/** Mirrors LevelResultCreateOut from the backend `/level-results` POST. */
+interface LevelResultCreateOut {
+  results: LevelResultOut[];
   // every reward this user owns, after this level
   reward_ids: number[];
   // only what this level earned
@@ -37,7 +47,7 @@ export async function submitLevelResult(result: LevelResultIn): Promise<LevelRes
   }
 
   try {
-    const submitted = await api<LevelResultOut>('/level-results', {
+    const submitted = await api<LevelResultCreateOut>('/level-results', {
       method: 'POST',
       body: result,
     });
