@@ -20,6 +20,7 @@ import {
 import { LevelSplashScreen } from '../../screens/level-splash';
 import { BackButton } from '../../ui/back-button';
 import { NextButton } from '../../ui/next-button';
+import { RetryButton } from '../../ui/retry-button';
 import { PassportPopup } from '../passport';
 import { hasPostcard, PostcardPopup, toPostcardSlug } from '../postcard';
 import { RewardCelebration } from './reward-celebration';
@@ -93,6 +94,14 @@ function goToLevelMap(level: TLevel) {
   void engine()
     .navigation.hidePopup()
     .then(() => engine().navigation.showScreen(LevelMapScreen, mapUnit));
+}
+
+/** Replays the level just finished. The splash's START handler re-starts the session. */
+function goToRetryLevel(level: TLevel) {
+  const mapUnit = findMapUnitForLevel(level);
+  void engine()
+    .navigation.hidePopup()
+    .then(() => engine().navigation.showScreen(LevelSplashScreen, { level, mapUnit }));
 }
 
 function goToNextLevel(nextLevel: NonNullable<ReturnType<typeof getNextLevelAfter>>) {
@@ -271,6 +280,9 @@ export class EndScreenPopup extends Container {
     backButton.anchor.set(0, 0);
     backButton.scale.set(0.7);
 
+    const retryButton = new RetryButton(() => goToRetryLevel(level));
+    retryButton.scale.set(0.7);
+
     const nextLevel = getNextLevelAfter(level);
     const nextButton = new NextButton(() => {
       if (nextLevel) goToNextLevel(nextLevel);
@@ -306,6 +318,7 @@ export class EndScreenPopup extends Container {
       this.contentContainer,
       ...(mascot ? [mascot] : []),
       backButton,
+      retryButton,
       nextButton,
     );
 
