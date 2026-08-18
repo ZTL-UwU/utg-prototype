@@ -111,7 +111,13 @@ class RewardBulkOut(Schema):
 class RewardSimpleOut(Schema):
     id: int
     type: str
+    layer: str
+    level: int | None
     image_url: str
+
+    @staticmethod
+    def resolve_level(obj) -> int | None:
+        return obj.level_id
 
     @staticmethod
     def resolve_image_url(obj) -> str:
