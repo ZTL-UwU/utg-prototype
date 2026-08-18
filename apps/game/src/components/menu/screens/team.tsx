@@ -98,9 +98,9 @@ export function MenuTeamScreen({ onBack }: MenuTeamScreenProps) {
       <h2 className="absolute top-4 right-14 left-14 flex h-10 items-center justify-center font-display text-3xl font-bold tracking-wide text-forest uppercase">
         Team
       </h2>
-      <div className="min-h-0 flex-1 overflow-y-auto py-2">
+      <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto py-2">
         <div className="flex min-h-full items-center justify-center">
-          <div className="grid w-full grid-cols-2 gap-4">
+          <div className="grid w-full grid-cols-2 gap-4 px-2">
             {TEAM.map((member) => (
               <button
                 type="button"
