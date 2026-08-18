@@ -1,11 +1,15 @@
+import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
 import { BlurFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { getAvatarPath } from '../../../utils/avatars';
 import { useAuthStore } from '../../../zustandStores/auth';
+import { useLevelProgress } from '../../../zustandStores/levelProgressStore';
 import useResultStore, { selectResultTotals } from '../../../zustandStores/resultStore';
+import { useUserRewardStore } from '../../../zustandStores/userRewardStore';
 import { AvatarSelectScreen } from '../../screens/avatar-select';
+import { AuthScreen } from '../../screens/home/auth';
 import { BackButton } from '../../ui/back-button';
 
 const POPUP_WIDTH = 1481;
@@ -38,6 +42,16 @@ const SECTION_TITLE_STYLE = {
   fontSize: 45,
   fontWeight: 'bold' as const,
   fill: VALUE_COLOR,
+} as const;
+
+const LOGOUT_BUTTON_WIDTH = 190;
+const LOGOUT_BUTTON_HEIGHT = 62;
+
+const LOGOUT_LABEL_STYLE = {
+  fontFamily: 'Concert One',
+  fontSize: 30,
+  fontWeight: 'bold' as const,
+  fill: 0xfdf7e7,
 } as const;
 
 function createStatRow(label: string, valueText: Text) {
@@ -93,6 +107,34 @@ export class UserStatsPopup extends Container {
       layout: true,
     });
 
+    const logoutButton = new FancyButton({
+      defaultView: new Graphics()
+        .roundRect(0, 0, LOGOUT_BUTTON_WIDTH, LOGOUT_BUTTON_HEIGHT, 20)
+        .fill(0xd89456),
+      text: new Text({ text: 'Logout', style: LOGOUT_LABEL_STYLE }),
+      animations: {
+        hover: {
+          props: { scale: { x: 1.1, y: 1.1 } },
+          duration: 100,
+        },
+        pressed: {
+          props: { scale: { x: 0.97, y: 0.97 } },
+          duration: 100,
+        },
+      },
+      anchor: 0.5,
+    });
+    logoutButton.layout = {
+      width: LOGOUT_BUTTON_WIDTH,
+      height: LOGOUT_BUTTON_HEIGHT,
+      marginLeft: 20,
+      isLeaf: true,
+    };
+    logoutButton.onPress.connect(() => {
+      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+      void this.logout();
+    });
+
     const header = new Container({
       layout: {
         display: 'flex',
@@ -100,7 +142,7 @@ export class UserStatsPopup extends Container {
         alignItems: 'center',
         gap: 20,
       },
-      children: [this.profileIcon, userName],
+      children: [this.profileIcon, userName, logoutButton],
     });
 
     this.totalStarsValue = new Text({ text: '0', style: VALUE_STYLE, layout: true });
@@ -205,6 +247,18 @@ export class UserStatsPopup extends Container {
     this.averageAccuracyValue.text = `${accuracy}%`;
     this.correctAttemptsValue.text = String(correct);
     this.incorrectAttemptsValue.text = String(mistake);
+  }
+
+  private async logout() {
+    // Dismiss first: hide() unwinds the blur on `navigation.currentScreen`, which is the
+    // wrong screen once showScreen has swapped it.
+    await engine().navigation.hidePopup();
+
+    useAuthStore.getState().clearTokens();
+    useUserRewardStore.getState().clearRewards();
+    useLevelProgress.getState().resetAllAttempts();
+
+    await engine().navigation.showScreen(AuthScreen);
   }
 
   private refreshAvatar() {
