@@ -13,16 +13,18 @@ const LABELS: Record<ORTHO_ENUM, string> = {
 const RADIUS = 18;
 const FILL_COLOR = 0xff914d;
 const ACTIVE_FILL_COLOR = 0xffde59;
+const DISABLED_FILL_COLOR = 0x627065;
 
 export class ScriptButton extends FancyButton {
   private bg: Graphics;
   private script: ORTHO_ENUM;
   private unsubscribe: () => void;
   private onSelected: () => void;
+  private disabled: boolean;
   public static BTN_WIDTH = 240; // larger
   public static BTN_HEIGHT = 90; // larger
 
-  constructor(script: ORTHO_ENUM, onSelected: () => void) {
+  constructor(script: ORTHO_ENUM, onSelected: () => void, disabled = false) {
     const label = new HTMLText({
       text: LABELS[script],
       style: {
@@ -38,25 +40,32 @@ export class ScriptButton extends FancyButton {
     // draw geometry early so FancyButton measures real bounds
     const bg = new Graphics()
       .roundRect(0, 0, ScriptButton.BTN_WIDTH, ScriptButton.BTN_HEIGHT, RADIUS)
-      .fill(FILL_COLOR);
+      .fill(disabled ? DISABLED_FILL_COLOR : FILL_COLOR);
 
     super({
       defaultView: bg,
       text: label,
       textOffset: { x: 0, y: 8 }, // lazy center hack
-      animations: {
-        hover: { props: { scale: { x: 1.05, y: 1.05 } }, duration: 100 },
-        pressed: { props: { scale: { x: 0.97, y: 0.97 } }, duration: 100 },
-      },
+      animations: disabled
+        ? undefined
+        : {
+            hover: { props: { scale: { x: 1.05, y: 1.05 } }, duration: 100 },
+            pressed: { props: { scale: { x: 0.97, y: 0.97 } }, duration: 100 },
+          },
       anchor: 0.5,
     });
 
     this.script = script;
     this.bg = bg;
-    this.paint(scriptState.getState().currentScript);
+    this.disabled = disabled;
     this.onSelected = onSelected;
+    this.enabled = !disabled;
+    this.cursor = disabled ? 'default' : 'pointer';
+    this.alpha = disabled ? 0.85 : 1;
+    this.paint(scriptState.getState().currentScript);
 
     this.onPress.connect(() => {
+      if (this.disabled) return;
       const { currentScript, setCurrentScript } = scriptState.getState();
       if (currentScript !== this.script) {
         setCurrentScript(this.script);
@@ -68,11 +77,11 @@ export class ScriptButton extends FancyButton {
   }
 
   private paint(currentScript: ORTHO_ENUM) {
-    const isActive = currentScript === this.script;
+    const isActive = !this.disabled && currentScript === this.script;
     this.bg
       .clear()
       .roundRect(0, 0, ScriptButton.BTN_WIDTH, ScriptButton.BTN_HEIGHT, RADIUS)
-      .fill(isActive ? ACTIVE_FILL_COLOR : FILL_COLOR);
+      .fill(this.disabled ? DISABLED_FILL_COLOR : isActive ? ACTIVE_FILL_COLOR : FILL_COLOR);
   }
 
   destroy(options?: Parameters<FancyButton['destroy']>[0]) {

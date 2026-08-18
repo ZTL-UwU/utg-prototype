@@ -67,13 +67,50 @@ export class HomeScreen extends Container {
       },
     });
 
-    const scripts: ORTHO_ENUM[] = ['Arabic', 'Cyrillic', 'Latin'];
+    const scripts: ORTHO_ENUM[] = ['Arabic', 'Latin', 'Cyrillic'];
     for (const s of scripts) {
-      const btn = new ScriptButton(s, () => {
-        void this.start(s);
-      });
+      const disabled = s === 'Cyrillic';
+      const btn = new ScriptButton(
+        s,
+        () => {
+          void this.start(s);
+        },
+        disabled,
+      );
       btn.layout = { width: ScriptButton.BTN_WIDTH, height: ScriptButton.BTN_HEIGHT, isLeaf: true };
-      this.scriptButtonContainer.addChild(btn);
+
+      if (!disabled) {
+        this.scriptButtonContainer.addChild(btn);
+        continue;
+      }
+
+      const disabledButtonWrap = new Container({
+        layout: {
+          width: ScriptButton.BTN_WIDTH,
+          height: ScriptButton.BTN_HEIGHT,
+          position: 'relative',
+        },
+      });
+      const comingSoon = new Text({
+        text: 'Coming soon!',
+        style: {
+          fill: 0x284937,
+          fontFamily: 'Concert One',
+          fontSize: 32,
+          fontWeight: 'bold',
+          align: 'center',
+        },
+      });
+      comingSoon.eventMode = 'none';
+      comingSoon.layout = {
+        position: 'absolute',
+        left: 0,
+        width: '100%',
+        top: -36,
+        isLeaf: true,
+      };
+      disabledButtonWrap.addChild(comingSoon, btn);
+      this.scriptButtonContainer.addChild(disabledButtonWrap);
     }
 
     const textDropShadow: Partial<TextDropShadow> = {
