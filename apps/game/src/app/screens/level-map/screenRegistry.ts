@@ -1,26 +1,26 @@
 import { type LevelTypeId } from '@utg/level-types';
 
-import { EducationLevelScreen } from '../education-level/level-1';
-import { EducationBubbleScreen } from '../education-level/level-2';
-import { EducationSheepScreen } from '../education-level/level-3';
-import { EducationImageScreen } from '../education-level/level-4';
-import { EducationWordScreen } from '../education-level/level-5';
-import { EducationSheepJumpScreen } from '../education-level/level-6';
-import { EducationWhackAMoleScreen } from '../education-level/level-7';
-import { GameLevelOneScreen } from '../game-level/level-1';
-import { GameNaanStackScreen } from '../game-level/level-2';
+import { EducationBubbleScreen } from '../education-level/level-bubble';
+import { EducationImageScreen } from '../education-level/level-image';
+import { EducationLevelScreen } from '../education-level/level-letter-grid';
+import { EducationSheepScreen } from '../education-level/level-sheep';
+import { EducationSheepJumpScreen } from '../education-level/level-sheep-jump';
+import { EducationWhackAMoleScreen } from '../education-level/level-whack-a-mole';
+import { EducationWordScreen } from '../education-level/level-word';
 import { GameLevelFlying } from '../game-level/level-flying';
-import { GameLevelFruitScreen } from '../game-level/level-fruit';
+import { GameLevelFruitScreen } from '../game-level/level-fruit-fall';
 import { GameLevelKite } from '../game-level/level-kite';
+import { GameNaanStackScreen } from '../game-level/level-naan-stack';
 import { GameLevelSki } from '../game-level/level-ski';
+import { GameLevelOneScreen } from '../game-level/level-tandoor-rush';
 import { GameLevelTrout } from '../game-level/level-trout';
-import { TypingLevelScreen } from '../typing-level/level-1';
-import { TypingSandstormScreen } from '../typing-level/level-2';
-import { TypingInstrumentScreen } from '../typing-level/level-3';
-import { TypingWordScreen } from '../typing-level/level-4';
-import { TypingMarketScreen } from '../typing-level/level-5';
-import { TypingSentenceScreen } from '../typing-level/level-6';
-import { TypingGoatsScreen } from '../typing-level/level-goats';
+import { TypingLevelScreen } from '../typing-level/level-desert';
+import { TypingGoatsScreen } from '../typing-level/level-goat';
+import { TypingInstrumentScreen } from '../typing-level/level-instrument';
+import { TypingMarketScreen } from '../typing-level/level-market';
+import { TypingSandstormScreen } from '../typing-level/level-sandstorm';
+import { TypingSentenceScreen } from '../typing-level/level-story';
+import { TypingWordScreen } from '../typing-level/level-word';
 import type { LevelScreenConstructor } from './units';
 
 /** Maps backend `level_type` ids to Pixi screen constructors. */
