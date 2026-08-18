@@ -9,9 +9,10 @@ const AUTH_ENDPOINTS = ['/user/login', '/user/register', '/user/token/refresh'];
 let refreshPromise: Promise<string | null> | null = null;
 
 async function refreshAccessToken(): Promise<string | null> {
-  const { refreshToken, setTokens, clearTokens } = useAuthStore.getState();
+  const { refreshToken, isGuest, setTokens, clearTokens } = useAuthStore.getState();
   if (!refreshToken) {
-    clearTokens();
+    // Guests have no tokens; a 401 must not wipe the local session.
+    if (!isGuest) clearTokens();
     // [TODO]:
     // Although this is unlikely to happen since we have the 12h refresh token expiry check on startup, we should still handle this better.
     // we need to show the auth overlay, and somehow retry the request (w/ a game result queue for game result reporting for example).
@@ -27,7 +28,7 @@ async function refreshAccessToken(): Promise<string | null> {
     setTokens(access, refreshToken);
     return access;
   } catch {
-    clearTokens();
+    if (!useAuthStore.getState().isGuest) clearTokens();
     // TODO: same as above
     return null;
   }

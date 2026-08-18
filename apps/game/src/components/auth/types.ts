@@ -21,6 +21,8 @@ export interface AuthParentProps {
   /** Fired by the X in the card corner. */
   onClose?: () => void;
   onLogin?: (credentials: LoginCredentials) => void | Promise<void>;
+  /** Play without an account; progression is stored on this device. */
+  onGuest?: () => void;
   onSignUp?: (data: SignUpData) => void | Promise<void>;
   onForgotPassword?: (email: string) => void | Promise<void>;
   onResetPassword?: (password: string) => void | Promise<void>;

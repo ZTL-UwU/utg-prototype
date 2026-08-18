@@ -3,8 +3,17 @@ import { persist } from 'zustand/middleware';
 
 import type { TLayer } from '../app/screens/level-map/units';
 import { api } from '../lib/api';
+import { loadGuestRewardIds, saveGuestRewardIds } from '../lib/guestRewards';
 import { ensureRemoteReady, type RemoteStatus } from '../lib/remoteResource';
-import { isLayer, isRewardType, type RewardType } from './rewardStore';
+import { sessionKind, useAuthStore } from './auth';
+import {
+  ensureRewardsReady,
+  isLayer,
+  isRewardType,
+  resolveRewardsByIds,
+  type RewardSimple,
+  type RewardType,
+} from './rewardStore';
 
 /** A reward this user owns, with the placement data the passport needs. */
 export interface UserReward {
@@ -40,6 +49,8 @@ interface UserRewardState {
 
   /** Replace ownership from a backend response and queue the new ids for both animations. */
   syncRewards: (ownedIds: number[], newIds: number[]) => void;
+  /** Guest mirror of `syncRewards`: adds ownership and resolves placement in place. */
+  grantLocalRewards: (newRewards: RewardSimple[]) => void;
   /** Replace ownership without queueing anything (login hydration). */
   setOwnedRewards: (ownedIds: number[]) => void;
 
@@ -76,6 +87,29 @@ export const useUserRewardStore = create<UserRewardState>()(
       fetchUserRewards: async () => {
         const { status } = get();
         if (status === 'loading' || status === 'ready') return;
+
+        const { accessToken, isGuest } = useAuthStore.getState();
+
+        // The reward catalog stands in for `/user/rewards/list`: it publishes the same
+        // rows, so the ids a guest owns are enough to rebuild the passport.
+        if (isGuest) {
+          set({ status: 'loading', error: undefined });
+          const ownedRewardIds = loadGuestRewardIds();
+          await ensureRewardsReady();
+          if (get().status !== 'loading') return;
+          set({
+            status: 'ready',
+            error: undefined,
+            ownedRewardIds,
+            rewards: resolveRewardsByIds(ownedRewardIds),
+          });
+          return;
+        }
+
+        if (!accessToken) {
+          set({ status: 'ready', error: undefined, rewards: [], ownedRewardIds: [] });
+          return;
+        }
 
         set({ status: 'loading', error: undefined });
         try {
@@ -118,6 +152,33 @@ export const useUserRewardStore = create<UserRewardState>()(
             unseenInPassport,
             // The POST returns ids only; go idle so the next ensure* refetches placement.
             status: newIds.length > 0 ? ('idle' as RemoteStatus) : s.status,
+          };
+        });
+      },
+
+      grantLocalRewards: (newRewards) => {
+        set((s) => {
+          const pendingCelebrations = { ...s.pendingCelebrations };
+          const unseenInPassport = { ...s.unseenInPassport };
+          for (const reward of newRewards) {
+            pendingCelebrations[reward.id] = true;
+            unseenInPassport[reward.id] = true;
+          }
+
+          // Same array when nothing was earned, so the persist subscriber stays quiet.
+          const ownedRewardIds =
+            newRewards.length === 0
+              ? s.ownedRewardIds
+              : [...s.ownedRewardIds, ...newRewards.map((reward) => reward.id)];
+
+          return {
+            ownedRewardIds,
+            // Resolved here instead of by a refetch: the grant already read the catalog.
+            rewards: resolveRewardsByIds(ownedRewardIds),
+            pendingCelebrations,
+            unseenInPassport,
+            status: 'ready' as RemoteStatus,
+            error: undefined,
           };
         });
       },
@@ -169,6 +230,15 @@ export const useUserRewardStore = create<UserRewardState>()(
   ),
 );
 
+// Ids only, so a reward catalog that failed to load can leave `rewards` unresolved
+// without ever dropping something the guest already earned.
+useUserRewardStore.subscribe((state, previous) => {
+  if (state.ownedRewardIds === previous.ownedRewardIds) return;
+  if (state.status !== 'ready') return;
+  if (!useAuthStore.getState().isGuest) return;
+  saveGuestRewardIds(state.ownedRewardIds);
+});
+
 /** Resolves when owned rewards are loaded; false if the fetch failed or logged out. */
 export function ensureUserRewardsReady(): Promise<boolean> {
   return ensureRemoteReady({
@@ -177,6 +247,20 @@ export function ensureUserRewardsReady(): Promise<boolean> {
     start: () => {
       void useUserRewardStore.getState().fetchUserRewards();
     },
+  });
+}
+
+/**
+ * Load owned rewards when a session starts and drop them when it ends. Guests
+ * hydrate from localStorage + the reward catalog; signed-in users hit the API.
+ */
+export function syncUserRewardsWithSession(): () => void {
+  return useAuthStore.subscribe((state, previous) => {
+    if (sessionKind(state) === sessionKind(previous)) return;
+
+    const { clearRewards, fetchUserRewards } = useUserRewardStore.getState();
+    clearRewards();
+    if (sessionKind(state) !== 'none') void fetchUserRewards();
   });
 }
 

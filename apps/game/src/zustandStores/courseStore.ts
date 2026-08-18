@@ -261,20 +261,23 @@ const useCourseStore = create<CourseStore>((set, get) => ({
   },
 }));
 
-/**
- * Resolves when the course catalog is ready.
- * On error, navigates to CourseLoadErrorScreen and returns false.
- */
-export async function ensureCourseReady(): Promise<boolean> {
-  const ready = await ensureRemoteReady({
+/** Resolves when the course catalog is ready; false if the fetch failed. Never navigates. */
+export function ensureCourseCatalogReady(): Promise<boolean> {
+  return ensureRemoteReady({
     getStatus: () => useCourseStore.getState().status,
     subscribe: (listener) => useCourseStore.subscribe((state) => listener(state.status)),
     start: () => {
       void useCourseStore.getState().fetchCourseStructure();
     },
   });
+}
 
-  if (ready) return true;
+/**
+ * Resolves when the course catalog is ready.
+ * On error, navigates to CourseLoadErrorScreen and returns false.
+ */
+export async function ensureCourseReady(): Promise<boolean> {
+  if (await ensureCourseCatalogReady()) return true;
 
   const { CourseLoadErrorScreen } = await import('../app/screens/course-load-error');
   const { engine } = await import('../engine/getEngine');
@@ -288,11 +291,5 @@ export { REMOTE_MASCOTS_BUNDLE };
 
 /** Resolves when the remote mascots bundle has been registered with the course catalog. */
 export function ensureMascotsReady(): Promise<boolean> {
-  return ensureRemoteReady({
-    getStatus: () => useCourseStore.getState().status,
-    subscribe: (listener) => useCourseStore.subscribe((state) => listener(state.status)),
-    start: () => {
-      void useCourseStore.getState().fetchCourseStructure();
-    },
-  });
+  return ensureCourseCatalogReady();
 }

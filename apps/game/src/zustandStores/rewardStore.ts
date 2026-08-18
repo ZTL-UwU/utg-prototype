@@ -39,7 +39,6 @@ export const LAYER_REWARD_TYPE = 'three_consecutive_three_stars_trophy' as const
 
 export type RewardType = LevelRewardType | typeof LAYER_REWARD_TYPE;
 
-/** The deployed schema returns only `{ id, type, image_url }`. */
 interface ApiReward {
   id: number;
   type: string;

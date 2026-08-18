@@ -1,14 +1,24 @@
 import { create } from 'zustand';
 
 import { api } from '../lib/api';
+import { loadGuestResults, saveGuestResults } from '../lib/guestResults';
 import { ensureRemoteReady, type RemoteStatus } from '../lib/remoteResource';
-import { useAuthStore } from './auth';
+import { useAuthStore, sessionKind } from './auth';
 import { getAccuracyPercent } from './scoreManager';
 
 /** Mirrors LevelResultOut from the backend `/level-results/list` endpoint. */
 export interface LevelResult {
   id: number;
   level_id: number;
+  star: number;
+  score: number;
+  correct: number;
+  mistake: number;
+}
+
+/** Payload recorded locally for a guest attempt (no server id yet). */
+export interface LocalLevelAttempt {
+  level: number;
   star: number;
   score: number;
   correct: number;
@@ -27,6 +37,8 @@ interface ResultStore {
   setResults: (results: LevelResult[]) => void;
   /** Optimistic completion so the next level can unlock before the POST returns. */
   markCompleted: (levelId: number, star: number) => void;
+  /** Append a full attempt for guests (unlocks + stats), persisted to localStorage. */
+  recordAttempt: (attempt: LocalLevelAttempt) => void;
   hasCompletedLevel: (levelId: number) => boolean;
   /** Put a failed fetch back to `idle` so the next `ensureResultsReady` retries it. */
   clearError: () => void;
@@ -49,10 +61,17 @@ const useResultStore = create<ResultStore>((set, get) => ({
     const { status } = get();
     if (status === 'loading' || status === 'ready') return;
 
+    const { accessToken, isGuest } = useAuthStore.getState();
+
+    if (isGuest) {
+      set({ status: 'ready', error: undefined, results: loadGuestResults() });
+      return;
+    }
+
     // Signed out is a known-empty history, not a failure: `error` is reserved for
     // "could not find out", which is what the progression locks fall open on.
     // `syncResultsWithSession` refetches once a session exists.
-    if (!useAuthStore.getState().accessToken) {
+    if (!accessToken) {
       set({ status: 'ready', error: undefined, results: [] });
       return;
     }
@@ -82,12 +101,31 @@ const useResultStore = create<ResultStore>((set, get) => ({
       results: applyServerResults(results, get().results),
     }),
 
+  // Optimistic completion so the next level can unlock before the POST returns.
   markCompleted: (levelId, star) => {
     if (star <= 0 || get().hasCompletedLevel(levelId)) return;
     set((state) => ({
       results: [
         ...state.results,
         { id: -levelId, level_id: levelId, star, score: 0, correct: 0, mistake: 0 },
+      ],
+    }));
+  },
+
+  recordAttempt: (attempt) => {
+    set((state) => ({
+      status: 'ready',
+      error: undefined,
+      results: [
+        ...state.results,
+        {
+          id: -Date.now(),
+          level_id: attempt.level,
+          star: attempt.star,
+          score: attempt.score,
+          correct: attempt.correct,
+          mistake: attempt.mistake,
+        },
       ],
     }));
   },
@@ -102,6 +140,12 @@ const useResultStore = create<ResultStore>((set, get) => ({
 
   clearResults: () => set({ status: 'idle', error: undefined, results: [] }),
 }));
+
+useResultStore.subscribe((state) => {
+  if (!useAuthStore.getState().isGuest) return;
+  if (state.status !== 'ready') return;
+  saveGuestResults(state.results);
+});
 
 export interface ResultTotals {
   totalStars: number;
@@ -150,18 +194,18 @@ export function ensureResultsReady(): Promise<boolean> {
 }
 
 /**
- * Fetch as soon as a session exists and drop results when it ends. Only signed-in
- * transitions matter, so a token refresh (one access token swapped for another)
- * does not trigger a refetch. Returns an unsubscribe.
+ * Fetch as soon as a session exists and drop results when it ends. Guest progress is
+ * loaded from localStorage; signed-in progress is fetched from the server. A token
+ * refresh (one access token swapped for another) does not trigger a refetch.
+ * Returns an unsubscribe.
  */
 export function syncResultsWithSession(): () => void {
   return useAuthStore.subscribe((state, previous) => {
-    const signedIn = state.accessToken !== null;
-    if (signedIn === (previous.accessToken !== null)) return;
+    if (sessionKind(state) === sessionKind(previous)) return;
 
     const { clearResults, fetchResults } = useResultStore.getState();
     clearResults();
-    if (signedIn) void fetchResults();
+    if (sessionKind(state) !== 'none') void fetchResults();
   });
 }
 

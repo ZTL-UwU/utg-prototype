@@ -17,6 +17,7 @@ export function AuthParent({
   initialView = 'login',
   onClose,
   onLogin,
+  onGuest,
   onSignUp,
   onForgotPassword,
   onResetPassword,
@@ -83,6 +84,7 @@ export function AuthParent({
         return (
           <LoginForm
             onSubmit={handleLogin}
+            onGuest={() => onGuest?.()}
             onForgot={() => setView('forgot')}
             onSignUpNav={() => setView('signup')}
           />

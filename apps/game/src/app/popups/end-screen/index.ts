@@ -358,7 +358,8 @@ export class EndScreenPopup extends Container {
   private async playRewardCelebration() {
     this.interactiveChildren = false;
     try {
-      // The outcome is unused; this only lets the POST land before the queue is read.
+      // The outcome is unused; this only lets the grant (a signed-in POST, or a guest's
+      // local award) land before the queue is read.
       const outcome = await Promise.race([
         this.resultPromise,
         waitFor(RESULT_TIMEOUT).then((): LevelResultOutcome | null => null),

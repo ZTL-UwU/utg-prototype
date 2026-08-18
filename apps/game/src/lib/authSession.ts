@@ -21,11 +21,16 @@ function remainingMsFromJwt(token: string): number | null {
 
 /**
  * Ensures the persisted session is usable before entering the game.
- * Requires ≥12h left on the refresh token so a long session won't force re-login mid-play.
+ * Guests skip token checks. Signed-in sessions need ≥12h left on the refresh
+ * token so a long session won't force re-login mid-play.
  * Returns false if the user must log in.
  */
 export async function ensureValidSession(): Promise<boolean> {
-  const { refreshToken, user, clearTokens } = useAuthStore.getState();
+  const { refreshToken, user, isGuest, clearTokens } = useAuthStore.getState();
+
+  if (isGuest && user) {
+    return true;
+  }
 
   if (!refreshToken || !user) {
     return false;

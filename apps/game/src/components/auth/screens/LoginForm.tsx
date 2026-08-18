@@ -8,11 +8,12 @@ import type { LoginCredentials } from '../types';
 
 export interface LoginFormProps {
   onSubmit: (credentials: LoginCredentials) => void | Promise<void>;
+  onGuest: () => void;
   onForgot: () => void;
   onSignUpNav: () => void;
 }
 
-export function LoginForm({ onSubmit, onForgot, onSignUpNav }: LoginFormProps) {
+export function LoginForm({ onSubmit, onGuest, onForgot, onSignUpNav }: LoginFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -52,6 +53,10 @@ export function LoginForm({ onSubmit, onForgot, onSignUpNav }: LoginFormProps) {
 
       <PrimaryButton type="submit" disabled={submitting}>
         {submitting ? 'Logging in…' : 'Log in'}
+      </PrimaryButton>
+
+      <PrimaryButton variant="ghost" onClick={onGuest}>
+        Continue as guest
       </PrimaryButton>
 
       <p className="mt-2 text-center font-body text-base text-muted">New to the game?</p>

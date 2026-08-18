@@ -169,6 +169,11 @@ export function ScreenOverlay() {
           onLogin={async (credentials) => {
             await login(credentials);
           }}
+          onGuest={() => {
+            useAuthStore.getState().enterGuestMode();
+            const { user } = useAuthStore.getState();
+            if (user) continueAfterLogin(user);
+          }}
           onSignUp={async (data) => {
             // Rejecting here is what keeps AuthParent off the success screen.
             await signUp(data);

@@ -1,12 +1,14 @@
 import { useAuthStore } from '../zustandStores/auth';
+import { ensureCourseCatalogReady } from '../zustandStores/courseStore';
 import useResultStore, { type LevelResult } from '../zustandStores/resultStore';
 import {
   ensureRewardsReady,
   resolveRewardsByIds,
   type RewardSimple,
 } from '../zustandStores/rewardStore';
-import { useUserRewardStore } from '../zustandStores/userRewardStore';
+import { ensureUserRewardsReady, useUserRewardStore } from '../zustandStores/userRewardStore';
 import { api } from './api';
+import { grantRewardsForAttempt } from './guestRewards';
 
 /** Mirrors LevelResultIn from the backend `/level-results` endpoint. */
 export interface LevelResultIn {
@@ -34,17 +36,36 @@ export type LevelResultOutcome =
 
 /**
  * Record a completed level and take ownership of whatever it earned. Never throws.
+ * Guests keep the attempt and granted badges in localStorage instead of posting.
  * A 0-star finish is still stored for stats, but does not mark the level complete
- * or unlock the next one. Starred finishes unlock immediately, then the POST's
- * full result list replaces that stub when the server answers.
+ * or unlock the next one. Starred finishes unlock immediately, then a signed-in
+ * POST's full result list replaces that stub when the server answers.
  */
 export async function submitLevelResult(result: LevelResultIn): Promise<LevelResultOutcome> {
-  useResultStore.getState().markCompleted(result.level, result.star);
+  const { accessToken, isGuest } = useAuthStore.getState();
 
-  // Authenticated: a 401 inside `api` can clear the session without retrying.
-  if (!useAuthStore.getState().accessToken) {
+  if (isGuest) {
+    useResultStore.getState().recordAttempt(result);
+    // The grant needs the level's layer, the reward catalog, and current ownership: the
+    // rows the backend query joins. Granting before they load would silently skip badges
+    // and, worse, re-award ones this guest already has.
+    await Promise.all([ensureCourseCatalogReady(), ensureRewardsReady(), ensureUserRewardsReady()]);
+
+    const newRewards = grantRewardsForAttempt(
+      result,
+      useResultStore.getState().results,
+      useUserRewardStore.getState().ownedRewardIds,
+    );
+    useUserRewardStore.getState().grantLocalRewards(newRewards);
+    return { status: 'submitted', newRewards };
+  }
+
+  if (!accessToken) {
+    useResultStore.getState().recordAttempt(result);
     return { status: 'skipped' };
   }
+
+  useResultStore.getState().markCompleted(result.level, result.star);
 
   try {
     const submitted = await api<LevelResultCreateOut>('/level-results', {

@@ -126,3 +126,8 @@ export function findMapUnitForLevel(level: TLevel): TMapUnit {
   }
   return mapUnit;
 }
+
+/** Layer a catalog level belongs to, or undefined when the course list has not loaded it. */
+export function findLayerForLevelId(levelId: number): TLayer | undefined {
+  return allMaps().find((map) => map.levels.some((entry) => entry.id === levelId))?.type;
+}
