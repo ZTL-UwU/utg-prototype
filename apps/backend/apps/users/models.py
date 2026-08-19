@@ -82,6 +82,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
+    is_cheat = models.BooleanField(
+        "cheat",
+        default=False,
+        help_text="Unlocks every published level for this user, skipping normal progression.",
+    )
     date_joined = models.DateTimeField(default=timezone.now)
 
     objects = UserManager()

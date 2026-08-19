@@ -16,15 +16,16 @@ class UserRewardInline(admin.TabularInline):
 class UserAdmin(BaseUserAdmin):
     form = UserChangeForm
     add_form = UserCreationForm
-    list_display = ("email", "name", "is_staff")
-    list_filter = ("is_staff", "is_superuser", "is_active")
+    list_display = ("email", "name", "is_staff", "is_cheat")
+    list_filter = ("is_staff", "is_superuser", "is_active", "is_cheat")
+    list_editable = ("is_cheat",)
     search_fields = ("email", "name")
     ordering = ("email",)
     filter_horizontal = ("groups", "user_permissions")
     inlines = (UserRewardInline,)
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        ("Profile", {"fields": ("name",)}),
+        ("Profile", {"fields": ("name", "is_cheat")}),
         (
             "Permissions",
             {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")},
@@ -36,7 +37,15 @@ class UserAdmin(BaseUserAdmin):
             None,
             {
                 "classes": ("wide",),
-                "fields": ("email", "name", "password1", "password2", "is_staff", "is_active"),
+                "fields": (
+                    "email",
+                    "name",
+                    "password1",
+                    "password2",
+                    "is_staff",
+                    "is_active",
+                    "is_cheat",
+                ),
             },
         ),
     )

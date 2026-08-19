@@ -20,6 +20,8 @@ from apps.game.models import Level
 from apps.users.models import LevelResult, Reward, RewardImage, RewardType, UserReward
 from apps.users.password_reset import send_password_reset_email
 from apps.users.schemas import (
+    AdminUserOut,
+    AdminUserPatchIn,
     DetailOut,
     ErrorOut,
     LevelResultCreateOut,
@@ -159,6 +161,34 @@ def password_reset_confirm(request, payload: PasswordResetConfirmIn):
 )
 def profile(request):
     return request.auth
+
+
+@router.get(
+    "/users/list",
+    auth=jwt_auth,
+    response={200: list[AdminUserOut], 403: ErrorOut},
+    summary="[Admin] List users",
+)
+@require_perm("users.view_user", message="You do not have permission to view users")
+def list_users(request):
+    return User.objects.order_by("email")
+
+
+@router.patch(
+    "/users/{user_id}",
+    auth=jwt_auth,
+    response={200: AdminUserOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Update a user",
+)
+@require_perm("users.change_user", message="You do not have permission to update users")
+def update_user(request, user_id: int, payload: AdminUserPatchIn):
+    try:
+        user = User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        return Status(404, {"detail": "User not found."})
+    user.is_cheat = payload.is_cheat
+    user.save(update_fields=["is_cheat"])
+    return user
 
 
 @router.get(

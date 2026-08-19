@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
@@ -30,6 +31,21 @@ class UserOut(Schema):
     id: int
     name: str | None
     email: str
+    is_cheat: bool
+
+
+class AdminUserOut(Schema):
+    id: int
+    name: str | None
+    email: str
+    is_staff: bool
+    is_active: bool
+    is_cheat: bool
+    date_joined: datetime
+
+
+class AdminUserPatchIn(Schema):
+    is_cheat: bool
 
 
 class LoginTokenPairOut(Schema):
