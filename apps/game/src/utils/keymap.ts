@@ -428,7 +428,7 @@ export function getMappedFromKeyCode(code: string, shift: boolean): string {
 
 /** Labels for modifier and special keys shown on the on-screen keyboard. */
 export function formatKeyboardLabel(text: string): string {
-  if (text.startsWith('*') && text.endsWith('*')) {
+  if (text.startsWith('*') && text.endsWith('*') && text.length > 1) {
     return text.slice(1, -1).toUpperCase();
   }
   return text;

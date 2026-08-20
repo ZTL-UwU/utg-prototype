@@ -132,6 +132,10 @@ const KEY_SUCCESS_COLOR = 0x8ec24d;
 const KEY_ERROR_COLOR = 0xef5a42;
 const SHIFT_HINT_PADDING = 6;
 const SHIFT_HINT_FONT_SIZE = 22;
+const HOME_KEY_CODES = new Set(['KeyF', 'KeyJ']);
+const HOME_BUMP_WIDTH = 16;
+const HOME_BUMP_HEIGHT = 3;
+const HOME_BUMP_BOTTOM = 7;
 
 class KeyCap extends Container {
   public readonly code: string;
@@ -200,7 +204,19 @@ class KeyCap extends Container {
 
     this.keyContent.addChild(this.keyLabel, this.hintLabel);
     this.drawBackground();
-    this.addChild(this.background, this.keyContent);
+    this.addChild(this.background);
+    if (HOME_KEY_CODES.has(code)) {
+      this.addChild(this.createHomeBump(textColor));
+    }
+    this.addChild(this.keyContent);
+  }
+
+  private createHomeBump(color: number) {
+    const x = (this.keyWidth - HOME_BUMP_WIDTH) / 2;
+    const y = UNIT - HOME_BUMP_HEIGHT - HOME_BUMP_BOTTOM;
+    return new Graphics()
+      .roundRect(x, y, HOME_BUMP_WIDTH, HOME_BUMP_HEIGHT, HOME_BUMP_HEIGHT / 2)
+      .fill({ color, alpha: 0.55 });
   }
 
   public setPressed(pressed: boolean) {

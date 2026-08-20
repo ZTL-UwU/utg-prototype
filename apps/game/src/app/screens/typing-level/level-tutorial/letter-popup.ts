@@ -53,7 +53,7 @@ type GuideItem = {
   stepIndex?: number;
 };
 
-function createGuideKey(label: string) {
+function createGuideKey(label: string, isHomeKey = false) {
   const key = new Container();
   const background = new Graphics()
     .roundRect(0, 5, GUIDE_KEY_WIDTH, GUIDE_KEY_HEIGHT, GUIDE_KEY_RADIUS)
@@ -74,6 +74,20 @@ function createGuideKey(label: string) {
   });
   text.position.set(GUIDE_KEY_WIDTH / 2, GUIDE_KEY_HEIGHT / 2);
   key.addChild(background, text);
+  if (isHomeKey) {
+    const bumpWidth = 28;
+    const bumpHeight = 6;
+    const bump = new Graphics()
+      .roundRect(
+        (GUIDE_KEY_WIDTH - bumpWidth) / 2,
+        GUIDE_KEY_HEIGHT - bumpHeight - 16,
+        bumpWidth,
+        bumpHeight,
+        bumpHeight / 2,
+      )
+      .fill({ color: COLORS.keyText, alpha: 0.55 });
+    key.addChild(bump);
+  }
   return key;
 }
 
@@ -265,7 +279,9 @@ export class LetterPopup extends Container {
     sourceSteps.forEach((step, sourceIndex) => {
       const stepIndex = this.steps.indexOf(step);
       items.push({
-        container: step.isShift ? createShiftGuideKey() : createGuideKey(step.label),
+        container: step.isShift
+          ? createShiftGuideKey()
+          : createGuideKey(step.label, step.code === 'KeyF' || step.code === 'KeyJ'),
         width: step.isShift ? SHIFT_WIDTH : GUIDE_KEY_WIDTH,
         y: step.isShift ? 34 : 0,
         stepIndex,
