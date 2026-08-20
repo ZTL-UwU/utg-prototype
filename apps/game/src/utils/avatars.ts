@@ -20,11 +20,11 @@ export interface AvatarDef {
 
 export const AVATARS: readonly AvatarDef[] = [
   { id: 0, path: 'avatar-select/goat.png', locked: false },
-  { id: 1, path: 'avatar-select/pig.png', locked: false },
+  { id: 1, path: 'avatar-select/deer.png', locked: false },
   { id: 2, path: 'avatar-select/horse.png', locked: false },
-  { id: 3, path: 'avatar-select/locked.png', locked: true },
-  { id: 4, path: 'avatar-select/locked.png', locked: true },
-  { id: 5, path: 'avatar-select/locked.png', locked: true },
+  { id: 3, path: 'avatar-select/yak.png', locked: false },
+  { id: 4, path: 'avatar-select/leopard.png', locked: false },
+  { id: 5, path: 'avatar-select/bear.png', locked: false },
 ];
 
 /** Fallback avatar id used when a user has no avatar set yet. */

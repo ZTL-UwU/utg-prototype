@@ -8,6 +8,7 @@ import { useAuthStore } from '../../../zustandStores/auth';
 
 const CELL_SIZE = 200;
 const GRID_GAP = 48;
+const COLUMNS = 3;
 
 type AvatarSelectMode = {
   mode?: 'onboarding' | 'profile';
@@ -95,7 +96,12 @@ export class AvatarSelectScreen extends Container {
     const unlocked = AVATARS.filter((avatar) => !avatar.locked);
     const locked = AVATARS.filter((avatar) => avatar.locked);
 
-    grid.addChild(this.buildRow(unlocked), this.buildRow(locked));
+    for (const group of [unlocked, locked]) {
+      for (let i = 0; i < group.length; i += COLUMNS) {
+        grid.addChild(this.buildRow(group.slice(i, i + COLUMNS)));
+      }
+    }
+
     return grid;
   }
 
