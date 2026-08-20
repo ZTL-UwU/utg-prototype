@@ -177,7 +177,7 @@ def list_users(request):
 @router.patch(
     "/users/{user_id}",
     auth=jwt_auth,
-    response={200: AdminUserOut, 403: ErrorOut, 404: ErrorOut},
+    response={200: AdminUserOut, 400: ErrorOut, 403: ErrorOut, 404: ErrorOut},
     summary="[Admin] Update a user",
 )
 @require_perm("users.change_user", message="You do not have permission to update users")
@@ -186,8 +186,28 @@ def update_user(request, user_id: int, payload: AdminUserPatchIn):
         user = User.objects.get(pk=user_id)
     except User.DoesNotExist:
         return Status(404, {"detail": "User not found."})
-    user.is_cheat = payload.is_cheat
-    user.save(update_fields=["is_cheat"])
+
+    updates: dict[str, bool] = {}
+    if payload.is_cheat is not None:
+        updates["is_cheat"] = payload.is_cheat
+    if payload.is_active is not None:
+        updates["is_active"] = payload.is_active
+    if payload.is_staff is not None:
+        updates["is_staff"] = payload.is_staff
+    if not updates:
+        return Status(400, {"detail": "No fields to update."})
+
+    is_self = user.pk == request.auth.pk
+    if is_self and updates.get("is_active") is False:
+        return Status(400, {"detail": "You cannot deactivate your own account."})
+    if is_self and updates.get("is_staff") is False:
+        return Status(400, {"detail": "You cannot remove your own staff access."})
+    if user.is_superuser and updates.get("is_staff") is False:
+        return Status(400, {"detail": "Superusers must remain staff."})
+
+    for field, value in updates.items():
+        setattr(user, field, value)
+    user.save(update_fields=list(updates))
     return user
 
 

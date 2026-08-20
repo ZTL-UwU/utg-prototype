@@ -45,7 +45,9 @@ class AdminUserOut(Schema):
 
 
 class AdminUserPatchIn(Schema):
-    is_cheat: bool
+    is_cheat: bool | None = None
+    is_active: bool | None = None
+    is_staff: bool | None = None
 
 
 class LoginTokenPairOut(Schema):
