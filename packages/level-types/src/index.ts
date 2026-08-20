@@ -64,6 +64,7 @@ export {
   defaultTypingGoatsProps,
   defaultTypingInstrumentProps,
   defaultTypingSandstormProps,
+  defaultTypingSpringProps,
   defaultTypingStoryProps,
   defaultTypingWordsProps,
   gameNaanStackPropsSchema,
@@ -72,6 +73,7 @@ export {
   typingGoatsPropsSchema,
   typingInstrumentPropsSchema,
   typingSandstormPropsSchema,
+  typingSpringPropsSchema,
   typingStoryPropsSchema,
   typingWordsPropsSchema,
   type GameNaanStackProps,
@@ -80,6 +82,7 @@ export {
   type TypingGoatsProps,
   type TypingInstrumentProps,
   type TypingSandstormProps,
+  type TypingSpringProps,
   type TypingStoryProps,
   type TypingWordsProps,
 } from './schemas/typing-game';
@@ -102,5 +105,6 @@ export { typingGoat } from './types/typing-goat';
 export { typingInstrument } from './types/typing-instrument';
 export { typingMarket } from './types/typing-market';
 export { typingSandstorm } from './types/typing-sandstorm';
+export { typingSpring } from './types/typing-spring';
 export { typingStory } from './types/typing-story';
 export { typingWord } from './types/typing-word';
