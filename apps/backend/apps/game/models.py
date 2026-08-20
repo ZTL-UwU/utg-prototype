@@ -37,6 +37,7 @@ class LevelType(models.TextChoices):
         "Game ski racing",
     )
     GAME_TROUT = "game-trout", "Game trout"
+    TYPING_SPRING = "typing-spring", "Typing spring"
 
 
 class Unit(AuditingMixin, models.Model):
