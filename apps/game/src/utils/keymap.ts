@@ -157,7 +157,7 @@ const LATIN_DEFAULT_LAYER: Record<string, string> = {
   Enter: '*Enter*',
 };
 
-/** Shifted ULY layer: symbols plus é / ö / ü on their base vowel keys. */
+/** Shifted ULY layer: uppercase letters, symbols, and É / Ö / Ü on their dedicated keys. */
 const LATIN_SHIFT_LAYER: Record<string, string> = {
   Digit1: '!',
   Digit2: '@',
@@ -447,7 +447,7 @@ export function getShiftHintLabel(code: string): string {
   const defaultText = getMappedFromKeyCode(code, false);
   const shiftText = getMappedFromKeyCode(code, true);
   if (!shiftText || shiftText === defaultText) return '';
-  // Letter keys only (Arabic/Cyrillic shift letters, Latin é/ö/ü) — skip punctuation.
+  // Letter keys only (Arabic/Cyrillic shift letters) — skip punctuation.
   if (!/\p{L}/u.test(shiftText)) return '';
   // Skip case-only counterparts of the same letter.
   if (shiftText.toLocaleLowerCase() === defaultText.toLocaleLowerCase()) return '';

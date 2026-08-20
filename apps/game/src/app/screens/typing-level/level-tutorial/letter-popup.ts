@@ -9,6 +9,7 @@ import {
   convertToCurrentScript,
   getCurrentTargetScript,
   getScriptFontFamily,
+  isCurrentScriptRtl,
 } from '../../../../utils/script';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { HandGuide } from './hand-guide';
@@ -117,8 +118,15 @@ function createPlus() {
   return new Sprite({ texture: Texture.from('typing-levels/typing-tutorial/plus.svg') });
 }
 
-function createArrow() {
-  return new Sprite({ texture: Texture.from('typing-levels/typing-tutorial/arrow.svg') });
+function createArrow(pointRight: boolean) {
+  const wrapper = new Container();
+  const arrow = new Sprite({ texture: Texture.from('typing-levels/typing-tutorial/arrow.svg') });
+  if (pointRight) {
+    arrow.scale.x = -1;
+    arrow.x = 120;
+  }
+  wrapper.addChild(arrow);
+  return wrapper;
 }
 
 function getAdjacentLetter(letter: string, delta: number): string {
@@ -238,16 +246,22 @@ export class LetterPopup extends Container {
   }
 
   private buildGuide() {
-    const items: GuideItem[] = [
-      {
-        container: createGuideKey(convertToCurrentScript(this.letter).toLocaleLowerCase('ug')),
-        width: GUIDE_KEY_WIDTH,
-        y: 0,
-      },
-      { container: createArrow(), width: 120, y: 34 },
-    ];
+    const rtl = isCurrentScriptRtl();
+    const resultKey: GuideItem = {
+      container: createGuideKey(convertToCurrentScript(this.letter).toLocaleLowerCase('ug')),
+      width: GUIDE_KEY_WIDTH,
+      y: 0,
+    };
+    const arrow: GuideItem = {
+      container: createArrow(!rtl),
+      width: 120,
+      y: 34,
+    };
 
-    const sourceSteps = [...this.steps].reverse();
+    const items: GuideItem[] = [];
+    if (rtl) items.push(resultKey, arrow);
+
+    const sourceSteps = rtl ? [...this.steps].reverse() : this.steps;
     sourceSteps.forEach((step, sourceIndex) => {
       const stepIndex = this.steps.indexOf(step);
       items.push({
@@ -261,6 +275,8 @@ export class LetterPopup extends Container {
         items.push({ container: createPlus(), width: 67, y: 34 });
       }
     });
+
+    if (!rtl) items.push(arrow, resultKey);
 
     const totalWidth = items.reduce(
       (width, item, index) => width + item.width + (index < items.length - 1 ? GUIDE_GAP : 0),
@@ -284,8 +300,7 @@ export class LetterPopup extends Container {
       x += item.width + GUIDE_GAP;
     }
 
-    const target = items[0]!;
-    this.stars.position.set(target.container.x + GUIDE_KEY_WIDTH * 0.65, -82);
+    this.stars.position.set(resultKey.container.x + GUIDE_KEY_WIDTH * 0.65, -82);
     this.guide.addChild(this.stars);
   }
 

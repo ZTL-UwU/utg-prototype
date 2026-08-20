@@ -2,7 +2,7 @@ import { Container } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
-import { getCurrentKeyboardLetters } from '../../../../utils/script';
+import { getCurrentKeyboardLetters, isCurrentScriptRtl } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -32,6 +32,7 @@ export class LetterRow extends Container {
   private isRemoving = false;
   private isTransitioning = false;
   private lettersContainer: Container;
+  private readonly rtl = isCurrentScriptRtl();
 
   constructor(keyboard: KeyboardLayout, level: TLevel) {
     const typedLevel = getTypedLevel(level, 'typing-desert');
@@ -75,7 +76,7 @@ export class LetterRow extends Container {
         left: index * STEP,
       };
       card.alpha = 0;
-      card.setActive(index === this.letters.length - 1, false);
+      card.setActive(index === this.currentIndex, false);
       this.lettersContainer.addChild(card);
       return card;
     });
@@ -134,21 +135,27 @@ export class LetterRow extends Container {
     if (!this.isTransitioning) this.keyboard.setHintedLetter(this.currentLetter);
   }
 
+  private get currentIndex() {
+    return this.rtl ? this.letters.length - 1 : 0;
+  }
+
   private get currentLetter() {
-    return this.letters[this.letters.length - 1];
+    return this.letters[this.currentIndex];
   }
 
   private get currentLetterCard() {
-    return this.letterCards[this.letterCards.length - 1];
+    return this.letterCards[this.currentIndex];
   }
 
-  private getRightToLeftDelay(index: number, delayStep: number) {
-    return (this.letterCards.length - 1 - index) * delayStep;
+  private getStaggerDelay(index: number, delayStep: number) {
+    const fromStart = this.rtl ? this.letterCards.length - 1 - index : index;
+    return fromStart * delayStep;
   }
 
   private removeCurrentLetter() {
-    const card = this.letterCards.pop();
-    this.letters.pop();
+    const card = this.rtl ? this.letterCards.pop() : this.letterCards.shift();
+    if (this.rtl) this.letters.pop();
+    else this.letters.shift();
 
     if (card) {
       this.lettersContainer.removeChild(card);
@@ -190,15 +197,13 @@ export class LetterRow extends Container {
 
   public async playEnterAnimation() {
     await Promise.all(
-      this.letterCards.map((card, index) => card.playAppear(this.getRightToLeftDelay(index, 0.08))),
+      this.letterCards.map((card, index) => card.playAppear(this.getStaggerDelay(index, 0.08))),
     );
   }
 
   public async playExitAnimation() {
     await Promise.all(
-      this.letterCards.map((card, index) =>
-        card.playDisappear(this.getRightToLeftDelay(index, 0.02)),
-      ),
+      this.letterCards.map((card, index) => card.playDisappear(this.getStaggerDelay(index, 0.02))),
     );
   }
 

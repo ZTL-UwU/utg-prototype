@@ -74,7 +74,7 @@ export const TYPING_SEQUENCE_ARABIC = new Map<EducationLetter, readonly string[]
 
 /**
  * Physical key sequence required to type each education letter on the Latin (ULY) keyboard.
- * Digraphs are separate base letters; é / ö / ü require Shift.
+ * Digraphs are separate base letters; é / ö / ü are dedicated unshifted keys.
  */
 export const TYPING_SEQUENCE_LATIN = new Map<EducationLetter, readonly string[]>([
   ['ئا', ['a']],
@@ -103,10 +103,10 @@ export const TYPING_SEQUENCE_LATIN = new Map<EducationLetter, readonly string[]>
   ['ھ', ['h']],
   ['ئو', ['o']],
   ['ئۇ', ['u']],
-  ['ئۆ', ['shift', 'o']],
-  ['ئۈ', ['shift', 'u']],
+  ['ئۆ', ['ö']],
+  ['ئۈ', ['ü']],
   ['ۋ', ['w']],
-  ['ئې', ['shift', 'e']],
+  ['ئې', ['é']],
   ['ئى', ['i']],
   ['ي', ['y']],
 ]);

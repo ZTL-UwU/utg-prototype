@@ -3,7 +3,11 @@ import { EDUCATION_LETTERS } from '@utg/letters';
 import { animate } from 'motion';
 import { Container, Graphics, Text } from 'pixi.js';
 
-import { convertToCurrentScript, getScriptFontFamily } from '../../utils/script';
+import {
+  convertToCurrentScript,
+  getScriptFontFamily,
+  isCurrentScriptRtl,
+} from '../../utils/script';
 import alphabetTimings from './alphabet-timings.json';
 
 export type AlphabetGridColorOptions = {
@@ -33,12 +37,15 @@ const DEFAULT_COLOR_OPTIONS: AlphabetGridColorOptions = {
   textColor: 0xffffff,
 };
 
-const letters = [
-  EDUCATION_LETTERS.slice(0, 8).reverse(),
-  EDUCATION_LETTERS.slice(8, 16).reverse(),
-  EDUCATION_LETTERS.slice(16, 24).reverse(),
-  EDUCATION_LETTERS.slice(24, 32).reverse(),
-];
+function getLetterRows() {
+  const rows = [
+    EDUCATION_LETTERS.slice(0, 8),
+    EDUCATION_LETTERS.slice(8, 16),
+    EDUCATION_LETTERS.slice(16, 24),
+    EDUCATION_LETTERS.slice(24, 32),
+  ];
+  return isCurrentScriptRtl() ? rows.map((row) => [...row].reverse()) : rows;
+}
 
 function drawButton(
   size: number,
@@ -159,6 +166,7 @@ export class AlphabetGrid extends Container {
 
     this.colorOptions = colorOptions;
 
+    const letters = getLetterRows();
     const columns = Math.max(...letters.map((row) => row.length));
     const rows = letters.length;
 
