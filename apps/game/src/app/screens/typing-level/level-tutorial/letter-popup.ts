@@ -240,7 +240,7 @@ export class LetterPopup extends Container {
   private buildGuide() {
     const items: GuideItem[] = [
       {
-        container: createGuideKey(convertToCurrentScript(this.letter)),
+        container: createGuideKey(convertToCurrentScript(this.letter).toLocaleLowerCase('ug')),
         width: GUIDE_KEY_WIDTH,
         y: 0,
       },

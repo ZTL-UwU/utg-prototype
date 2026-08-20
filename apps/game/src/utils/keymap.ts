@@ -126,9 +126,9 @@ const LATIN_DEFAULT_LAYER: Record<string, string> = {
   KeyI: 'i',
   KeyO: 'o',
   KeyP: 'p',
-  BracketLeft: '[',
-  BracketRight: ']',
-  Backquote: '`',
+  BracketLeft: 'ö',
+  BracketRight: 'ü',
+  Backquote: 'é',
   KeyA: 'a',
   KeyS: 's',
   KeyD: 'd',
@@ -172,16 +172,39 @@ const LATIN_SHIFT_LAYER: Record<string, string> = {
   Minus: '_',
   Equal: '+',
   Backspace: '⌫',
-  KeyE: 'é',
-  KeyU: 'ü',
-  KeyO: 'ö',
-  BracketLeft: '{',
-  BracketRight: '}',
-  Backquote: '~',
+  KeyQ: 'Q',
+  KeyW: 'W',
+  KeyE: 'E',
+  KeyR: 'R',
+  KeyT: 'T',
+  KeyY: 'Y',
+  KeyU: 'U',
+  KeyI: 'I',
+  KeyO: 'O',
+  KeyP: 'P',
+  BracketLeft: 'Ö',
+  BracketRight: 'Ü',
+  Backquote: 'É',
+  KeyA: 'A',
+  KeyS: 'S',
+  KeyD: 'D',
+  KeyF: 'F',
+  KeyG: 'G',
+  KeyH: 'H',
+  KeyJ: 'J',
+  KeyK: 'K',
+  KeyL: 'L',
   Semicolon: ':',
   Quote: '"',
   Backslash: '|',
   ShiftLeft: '*Shift*',
+  KeyZ: 'Z',
+  KeyX: 'X',
+  KeyC: 'C',
+  KeyV: 'V',
+  KeyB: 'B',
+  KeyN: 'N',
+  KeyM: 'M',
   Comma: '<',
   Period: '>',
   Slash: '?',
@@ -329,19 +352,19 @@ const STRUCTURAL_AUXILIARY_KEYS = [
 
 /** Digit + punctuation keys that are auxiliary on Arabic / Latin layouts. */
 const QWERTY_PUNCTUATION_AUXILIARY_KEYS = [
-  'Backquote',
   'Minus',
   'Equal',
-  'BracketLeft',
-  'BracketRight',
   'Backslash',
   'Semicolon',
   'Quote',
 ] as const;
 
+const NON_LATIN_AUXILIARY_KEYS = new Set<string>(['Backquote', 'BracketLeft', 'BracketRight']);
+
 const ARABIC_AUXILIARY_KEYS = new Set<string>([
   ...STRUCTURAL_AUXILIARY_KEYS,
   ...QWERTY_PUNCTUATION_AUXILIARY_KEYS,
+  ...NON_LATIN_AUXILIARY_KEYS,
 ]);
 
 const LATIN_AUXILIARY_KEYS = new Set<string>([
@@ -353,6 +376,7 @@ const LATIN_AUXILIARY_KEYS = new Set<string>([
 const CYRILLIC_AUXILIARY_KEYS = new Set<string>([
   ...STRUCTURAL_AUXILIARY_KEYS,
   ...QWERTY_PUNCTUATION_AUXILIARY_KEYS,
+  ...NON_LATIN_AUXILIARY_KEYS,
 ]);
 
 const AUXILIARY_LABELS: Record<string, string> = {

@@ -34,3 +34,20 @@ export function getScriptFontFamily(): string {
 export function convertToCurrentScript(text: string): string {
   return convertArabic(text, getCurrentTargetScript());
 }
+
+/**
+ * Convert Arabic keyboard-letter targets so they match unshifted key glyphs.
+ * Isolated hamza is stripped by the word converter; Latin types it as `'`.
+ * Multi-character results (Latin ch/sh/gh/ng/zh, Cyrillic ла) split into one keystroke each.
+ */
+export function convertKeyboardLettersToCurrentScript(letters: readonly string[]): string[] {
+  const script = getCurrentTargetScript();
+  if (script === 'Arabic') return [...letters];
+
+  return letters.flatMap((letter) => {
+    let converted = convertArabic(letter, script).toLocaleLowerCase('ug');
+    if (!converted && letter === 'ئ' && script === 'Latin') converted = "'";
+    if (!converted) return [];
+    return Array.from(converted);
+  });
+}

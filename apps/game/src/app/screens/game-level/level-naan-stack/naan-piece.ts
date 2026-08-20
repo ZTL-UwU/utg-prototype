@@ -1,7 +1,7 @@
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
-import { convertToCurrentScript, getScriptFontFamily } from '../../../../utils/script';
+import { getScriptFontFamily } from '../../../../utils/script';
 
 const NAAN_ASSET = 'game-levels/game-level-naan-stack/naan.png';
 
@@ -29,7 +29,7 @@ export class NaanPiece extends Container {
     this.sprite.height = (width / this.sprite.texture.width) * this.sprite.texture.height;
 
     this.letterLabel = new Text({
-      text: convertToCurrentScript(letter),
+      text: letter,
       resolution: 2,
       anchor: 0.5,
       style: {

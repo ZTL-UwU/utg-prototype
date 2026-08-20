@@ -3,6 +3,7 @@ import { Container, Sprite, Texture, Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { convertKeyboardLettersToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -60,7 +61,7 @@ export class GameLevelFruitScreen extends Container {
     this.fallVelocity = props.fallVelocity;
     this.totalFruits = props.totalFruits;
 
-    const bufferFruits = props.letters.map((letter: string) => {
+    const bufferFruits = convertKeyboardLettersToCurrentScript(props.letters).map((letter) => {
       return new Fruit({ letter });
     });
     bufferFruits.sort(() => Math.random() - 0.5);

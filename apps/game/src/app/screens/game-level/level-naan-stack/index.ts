@@ -3,6 +3,7 @@ import { Container, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { convertKeyboardLettersToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -70,7 +71,7 @@ export class GameNaanStackScreen extends Container {
     const mapUnit = findMapUnitForLevel(typedLevel);
     super();
     this.level = typedLevel;
-    this.letterPool = typedLevel.props.letters;
+    this.letterPool = convertKeyboardLettersToCurrentScript(typedLevel.props.letters);
     this.plateCapacity = typedLevel.props.plateCapacity;
     this.spawnIntervalMs = typedLevel.props.spawnDelayMs;
     this.moveSpeed = typedLevel.props.moveSpeed;

@@ -2,6 +2,7 @@ import { Container, Sprite, Text, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { convertKeyboardLettersToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -132,7 +133,10 @@ export class GameLevelOneScreen extends Container {
     this.level = typedLevel;
     this.targetCount = typedLevel.props.targetCount;
     this.roundDurationMs = typedLevel.props.roundDurationMs;
-    this.letters = shuffledLetters(typedLevel.props.letters, this.targetCount);
+    this.letters = shuffledLetters(
+      convertKeyboardLettersToCurrentScript(typedLevel.props.letters),
+      this.targetCount,
+    );
     this.score.text = `0/${this.targetCount}`;
 
     this.hud = new HUD({
