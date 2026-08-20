@@ -1,4 +1,4 @@
-import { BookOpen, PawPrint, TextQuote, Trophy } from 'lucide-react';
+import { BookOpen, PawPrint, TextQuote, Trophy, Users } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 
 import {
@@ -16,26 +16,47 @@ const contentItems = [
   { title: 'Rewards', url: '/rewards', icon: Trophy },
 ] as const;
 
+const playerItems = [{ title: 'Users', url: '/users', icon: Users }] as const;
+
 export function NavContent() {
   const location = useLocation();
 
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>Content</SidebarGroupLabel>
-      <SidebarMenu>
-        {contentItems.map((item) => (
-          <SidebarMenuItem key={item.url}>
-            <SidebarMenuButton
-              render={<Link to={item.url} />}
-              isActive={location.pathname === item.url}
-              tooltip={item.title}
-            >
-              <item.icon />
-              <span className="font-medium">{item.title}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        ))}
-      </SidebarMenu>
-    </SidebarGroup>
+    <>
+      <SidebarGroup>
+        <SidebarGroupLabel>Content</SidebarGroupLabel>
+        <SidebarMenu>
+          {contentItems.map((item) => (
+            <SidebarMenuItem key={item.url}>
+              <SidebarMenuButton
+                render={<Link to={item.url} />}
+                isActive={location.pathname === item.url}
+                tooltip={item.title}
+              >
+                <item.icon />
+                <span className="font-medium">{item.title}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroup>
+      <SidebarGroup>
+        <SidebarGroupLabel>Players</SidebarGroupLabel>
+        <SidebarMenu>
+          {playerItems.map((item) => (
+            <SidebarMenuItem key={item.url}>
+              <SidebarMenuButton
+                render={<Link to={item.url} />}
+                isActive={location.pathname === item.url}
+                tooltip={item.title}
+              >
+                <item.icon />
+                <span className="font-medium">{item.title}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroup>
+    </>
   );
 }

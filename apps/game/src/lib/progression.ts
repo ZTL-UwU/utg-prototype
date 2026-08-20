@@ -5,6 +5,7 @@ import {
   type TLevel,
   type TMapUnit,
 } from '../app/screens/level-map/units';
+import { useAuthStore } from '../zustandStores/auth';
 import useResultStore from '../zustandStores/resultStore';
 
 const LAYER_PREREQUISITE: Record<TLayer, TLayer | null> = {
@@ -32,6 +33,10 @@ function progressionUnknown(): boolean {
   return useResultStore.getState().status === 'error';
 }
 
+function isCheatUnlocked(): boolean {
+  return useAuthStore.getState().user?.is_cheat === true;
+}
+
 export function hasCompletedLevel(levelId: number): boolean {
   return useResultStore.getState().hasCompletedLevel(levelId);
 }
@@ -44,7 +49,7 @@ export function isLayerComplete(layer: TLayer): boolean {
 
 /** Education is open first; each later layer waits on the previous one. */
 export function isLayerUnlocked(layer: TLayer): boolean {
-  if (progressionUnknown()) return true;
+  if (isCheatUnlocked() || progressionUnknown()) return true;
   const prerequisite = LAYER_PREREQUISITE[layer];
   return prerequisite === null || isLayerComplete(prerequisite);
 }
@@ -58,7 +63,7 @@ export function isMapUnitComplete(mapUnit: TMapUnit): boolean {
  * once the typing layer is finished.
  */
 export function isMapUnitUnlocked(mapUnit: TMapUnit): boolean {
-  if (progressionUnknown()) return true;
+  if (isCheatUnlocked() || progressionUnknown()) return true;
   if (!isLayerUnlocked(mapUnit.type)) return false;
   if (mapUnit.type === 'game') return true;
 
@@ -74,7 +79,7 @@ export function isMapUnitUnlocked(mapUnit: TMapUnit): boolean {
  */
 export function isLevelUnlocked(level: TLevel): boolean {
   if (!level.unlocked || !level.screen) return false;
-  if (progressionUnknown()) return true;
+  if (isCheatUnlocked() || progressionUnknown()) return true;
 
   let mapUnit: TMapUnit;
   try {

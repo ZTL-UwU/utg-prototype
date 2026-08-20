@@ -24,6 +24,7 @@ const CONTENT_TITLES: Record<string, string> = {
   '/sentences': 'Sentences',
   '/mascots': 'Mascots',
   '/rewards': 'Rewards',
+  '/users': 'Users',
 };
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
@@ -108,7 +109,7 @@ export default function AppLayout() {
             </Breadcrumb>
           </div>
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0 md:pt-2 md:p-6 lg:pt-2 lg:p-8">
+        <div className="flex min-w-0 flex-1 flex-col gap-4 p-4 pt-0 md:p-6 md:pt-2 lg:p-8 lg:pt-2">
           <Outlet />
         </div>
       </SidebarInset>

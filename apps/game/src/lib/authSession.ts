@@ -1,4 +1,4 @@
-import { useAuthStore } from '../zustandStores/auth';
+import { useAuthStore, type AuthUser } from '../zustandStores/auth';
 import { api } from './api';
 
 /** Reject entry if refresh would die during a long play session. */
@@ -46,9 +46,10 @@ export async function ensureValidSession(): Promise<boolean> {
   // Call the profile api to check if the session is truly valid
   // If the access token is expired, the api will auto refresh it
   try {
-    await api('/user/profile', {
+    const profile = await api<AuthUser>('/user/profile', {
       method: 'GET',
     });
+    useAuthStore.getState().setUser({ ...user, ...profile });
     return true;
   } catch {
     clearTokens();

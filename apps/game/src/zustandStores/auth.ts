@@ -16,6 +16,11 @@ export type AuthUser = {
    * treat a missing value as "unknown", not "owns nothing".
    */
   reward_ids?: number[];
+  /**
+   * Admin-managed flag: skip play-order locks so every published level is playable.
+   * Optional on sessions persisted before this field existed; treat missing as false.
+   */
+  is_cheat?: boolean;
 };
 
 /** Local-only player used when someone continues without an account. */
