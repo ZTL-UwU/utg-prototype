@@ -20,6 +20,7 @@ import { typingGoat } from './types/typing-goat';
 import { typingInstrument } from './types/typing-instrument';
 import { typingMarket } from './types/typing-market';
 import { typingSandstorm } from './types/typing-sandstorm';
+import { typingSpring } from './types/typing-spring';
 import { typingStory } from './types/typing-story';
 import { typingWord } from './types/typing-word';
 
@@ -47,6 +48,7 @@ export const LEVEL_TYPES = {
   'typing-market': typingMarket,
   'typing-story': typingStory,
   'typing-goat': typingGoat,
+  'typing-spring': typingSpring,
   'game-tandoor-rush': gameTandoorRush,
   'game-fruit-fall': gameFruitFall,
   'game-naan-stack': gameNaanStack,

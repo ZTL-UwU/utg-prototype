@@ -90,6 +90,18 @@ export function defaultTypingGoatsProps(): TypingGoatsProps {
   return { sentenceIds: [], roundCount: 3, sentenceDurationMs: 60_000 };
 }
 
+export const typingSpringPropsSchema = z.object({
+  storyId: z.number().int().positive().nullable(),
+  roundCount: z.number().int().positive(),
+  sentenceDurationMs: z.number().int().positive(),
+});
+
+export type TypingSpringProps = z.infer<typeof typingSpringPropsSchema>;
+
+export function defaultTypingSpringProps(): TypingSpringProps {
+  return { storyId: null, roundCount: 3, sentenceDurationMs: 60_000 };
+}
+
 export const gameTandoorRushPropsSchema = z.object({
   letters: z.array(z.string().min(1)),
   targetCount: z.number().int().positive(),
