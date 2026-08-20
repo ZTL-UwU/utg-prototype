@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { api } from '../lib/api';
 import { loadGuestResults, saveGuestResults } from '../lib/guestResults';
 import { ensureRemoteReady, type RemoteStatus } from '../lib/remoteResource';
+import { toLocalDayKey } from '../utils/date';
 import { useAuthStore, sessionKind } from './auth';
 import { getAccuracyPercent } from './scoreManager';
 
@@ -14,6 +15,8 @@ export interface LevelResult {
   score: number;
   correct: number;
   mistake: number;
+  // server rows always carry, old local rows are invalidated if this is required
+  created_at?: string;
 }
 
 /** Payload recorded locally for a guest attempt (no server id yet). */
@@ -107,7 +110,16 @@ const useResultStore = create<ResultStore>((set, get) => ({
     set((state) => ({
       results: [
         ...state.results,
-        { id: -levelId, level_id: levelId, star, score: 0, correct: 0, mistake: 0 },
+        {
+          id: -levelId,
+          level_id: levelId,
+          star,
+          score: 0,
+          correct: 0,
+          mistake: 0,
+          // Stamped locally so today lights up on the calendar before the POST answers.
+          created_at: new Date().toISOString(),
+        },
       ],
     }));
   },
@@ -125,6 +137,8 @@ const useResultStore = create<ResultStore>((set, get) => ({
           score: attempt.score,
           correct: attempt.correct,
           mistake: attempt.mistake,
+          // Guests never reach the server, so this is the only timestamp their history gets.
+          created_at: new Date().toISOString(),
         },
       ],
     }));
@@ -173,6 +187,28 @@ export function selectResultTotals(results: LevelResult[]): ResultTotals {
   for (const star of bestStars.values()) totalStars += star;
 
   return { totalStars, correct, mistake, accuracy: getAccuracyPercent(correct, mistake) };
+}
+
+/**
+ * The local calendar days on which this player finished a level, as `YYYY-MM-DD` keys.
+ *
+ * Stars gate it: a 0-star attempt is still recorded for the lifetime totals, but it is an
+ * attempt, not a finish, so it does not earn the day a flame. Rows with no `created_at` are
+ * skipped rather than guessed at - see the field's note on legacy guest history.
+ */
+export function selectStreakDays(results: LevelResult[]): Set<string> {
+  const days = new Set<string>();
+
+  for (const result of results) {
+    if (result.star <= 0 || !result.created_at) continue;
+
+    const finishedAt = new Date(result.created_at);
+    if (Number.isNaN(finishedAt.getTime())) continue;
+
+    days.add(toLocalDayKey(finishedAt));
+  }
+
+  return days;
 }
 
 /**

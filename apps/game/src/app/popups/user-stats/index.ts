@@ -4,13 +4,18 @@ import { BlurFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js'
 
 import { engine } from '../../../engine/getEngine';
 import { getAvatarPath } from '../../../utils/avatars';
+import { formatMonthTitle } from '../../../utils/date';
 import { useAuthStore } from '../../../zustandStores/auth';
 import { useLevelProgress } from '../../../zustandStores/levelProgressStore';
-import useResultStore, { selectResultTotals } from '../../../zustandStores/resultStore';
+import useResultStore, {
+  selectResultTotals,
+  selectStreakDays,
+} from '../../../zustandStores/resultStore';
 import { useUserRewardStore } from '../../../zustandStores/userRewardStore';
 import { AvatarSelectScreen } from '../../screens/avatar-select';
 import { AuthScreen } from '../../screens/home/auth';
 import { BackButton } from '../../ui/back-button';
+import { StreakCalendar } from './streak-calendar';
 
 const POPUP_WIDTH = 1481;
 const POPUP_HEIGHT = 833;
@@ -44,6 +49,12 @@ const SECTION_TITLE_STYLE = {
   fill: VALUE_COLOR,
 } as const;
 
+const MONTH_LABEL_STYLE = {
+  fontFamily: 'Concert One',
+  fontSize: 30,
+  fill: LABEL_COLOR,
+} as const;
+
 const LOGOUT_BUTTON_WIDTH = 190;
 const LOGOUT_BUTTON_HEIGHT = 62;
 
@@ -74,6 +85,7 @@ export class UserStatsPopup extends Container {
   private correctAttemptsValue: Text;
   private incorrectAttemptsValue: Text;
   private profileIcon: Sprite;
+  private streakCalendar: StreakCalendar;
   private unsubscribeScore: () => void;
 
   constructor() {
@@ -166,20 +178,24 @@ export class UserStatsPopup extends Container {
       ],
     });
 
-    const streaksTitle = new Text({
-      text: 'Streaks',
-      style: SECTION_TITLE_STYLE,
-      layout: true,
+    const streakMonth = new Date();
+
+    // One heading row instead of two: a separate month title inside the calendar would cost
+    // another ~55px of the fixed slot, which the day cells need more.
+    const streaksTitle = new Container({
+      layout: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        justifyContent: 'space-between',
+        width: '100%',
+      },
+      children: [
+        new Text({ text: 'Streaks', style: SECTION_TITLE_STYLE, layout: true }),
+        new Text({ text: formatMonthTitle(streakMonth), style: MONTH_LABEL_STYLE, layout: true }),
+      ],
     });
 
-    const streaksPlaceholder = new Graphics()
-      .roundRect(0, 0, 650, 525, 15)
-      .fill({ color: 0xffffff, alpha: 0.35 })
-      .stroke({ color: 0xcccccc, width: 2 });
-    streaksPlaceholder.layout = {
-      width: '100%',
-      height: '100%',
-    };
+    this.streakCalendar = new StreakCalendar(streakMonth);
 
     const streaksSection = new Container({
       layout: {
@@ -188,7 +204,7 @@ export class UserStatsPopup extends Container {
         flex: 2,
         paddingRight: 60,
       },
-      children: [streaksTitle, streaksPlaceholder],
+      children: [streaksTitle, this.streakCalendar],
     });
 
     const body = new Container({
@@ -239,14 +255,15 @@ export class UserStatsPopup extends Container {
   }
 
   private updateStats() {
-    const { totalStars, correct, mistake, accuracy } = selectResultTotals(
-      useResultStore.getState().results,
-    );
+    const { results } = useResultStore.getState();
+    const { totalStars, correct, mistake, accuracy } = selectResultTotals(results);
 
     this.totalStarsValue.text = String(totalStars);
     this.averageAccuracyValue.text = `${accuracy}%`;
     this.correctAttemptsValue.text = String(correct);
     this.incorrectAttemptsValue.text = String(mistake);
+
+    this.streakCalendar.setActiveDays(selectStreakDays(results));
   }
 
   private async logout() {

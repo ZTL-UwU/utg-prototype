@@ -5,10 +5,13 @@ interface StoredLevelResult {
   score: number;
   correct: number;
   mistake: number;
+  /** Absent on histories persisted before the streak calendar (storage version 1). */
+  created_at?: string;
 }
 
 const STORAGE_KEY = 'utg-guest-level-results';
-const VERSION = 1;
+// 2: rows carry `created_at`. Version 1 rows stay valid; they just have no date.
+const VERSION = 2;
 
 function isLevelResult(value: unknown): value is StoredLevelResult {
   if (typeof value !== 'object' || value === null) return false;
@@ -19,7 +22,8 @@ function isLevelResult(value: unknown): value is StoredLevelResult {
     typeof row.star === 'number' &&
     typeof row.score === 'number' &&
     typeof row.correct === 'number' &&
-    typeof row.mistake === 'number'
+    typeof row.mistake === 'number' &&
+    (row.created_at === undefined || typeof row.created_at === 'string')
   );
 }
 
