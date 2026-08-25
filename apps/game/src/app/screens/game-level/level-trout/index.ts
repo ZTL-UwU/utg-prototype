@@ -1,4 +1,3 @@
-import { sound } from '@pixi/sound';
 import { Container, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
@@ -6,11 +5,7 @@ import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { convertToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
-import {
-  getWordAudioAlias,
-  REMOTE_WORDS_BUNDLE,
-  resolveWordsByIds,
-} from '../../../../zustandStores/wordStore';
+import { REMOTE_WORDS_BUNDLE, resolveWordsByIds } from '../../../../zustandStores/wordStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
@@ -326,7 +321,6 @@ export class GameLevelTrout extends Container {
 
       if (trout.isComplete) {
         void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
-        this.playWordAudio(trout.wordId);
         void this.onWordCaught(trout);
       } else {
         this.keyboard.setHintedLetter(trout.currentLetter);
@@ -420,11 +414,6 @@ export class GameLevelTrout extends Container {
     if (!this.hasPlayableTrout()) await this.startNewRound();
     else this.activateNextAvailableTrout();
     this.resolving = false;
-  }
-
-  private playWordAudio(wordId: number) {
-    const alias = getWordAudioAlias(wordId);
-    if (sound.exists(alias)) void engine().audio.sfx.play(alias);
   }
 
   private endGame() {
