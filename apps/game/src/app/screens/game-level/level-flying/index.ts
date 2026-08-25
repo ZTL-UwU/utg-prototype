@@ -128,7 +128,9 @@ export class GameLevelFlying extends Container {
     this.bird.anchor.set(0.5);
 
     const wordPool = resolveWordsByIds(props.wordIds).map((word) => word.word);
-    this.words = pickWords(wordPool, props.totalWords).map(convertToCurrentScript);
+    this.words = pickWords(wordPool, props.totalWords).map((word) =>
+      convertToCurrentScript(word, { autoCapitalize: false }),
+    );
     this.activeWord = this.words[0];
     this.wordStyle = createTypingWordStyle(props.wordFontSize, WORD_BASE_COLOR);
     this.wordText = new HTMLText({ style: this.wordStyle });

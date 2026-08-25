@@ -87,7 +87,10 @@ export class GameLevelTrout extends Container {
     this.swimSpeed = props.swimSpeedPxPerSecond;
 
     this.wordPool = resolveWordsByIds(props.wordIds)
-      .map((entry) => ({ id: entry.id, word: convertToCurrentScript(entry.word) }))
+      .map((entry) => ({
+        id: entry.id,
+        word: convertToCurrentScript(entry.word, { autoCapitalize: false }),
+      }))
       .filter((entry) => entry.word.length > 0);
 
     this.background = new Sprite({

@@ -53,7 +53,7 @@ export function generateRoundsDictionary(wordIds: number[] = [], roundCount = 5)
     .filter((word) => word.image_url)
     .map((word) => ({
       wordId: word.id,
-      word: convertToCurrentScript(word.word.trim()),
+      word: convertToCurrentScript(word.word.trim(), { autoCapitalize: false }),
       activeLetterIdx: 0,
     }));
 

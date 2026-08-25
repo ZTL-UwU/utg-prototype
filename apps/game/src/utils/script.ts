@@ -1,5 +1,5 @@
 import { getKeyboardLettersForScript } from '@utg/letters';
-import { convertArabic, type TargetScript } from '@utg/script-converter';
+import { convertArabic, type ConvertOptions, type TargetScript } from '@utg/script-converter';
 
 import { scriptState } from '../zustandStores/scriptState';
 
@@ -31,8 +31,8 @@ export function getScriptFontFamily(): string {
 }
 
 /** Convert Arabic-script text to the player's selected orthography. */
-export function convertToCurrentScript(text: string): string {
-  return convertArabic(text, getCurrentTargetScript());
+export function convertToCurrentScript(text: string, options?: ConvertOptions): string {
+  return convertArabic(text, getCurrentTargetScript(), options);
 }
 
 /**

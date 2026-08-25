@@ -50,3 +50,18 @@ describe('convertArabic', () => {
     });
   });
 });
+
+describe('autoCapitalize option', () => {
+  it('defaults to capitalizing Latin and Cyrillic output', () => {
+    expect(convert('سالام', 'Arabic', 'Latin')).toBe('Salam');
+    expect(convert('سالام', 'Arabic', 'Cyrillic')).toBe('Салам');
+  });
+
+  it('leaves Latin and Cyrillic lowercase when disabled', () => {
+    const options = { autoCapitalize: false } as const;
+    expect(convert('سالام ئالەيكۇم!', 'Arabic', 'Latin', options)).toBe('salam aleykum!');
+    expect(convert('سالام ئالەيكۇم!', 'Arabic', 'Cyrillic', options)).toBe('салам аләйкум!');
+    expect(convertArabic('راھىلە', 'Latin', options)).toBe('rahile');
+    expect(convertArabic('راھىلە', 'Cyrillic', options)).toBe('раһилә');
+  });
+});
