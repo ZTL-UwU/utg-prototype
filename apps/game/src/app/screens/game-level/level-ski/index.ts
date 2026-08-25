@@ -11,6 +11,7 @@ import {
 } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { getSentenceMarkup } from '../../../../utils/example-words';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import {
   convertToCurrentScript,
@@ -69,7 +70,6 @@ const COUNTDOWN_COLORS = [0xef5a42, 0xf5a623, 0x7ed957] as const;
 
 const SENTENCE_COLORS = {
   completed: 0x86bd65,
-  error: 0xef5a42,
   remaining: 0x333333,
 } as const;
 
@@ -123,8 +123,6 @@ type SkiState =
 type SentenceRound = {
   sentence: string;
   correctIdx: number;
-  /** How many upcoming letters to paint red (one per consecutive mistake). */
-  mistakeCount: number;
 };
 
 function pickSentences(sentenceIds: number[], roundCount: number): string[] {
@@ -153,22 +151,9 @@ function createSkiSentenceStyle(fontSize: number): HTMLTextStyle {
     cssOverrides: [`direction: ${rtl ? 'rtl' : 'ltr'}`],
     tagStyles: {
       completed: { fill: SENTENCE_COLORS.completed },
-      error: { fill: SENTENCE_COLORS.error },
       remaining: { fill: SENTENCE_COLORS.remaining },
     },
   });
-}
-
-function getSkiSentenceMarkup(sentence: string, correctIdx: number, mistakeCount: number): string {
-  const completed = sentence.slice(0, correctIdx);
-  const errorLen = Math.min(Math.max(0, mistakeCount), sentence.length - correctIdx);
-  const errored = sentence.slice(correctIdx, correctIdx + errorLen);
-  const remaining = sentence.slice(correctIdx + errorLen);
-  return (
-    `<completed>${completed}</completed>` +
-    `<error>${errored}</error>` +
-    `<remaining>${remaining}</remaining>`
-  );
 }
 
 function lerp(a: number, b: number, t: number) {
@@ -444,7 +429,7 @@ export class GameLevelSki extends Container {
   }
 
   private get currentTargetLetter(): string | undefined {
-    if (!this.currentRound || this.currentRound.mistakeCount > 0) return undefined;
+    if (!this.currentRound) return undefined;
     return this.currentRound.sentence[this.currentRound.correctIdx];
   }
 
@@ -485,7 +470,6 @@ export class GameLevelSki extends Container {
     this.currentRound = {
       sentence: this.sentences[index]!,
       correctIdx: 0,
-      mistakeCount: 0,
     };
     this.approachElapsedMs = 0;
     this.timerColor = 'green';
@@ -536,8 +520,8 @@ export class GameLevelSki extends Container {
 
   private renderSentence() {
     if (!this.currentRound) return;
-    const { sentence, correctIdx, mistakeCount } = this.currentRound;
-    this.sentenceText.text = getSkiSentenceMarkup(sentence, correctIdx, mistakeCount);
+    const { sentence, correctIdx } = this.currentRound;
+    this.sentenceText.text = getSentenceMarkup(sentence, correctIdx);
     this.layoutSentencePanel();
     this.keyboard.setHintedLetter(this.currentTargetLetter);
   }
@@ -567,20 +551,8 @@ export class GameLevelSki extends Container {
       return;
     }
 
-    if (event.code === 'Backspace' || event.key === 'Backspace') {
-      event.preventDefault();
-      this.handleBackspace();
-      return;
-    }
-
     const typed = getMappedFromKeyboardEvent(event);
     if (typed === '' && event.code !== 'Space') return;
-
-    // Must backspace red error letters before a correct key can advance.
-    if (this.currentRound.mistakeCount > 0) {
-      this.onTypingMistake(event.code);
-      return;
-    }
 
     const { sentence, correctIdx } = this.currentRound;
     const matched = typed.length > 0 && sentence.startsWith(typed, correctIdx);
@@ -589,7 +561,6 @@ export class GameLevelSki extends Container {
       this.pushTimeout(() => this.keyboard.clearKeyFeedback(event.code), FEEDBACK_MS);
       useSessionStore.getState().recordCorrect();
       this.pulseSkiSway();
-      this.currentRound.mistakeCount = 0;
       this.currentRound.correctIdx += typed.length;
       if (this.currentRound.correctIdx >= sentence.length) {
         void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
@@ -634,18 +605,8 @@ export class GameLevelSki extends Container {
     }, SWAY_RETURN_MS);
   }
 
-  private handleBackspace() {
-    if (!this.currentRound || this.currentRound.mistakeCount <= 0) return;
-    this.currentRound.mistakeCount -= 1;
-    this.keyboard.setKeyFeedback('Backspace', 'success');
-    this.pushTimeout(() => this.keyboard.clearKeyFeedback('Backspace'), FEEDBACK_MS);
-    this.renderSentence();
-  }
-
   private onTypingMistake(code: string) {
     if (!this.currentRound) return;
-    const remaining = this.currentRound.sentence.length - this.currentRound.correctIdx;
-    this.currentRound.mistakeCount = Math.min(this.currentRound.mistakeCount + 1, remaining);
     this.keyboard.setKeyFeedback(code, 'error');
     void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
     this.pushTimeout(() => {
@@ -653,7 +614,6 @@ export class GameLevelSki extends Container {
       this.keyboard.setHintedLetter(this.currentTargetLetter);
     }, FEEDBACK_MS);
     useSessionStore.getState().recordMistake();
-    this.renderSentence();
 
     const livesLeft = this.livesBar.loseLife();
     if (livesLeft <= 0) {
