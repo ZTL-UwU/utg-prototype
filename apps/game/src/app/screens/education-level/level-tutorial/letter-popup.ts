@@ -14,6 +14,7 @@ import {
   REMOTE_WORDS_BUNDLE,
   type WordSimple,
 } from '../../../../zustandStores/wordStore';
+import { createLetterNavButtons } from '../../../ui/letter-nav-buttons';
 import { SoundButton } from '../../../ui/sound-button';
 import { MissingWordNotice } from './missing-word-notice';
 
@@ -46,6 +47,7 @@ export class LetterPopup extends Container {
   private variantImage: Sprite;
   private background: Graphics;
   private closeButton: FancyButton;
+  private prevButton: FancyButton;
   private nextButton: FancyButton;
   private soundButton: SoundButton;
 
@@ -62,7 +64,12 @@ export class LetterPopup extends Container {
     this.background.layout = { position: 'absolute', width: '100%', height: '100%' };
 
     this.closeButton = this.createCloseButton();
-    this.nextButton = this.createNextButton();
+    const { prevButton, nextButton } = createLetterNavButtons({
+      onPrev: () => this.goToLetter(getAdjacentLetter(this.letter, -1)),
+      onNext: () => this.goToLetter(getAdjacentLetter(this.letter, 1)),
+    });
+    this.prevButton = prevButton;
+    this.nextButton = nextButton;
     this.variantImage = new Sprite({
       texture: Texture.from(`education-levels/education-letter-variants/${this.letter}.png`),
       anchor: 0.5,
@@ -88,6 +95,7 @@ export class LetterPopup extends Container {
     this.addChild(
       this.background,
       this.closeButton,
+      this.prevButton,
       this.nextButton,
       this.variantImage,
       this.soundButton,
@@ -182,22 +190,6 @@ export class LetterPopup extends Container {
     button.onPress.connect(() => {
       engine().audio.sfx.stop(this.getSoundAlias());
       void engine().navigation.hidePopup();
-    });
-    return button;
-  }
-
-  private createNextButton(): FancyButton {
-    const button = new FancyButton({
-      defaultView: 'ui/next-button.svg',
-      animations: {
-        hover: { props: { scale: { x: 1.03, y: 1.03 } }, duration: 100 },
-        pressed: { props: { scale: { x: 0.97, y: 0.97 } }, duration: 100 },
-      },
-    });
-    button.anchor.set(0.5);
-    button.layout = { position: 'absolute', top: '10%', left: '95%' };
-    button.onPress.connect(() => {
-      this.goToLetter(getAdjacentLetter(this.letter, 1));
     });
     return button;
   }
