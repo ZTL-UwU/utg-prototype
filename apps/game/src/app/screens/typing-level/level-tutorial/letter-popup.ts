@@ -12,6 +12,7 @@ import {
   isCurrentScriptRtl,
 } from '../../../../utils/script';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
+import { createLetterNavButtons } from '../../../ui/letter-nav-buttons';
 import { HandGuide } from './hand-guide';
 
 const COLORS = {
@@ -158,6 +159,7 @@ export class LetterPopup extends Container {
   private readonly handGuide: HandGuide;
   private readonly background: Graphics;
   private readonly closeButton: FancyButton;
+  private readonly prevButton: FancyButton;
   private readonly nextButton: FancyButton;
   private readonly guide = new Container();
   private readonly stars = new Sprite({
@@ -182,7 +184,12 @@ export class LetterPopup extends Container {
     this.background.layout = { position: 'absolute', width: '100%', height: '100%' };
 
     this.closeButton = this.createCloseButton();
-    this.nextButton = this.createNextButton();
+    const { prevButton, nextButton } = createLetterNavButtons({
+      onPrev: () => this.goToLetter(getAdjacentLetter(this.letter, -1)),
+      onNext: () => this.goToLetter(getAdjacentLetter(this.letter, 1)),
+    });
+    this.prevButton = prevButton;
+    this.nextButton = nextButton;
     this.keyboard = new KeyboardLayout();
     this.handGuide = new HandGuide();
     this.stars.visible = false;
@@ -191,6 +198,7 @@ export class LetterPopup extends Container {
     this.addChild(
       this.background,
       this.closeButton,
+      this.prevButton,
       this.nextButton,
       this.guide,
       this.keyboard,
@@ -500,22 +508,6 @@ export class LetterPopup extends Container {
     button.onPress.connect(() => {
       void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
       void engine().navigation.hidePopup();
-    });
-    return button;
-  }
-
-  private createNextButton(): FancyButton {
-    const button = new FancyButton({
-      defaultView: 'ui/next-button.svg',
-      animations: {
-        hover: { props: { scale: { x: 1.03, y: 1.03 } }, duration: 100 },
-        pressed: { props: { scale: { x: 0.97, y: 0.97 } }, duration: 100 },
-      },
-    });
-    button.anchor.set(0.5);
-    button.layout = { position: 'absolute', top: '10%', left: '95%' };
-    button.onPress.connect(() => {
-      this.goToLetter(getAdjacentLetter(this.letter, 1));
     });
     return button;
   }
