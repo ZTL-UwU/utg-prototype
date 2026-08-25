@@ -75,9 +75,9 @@ export class GameLevelKite extends Container {
     });
     this.keyboard = new KeyboardLayout();
 
-    this.wordPool = resolveWordsByIds(props.wordIds)
-      .map((word) => word.word)
-      .map(convertToCurrentScript);
+    this.wordPool = resolveWordsByIds(props.wordIds).map((word) =>
+      convertToCurrentScript(word.word, { autoCapitalize: false }),
+    );
     this.wordPool.sort(() => Math.random() - 0.5);
 
     this.kite = new Kite();

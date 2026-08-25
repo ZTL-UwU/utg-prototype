@@ -209,6 +209,14 @@ function ctsToUcs(text: string): string {
   return replaceViaTable(folded, CTS_CHARS, UCS_CHARS);
 }
 
+export type ConvertOptions = {
+  /**
+   * Capitalize the first letter of the text and after sentence-ending punctuation.
+   * Arabic has no case, so this only affects Latin/Cyrillic output. Defaults to true.
+   */
+  autoCapitalize?: boolean;
+};
+
 /**
  * Capitalize the first letter of the text and after sentence-ending punctuation.
  * Arabic has no case, so outputs in Latin/Cyrillic need this for sentence case.
@@ -219,14 +227,18 @@ function autoCapitalize(text: string): string {
   });
 }
 
+function withAutoCapitalize(text: string, options?: ConvertOptions): string {
+  return options?.autoCapitalize === false ? text : autoCapitalize(text);
+}
+
 /** Convert Uyghur Arabic Script (UAS) to Uyghur Latin Script (ULS). */
-export function arabicToLatin(text: string): string {
-  return autoCapitalize(ctsToUls(uasToCts(text).toLowerCase()));
+export function arabicToLatin(text: string, options?: ConvertOptions): string {
+  return withAutoCapitalize(ctsToUls(uasToCts(text).toLowerCase()), options);
 }
 
 /** Convert Uyghur Arabic Script (UAS) to Uyghur Cyrillic Script (UCS). */
-export function arabicToCyrillic(text: string): string {
-  return autoCapitalize(ctsToUcs(uasToCts(text).toLowerCase()));
+export function arabicToCyrillic(text: string, options?: ConvertOptions): string {
+  return withAutoCapitalize(ctsToUcs(uasToCts(text).toLowerCase()), options);
 }
 
 /** Convert Uyghur Latin Script (ULS) to Uyghur Arabic Script (UAS). */
@@ -235,8 +247,8 @@ export function latinToArabic(text: string): string {
 }
 
 /** Convert Uyghur Latin Script (ULS) to Uyghur Cyrillic Script (UCS). */
-export function latinToCyrillic(text: string): string {
-  return autoCapitalize(ctsToUcs(ulsToCts(text.toLowerCase())));
+export function latinToCyrillic(text: string, options?: ConvertOptions): string {
+  return withAutoCapitalize(ctsToUcs(ulsToCts(text.toLowerCase())), options);
 }
 
 /** Convert Uyghur Cyrillic Script (UCS) to Uyghur Arabic Script (UAS). */
@@ -245,22 +257,27 @@ export function cyrillicToArabic(text: string): string {
 }
 
 /** Convert Uyghur Cyrillic Script (UCS) to Uyghur Latin Script (ULS). */
-export function cyrillicToLatin(text: string): string {
-  return autoCapitalize(ctsToUls(ucsToCts(text)));
+export function cyrillicToLatin(text: string, options?: ConvertOptions): string {
+  return withAutoCapitalize(ctsToUls(ucsToCts(text)), options);
 }
 
 export type TargetScript = 'Arabic' | 'Latin' | 'Cyrillic';
 
 /** Convert between Uyghur Arabic, Latin, and Cyrillic scripts. */
-export function convert(text: string, from: TargetScript, to: TargetScript): string {
+export function convert(
+  text: string,
+  from: TargetScript,
+  to: TargetScript,
+  options?: ConvertOptions,
+): string {
   if (from === to) return text;
   switch (from) {
     case 'Arabic':
-      return to === 'Latin' ? arabicToLatin(text) : arabicToCyrillic(text);
+      return to === 'Latin' ? arabicToLatin(text, options) : arabicToCyrillic(text, options);
     case 'Latin':
-      return to === 'Arabic' ? latinToArabic(text) : latinToCyrillic(text);
+      return to === 'Arabic' ? latinToArabic(text) : latinToCyrillic(text, options);
     case 'Cyrillic':
-      return to === 'Arabic' ? cyrillicToArabic(text) : cyrillicToLatin(text);
+      return to === 'Arabic' ? cyrillicToArabic(text) : cyrillicToLatin(text, options);
   }
 }
 
@@ -268,6 +285,10 @@ export function convert(text: string, from: TargetScript, to: TargetScript): str
  * Convert Uyghur Arabic Script to the given target.
  * Thin wrapper mirroring the upstream converter call style.
  */
-export function convertArabic(text: string, target: TargetScript): string {
-  return convert(text, 'Arabic', target);
+export function convertArabic(
+  text: string,
+  target: TargetScript,
+  options?: ConvertOptions,
+): string {
+  return convert(text, 'Arabic', target, options);
 }
