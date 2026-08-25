@@ -4,6 +4,7 @@ import { Container, Sprite, Texture } from 'pixi.js';
 const BUTTON_ASSET = 'ui/next-button.svg';
 const BUTTON_GAP = 16;
 const BUTTON_SIZE_FALLBACK = 123;
+const BUTTON_SCALE = 0.8;
 const BUTTON_ANIMATIONS = {
   hover: { props: { scale: { x: 1.03, y: 1.03 } }, duration: 100 },
   pressed: { props: { scale: { x: 0.97, y: 0.97 } }, duration: 100 },
@@ -27,6 +28,7 @@ function createButton(pointLeft: boolean, onPress: () => void) {
   const button = new FancyButton({
     defaultView: createArrowView(pointLeft),
     animations: BUTTON_ANIMATIONS,
+    scale: BUTTON_SCALE,
   });
   button.anchor.set(0.5);
   button.onPress.connect(onPress);
@@ -35,7 +37,7 @@ function createButton(pointLeft: boolean, onPress: () => void) {
 
 function navButtonStride() {
   const width = Texture.from(BUTTON_ASSET).width;
-  return (width > 0 ? width : BUTTON_SIZE_FALLBACK) + BUTTON_GAP;
+  return (width > 0 ? width : BUTTON_SIZE_FALLBACK) * BUTTON_SCALE + BUTTON_GAP;
 }
 
 /** Previous/next letter controls, clustered around the existing top-right next slot. */
