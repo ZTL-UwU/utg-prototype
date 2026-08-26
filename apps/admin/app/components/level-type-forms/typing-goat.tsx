@@ -7,7 +7,7 @@ import {
   LEVEL_PROPS_FORM_ID,
   type LevelPropsFormProps,
 } from '~/components/level-type-forms/shared';
-import { SentenceIdsSelector } from '~/components/sentence-ids-selector';
+import { StoryIdSelector } from '~/components/story-id-selector';
 import { Field, FieldDescription, FieldError, FieldLabel } from '~/components/ui/field';
 
 export function TypingGoatPropsForm({
@@ -36,17 +36,17 @@ export function TypingGoatPropsForm({
         children={(dirty) => <DirtyStateBridge dirty={dirty} onDirtyChange={onDirtyChange} />}
       />
 
-      <form.Field name="sentenceIds" mode="array">
+      <form.Field name="storyId">
         {(field) => {
           const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
           return (
             <Field data-invalid={isInvalid}>
-              <FieldLabel>Sentences</FieldLabel>
-              <FieldDescription>Sentences used in this level.</FieldDescription>
-              <SentenceIdsSelector
+              <FieldLabel>Story</FieldLabel>
+              <FieldDescription>Story whose sentences are used in this level.</FieldDescription>
+              <StoryIdSelector
                 value={field.state.value}
-                onChange={(sentenceIds) => {
-                  field.setValue(sentenceIds);
+                onChange={(storyId) => {
+                  field.setValue(storyId);
                   field.handleBlur();
                 }}
               />
