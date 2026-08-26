@@ -97,17 +97,19 @@ export default function WordsPage() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
       <title>{pageTitle('Words')}</title>
-      <header className="flex items-start justify-between gap-4">
+      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="flex max-w-2xl flex-col gap-2">
           <h1 className="text-3xl font-semibold tracking-tight">Words</h1>
           <p className="text-muted-foreground">
             Vocabulary used across education and typing levels.
           </p>
         </div>
-        <Button type="button" size="lg" onClick={openCreate}>
-          <PlusIcon data-icon="inline-start" />
-          Add word
-        </Button>
+        <div className="flex w-full flex-wrap gap-2 md:w-auto md:shrink-0">
+          <Button type="button" size="lg" onClick={openCreate}>
+            <PlusIcon data-icon="inline-start" />
+            Add word
+          </Button>
+        </div>
       </header>
 
       <div className="sticky top-0 z-10 -mx-4 flex flex-col gap-2 bg-background/80 px-4 py-4 backdrop-blur-md md:-mx-6 md:px-6 lg:-mx-8 lg:px-8">

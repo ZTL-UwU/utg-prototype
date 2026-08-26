@@ -305,14 +305,14 @@ export default function RewardsPage() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <title>{pageTitle('Rewards')}</title>
-      <header className="flex items-start justify-between gap-4">
+      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="flex max-w-2xl flex-col gap-2">
           <h1 className="text-3xl font-semibold tracking-tight">Rewards</h1>
           <p className="text-muted-foreground">
             Assign badge and trophy images for each level, or apply one image across a layer.
           </p>
         </div>
-        <div className="flex shrink-0 gap-2">
+        <div className="flex w-full flex-wrap gap-2 md:w-auto md:shrink-0">
           <Button type="button" size="lg" variant="outline" onClick={() => setBulkOpen(true)}>
             Bulk update
           </Button>
