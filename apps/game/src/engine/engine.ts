@@ -42,8 +42,10 @@ export class CreationEngine extends Application {
     // Add a visibility listener, so the app can pause sounds and screens
     document.addEventListener('visibilitychange', this.visibilityChange);
 
-    // Init PixiJS devtools
-    await initDevtools({ app: this });
+    if (import.meta.env.DEV) {
+      // Init PixiJS devtools
+      await initDevtools({ app: this });
+    }
 
     // Init PixiJS assets with this asset manifest
     await Assets.init({ manifest, basePath: `${import.meta.env.BASE_URL}assets` });
