@@ -4,12 +4,8 @@ import { Container, HTMLText, HTMLTextStyle, Sprite, Texture, type Ticker } from
 import { engine } from '../../../../engine/getEngine';
 import { createTypingSentenceStyle, getSentenceMarkup } from '../../../../utils/example-words';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
-import { convertToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
-import {
-  REMOTE_SENTENCES_BUNDLE,
-  resolveSentencesByStoryId,
-} from '../../../../zustandStores/sentenceStore';
+import { REMOTE_SENTENCES_BUNDLE } from '../../../../zustandStores/sentenceStore';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
@@ -18,6 +14,7 @@ import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { RoundedProgressBar } from '../../../ui/rounded-progress-bar';
 import { LevelMapScreen } from '../../level-map';
 import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
+import { generateSentenceRounds, type SentenceRound } from '../sentence-rounds';
 
 const FONT_SIZE = 56;
 const FEEDBACK_DURATION_MS = 350;
@@ -35,26 +32,8 @@ const TIMER_COLORS: Record<TimerColor, number> = {
   red: 0xef5a42,
 };
 
-export type SentenceRound = {
-  sentenceId: number;
-  sentence: string;
-  activeLetterIdx: number;
-};
-
-export function generateSentenceRounds(
-  storyId: number | null = null,
-  roundCount = 3,
-): SentenceRound[] {
-  const pool = (storyId == null ? [] : resolveSentencesByStoryId(storyId))
-    .map((entry) => ({
-      sentenceId: entry.id,
-      sentence: convertToCurrentScript(entry.sentence.trim()),
-      activeLetterIdx: 0,
-    }))
-    .filter((round) => round.sentence.length > 0);
-
-  return [...pool].sort(() => Math.random() - 0.5).slice(0, roundCount);
-}
+export type { SentenceRound };
+export { generateSentenceRounds };
 
 export class TypingSpringScreen extends Container {
   public static assetBundles = ['typing-level-spring', REMOTE_SENTENCES_BUNDLE];
@@ -108,7 +87,7 @@ export class TypingSpringScreen extends Container {
     });
 
     this.keyboard = new KeyboardLayout();
-    this.rounds = generateSentenceRounds(typedLevel.props.storyId, typedLevel.props.roundCount);
+    this.rounds = generateSentenceRounds(typedLevel.props.storyId);
 
     this.sentenceStyle = createTypingSentenceStyle(FONT_SIZE);
     this.sentenceText = new HTMLText({ style: this.sentenceStyle });
@@ -232,7 +211,7 @@ export class TypingSpringScreen extends Container {
       this.endGame();
       return;
     }
-    this.currentRound = this.rounds.pop();
+    this.currentRound = this.rounds.shift();
     if (!this.currentRound) return;
 
     this.resetSentenceTimer();
