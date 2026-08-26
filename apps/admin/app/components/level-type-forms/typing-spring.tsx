@@ -42,7 +42,9 @@ export function TypingSpringPropsForm({
           return (
             <Field data-invalid={isInvalid}>
               <FieldLabel>Story</FieldLabel>
-              <FieldDescription>Story whose sentences are used in this level.</FieldDescription>
+              <FieldDescription>
+                Every sentence in this story is played in story order.
+              </FieldDescription>
               <StoryIdSelector
                 value={field.state.value}
                 onChange={(storyId) => {
@@ -54,17 +56,6 @@ export function TypingSpringPropsForm({
             </Field>
           );
         }}
-      </form.Field>
-
-      <form.Field name="roundCount">
-        {(field) => (
-          <NumberPropsField
-            field={field}
-            label="Round count"
-            description="Number of sentences played in this level."
-            min={1}
-          />
-        )}
       </form.Field>
 
       <form.Field name="sentenceDurationMs">

@@ -22,6 +22,9 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['packages/script-converter/tests/**/*.test.ts'],
+    include: [
+      'packages/script-converter/tests/**/*.test.ts',
+      'packages/level-types/tests/**/*.test.ts',
+    ],
   },
 });
