@@ -79,7 +79,7 @@ export function defaultTypingStoryProps(): TypingStoryProps {
 }
 
 export const typingGoatsPropsSchema = z.object({
-  sentenceIds: z.array(z.number().int().positive()),
+  storyId: z.number().int().positive().nullable(),
   roundCount: z.number().int().positive(),
   sentenceDurationMs: z.number().int().positive(),
 });
@@ -87,7 +87,7 @@ export const typingGoatsPropsSchema = z.object({
 export type TypingGoatsProps = z.infer<typeof typingGoatsPropsSchema>;
 
 export function defaultTypingGoatsProps(): TypingGoatsProps {
-  return { sentenceIds: [], roundCount: 3, sentenceDurationMs: 60_000 };
+  return { storyId: null, roundCount: 3, sentenceDurationMs: 60_000 };
 }
 
 export const typingSpringPropsSchema = z.object({
