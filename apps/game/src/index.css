@@ -28,6 +28,7 @@
   body,
   #root {
     @apply m-0 size-full;
+    touch-action: none;
   }
 
   body {

@@ -8,7 +8,8 @@
     "build": "vp build",
     "lint": "vp check",
     "lint:fix": "vp check --fix",
-    "preview": "vp preview"
+    "preview": "vp preview",
+    "test": "vp test"
   },
   "dependencies": {
     "@assetpack/core": "^1.7.0",
