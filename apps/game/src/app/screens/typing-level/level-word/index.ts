@@ -37,6 +37,7 @@ export type Round = {
   wordId: number;
   word: string;
   activeLetterIdx: number;
+  hasImage: boolean;
 };
 
 /**
@@ -50,11 +51,12 @@ export type Round = {
 // ];
 export function generateRoundsDictionary(wordIds: number[] = [], roundCount = 5): Round[] {
   const pool = resolveWordsByIds(wordIds)
-    .filter((word) => word.image_url)
+    // .filter((word) => word.image_url)
     .map((word) => ({
       wordId: word.id,
       word: convertToCurrentScript(word.word.trim(), { autoCapitalize: false }),
       activeLetterIdx: 0,
+      hasImage: !!word.image_url,
     }));
 
   return [...pool].sort(() => Math.random() - 0.5).slice(0, roundCount);
@@ -75,9 +77,6 @@ export class TypingWordScreen extends Container {
   private keyboard: KeyboardLayout;
   private rounds: Round[];
   private currentRound?: Round;
-  private _cardW: number = CARD_WIDTH;
-  private _sw: number = 0;
-  private _sh: number = 0;
   private paused: boolean;
   private level: TLevel;
 
@@ -111,7 +110,10 @@ export class TypingWordScreen extends Container {
     this.contentContainer = new Container({
       layout: {
         position: 'absolute',
+        left: 0,
+        width: '100%',
         flexDirection: 'row',
+        justifyContent: 'center',
         alignItems: 'center',
         gap: CONTENT_GAP,
       },
@@ -122,12 +124,10 @@ export class TypingWordScreen extends Container {
   }
 
   resize(width: number, height: number) {
-    this._sw = width;
-    this._sh = height;
     this.layout = { width, height };
     this.background.layout = { width, height };
     this.keyboard.resize(width, height);
-    this.centerContent();
+    this.contentContainer.layout = { top: height * 0.15 };
   }
 
   async show() {
@@ -183,28 +183,14 @@ export class TypingWordScreen extends Container {
       height: cardH + SHADOW_OFFSET,
       flexShrink: 0,
     };
-    this._cardW = cardW; // for centering
-    this.centerContent();
   }
 
-  private centerContent() {
-    const groupW = IMAGE_SIZE + CONTENT_GAP + this._cardW + SHADOW_OFFSET;
-    this.contentContainer.layout = {
-      position: 'absolute',
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: CONTENT_GAP,
-      left: (this._sw - groupW) / 2,
-      top: this._sh * 0.15,
-    };
-  }
-
-  private updateContentContainer(image: Sprite, word: string, activeLetterIdx: number) {
+  private updateContentContainer(image: Sprite | undefined, word: string, activeLetterIdx: number) {
     this.contentContainer.removeChildren();
-    image.layout = { width: IMAGE_SIZE, height: IMAGE_SIZE, flexShrink: 0 };
     const len = word[activeLetterIdx].length;
     this.wordText.text = getHighlightedWordMarkup(word, activeLetterIdx, len);
-    this.contentContainer.addChild(image, this.wordContainer);
+    if (image) this.contentContainer.addChild(image);
+    this.contentContainer.addChild(this.wordContainer);
     this.drawCard();
   }
 
@@ -213,8 +199,15 @@ export class TypingWordScreen extends Container {
     if (this.rounds.length === 0) this.endGame();
     this.currentRound = this.rounds.pop() ?? undefined;
     if (!this.currentRound) return;
-    const { wordId, word, activeLetterIdx } = this.currentRound!;
-    const image: Sprite = new Sprite(Texture.from(getWordImageAlias(wordId)));
+    const { wordId, word, activeLetterIdx, hasImage } = this.currentRound;
+    // Words without an image have no entry in the words bundle, so asking for the
+    // texture would only warn and hand back an empty one taking up a slot in the row.
+    const image = hasImage
+      ? new Sprite({
+          texture: Texture.from(getWordImageAlias(wordId)),
+          layout: { width: IMAGE_SIZE, height: IMAGE_SIZE, flexShrink: 0 },
+        })
+      : undefined;
     this.updateContentContainer(image, word, activeLetterIdx); // always highlights first letter, letterIdx for new round always at 0
     this.keyboard.setHintedLetter(this.currentTargetLetter);
   }
