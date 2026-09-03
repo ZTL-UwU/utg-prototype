@@ -58,6 +58,8 @@ export {
   type GameTroutProps,
 } from './schemas/game-trout';
 export {
+  TYPING_TEST_DURATIONS_SECONDS,
+  TYPING_TEST_MODES,
   defaultGameNaanStackProps,
   defaultGameTandoorRushProps,
   defaultTypingDesertProps,
@@ -66,6 +68,7 @@ export {
   defaultTypingSandstormProps,
   defaultTypingSpringProps,
   defaultTypingStoryProps,
+  defaultTypingTestProps,
   defaultTypingWordsProps,
   gameNaanStackPropsSchema,
   gameTandoorRushPropsSchema,
@@ -75,6 +78,7 @@ export {
   typingSandstormPropsSchema,
   typingSpringPropsSchema,
   typingStoryPropsSchema,
+  typingTestPropsSchema,
   typingWordsPropsSchema,
   type GameNaanStackProps,
   type GameTandoorRushProps,
@@ -84,6 +88,9 @@ export {
   type TypingSandstormProps,
   type TypingSpringProps,
   type TypingStoryProps,
+  type TypingTestDurationSeconds,
+  type TypingTestMode,
+  type TypingTestProps,
   type TypingWordsProps,
 } from './schemas/typing-game';
 export { educationBubble } from './types/education-bubble';
@@ -107,4 +114,5 @@ export { typingMarket } from './types/typing-market';
 export { typingSandstorm } from './types/typing-sandstorm';
 export { typingSpring } from './types/typing-spring';
 export { typingStory } from './types/typing-story';
+export { typingTest } from './types/typing-test';
 export { typingWord } from './types/typing-word';

@@ -9,7 +9,7 @@ import {
 } from '../../utils/keymap';
 import { getScriptFontFamily } from '../../utils/script';
 
-export type KeyFeedback = 'none' | 'hint' | 'error' | 'success';
+export type KeyFeedback = 'none' | 'hint' | 'error' | 'error-soft' | 'success';
 
 type Key = {
   code: string;
@@ -130,6 +130,8 @@ const DEFAULT_COLOR_OPTIONS: KeyboardColorOptions = {
 
 const KEY_SUCCESS_COLOR = 0x8ec24d;
 const KEY_ERROR_COLOR = 0xef5a42;
+// Lighter red so a heatmap can rank problem keys against the worst ones.
+const KEY_ERROR_SOFT_COLOR = 0xf6907c;
 const SHIFT_HINT_PADDING = 6;
 const SHIFT_HINT_FONT_SIZE = 22;
 const HOME_KEY_CODES = new Set(['KeyF', 'KeyJ']);
@@ -250,11 +252,13 @@ class KeyCap extends Container {
         ? KEY_SUCCESS_COLOR
         : this.feedback === 'error'
           ? KEY_ERROR_COLOR
-          : this.feedback === 'hint'
-            ? this.keyPressedColor
-            : this.pressed
+          : this.feedback === 'error-soft'
+            ? KEY_ERROR_SOFT_COLOR
+            : this.feedback === 'hint'
               ? this.keyPressedColor
-              : this.keyColor;
+              : this.pressed
+                ? this.keyPressedColor
+                : this.keyColor;
 
     this.background
       .clear()

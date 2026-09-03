@@ -99,6 +99,34 @@ export function defaultTypingSpringProps(): TypingSpringProps {
   return { storyId: null, sentenceDurationMs: 60_000 };
 }
 
+export const TYPING_TEST_MODES = ['letters', 'words', 'sentences'] as const;
+export const TYPING_TEST_DURATIONS_SECONDS = [15, 30, 60] as const;
+
+export type TypingTestMode = (typeof TYPING_TEST_MODES)[number];
+export type TypingTestDurationSeconds = (typeof TYPING_TEST_DURATIONS_SECONDS)[number];
+
+export const typingTestPropsSchema = z.object({
+  letters: z.array(z.string().min(1)),
+  wordIds: z.array(z.number().int().positive()),
+  storyId: z.number().int().positive().nullable(),
+  defaultMode: z.enum(TYPING_TEST_MODES),
+  defaultDurationSeconds: z.union([z.literal(15), z.literal(30), z.literal(60)]),
+  showKeyboardByDefault: z.boolean(),
+});
+
+export type TypingTestProps = z.infer<typeof typingTestPropsSchema>;
+
+export function defaultTypingTestProps(): TypingTestProps {
+  return {
+    letters: [],
+    wordIds: [],
+    storyId: null,
+    defaultMode: 'letters',
+    defaultDurationSeconds: 30,
+    showKeyboardByDefault: true,
+  };
+}
+
 export const gameTandoorRushPropsSchema = z.object({
   letters: z.array(z.string().min(1)),
   targetCount: z.number().int().positive(),
