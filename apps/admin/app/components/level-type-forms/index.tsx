@@ -28,6 +28,7 @@ import { TypingMarketPropsForm } from '~/components/level-type-forms/typing-mark
 import { TypingSandstormPropsForm } from '~/components/level-type-forms/typing-sandstorm';
 import { TypingSpringPropsForm } from '~/components/level-type-forms/typing-spring';
 import { TypingStoryPropsForm } from '~/components/level-type-forms/typing-story';
+import { TypingTestPropsForm } from '~/components/level-type-forms/typing-test';
 import { TypingWordPropsForm } from '~/components/level-type-forms/typing-word';
 import type { Level } from '~/lib/game';
 
@@ -57,6 +58,7 @@ const levelTypePropsForms = {
   'typing-story': TypingStoryPropsForm,
   'typing-goat': TypingGoatPropsForm,
   'typing-spring': TypingSpringPropsForm,
+  'typing-test': TypingTestPropsForm,
   'game-tandoor-rush': GameTandoorRushPropsForm,
   'game-fruit-fall': GameFruitFallingPropsForm,
   'game-naan-stack': GameNaanStackPropsForm,

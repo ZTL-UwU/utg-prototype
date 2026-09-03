@@ -21,6 +21,7 @@ import { TypingMarketScreen } from '../typing-level/level-market';
 import { TypingSandstormScreen } from '../typing-level/level-sandstorm';
 import { TypingSpringScreen } from '../typing-level/level-spring';
 import { TypingSentenceScreen } from '../typing-level/level-story';
+import { TypingTestScreen } from '../typing-level/level-typing-test';
 import { TypingWordScreen } from '../typing-level/level-word';
 import type { LevelScreenConstructor } from './units';
 
@@ -41,6 +42,7 @@ export const LEVEL_TYPE_SCREENS: Record<LevelTypeId, LevelScreenConstructor> = {
   'typing-story': TypingSentenceScreen,
   'typing-goat': TypingGoatsScreen,
   'typing-spring': TypingSpringScreen,
+  'typing-test': TypingTestScreen,
   'game-tandoor-rush': GameLevelOneScreen,
   'game-naan-stack': GameNaanStackScreen,
   'game-fruit-fall': GameLevelFruitScreen,
