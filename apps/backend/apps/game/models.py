@@ -38,6 +38,7 @@ class LevelType(models.TextChoices):
     )
     GAME_TROUT = "game-trout", "Game trout"
     TYPING_SPRING = "typing-spring", "Typing spring"
+    TYPING_TEST = "typing-test", "Typing test"
 
 
 class Unit(AuditingMixin, models.Model):
