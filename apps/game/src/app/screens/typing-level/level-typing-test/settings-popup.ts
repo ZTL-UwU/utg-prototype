@@ -203,7 +203,7 @@ export class TypingTestSettingsPopup extends Container {
     background.layout = { width: PANEL_WIDTH, height: PANEL_HEIGHT };
 
     const title = createFlowLabel('TYPING TEST', 72, COLORS.BUTTON);
-    const subtitle = createFlowLabel('Take this test to know where to start', 32, COLORS.TEXT);
+    const subtitle = createFlowLabel('Choose your preferences for this test', 32, COLORS.TEXT);
 
     const modeControl = new SegmentedControl(
       modes.map((mode) => ({ value: mode, label: MODE_LABELS[mode] })),
