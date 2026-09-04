@@ -3,12 +3,12 @@ import { useState } from 'react';
 import { BackButton } from '../../ui/BackButton';
 import { CloseButton } from '../../ui/CloseButton';
 import aaditPhoto from './team_photos/Aadit.jpg';
+import danaPhoto from './team_photos/Dana.jpeg';
 import jadePhoto from './team_photos/Jade.jpg';
 import manasPhoto from './team_photos/Manas.jpg';
 import nikitaPhoto from './team_photos/Nikita.jpg';
 import patriciaPhoto from './team_photos/Patricia.jpg';
 import tianliPhoto from './team_photos/tianli.jpg';
-
 export interface MenuTeamScreenProps {
   onBack: () => void;
 }
@@ -86,6 +86,16 @@ const TEAM: TeamMember[] = [
     program: 'B.A. International Relations and Minor in Economics',
     favouriteStop: 'Ski Race + Gumchen Story!',
     funFact: 'I am bilingual and I learn Korean Hangeul for fun!',
+  },
+  {
+    name: 'Dana Turdy',
+    role: 'Uyghur Language Advisor',
+    photo: danaPhoto,
+    from: '🇨🇦 🇨🇳',
+    program: 'B.A. Political Science and Sociology',
+    favouriteStop: 'The bazaar is so beautiful to look at!',
+    funFact:
+      'I am an Uyghur immigrant passionate about organizing social justice, travelling, eating good food, and going to see live music',
   },
 ];
 
