@@ -7,8 +7,11 @@ import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { REMOTE_WORDS_BUNDLE, resolveWordsByIds } from '../../../../zustandStores/wordStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
+import { QuitPopup } from '../../../popups/quit';
+import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
-import { getTypedLevel, type TLevel } from '../../level-map/units';
+import { LevelMapScreen } from '../../level-map';
+import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
 import { Gust } from './gust';
 import { Kite } from './kite';
 import { KITE_WIDTH, KitesBar } from './kites-bar';
@@ -17,10 +20,11 @@ import { ScoreCounter } from './score-counter';
 const KEY_FEEDBACK_MS = 300;
 const WORD_COMPLETE_HOLD_MS = 350; // let the last letter read as completed before the gust exits
 const HUD_MARGIN = 40;
+const SCORE_COUNTER_TOP = 172; // clears the back button, which is centred at y 90 and 123 tall
 const MAX_FRAME_MS = 50; // a backgrounded tab must not eat the timer
 
 export class GameLevelKite extends Container {
-  public static assetBundles = ['game-level-kite', REMOTE_WORDS_BUNDLE];
+  public static assetBundles = ['game-level-kite', 'ui', REMOTE_WORDS_BUNDLE];
   public static splashBackgroundAsset = 'game-levels/game-level-kite/splash.png';
   public static helpAssets: string[] = [];
 
@@ -51,6 +55,7 @@ export class GameLevelKite extends Container {
   // hud
   private kitesBar: KitesBar;
   private scoreCounter: ScoreCounter;
+  private hud: HUD;
   private score: number = 0;
 
   // keyboard
@@ -85,7 +90,23 @@ export class GameLevelKite extends Container {
     this.kitesBar = new KitesBar(props.maxLives);
     this.scoreCounter = new ScoreCounter();
 
-    this.addChild(this.background, this.kite, this.keyboard, this.kitesBar, this.scoreCounter);
+    const mapUnit = findMapUnitForLevel(typedLevel);
+    this.hud = new HUD({
+      onBack: () =>
+        void engine().navigation.showPopup(QuitPopup, {
+          mascot: typedLevel.mascot,
+          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
+        }),
+    });
+
+    this.addChild(
+      this.background,
+      this.kite,
+      this.keyboard,
+      this.kitesBar,
+      this.scoreCounter,
+      this.hud,
+    );
   }
   resize(width: number, height: number) {
     this.layout = { width, height };
@@ -95,7 +116,8 @@ export class GameLevelKite extends Container {
     this.kite.resize(width, height);
     this.keyboard.resize(width, height);
     this.kitesBar.position.set(width - HUD_MARGIN, HUD_MARGIN + KITE_WIDTH / 2);
-    this.scoreCounter.position.set(HUD_MARGIN, HUD_MARGIN);
+    this.scoreCounter.position.set(HUD_MARGIN, SCORE_COUNTER_TOP);
+    this.hud.layout = { width, height };
   }
   public update(ticker: Ticker) {
     if (!this.timerRunning || this.paused || this.completed || this.resolving) return;
@@ -140,7 +162,7 @@ export class GameLevelKite extends Container {
     if (!word) return; // no words configured
     this.gust = new Gust({ word, fontSize: this.wordFontSize });
     this.gust.resize(this.screenWidth, this.screenHeight);
-    this.addChild(this.gust);
+    this.addChildAt(this.gust, this.getChildIndex(this.hud)); // gusts pass under the hud
     this.keyboard.setHintedLetter(this.gust.currentLetter);
     this.resolving = false;
     this.timerRunning = false;
