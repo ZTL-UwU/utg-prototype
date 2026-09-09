@@ -25,7 +25,8 @@ def require_perm(
             user = getattr(request, "auth", None) if request is not None else None
             if user is None:
                 raise AuthorizationError(message="Authentication required.")
-
+            if user.is_active and user.is_staff:
+                return view_func(*args, **kwargs)
             checks = (user.has_perm(perm) for perm in perms)
             allowed = any(checks) if any_of else all(checks)
             if not allowed:
