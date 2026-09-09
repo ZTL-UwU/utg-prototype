@@ -7,7 +7,7 @@ import {
   LEVEL_PROPS_FORM_ID,
   type LevelPropsFormProps,
 } from '~/components/level-type-forms/shared';
-import { SentenceIdsSelector } from '~/components/sentence-ids-selector';
+import { StoryIdMultiselect } from '~/components/story-id-multiselect';
 import { Field, FieldDescription, FieldError, FieldLabel } from '~/components/ui/field';
 
 export function GameSkiPropsForm({
@@ -36,37 +36,27 @@ export function GameSkiPropsForm({
         children={(dirty) => <DirtyStateBridge dirty={dirty} onDirtyChange={onDirtyChange} />}
       />
 
-      <form.Field name="sentenceIds" mode="array">
+      <form.Field name="storyIds" mode="array">
         {(field) => {
           const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
           return (
             <Field data-invalid={isInvalid}>
-              <FieldLabel>Sentences</FieldLabel>
+              <FieldLabel>Stories</FieldLabel>
               <FieldDescription>
-                Sentences typed at each barrier during the ski race.
+                Stories randomly selected from to be typed out throughout the game.
               </FieldDescription>
-              <SentenceIdsSelector
+              <StoryIdMultiselect
                 value={field.state.value}
-                onChange={(sentenceIds) => {
-                  field.setValue(sentenceIds);
+                onChange={(storyIds) => {
+                  field.setValue(storyIds);
                   field.handleBlur();
                 }}
               />
+
               {isInvalid && <FieldError errors={field.state.meta.errors} />}
             </Field>
           );
         }}
-      </form.Field>
-
-      <form.Field name="roundCount">
-        {(field) => (
-          <NumberPropsField
-            field={field}
-            label="Barriers"
-            description="How many sentences / barriers appear in the race (spec default is 5)."
-            min={1}
-          />
-        )}
       </form.Field>
 
       <form.Field name="maxLives">
