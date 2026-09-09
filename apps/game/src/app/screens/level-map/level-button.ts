@@ -59,7 +59,9 @@ export class LevelButton extends FancyButton {
     this.ring = new Graphics();
     if (unlocked) {
       const progress = useLevelProgress.getState();
-      this.currentFill = hasCompletedLevel(level.id) ? 1 : 0;
+      // Levels that can never earn a star fall back to the local "played it once" flag.
+      const filled = hasCompletedLevel(level.id) || progress.isAttempted(mapUnit.type, level.id);
+      this.currentFill = filled ? 1 : 0;
       drawDashedRing(this.ring, this.currentRadius, this.currentFill);
       this.addChild(this.ring);
 

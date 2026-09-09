@@ -4,13 +4,19 @@ import { Container, Graphics, HTMLText, HTMLTextStyle, Text, type Ticker } from 
 import { engine } from '../../../../engine/getEngine';
 import { createTypingSentenceStyle, getSentenceMarkup } from '../../../../utils/example-words';
 import { getKeyFromChar, getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { useLevelProgress } from '../../../../zustandStores/levelProgressStore';
 import { REMOTE_SENTENCES_BUNDLE } from '../../../../zustandStores/sentenceStore';
 import { REMOTE_WORDS_BUNDLE } from '../../../../zustandStores/wordStore';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout, type KeyFeedback } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
+import {
+  findMapUnitForLevel,
+  getTypedLevel,
+  type TLevel,
+  type TMapUnit,
+} from '../../level-map/units';
 import { TypingTestResultsPopup } from './results-popup';
 import { TypingTestSettingsPopup, type TypingTestSettings } from './settings-popup';
 import { createPromptSource, type PromptSource } from './test-content';
@@ -54,6 +60,7 @@ export class TypingTestScreen extends Container {
   private readonly keyboard: KeyboardLayout;
   private readonly hud: HUD;
   private readonly level: TLevel;
+  private readonly mapUnit: TMapUnit;
   private readonly props: TypingTestProps;
 
   private promptSource?: PromptSource;
@@ -78,6 +85,7 @@ export class TypingTestScreen extends Container {
     const mapUnit = findMapUnitForLevel(typedLevel);
     super();
     this.level = typedLevel;
+    this.mapUnit = mapUnit;
     this.props = typedLevel.props;
 
     // No help button: it sits where the countdown is drawn.
@@ -301,6 +309,10 @@ export class TypingTestScreen extends Container {
     this.running = false;
     window.removeEventListener('keydown', this.handleKeyDown);
     this.clearPendingFeedback();
+
+    // The test is endlessly replayable and never scored, so finishing one run is all the
+    // map ring can go on.
+    useLevelProgress.getState().markAttempted(this.mapUnit.type, this.level.id);
 
     void engine().navigation.showPopup(TypingTestResultsPopup, {
       level: this.level,

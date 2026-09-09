@@ -1,3 +1,5 @@
+import type { LevelTypeId } from '@utg/level-types';
+
 import {
   findMapUnitForLevel,
   getLayerMaps,
@@ -13,6 +15,16 @@ const LAYER_PREREQUISITE: Record<TLayer, TLayer | null> = {
   typing: 'education',
   game: 'typing',
 };
+
+/**
+ * Drills rather than milestones: endlessly replayable, never scored, so they can never
+ * earn a star. They stay in the play order, but a lock must never wait on one.
+ */
+const NON_GATING_LEVEL_TYPES: ReadonlySet<LevelTypeId> = new Set<LevelTypeId>(['typing-test']);
+
+function gatesProgression(level: TLevel): boolean {
+  return !NON_GATING_LEVEL_TYPES.has(level.levelType);
+}
 
 function playableLevels(mapUnit: TMapUnit): TLevel[] {
   return mapUnit.levels.filter((level) => level.unlocked && level.screen);
@@ -41,9 +53,9 @@ export function hasCompletedLevel(levelId: number): boolean {
   return useResultStore.getState().hasCompletedLevel(levelId);
 }
 
-/** True when every playable level in the layer has a starred result. */
+/** True when every gating level in the layer has a starred result. */
 export function isLayerComplete(layer: TLayer): boolean {
-  const levels = playableLevelsInLayer(layer);
+  const levels = playableLevelsInLayer(layer).filter(gatesProgression);
   return levels.length > 0 && levels.every((level) => hasCompletedLevel(level.id));
 }
 
@@ -55,7 +67,9 @@ export function isLayerUnlocked(layer: TLayer): boolean {
 }
 
 export function isMapUnitComplete(mapUnit: TMapUnit): boolean {
-  return playableLevels(mapUnit).every((level) => hasCompletedLevel(level.id));
+  return playableLevels(mapUnit)
+    .filter(gatesProgression)
+    .every((level) => hasCompletedLevel(level.id));
 }
 
 /**
@@ -75,7 +89,8 @@ export function isMapUnitUnlocked(mapUnit: TMapUnit): boolean {
 
 /**
  * Education and typing levels unlock one after another. Challenge games all
- * unlock at once after the typing layer is complete.
+ * unlock at once after the typing layer is complete. Non-gating levels keep their
+ * slot in the sequence, so they stay reachable and still wait on the level before them.
  */
 export function isLevelUnlocked(level: TLevel): boolean {
   if (!level.unlocked || !level.screen) return false;
