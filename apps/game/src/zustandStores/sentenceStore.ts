@@ -22,8 +22,8 @@ export interface SentenceSimple {
 }
 
 /**
- * Mirrors StoryOut from the backend `/stories/list` endpoint. The nested `sentences`
- * and `is_published` are ignored — sentences are resolved locally by story_id.
+ * Mirrors StorySimpleOut from the backend `/stories/list-simple` endpoint. Its
+ * `sentence_ids` is ignored — sentences are resolved locally by story_id.
  */
 export interface StorySimple {
   id: number;
@@ -98,7 +98,11 @@ const useSentenceStore = create<SentenceStore>((set, get) => ({
     try {
       const [sentences, stories] = await Promise.all([
         api<SentenceSimple[]>('/sentences/list-simple'),
-        api<StorySimple[]>('/stories/list'),
+        // Story names only decorate the ski level; never fail the sentence catalog over them.
+        api<StorySimple[]>('/stories/list-simple').catch((err: unknown) => {
+          console.warn('/stories/list-simple: story names unavailable', err);
+          return [] as StorySimple[];
+        }),
       ]);
       registerSentencesBundle(sentences);
       set({ status: 'ready', error: undefined, sentences, stories });
