@@ -19,10 +19,7 @@ import {
   isCurrentScriptRtl,
 } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
-import {
-  REMOTE_SENTENCES_BUNDLE,
-  resolveSentencesByIds,
-} from '../../../../zustandStores/sentenceStore';
+import { REMOTE_SENTENCES_BUNDLE, resolveStoryById } from '../../../../zustandStores/sentenceStore';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
@@ -31,6 +28,7 @@ import { KeyboardLayout, type KeyboardColorOptions } from '../../../ui/keyboard-
 import { RoundedProgressBar } from '../../../ui/rounded-progress-bar';
 import { LevelMapScreen } from '../../level-map';
 import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
+import { generateSentenceRounds } from '../../typing-level/sentence-rounds';
 import { LivesBar } from './lives-bar';
 
 const DESIGN_WIDTH = 1920;
@@ -125,17 +123,13 @@ type SentenceRound = {
   correctIdx: number;
 };
 
-function pickSentences(sentenceIds: number[], roundCount: number): string[] {
-  const pool = resolveSentencesByIds(sentenceIds)
-    .map((entry) => convertToCurrentScript(entry.sentence.trim()))
-    .filter((sentence) => sentence.length > 0);
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  const picked = shuffled.slice(0, roundCount);
-  // If the pool is smaller than roundCount, cycle so we still get N barriers.
-  while (picked.length > 0 && picked.length < roundCount) {
-    picked.push(shuffled[picked.length % shuffled.length]!);
-  }
-  return picked;
+/** One random story from the level's pool: its title first, then every sentence in story order. */
+function pickStorySentences(storyIds: number[]): string[] {
+  if (storyIds.length === 0) return [];
+  const storyId = storyIds[Math.floor(Math.random() * storyIds.length)]!;
+  const title = convertToCurrentScript(resolveStoryById(storyId)?.name.trim() ?? '');
+  const sentences = generateSentenceRounds(storyId).map((round) => round.sentence);
+  return [title, ...sentences].filter((text) => text.length > 0);
 }
 
 function createSkiSentenceStyle(fontSize: number): HTMLTextStyle {
@@ -168,7 +162,8 @@ export class GameLevelSki extends Container {
   private readonly level: TLevel;
   private readonly approachDurationMs: number;
   private readonly countdownStepMs: number;
-  private readonly sentences: string[];
+  private readonly storyIds: number[];
+  private sentences: string[] = [];
 
   private readonly gameplay = new Container();
   private readonly background: Sprite;
@@ -210,7 +205,8 @@ export class GameLevelSki extends Container {
     this.level = typedLevel;
     this.approachDurationMs = typedLevel.props.approachDurationMs;
     this.countdownStepMs = typedLevel.props.countdownStepMs;
-    this.sentences = pickSentences(typedLevel.props.sentenceIds, typedLevel.props.roundCount);
+    this.storyIds = typedLevel.props.storyIds;
+    this.sentences = pickStorySentences(this.storyIds);
 
     this.background = new Sprite({
       texture: Texture.from(ASSET.background),
@@ -391,6 +387,7 @@ export class GameLevelSki extends Container {
     this.clearFeedbackTimeouts();
     this.livesBar.reset();
     this.state = 'countdown';
+    this.sentences = pickStorySentences(this.storyIds);
     this.sentenceIndex = 0;
     this.currentRound = undefined;
     this.approachElapsedMs = 0;
