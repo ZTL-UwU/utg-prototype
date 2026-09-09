@@ -21,20 +21,10 @@ export interface SentenceSimple {
   audio_url: string | null;
 }
 
-/**
- * Mirrors StorySimpleOut from the backend `/stories/list-simple` endpoint. Its
- * `sentence_ids` is ignored — sentences are resolved locally by story_id.
- */
-export interface StorySimple {
-  id: number;
-  name: string;
-}
-
 interface SentenceStore {
   status: RemoteStatus;
   error?: string;
   sentences: SentenceSimple[];
-  stories: StorySimple[];
   fetchSentences: () => Promise<void>;
 }
 
@@ -58,11 +48,6 @@ export function resolveSentencesByStoryId(storyId: number): SentenceSimple[] {
       if (orderA !== orderB) return orderA - orderB;
       return a.id - b.id;
     });
-}
-
-/** Resolve a backend story id to its record. */
-export function resolveStoryById(storyId: number): StorySimple | undefined {
-  return useSentenceStore.getState().stories.find((story) => story.id === storyId);
 }
 
 function registerSentencesBundle(sentences: SentenceSimple[]): void {
@@ -89,23 +74,15 @@ const useSentenceStore = create<SentenceStore>((set, get) => ({
   status: 'idle',
   error: undefined,
   sentences: [],
-  stories: [],
   fetchSentences: async () => {
     const { status } = get();
     if (status === 'loading' || status === 'ready') return;
 
     set({ status: 'loading', error: undefined });
     try {
-      const [sentences, stories] = await Promise.all([
-        api<SentenceSimple[]>('/sentences/list-simple'),
-        // Story names only decorate the ski level; never fail the sentence catalog over them.
-        api<StorySimple[]>('/stories/list-simple').catch((err: unknown) => {
-          console.warn('/stories/list-simple: story names unavailable', err);
-          return [] as StorySimple[];
-        }),
-      ]);
+      const sentences = await api<SentenceSimple[]>('/sentences/list-simple');
       registerSentencesBundle(sentences);
-      set({ status: 'ready', error: undefined, sentences, stories });
+      set({ status: 'ready', error: undefined, sentences });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load sentences';
       registerSentencesBundle([]);
@@ -113,7 +90,6 @@ const useSentenceStore = create<SentenceStore>((set, get) => ({
         status: 'error',
         error: message,
         sentences: [],
-        stories: [],
       });
     }
   },

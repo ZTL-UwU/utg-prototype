@@ -19,7 +19,7 @@ import {
   isCurrentScriptRtl,
 } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
-import { REMOTE_SENTENCES_BUNDLE, resolveStoryById } from '../../../../zustandStores/sentenceStore';
+import { REMOTE_SENTENCES_BUNDLE } from '../../../../zustandStores/sentenceStore';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
@@ -123,13 +123,11 @@ type SentenceRound = {
   correctIdx: number;
 };
 
-/** One random story from the level's pool: its title first, then every sentence in story order. */
+/** Every sentence of one random story from the level's pool, in story order. */
 function pickStorySentences(storyIds: number[]): string[] {
   if (storyIds.length === 0) return [];
   const storyId = storyIds[Math.floor(Math.random() * storyIds.length)]!;
-  const title = convertToCurrentScript(resolveStoryById(storyId)?.name.trim() ?? '');
-  const sentences = generateSentenceRounds(storyId).map((round) => round.sentence);
-  return [title, ...sentences].filter((text) => text.length > 0);
+  return generateSentenceRounds(storyId).map((round) => round.sentence);
 }
 
 function createSkiSentenceStyle(fontSize: number): HTMLTextStyle {
