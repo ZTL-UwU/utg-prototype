@@ -64,8 +64,30 @@
     animation: auth-screen-in 260ms ease-out both;
   }
 
+  @keyframes auth-shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+
+    20%,
+    60% {
+      transform: translateX(-8px);
+    }
+
+    40%,
+    80% {
+      transform: translateX(8px);
+    }
+  }
+
+  .auth-shake {
+    animation: auth-shake 400ms ease-in-out;
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .auth-screen-enter {
+    .auth-screen-enter,
+    .auth-shake {
       animation: none;
     }
   }

@@ -6,8 +6,8 @@ import {
   type LevelRewardType,
   type RewardSimple,
 } from '../zustandStores/rewardStore';
+import { localStorageKey, type LocalSessionKind } from './localSessionStorage';
 
-const STORAGE_KEY = 'utg-guest-rewards';
 const VERSION = 1;
 
 function isRewardId(value: unknown): value is number {
@@ -19,9 +19,9 @@ function isRewardId(value: unknown): value is number {
  * placement and artwork are read back from the reward catalog, which is the same
  * data `/user/rewards/list` returns for a signed-in player.
  */
-export function loadGuestRewardIds(): number[] {
+export function loadGuestRewardIds(kind: LocalSessionKind): number[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(localStorageKey(kind, 'rewards'));
     if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed.filter(isRewardId);
@@ -37,9 +37,12 @@ export function loadGuestRewardIds(): number[] {
 }
 
 /** Persist guest reward ownership so the passport survives a reload. */
-export function saveGuestRewardIds(rewardIds: number[]): void {
+export function saveGuestRewardIds(kind: LocalSessionKind, rewardIds: number[]): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: VERSION, reward_ids: rewardIds }));
+    localStorage.setItem(
+      localStorageKey(kind, 'rewards'),
+      JSON.stringify({ version: VERSION, reward_ids: rewardIds }),
+    );
   } catch (err) {
     console.warn('Failed to save guest rewards', err);
   }

@@ -7,6 +7,7 @@ import { ForgotPasswordSent } from './screens/ForgotPasswordSent';
 import { LoginForm } from './screens/LoginForm';
 import { ResetPasswordForm } from './screens/ResetPasswordForm';
 import { SignUpForm } from './screens/SignUpForm';
+import { TesterPasswordForm } from './screens/TesterPasswordForm';
 import type { AuthParentProps, AuthView, LoginCredentials, SignUpData } from './types';
 
 /**
@@ -18,6 +19,7 @@ export function AuthParent({
   onClose,
   onLogin,
   onGuest,
+  onTester,
   onSignUp,
   onForgotPassword,
   onResetPassword,
@@ -79,12 +81,20 @@ export function AuthParent({
         return <ResetPasswordForm onSubmit={handleResetPassword} />;
       case 'success':
         return <AuthSuccess onPlay={handlePlay} />;
+      case 'tester':
+        return (
+          <TesterPasswordForm
+            onSubmit={(password) => onTester?.(password) ?? false}
+            onBack={() => setView('login')}
+          />
+        );
       case 'login':
       default:
         return (
           <LoginForm
             onSubmit={handleLogin}
             onGuest={() => onGuest?.()}
+            onTester={() => setView('tester')}
             onForgot={() => setView('forgot')}
             onSignUpNav={() => setView('signup')}
           />
