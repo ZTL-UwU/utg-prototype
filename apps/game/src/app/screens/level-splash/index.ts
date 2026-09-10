@@ -4,8 +4,10 @@ import { DropShadowFilter } from 'pixi-filters';
 import { Assets, Container, Graphics, SplitText, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { isLevelUnlocked } from '../../../lib/progression';
 import { curveSplitText } from '../../../utils/curve-split-text';
 import useSessionStore from '../../../zustandStores/sessionStore';
+import { LockedLevelPopup } from '../../popups/locked-level';
 import { TutorialPopup } from '../../popups/tutorial';
 import { HUD } from '../../ui/hud';
 import { LevelMapScreen } from '../level-map';
@@ -182,7 +184,17 @@ export class LevelSplashScreen extends Container {
       useSessionStore.getState().reset();
       useSessionStore.getState().startSession(mapUnit.type);
 
-      const startLevel = () => void engine().navigation.showScreen(level.screen!, level);
+      const locked = !isLevelUnlocked(level);
+      const startLevel = () =>
+        void engine()
+          .navigation.showScreen(level.screen!, level)
+          .then(() => {
+            if (!locked) return;
+            void engine().navigation.showPopup(LockedLevelPopup, {
+              layer: mapUnit.type,
+              onClose: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
+            });
+          });
       if (!helpAssets.length) {
         startLevel();
         return;

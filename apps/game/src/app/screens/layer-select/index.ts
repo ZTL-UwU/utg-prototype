@@ -126,7 +126,6 @@ export class LayerSelectScreen extends Container {
         void (async () => {
           if (!(await ensureCourseReady())) return;
           await ensureResultsReady();
-          if (!isLayerUnlocked(layer)) return;
           if (layer === 'education') {
             await engine().navigation.showScreen(EducationLevelSelect);
             return;
@@ -204,9 +203,7 @@ export class LayerSelectScreen extends Container {
   private refreshLayerLocks() {
     const lockedIcon = Texture.from('layer-select/locked-icon.png');
     for (const { button, layer, unlockedIcon } of this.layerButtons) {
-      const unlocked = isLayerUnlocked(layer);
-      button.defaultView = unlocked ? unlockedIcon : lockedIcon;
-      button.enabled = unlocked;
+      button.defaultView = isLayerUnlocked(layer) ? unlockedIcon : lockedIcon;
     }
   }
 
