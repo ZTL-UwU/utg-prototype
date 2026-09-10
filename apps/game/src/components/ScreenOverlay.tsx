@@ -174,6 +174,11 @@ export function ScreenOverlay() {
             const { user } = useAuthStore.getState();
             if (user) continueAfterLogin(user);
           }}
+          onTester={(password) => {
+            if (!useAuthStore.getState().enterTesterMode(password)) return false;
+            goToAvatarSelectScreen();
+            return true;
+          }}
           onSignUp={async (data) => {
             // Rejecting here is what keeps AuthParent off the success screen.
             await signUp(data);

@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+import { clearLocalSession, type LocalSessionKind } from '../lib/localSessionStorage';
+import { isTesterPassword } from '../lib/testerMode';
+
 export type AuthUser = {
   id: number;
   name: string | null;
@@ -31,13 +34,29 @@ export const GUEST_USER: AuthUser = {
   avatar: null,
 };
 
+/** Local-only player for presentations: a guest with cheat-mode access. */
+export const TESTER_USER: AuthUser = {
+  id: 0,
+  name: 'Tester',
+  email: '',
+  avatar: null,
+  is_cheat: true,
+};
+
 export function sessionKind(state: {
   accessToken: string | null;
   isGuest: boolean;
-}): 'signed-in' | 'guest' | 'none' {
+  isTester?: boolean;
+}): 'signed-in' | 'tester' | 'guest' | 'none' {
   if (state.accessToken !== null) return 'signed-in';
+  if (state.isTester) return 'tester';
   if (state.isGuest) return 'guest';
   return 'none';
+}
+
+/** Which localStorage bucket a local-only session reads and writes. */
+export function localSessionKind(state: { isTester?: boolean }): LocalSessionKind {
+  return state.isTester ? 'tester' : 'guest';
 }
 
 type AuthState = {
@@ -46,40 +65,61 @@ type AuthState = {
   user: AuthUser | null;
   /** True when playing without an account; progress stays on this device. */
   isGuest: boolean;
+  /** Guest session with cheat access, entered with the tester password. Implies `isGuest`. */
+  isTester: boolean;
   setTokens: (accessToken: string, refreshToken: string) => void;
   setUser: (user: AuthUser) => void;
   setAuth: (accessToken: string, refreshToken: string, user: AuthUser) => void;
   enterGuestMode: () => void;
+  /** Starts a fresh tester session. Returns false, changing nothing, on a wrong password. */
+  enterTesterMode: (password: string) => boolean;
   clearTokens: () => void;
+};
+
+const SIGNED_OUT = {
+  accessToken: null,
+  refreshToken: null,
+  user: null,
+  isGuest: false,
+  isTester: false,
 };
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      accessToken: null,
-      refreshToken: null,
-      user: null,
-      isGuest: false,
+      ...SIGNED_OUT,
       setTokens: (accessToken, refreshToken) => set({ accessToken, refreshToken }),
       setUser: (user) => set({ user }),
       setAuth: (accessToken, refreshToken, user) =>
-        set({ accessToken, refreshToken, user, isGuest: false }),
+        set({ accessToken, refreshToken, user, isGuest: false, isTester: false }),
       enterGuestMode: () =>
         set((state) => ({
           accessToken: null,
           refreshToken: null,
           isGuest: true,
-          user: state.isGuest && state.user ? state.user : { ...GUEST_USER },
+          isTester: false,
+          user: state.isGuest && !state.isTester && state.user ? state.user : { ...GUEST_USER },
         })),
-      clearTokens: () => set({ accessToken: null, refreshToken: null, user: null, isGuest: false }),
+      enterTesterMode: (password) => {
+        if (!isTesterPassword(password)) return false;
+
+        clearLocalSession('tester');
+        // Sign out first so the result/reward syncs always see a session change and drop
+        // what they hold, even when a tester session is already running.
+        set(SIGNED_OUT);
+        set({ isGuest: true, isTester: true, user: { ...TESTER_USER } });
+        return true;
+      },
+      clearTokens: () => set(SIGNED_OUT),
     }),
     {
       name: 'auth',
-      partialize: ({ accessToken, refreshToken, user, isGuest }) => ({
+      partialize: ({ accessToken, refreshToken, user, isGuest, isTester }) => ({
         accessToken,
         refreshToken,
         user,
         isGuest,
+        isTester,
       }),
     },
   ),

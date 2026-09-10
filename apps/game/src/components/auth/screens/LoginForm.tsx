@@ -9,11 +9,12 @@ import type { LoginCredentials } from '../types';
 export interface LoginFormProps {
   onSubmit: (credentials: LoginCredentials) => void | Promise<void>;
   onGuest: () => void;
+  onTester: () => void;
   onForgot: () => void;
   onSignUpNav: () => void;
 }
 
-export function LoginForm({ onSubmit, onGuest, onForgot, onSignUpNav }: LoginFormProps) {
+export function LoginForm({ onSubmit, onGuest, onTester, onForgot, onSignUpNav }: LoginFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -57,6 +58,10 @@ export function LoginForm({ onSubmit, onGuest, onForgot, onSignUpNav }: LoginFor
 
       <PrimaryButton variant="ghost" onClick={onGuest}>
         Continue as guest
+      </PrimaryButton>
+
+      <PrimaryButton variant="ghost" onClick={onTester}>
+        Tester mode
       </PrimaryButton>
 
       <p className="mt-2 text-center font-body text-base text-muted">New to the game?</p>

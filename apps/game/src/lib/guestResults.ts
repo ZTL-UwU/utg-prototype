@@ -1,3 +1,5 @@
+import { localStorageKey, type LocalSessionKind } from './localSessionStorage';
+
 interface StoredLevelResult {
   id: number;
   level_id: number;
@@ -9,7 +11,6 @@ interface StoredLevelResult {
   created_at?: string;
 }
 
-const STORAGE_KEY = 'utg-guest-level-results';
 // 2: rows carry `created_at`. Version 1 rows stay valid; they just have no date.
 const VERSION = 2;
 
@@ -28,9 +29,9 @@ function isLevelResult(value: unknown): value is StoredLevelResult {
 }
 
 /** Load guest level attempts from localStorage. Invalid or missing data is an empty history. */
-export function loadGuestResults(): StoredLevelResult[] {
+export function loadGuestResults(kind: LocalSessionKind): StoredLevelResult[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(localStorageKey(kind, 'results'));
     if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed.filter(isLevelResult);
@@ -46,9 +47,12 @@ export function loadGuestResults(): StoredLevelResult[] {
 }
 
 /** Persist guest level attempts so progression survives a reload. */
-export function saveGuestResults(results: StoredLevelResult[]): void {
+export function saveGuestResults(kind: LocalSessionKind, results: StoredLevelResult[]): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: VERSION, results }));
+    localStorage.setItem(
+      localStorageKey(kind, 'results'),
+      JSON.stringify({ version: VERSION, results }),
+    );
   } catch (err) {
     console.warn('Failed to save guest level results', err);
   }

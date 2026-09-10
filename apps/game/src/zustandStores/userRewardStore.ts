@@ -5,7 +5,7 @@ import type { TLayer } from '../app/screens/level-map/units';
 import { api } from '../lib/api';
 import { loadGuestRewardIds, saveGuestRewardIds } from '../lib/guestRewards';
 import { ensureRemoteReady, type RemoteStatus } from '../lib/remoteResource';
-import { sessionKind, useAuthStore } from './auth';
+import { localSessionKind, sessionKind, useAuthStore } from './auth';
 import {
   ensureRewardsReady,
   isLayer,
@@ -88,13 +88,14 @@ export const useUserRewardStore = create<UserRewardState>()(
         const { status } = get();
         if (status === 'loading' || status === 'ready') return;
 
-        const { accessToken, isGuest } = useAuthStore.getState();
+        const auth = useAuthStore.getState();
+        const { accessToken, isGuest } = auth;
 
         // The reward catalog stands in for `/user/rewards/list`: it publishes the same
         // rows, so the ids a guest owns are enough to rebuild the passport.
         if (isGuest) {
           set({ status: 'loading', error: undefined });
-          const ownedRewardIds = loadGuestRewardIds();
+          const ownedRewardIds = loadGuestRewardIds(localSessionKind(auth));
           await ensureRewardsReady();
           if (get().status !== 'loading') return;
           set({
@@ -235,8 +236,9 @@ export const useUserRewardStore = create<UserRewardState>()(
 useUserRewardStore.subscribe((state, previous) => {
   if (state.ownedRewardIds === previous.ownedRewardIds) return;
   if (state.status !== 'ready') return;
-  if (!useAuthStore.getState().isGuest) return;
-  saveGuestRewardIds(state.ownedRewardIds);
+  const auth = useAuthStore.getState();
+  if (!auth.isGuest) return;
+  saveGuestRewardIds(localSessionKind(auth), state.ownedRewardIds);
 });
 
 /** Resolves when owned rewards are loaded; false if the fetch failed or logged out. */

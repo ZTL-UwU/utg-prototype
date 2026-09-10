@@ -4,7 +4,7 @@ import { api } from '../lib/api';
 import { loadGuestResults, saveGuestResults } from '../lib/guestResults';
 import { ensureRemoteReady, type RemoteStatus } from '../lib/remoteResource';
 import { toLocalDayKey } from '../utils/date';
-import { useAuthStore, sessionKind } from './auth';
+import { localSessionKind, useAuthStore, sessionKind } from './auth';
 import { getAccuracyPercent } from './scoreManager';
 
 /** Mirrors LevelResultOut from the backend `/level-results/list` endpoint. */
@@ -64,10 +64,11 @@ const useResultStore = create<ResultStore>((set, get) => ({
     const { status } = get();
     if (status === 'loading' || status === 'ready') return;
 
-    const { accessToken, isGuest } = useAuthStore.getState();
+    const auth = useAuthStore.getState();
+    const { accessToken, isGuest } = auth;
 
     if (isGuest) {
-      set({ status: 'ready', error: undefined, results: loadGuestResults() });
+      set({ status: 'ready', error: undefined, results: loadGuestResults(localSessionKind(auth)) });
       return;
     }
 
@@ -156,9 +157,10 @@ const useResultStore = create<ResultStore>((set, get) => ({
 }));
 
 useResultStore.subscribe((state) => {
-  if (!useAuthStore.getState().isGuest) return;
+  const auth = useAuthStore.getState();
+  if (!auth.isGuest) return;
   if (state.status !== 'ready') return;
-  saveGuestResults(state.results);
+  saveGuestResults(localSessionKind(auth), state.results);
 });
 
 export interface ResultTotals {
