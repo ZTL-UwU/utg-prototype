@@ -10,10 +10,10 @@ import {
 import { useAuthStore } from '../zustandStores/auth';
 import useResultStore from '../zustandStores/resultStore';
 
-const LAYER_PREREQUISITE: Record<TLayer, TLayer | null> = {
-  education: null,
-  typing: 'education',
-  game: 'typing',
+const LAYER_PREREQUISITES: Record<TLayer, TLayer[]> = {
+  education: [],
+  typing: [],
+  game: ['education', 'typing'],
 };
 
 /**
@@ -59,11 +59,10 @@ export function isLayerComplete(layer: TLayer): boolean {
   return levels.length > 0 && levels.every((level) => hasCompletedLevel(level.id));
 }
 
-/** Education is open first; each later layer waits on the previous one. */
+/** Education and typing are open; the game layer waits on both. */
 export function isLayerUnlocked(layer: TLayer): boolean {
   if (isCheatUnlocked() || progressionUnknown()) return true;
-  const prerequisite = LAYER_PREREQUISITE[layer];
-  return prerequisite === null || isLayerComplete(prerequisite);
+  return LAYER_PREREQUISITES[layer].every(isLayerComplete);
 }
 
 export function isMapUnitComplete(mapUnit: TMapUnit): boolean {
@@ -74,7 +73,7 @@ export function isMapUnitComplete(mapUnit: TMapUnit): boolean {
 
 /**
  * Education and typing units unlock in order. Challenge maps all unlock together
- * once the typing layer is finished.
+ * once the education and typing layers are finished.
  */
 export function isMapUnitUnlocked(mapUnit: TMapUnit): boolean {
   if (isCheatUnlocked() || progressionUnknown()) return true;
@@ -89,7 +88,7 @@ export function isMapUnitUnlocked(mapUnit: TMapUnit): boolean {
 
 /**
  * Education and typing levels unlock one after another. Challenge games all
- * unlock at once after the typing layer is complete. Non-gating levels keep their
+ * unlock at once after the education and typing layers are complete. Non-gating levels keep their
  * slot in the sequence, so they stay reachable and still wait on the level before them.
  */
 export function isLevelUnlocked(level: TLevel): boolean {

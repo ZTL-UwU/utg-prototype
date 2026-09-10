@@ -119,7 +119,10 @@ export class LevelButton extends FancyButton {
           },
         });
       });
+    }
 
+    // Levels without a screen can't render a splash, so they stay disabled.
+    if (level.screen) {
       this.onPress.connect(() => {
         void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
         void engine().navigation.showScreen(LevelSplashScreen, { level, mapUnit });

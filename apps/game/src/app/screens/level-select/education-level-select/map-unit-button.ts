@@ -57,10 +57,11 @@ export class MapUnitButton extends FancyButton {
     };
 
     this.ring = new Graphics();
-    if (!unlocked) {
-      this.enabled = false;
-      return;
-    }
+    this.onPress.connect(() => {
+      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+      void engine().navigation.showScreen(LevelMapScreen, mapUnit);
+    });
+    if (!unlocked) return;
 
     const progress = useLevelProgress.getState();
     this.currentFill = isMapUnitComplete(mapUnit) ? 1 : 0;
@@ -120,11 +121,6 @@ export class MapUnitButton extends FancyButton {
           drawDashedRing(this.ring, r, this.currentFill);
         },
       });
-    });
-
-    this.onPress.connect(() => {
-      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      void engine().navigation.showScreen(LevelMapScreen, mapUnit);
     });
   }
 

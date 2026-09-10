@@ -150,15 +150,11 @@ export class LevelMapScreen extends Container {
     const nextMap = getNextMap(mapUnit);
     if (nextMap) {
       this.nextMapButton = createMapNavButton('>>');
-      if (isMapUnitUnlocked(nextMap)) {
-        this.nextMapButton.onPress.connect(() => {
-          void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-          void engine().navigation.showScreen(LevelMapScreen, nextMap);
-        });
-      } else {
-        this.nextMapButton.alpha = 0.45;
-        this.nextMapButton.enabled = false;
-      }
+      this.nextMapButton.onPress.connect(() => {
+        void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+        void engine().navigation.showScreen(LevelMapScreen, nextMap);
+      });
+      if (!isMapUnitUnlocked(nextMap)) this.nextMapButton.alpha = 0.45;
     }
 
     this.addChild(
