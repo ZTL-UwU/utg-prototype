@@ -63,7 +63,9 @@ export class LockedLevelPopup extends Container {
         align: 'center',
         fill: 0x6b411e,
       },
-      layout: true,
+      // Layout rewraps text to its node width. Left intrinsic, each rewrap narrows the node
+      // and `scale-down` shrinks the result; a fixed width keeps it wrapping at full size.
+      layout: { width: contentWidth, objectFit: 'none', objectPosition: 'center' },
     });
     const content = new Container({
       layout: {
