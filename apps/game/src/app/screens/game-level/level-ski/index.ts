@@ -63,7 +63,7 @@ const ASSET = {
 } as const;
 
 /** Ready / Set / Go in Uyghur Arabic — converted to the player's script at runtime. */
-const COUNTDOWN_ARABIC = ['تەييار', 'تەييارلى', 'باشلى!'] as const;
+const COUNTDOWN_ARABIC = ['دىققەت', 'تەييارلىق', 'باشلا!'] as const;
 const COUNTDOWN_COLORS = [0xef5a42, 0xf5a623, 0x7ed957] as const;
 
 const SENTENCE_COLORS = {
