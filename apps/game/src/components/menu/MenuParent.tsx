@@ -41,9 +41,11 @@ export function MenuParent() {
       className={
         view === 'alphabet'
           ? 'max-w-5xl justify-start overflow-hidden'
-          : view === 'converter' || view === 'project' || view === 'team'
-            ? 'justify-start overflow-hidden px-10 md:px-16'
-            : undefined
+          : view === 'team'
+            ? 'max-w-[95vw] min-h-[90vh] justify-start overflow-hidden px-6 md:px-10'
+            : view === 'converter' || view === 'project'
+              ? 'justify-start overflow-hidden px-10 md:px-16'
+              : undefined
       }
     >
       {renderScreen()}
