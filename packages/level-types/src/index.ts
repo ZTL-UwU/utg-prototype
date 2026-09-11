@@ -79,6 +79,7 @@ export {
   typingSpringPropsSchema,
   typingStoryPropsSchema,
   typingTestPropsSchema,
+  typingTestStoredPropsSchema,
   typingWordsPropsSchema,
   type GameNaanStackProps,
   type GameTandoorRushProps,

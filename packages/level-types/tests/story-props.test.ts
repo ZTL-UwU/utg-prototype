@@ -17,3 +17,22 @@ describe('story level props', () => {
     }
   });
 });
+
+describe('typing test story props', () => {
+  it('carries a legacy storyId into storyIds', () => {
+    const props = parseLevelProps('typing-test', { storyId: 42 });
+    expect(props.storyIds).toEqual([42]);
+    expect(props).not.toHaveProperty('storyId');
+  });
+
+  it('turns a legacy null storyId into no stories', () => {
+    expect(parseLevelProps('typing-test', { storyId: null }).storyIds).toEqual([]);
+  });
+
+  it('keeps storyIds, which win over a legacy storyId', () => {
+    expect(parseLevelProps('typing-test', { storyIds: [1, 2] }).storyIds).toEqual([1, 2]);
+    expect(parseLevelProps('typing-test', { storyId: 42, storyIds: [1, 2] }).storyIds).toEqual([
+      1, 2,
+    ]);
+  });
+});

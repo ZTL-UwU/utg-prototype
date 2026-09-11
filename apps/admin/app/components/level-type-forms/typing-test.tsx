@@ -14,7 +14,7 @@ import {
   LEVEL_PROPS_FORM_ID,
   type LevelPropsFormProps,
 } from '~/components/level-type-forms/shared';
-import { StoryIdSelector } from '~/components/story-id-selector';
+import { StoryIdMultiselect } from '~/components/story-id-multiselect';
 import { Field, FieldDescription, FieldError, FieldLabel } from '~/components/ui/field';
 import {
   Select,
@@ -99,19 +99,20 @@ export function TypingTestPropsForm({
         }}
       </form.Field>
 
-      <form.Field name="storyId">
+      <form.Field name="storyIds" mode="array">
         {(field) => {
           const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
           return (
             <Field data-invalid={isInvalid}>
-              <FieldLabel>Story</FieldLabel>
+              <FieldLabel>Stories</FieldLabel>
               <FieldDescription>
-                Sentences typed in the Sentences mode, in story order.
+                Stories for the Sentences mode. Each test picks one at random and types all of its
+                sentences in order.
               </FieldDescription>
-              <StoryIdSelector
+              <StoryIdMultiselect
                 value={field.state.value}
-                onChange={(storyId) => {
-                  field.setValue(storyId);
+                onChange={(storyIds) => {
+                  field.setValue(storyIds);
                   field.handleBlur();
                 }}
               />

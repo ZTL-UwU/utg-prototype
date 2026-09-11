@@ -108,11 +108,22 @@ export type TypingTestDurationSeconds = (typeof TYPING_TEST_DURATIONS_SECONDS)[n
 export const typingTestPropsSchema = z.object({
   letters: z.array(z.string().min(1)),
   wordIds: z.array(z.number().int().positive()),
-  storyId: z.number().int().positive().nullable(),
+  storyIds: z.array(z.number().int().positive()),
   defaultMode: z.enum(TYPING_TEST_MODES),
   defaultDurationSeconds: z.union([z.literal(15), z.literal(30), z.literal(60)]),
   showKeyboardByDefault: z.boolean(),
 });
+
+/** Levels saved before multi-story support stored one `storyId`; carry it into `storyIds`. */
+function withLegacyStoryId(value: unknown): unknown {
+  if (value == null || typeof value !== 'object' || Array.isArray(value)) return value;
+  const { storyId, ...rest } = value as Record<string, unknown>;
+  const hasStoryIds = Array.isArray(rest.storyIds) && rest.storyIds.length > 0;
+  return typeof storyId === 'number' && !hasStoryIds ? { ...rest, storyIds: [storyId] } : rest;
+}
+
+/** Registered schema for saved props; the admin form validates against the plain object. */
+export const typingTestStoredPropsSchema = z.preprocess(withLegacyStoryId, typingTestPropsSchema);
 
 export type TypingTestProps = z.infer<typeof typingTestPropsSchema>;
 
@@ -120,7 +131,7 @@ export function defaultTypingTestProps(): TypingTestProps {
   return {
     letters: [],
     wordIds: [],
-    storyId: null,
+    storyIds: [],
     defaultMode: 'letters',
     defaultDurationSeconds: 30,
     showKeyboardByDefault: true,
