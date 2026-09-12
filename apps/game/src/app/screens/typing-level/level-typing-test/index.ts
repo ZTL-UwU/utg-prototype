@@ -1,8 +1,7 @@
 import type { TypingTestProps } from '@utg/level-types';
-import { Container, Graphics, HTMLText, HTMLTextStyle, Text, type Ticker } from 'pixi.js';
+import { Container, Graphics, Text, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { createTypingSentenceStyle, getSentenceMarkup } from '../../../../utils/example-words';
 import { getKeyFromChar, getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useLevelProgress } from '../../../../zustandStores/levelProgressStore';
 import { REMOTE_SENTENCES_BUNDLE } from '../../../../zustandStores/sentenceStore';
@@ -17,11 +16,10 @@ import {
   type TLevel,
   type TMapUnit,
 } from '../../level-map/units';
+import { createPromptView, type PromptView } from './prompt-views';
 import { TypingTestResultsPopup } from './results-popup';
 import { TypingTestSettingsPopup, type TypingTestSettings } from './settings-popup';
-import { createPromptSource, type PromptSource } from './test-content';
 
-const FONT_SIZE = 48;
 const FEEDBACK_DURATION_MS = 350;
 const PANEL_RADIUS = 32;
 const PANEL_WIDTH_RATIO = 0.8;
@@ -29,7 +27,6 @@ const PANEL_MAX_WIDTH = 1500;
 const PANEL_TOP_RATIO = 0.12;
 const PANEL_HEIGHT_RATIO_WITH_KEYBOARD = 0.34;
 const PANEL_HEIGHT_RATIO = 0.5;
-const PANEL_TEXT_MARGIN = 120;
 
 const COLORS = {
   BACKGROUND: 0xfdf3e0,
@@ -54,8 +51,6 @@ export class TypingTestScreen extends Container {
 
   private readonly background = new Graphics();
   private readonly panel = new Graphics();
-  private readonly promptStyle: HTMLTextStyle;
-  private readonly promptText: HTMLText;
   private readonly timerText: Text;
   private readonly keyboard: KeyboardLayout;
   private readonly hud: HUD;
@@ -63,7 +58,7 @@ export class TypingTestScreen extends Container {
   private readonly mapUnit: TMapUnit;
   private readonly props: TypingTestProps;
 
-  private promptSource?: PromptSource;
+  private promptView?: PromptView;
   private settings?: TypingTestSettings;
   private text = '';
   private activeIdx = 0;
@@ -73,6 +68,7 @@ export class TypingTestScreen extends Container {
   private armed = false;
   private running = false;
   private paused = false;
+  private completing = false;
   private correctChars = 0;
   private mistakes = 0;
   private readonly mistakesByCode = new Map<string, number>();
@@ -99,10 +95,6 @@ export class TypingTestScreen extends Container {
 
     this.keyboard = new KeyboardLayout();
 
-    this.promptStyle = createTypingSentenceStyle(FONT_SIZE);
-    this.promptText = new HTMLText({ style: this.promptStyle });
-    this.promptText.anchor.set(0.5);
-
     this.timerText = new Text({
       text: '',
       resolution: 2,
@@ -110,7 +102,7 @@ export class TypingTestScreen extends Container {
       anchor: { x: 1, y: 0.5 },
     });
 
-    this.addChild(this.background, this.panel, this.promptText, this.timerText, this.hud);
+    this.addChild(this.background, this.panel, this.timerText, this.hud);
   }
 
   resize(width: number, height: number) {
@@ -138,8 +130,7 @@ export class TypingTestScreen extends Container {
       .roundRect(panelX, panelY, panelWidth, panelHeight, PANEL_RADIUS)
       .fill(COLORS.PANEL);
 
-    this.promptStyle.wordWrapWidth = panelWidth - PANEL_TEXT_MARGIN;
-    this.promptText.position.set(this._sw / 2, panelY + panelHeight / 2);
+    this.promptView?.place(panelX, panelY, panelWidth, panelHeight);
     this.timerText.position.set(this._sw - 80, panelY / 2);
   }
 
@@ -192,7 +183,8 @@ export class TypingTestScreen extends Container {
   private startTest(settings: TypingTestSettings) {
     lastSettings = settings;
     this.settings = settings;
-    this.promptSource = createPromptSource(settings.mode, this.props);
+    this.promptView = createPromptView(settings.mode, this.props);
+    this.addChildAt(this.promptView, this.getChildIndex(this.panel) + 1);
 
     this.durationMs = settings.durationSeconds * 1000;
     this.remainingMs = this.durationMs;
@@ -221,14 +213,30 @@ export class TypingTestScreen extends Container {
   }
 
   private loadNextPage() {
-    this.text = this.promptSource?.next() ?? '';
+    this.text = this.promptView?.next() ?? '';
     this.activeIdx = 0;
     this.updatePromptDisplay();
   }
 
   private updatePromptDisplay() {
-    this.promptText.text = getSentenceMarkup(this.text, this.activeIdx);
+    if (this.activeIdx < this.text.length) this.promptView?.setProgress(this.activeIdx);
     this.refreshHint();
+  }
+
+  /** Shows the next page, row or word once the finished one has played its celebration. */
+  private finishItem() {
+    const celebration = this.promptView?.playComplete?.();
+    if (!celebration) {
+      this.loadNextPage();
+      return;
+    }
+
+    // Keys during the celebration would land on the finished item, so they are dropped.
+    this.completing = true;
+    void celebration.then(() => {
+      this.completing = false;
+      if (this.armed) this.loadNextPage();
+    });
   }
 
   private refreshHint() {
@@ -261,6 +269,7 @@ export class TypingTestScreen extends Container {
     if (
       !this.armed ||
       this.paused ||
+      this.completing ||
       event.repeat ||
       event.key === 'Shift' ||
       event.ctrlKey ||
@@ -281,7 +290,7 @@ export class TypingTestScreen extends Container {
       this.correctChars += typedLetter.length;
       this.activeIdx += typedLetter.length;
 
-      if (this.activeIdx >= this.text.length) this.loadNextPage();
+      if (this.activeIdx >= this.text.length) this.finishItem();
       else this.updatePromptDisplay();
 
       // Flashed after the hint has moved on, so the new hint cannot wipe the green key.
@@ -292,6 +301,7 @@ export class TypingTestScreen extends Container {
 
     this.mistakes += 1;
     this.recordProblemKey();
+    this.promptView?.showError();
     this.flashKey(event.code, 'error');
     void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
   };
