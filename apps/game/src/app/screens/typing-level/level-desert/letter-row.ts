@@ -14,7 +14,7 @@ const CARD_SIZE = 140;
 const CARD_GAP = 40;
 const STEP = CARD_SIZE + CARD_GAP;
 
-function makeRow(letters: readonly string[], rowSize: number): string[] {
+export function makeRow(letters: readonly string[], rowSize: number): string[] {
   return Array.from({ length: rowSize }, () => {
     const pick = letters[Math.floor(Math.random() * letters.length)];
     return pick ?? '';

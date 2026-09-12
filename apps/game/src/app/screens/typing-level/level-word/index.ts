@@ -1,37 +1,20 @@
-import { animate } from 'motion';
-import { Container, Graphics, HTMLText, HTMLTextStyle, Sprite, Texture } from 'pixi.js';
+import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { createTypingWordStyle, getHighlightedWordMarkup } from '../../../../utils/example-words';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { convertToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
-import {
-  getWordImageAlias,
-  REMOTE_WORDS_BUNDLE,
-  resolveWordsByIds,
-} from '../../../../zustandStores/wordStore';
+import { REMOTE_WORDS_BUNDLE, resolveWordsByIds } from '../../../../zustandStores/wordStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
 import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
+import { TypingWordCard } from './word-card';
 
-const FONT_SIZE = 100;
-const CARD_WIDTH = 200;
-const PAD_Y = 32;
-const PAD_X = 48;
-const SHADOW_OFFSET = 8;
-const CONTENT_GAP = 72;
-const IMAGE_SIZE = 300;
 const FEEDBACK_DURATION_MS = 350;
-const CARD_COLORS = {
-  default: 0x7e5433,
-  error: 0xef5a42,
-  success: 0x8ec24d,
-};
 
 export type Round = {
   wordId: number;
@@ -68,12 +51,7 @@ export class TypingWordScreen extends Container {
   public static helpAssets = ['tutorial-popups/typing-tutorial.png'];
   private background: Sprite;
   private hud: HUD;
-  private wordStyle: HTMLTextStyle = createTypingWordStyle(FONT_SIZE, 0xffffff);
-  private contentContainer: Container;
-  private card: Graphics;
-  private cardShadow: Graphics;
-  private wordContainer: Container;
-  private wordText: HTMLText;
+  private wordCard: TypingWordCard;
   private keyboard: KeyboardLayout;
   private rounds: Round[];
   private currentRound?: Round;
@@ -100,25 +78,9 @@ export class TypingWordScreen extends Container {
     this.keyboard = new KeyboardLayout();
     this.rounds = generateRoundsDictionary(typedLevel.props.wordIds, typedLevel.props.roundCount);
     // this.rounds = DEV_TEST_ROUNDS; // uncomment to assign rounds to selected test set
-    this.card = new Graphics();
-    this.cardShadow = new Graphics();
-    this.wordText = new HTMLText({ style: this.wordStyle });
-
-    this.wordContainer = new Container();
-    this.wordContainer.addChild(this.cardShadow, this.card, this.wordText);
-
-    this.contentContainer = new Container({
-      layout: {
-        position: 'absolute',
-        left: 0,
-        width: '100%',
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: CONTENT_GAP,
-      },
-    });
-    this.addChild(this.background, this.hud, this.keyboard, this.contentContainer);
+    this.wordCard = new TypingWordCard();
+    this.wordCard.layout = { position: 'absolute', left: 0, width: '100%' };
+    this.addChild(this.background, this.hud, this.keyboard, this.wordCard);
     this.popAndStartRound();
     this.paused = false;
   }
@@ -127,7 +89,7 @@ export class TypingWordScreen extends Container {
     this.layout = { width, height };
     this.background.layout = { width, height };
     this.keyboard.resize(width, height);
-    this.contentContainer.layout = { top: height * 0.15 };
+    this.wordCard.layout = { top: height * 0.15 };
   }
 
   async show() {
@@ -158,57 +120,12 @@ export class TypingWordScreen extends Container {
     return this.currentRound.word[this.currentRound.activeLetterIdx];
   }
 
-  /**===== COMPONENT RENDERING HELPERS ======= */
-
-  private drawCard() {
-    // measure the rendered word
-    const b = this.wordText.getLocalBounds();
-    const cardW = Math.max(CARD_WIDTH, b.width + PAD_X * 2); // fit, with a floor
-    const cardH = FONT_SIZE + PAD_Y * 2;
-
-    this.cardShadow
-      .clear()
-      .roundRect(SHADOW_OFFSET, SHADOW_OFFSET, cardW, cardH, 20)
-      .fill(0x000000);
-    this.cardShadow.alpha = 0.5;
-
-    this.card.clear().roundRect(0, 0, cardW, cardH, 20).fill(0xffffff);
-    this.card.tint = CARD_COLORS.default;
-
-    this.wordText.anchor.set(0.5);
-    this.wordText.position.set(cardW / 2, cardH / 2);
-
-    this.wordContainer.layout = {
-      width: cardW + SHADOW_OFFSET,
-      height: cardH + SHADOW_OFFSET,
-      flexShrink: 0,
-    };
-  }
-
-  private updateContentContainer(image: Sprite | undefined, word: string, activeLetterIdx: number) {
-    this.contentContainer.removeChildren();
-    const len = word[activeLetterIdx].length;
-    this.wordText.text = getHighlightedWordMarkup(word, activeLetterIdx, len);
-    if (image) this.contentContainer.addChild(image);
-    this.contentContainer.addChild(this.wordContainer);
-    this.drawCard();
-  }
-
   // pops the next round from this.rounds and assigns it to currentRound, calls endRound if rounds is empty
   private popAndStartRound() {
     if (this.rounds.length === 0) this.endGame();
     this.currentRound = this.rounds.pop() ?? undefined;
     if (!this.currentRound) return;
-    const { wordId, word, activeLetterIdx, hasImage } = this.currentRound;
-    // Words without an image have no entry in the words bundle, so asking for the
-    // texture would only warn and hand back an empty one taking up a slot in the row.
-    const image = hasImage
-      ? new Sprite({
-          texture: Texture.from(getWordImageAlias(wordId)),
-          layout: { width: IMAGE_SIZE, height: IMAGE_SIZE, flexShrink: 0 },
-        })
-      : undefined;
-    this.updateContentContainer(image, word, activeLetterIdx); // always highlights first letter, letterIdx for new round always at 0
+    this.wordCard.setRound(this.currentRound); // always highlights first letter, letterIdx for new round always at 0
     this.keyboard.setHintedLetter(this.currentTargetLetter);
   }
   /**
@@ -240,12 +157,12 @@ export class TypingWordScreen extends Container {
       await this.advanceHighlightedLetter();
     } else {
       this.keyboard.setKeyFeedback(event.code, 'error');
-      this.card.tint = CARD_COLORS['error'];
+      this.wordCard.setFeedback('error');
       void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
 
       setTimeout(() => {
         this.keyboard.clearKeyFeedback(event.code);
-        this.card.tint = CARD_COLORS['default'];
+        this.wordCard.setFeedback('default');
         this.keyboard.setHintedLetter(this.currentTargetLetter);
       }, FEEDBACK_DURATION_MS);
       useSessionStore.getState().recordMistake();
@@ -257,28 +174,13 @@ export class TypingWordScreen extends Container {
     r.activeLetterIdx += r.word[r.activeLetterIdx].length;
 
     if (r.activeLetterIdx >= r.word.length) {
-      await this.playSuccessFlash(); // wait for it to finish
+      await this.wordCard.playSuccessFlash(); // wait for it to finish
       this.popAndStartRound(); // drawCard resets tint to default here
     } else {
-      this.wordText.text = getHighlightedWordMarkup(
-        r.word,
-        r.activeLetterIdx,
-        r.word[r.activeLetterIdx].length,
-      );
+      this.wordCard.setProgress(r.activeLetterIdx);
       this.keyboard.setHintedLetter(this.currentTargetLetter);
     }
   };
-
-  private async playSuccessFlash(): Promise<void> {
-    this.card.tint = CARD_COLORS.success;
-
-    const controls = animate(
-      this.wordContainer.scale,
-      { x: 1.12, y: 1.12 },
-      { duration: 0.15, ease: 'easeOut', repeat: 1, repeatType: 'reverse' },
-    );
-    await controls.finished;
-  }
 
   private endGame() {
     this.paused = true;
