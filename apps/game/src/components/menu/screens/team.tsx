@@ -97,7 +97,7 @@ const TEAM: TeamMember[] = [
     name: 'Dana Turdy',
     role: 'Uyghur Language Advisor',
     photo: danaPhoto,
-    from: 'Uyghur, 🇨🇦 🇨🇳',
+    from: 'Uyghur, 🇨🇦',
     program: 'B.A. Political Science and Sociology',
     favouriteStop: 'The bazaar is so beautiful to look at!',
     funFact:
