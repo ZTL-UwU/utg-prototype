@@ -325,6 +325,7 @@ const CYRILLIC_LAYERS: LayerMap = {
 
 /** Modifier / chrome keys that are always styled as auxiliary. */
 const STRUCTURAL_AUXILIARY_KEYS = [
+  'Backquote',
   'Backspace',
   'Tab',
   'CapsLock',
@@ -351,15 +352,9 @@ const STRUCTURAL_AUXILIARY_KEYS = [
 ] as const;
 
 /** Digit + punctuation keys that are auxiliary on Arabic / Latin layouts. */
-const QWERTY_PUNCTUATION_AUXILIARY_KEYS = [
-  'Minus',
-  'Equal',
-  'Backslash',
-  'Semicolon',
-  'Quote',
-] as const;
+const QWERTY_PUNCTUATION_AUXILIARY_KEYS = ['Minus', 'Equal', 'Semicolon', 'Quote'] as const;
 
-const NON_LATIN_AUXILIARY_KEYS = new Set<string>(['Backquote', 'BracketLeft', 'BracketRight']);
+const NON_LATIN_AUXILIARY_KEYS = new Set<string>(['BracketLeft', 'BracketRight', 'Backslash']);
 
 const ARABIC_AUXILIARY_KEYS = new Set<string>([
   ...STRUCTURAL_AUXILIARY_KEYS,
