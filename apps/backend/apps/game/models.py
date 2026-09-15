@@ -37,6 +37,7 @@ class LevelType(models.TextChoices):
         "Game ski racing",
     )
     GAME_TROUT = "game-trout", "Game trout"
+    GAME_WORD_SEARCH = "game-word-search", "Game word search"
     TYPING_SPRING = "typing-spring", "Typing spring"
     TYPING_TEST = "typing-test", "Typing test"
 
