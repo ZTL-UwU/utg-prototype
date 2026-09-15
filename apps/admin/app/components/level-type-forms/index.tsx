@@ -20,6 +20,7 @@ import { GameNaanStackPropsForm } from '~/components/level-type-forms/game-naan-
 import { GameSkiPropsForm } from '~/components/level-type-forms/game-ski';
 import { GameTandoorRushPropsForm } from '~/components/level-type-forms/game-tandoor-rush';
 import { GameTroutPropsForm } from '~/components/level-type-forms/game-trout';
+import { GameWordSearchPropsForm } from '~/components/level-type-forms/game-word-search';
 import { type LevelPropsFormProps } from '~/components/level-type-forms/shared';
 import { TypingDesertPropsForm } from '~/components/level-type-forms/typing-desert';
 import { TypingGoatPropsForm } from '~/components/level-type-forms/typing-goat';
@@ -66,6 +67,7 @@ const levelTypePropsForms = {
   'game-kite': GameKitePropsForm,
   'game-ski': GameSkiPropsForm,
   'game-trout': GameTroutPropsForm,
+  'game-word-search': GameWordSearchPropsForm,
 } satisfies { [K in LevelTypeId]: LevelPropsFormComponent<K> };
 
 function resolveDefaultProps(level: Level | null, levelType: LevelTypeId) {

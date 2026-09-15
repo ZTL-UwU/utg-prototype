@@ -7,6 +7,7 @@ import { EducationSheepScreen } from '../education-level/level-sheep';
 import { EducationSheepJumpScreen } from '../education-level/level-sheep-jump';
 import { EducationWhackAMoleScreen } from '../education-level/level-whack-a-mole';
 import { EducationWordScreen } from '../education-level/level-word';
+import { GameWordSearchScreen } from '../game-level/level-crossword';
 import { GameLevelFlying } from '../game-level/level-flying';
 import { GameLevelFruitScreen } from '../game-level/level-fruit-fall';
 import { GameLevelKite } from '../game-level/level-kite';
@@ -50,4 +51,5 @@ export const LEVEL_TYPE_SCREENS: Record<LevelTypeId, LevelScreenConstructor> = {
   'game-kite': GameLevelKite,
   'game-ski': GameLevelSki,
   'game-trout': GameLevelTrout,
+  'game-word-search': GameWordSearchScreen,
 };

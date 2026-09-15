@@ -16,12 +16,15 @@ type WordIdsSelectorProps = {
   onChange: (value: number[]) => void;
   /** When true, only words with a target_letter are selectable. */
   requireTargetLetter?: boolean;
+  /** When set, hides multi-word entries and words longer than this many letters. */
+  maxLength?: number;
 };
 
 export function WordIdsSelector({
   value,
   onChange,
   requireTargetLetter = true,
+  maxLength,
 }: WordIdsSelectorProps) {
   const searchId = useId();
   const [query, setQuery] = useState('');
@@ -32,6 +35,10 @@ export function WordIdsSelector({
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const selectable = words.filter((word) => {
     if (requireTargetLetter && !word.target_letter) return false;
+    if (maxLength != null) {
+      const text = word.word.trim();
+      if (/\s/.test(text) || text.length > maxLength) return false;
+    }
     if (onlyWithImage && !word.image) return false;
     if (onlyWithAudio && !word.audio) return false;
     if (normalizedQuery) {
