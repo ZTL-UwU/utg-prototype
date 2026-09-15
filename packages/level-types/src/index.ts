@@ -58,6 +58,14 @@ export {
   type GameTroutProps,
 } from './schemas/game-trout';
 export {
+  WORD_SEARCH_GRID_SIZE,
+  WORD_SEARCH_MAX_WORDS,
+  WORD_SEARCH_MIN_WORDS,
+  defaultGameWordSearchProps,
+  gameWordSearchPropsSchema,
+  type GameWordSearchProps,
+} from './schemas/game-word-search';
+export {
   TYPING_TEST_DURATIONS_SECONDS,
   TYPING_TEST_MODES,
   defaultGameNaanStackProps,
@@ -108,6 +116,7 @@ export { gameNaanStack } from './types/game-naan-stack';
 export { gameSki } from './types/game-ski';
 export { gameTandoorRush } from './types/game-tandoor-rush';
 export { gameTrout } from './types/game-trout';
+export { gameWordSearch } from './types/game-word-search';
 export { typingDesert } from './types/typing-desert';
 export { typingGoat } from './types/typing-goat';
 export { typingInstrument } from './types/typing-instrument';
