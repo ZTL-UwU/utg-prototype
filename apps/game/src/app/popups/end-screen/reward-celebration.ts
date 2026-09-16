@@ -111,8 +111,8 @@ export class RewardCelebration extends Container {
     this.animations.length = 0;
   }
 
-  private track(animation: AnimationPlaybackControls): AnimationPlaybackControls {
+  private track(animation: AnimationPlaybackControls): Promise<unknown> {
     this.animations.push(animation);
-    return animation;
+    return animation.finished;
   }
 }

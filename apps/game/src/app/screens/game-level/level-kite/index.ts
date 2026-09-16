@@ -145,7 +145,7 @@ export class GameLevelKite extends Container {
     this.scoreCounter.setScore(0);
     this.kite.reset();
     window.addEventListener('keydown', this.handleKeyDown);
-    this.keyboard.playEnterAnimation();
+    void this.keyboard.playEnterAnimation();
     this.spawnGust();
   }
   async hide() {
@@ -154,7 +154,7 @@ export class GameLevelKite extends Container {
     this.gust?.stopAnimations();
     this.kite.stopAnimations();
     this.clearFeedbackTimeouts();
-    this.keyboard.playExitAnimation();
+    void this.keyboard.playExitAnimation();
   }
 
   private spawnGust() {
@@ -166,7 +166,7 @@ export class GameLevelKite extends Container {
     this.keyboard.setHintedLetter(this.gust.currentLetter);
     this.resolving = false;
     this.timerRunning = false;
-    Promise.all([this.gust.playEntryAnimation(), this.kite.playEntryAnimation()]).then(() => {
+    void Promise.all([this.gust.playEntryAnimation(), this.kite.playEntryAnimation()]).then(() => {
       if (this.completed || this.resolving) return; // screen left, or already resolved
       this.wordTimerMs = this.gustDurationMs;
       this.timerRunning = true;
@@ -180,8 +180,8 @@ export class GameLevelKite extends Container {
     this.keyboard.setHintedLetter(undefined);
     this.pushTimeout(() => {
       if (this.completed) return; // screen left while the completed word was held
-      this.kite.playSoarAnimation().then(() => {
-        this.gust?.playExitAnimation().then(() => {
+      void this.kite.playSoarAnimation().then(() => {
+        void this.gust?.playExitAnimation().then(() => {
           this.gust?.destroy({ children: true });
           this.gust = undefined;
           this.activeWordIdx++;

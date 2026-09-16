@@ -116,7 +116,7 @@ export class PostcardPopup extends Container {
 
     // The share button only appears on the back face, so this has the whole flip to finish.
     if (canCopyImages()) {
-      this.warmFrontPng();
+      void this.warmFrontPng();
     }
 
     // missing certain imgs

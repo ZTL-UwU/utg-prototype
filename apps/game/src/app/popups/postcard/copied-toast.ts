@@ -15,7 +15,7 @@ const FADE_OUT = 0.3;
 /** Transient confirmation over the postcard. Centred on its own origin, so callers only position it. */
 export class CopiedToast extends Container {
   private readonly pill: Graphics;
-  private readonly label: Text;
+  private readonly messageText: Text;
   private readonly animations: AnimationPlaybackControls[] = [];
 
   /** Bumped on every flash so a re-press abandons the run already in flight. */
@@ -26,7 +26,7 @@ export class CopiedToast extends Container {
     this.alpha = 0;
 
     this.pill = new Graphics();
-    this.label = new Text({
+    this.messageText = new Text({
       text: '',
       style: new TextStyle({
         fontFamily: 'Concert One',
@@ -35,29 +35,33 @@ export class CopiedToast extends Container {
         align: 'center',
       }),
     });
-    this.label.anchor.set(0.5);
+    this.messageText.anchor.set(0.5);
 
-    this.addChild(this.pill, this.label);
+    this.addChild(this.pill, this.messageText);
   }
 
   public async flash(message: string) {
     const run = ++this.run;
     this.stop();
 
-    this.label.text = message;
-    const width = this.label.width + PILL_PADDING_X * 2;
+    this.messageText.text = message;
+    const width = this.messageText.width + PILL_PADDING_X * 2;
     this.pill
       .clear()
       .roundRect(-width / 2, -PILL_HEIGHT / 2, width, PILL_HEIGHT, PILL_RADIUS)
       .fill({ color: PILL_COLOR, alpha: PILL_ALPHA });
 
-    await this.track(animate(this.alpha, 1, { duration: FADE_IN, ease: 'easeOut' }));
+    await this.track(
+      animate(this as Container, { alpha: 1 }, { duration: FADE_IN, ease: 'easeOut' }),
+    );
     if (run !== this.run) return;
 
-    await this.track(animate(this.alpha, 1, { duration: HOLD }));
+    await this.track(animate(this as Container, { alpha: 1 }, { duration: HOLD }));
     if (run !== this.run) return;
 
-    await this.track(animate(this.alpha, 0, { duration: FADE_OUT, ease: 'easeIn' }));
+    await this.track(
+      animate(this as Container, { alpha: 0 }, { duration: FADE_OUT, ease: 'easeIn' }),
+    );
   }
 
   public stop() {
@@ -76,7 +80,7 @@ export class CopiedToast extends Container {
   private async track(animation: AnimationPlaybackControls) {
     this.animations.push(animation);
     try {
-      await animation;
+      await animation.finished;
     } catch {
       // `stop()` settles the animation as rejected; the run token decides what happens next.
     }

@@ -295,7 +295,6 @@ export class TypingTestScreen extends Container {
 
       // Flashed after the hint has moved on, so the new hint cannot wipe the green key.
       this.flashKey(event.code, 'success');
-      void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
       return;
     }
 
@@ -303,7 +302,6 @@ export class TypingTestScreen extends Container {
     this.recordProblemKey();
     this.promptView?.showError();
     this.flashKey(event.code, 'error');
-    void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
   };
 
   /** The heatmap flags the key that should have been pressed, not the one that was. */
