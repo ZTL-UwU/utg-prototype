@@ -478,6 +478,9 @@ def create_word(
     request,
     data: Form[WordIn],
     image: File[UploadedFile] = None,
+    education_audio: File[UploadedFile] = None,
+    standard_audio: File[UploadedFile] = None,
+    # Deprecated alias for education_audio; drop once the admin is on the new keys.
     audio: File[UploadedFile] = None,
 ):
     word = Word.objects.create(
@@ -486,7 +489,8 @@ def create_word(
         translation=data.translation or None,
         is_tutorial_word=data.is_tutorial_word,
         image=image,
-        audio=audio,
+        education_audio=education_audio if education_audio is not None else audio,
+        standard_audio=standard_audio,
         created_by=request.auth,
         updated_by=request.auth,
     )
@@ -511,7 +515,15 @@ def list_words(request):
 )
 def list_words_simple(request):
     qs = Word.objects.filter(is_active=True, is_published=True)
-    return qs.only("id", "word", "target_letter", "is_tutorial_word", "image", "audio")
+    return qs.only(
+        "id",
+        "word",
+        "target_letter",
+        "is_tutorial_word",
+        "image",
+        "education_audio",
+        "standard_audio",
+    )
 
 
 @router.patch(
@@ -526,6 +538,9 @@ def update_word(
     word_id: int,
     data: Form[WordIn],
     image: File[UploadedFile] = None,
+    education_audio: File[UploadedFile] = None,
+    standard_audio: File[UploadedFile] = None,
+    # Deprecated alias for education_audio; drop once the admin is on the new keys.
     audio: File[UploadedFile] = None,
 ):
     try:
@@ -543,12 +558,19 @@ def update_word(
         if word.image:
             word.image.delete(save=False)
         word.image = None
-    if audio is not None:
-        word.audio = audio
-    elif data.clear_audio:
-        if word.audio:
-            word.audio.delete(save=False)
-        word.audio = None
+    new_education_audio = education_audio if education_audio is not None else audio
+    if new_education_audio is not None:
+        word.education_audio = new_education_audio
+    elif data.clear_education_audio or data.clear_audio:
+        if word.education_audio:
+            word.education_audio.delete(save=False)
+        word.education_audio = None
+    if standard_audio is not None:
+        word.standard_audio = standard_audio
+    elif data.clear_standard_audio:
+        if word.standard_audio:
+            word.standard_audio.delete(save=False)
+        word.standard_audio = None
     word.updated_by = request.auth
     word.save()
     return word

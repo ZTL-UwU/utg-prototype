@@ -113,7 +113,10 @@ class Word(AuditingMixin, models.Model):
     translation = models.CharField(null=True, blank=True, max_length=255)
     is_tutorial_word = models.BooleanField(default=False)
     image = models.ImageField(upload_to="words/", null=True, blank=True)
-    audio = models.FileField(upload_to="words/audio/", null=True, blank=True)
+    # Voice actor saying the target letter and then the word; used by education levels.
+    education_audio = models.FileField(upload_to="words/audio/", null=True, blank=True)
+    # Voice actor saying only the word; used by typing and game levels.
+    standard_audio = models.FileField(upload_to="words/audio/standard/", null=True, blank=True)
 
     class Meta:
         db_table = "words"

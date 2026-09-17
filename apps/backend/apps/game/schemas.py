@@ -185,6 +185,10 @@ class WordIn(Schema):
     translation: str | None = None
     is_tutorial_word: bool = False
     clear_image: bool = False
+    clear_education_audio: bool = False
+    clear_standard_audio: bool = False
+    # Deprecated: kept so the pre-rename admin build keeps working. Treated as
+    # clear_education_audio. Drop once the admin is on the new keys.
     clear_audio: bool = False
 
 
@@ -194,6 +198,20 @@ class AudioOut(Schema):
     filename: str
 
 
+def _audio_out(audio) -> AudioOut:
+    return AudioOut(
+        name=audio.name,
+        url=audio.url,
+        filename=Path(audio.name).name,
+    )
+
+
+def _optional_audio_out(audio) -> AudioOut | None:
+    if not audio:
+        return None
+    return _audio_out(audio)
+
+
 class WordOut(Schema):
     id: int
     word: str
@@ -201,6 +219,9 @@ class WordOut(Schema):
     translation: str | None
     is_tutorial_word: bool
     image: ImageOut | None = None
+    education_audio: AudioOut | None = None
+    standard_audio: AudioOut | None = None
+    # Deprecated alias for education_audio; drop once the admin is on the new keys.
     audio: AudioOut | None = None
 
     @staticmethod
@@ -208,15 +229,16 @@ class WordOut(Schema):
         return _optional_image_out(obj.image)
 
     @staticmethod
+    def resolve_education_audio(obj) -> AudioOut | None:
+        return _optional_audio_out(obj.education_audio)
+
+    @staticmethod
+    def resolve_standard_audio(obj) -> AudioOut | None:
+        return _optional_audio_out(obj.standard_audio)
+
+    @staticmethod
     def resolve_audio(obj) -> AudioOut | None:
-        audio = obj.audio
-        if not audio:
-            return None
-        return AudioOut(
-            name=audio.name,
-            url=audio.url,
-            filename=Path(audio.name).name,
-        )
+        return _optional_audio_out(obj.education_audio)
 
 
 class WordSimpleOut(Schema):
@@ -225,6 +247,9 @@ class WordSimpleOut(Schema):
     target_letter: str | None
     is_tutorial_word: bool
     image_url: str | None = None
+    education_audio_url: str | None = None
+    standard_audio_url: str | None = None
+    # Deprecated alias for education_audio_url; drop once the game is on the new keys.
     audio_url: str | None = None
 
     @staticmethod
@@ -232,8 +257,16 @@ class WordSimpleOut(Schema):
         return obj.image.url if obj.image else None
 
     @staticmethod
+    def resolve_education_audio_url(obj) -> str | None:
+        return obj.education_audio.url if obj.education_audio else None
+
+    @staticmethod
+    def resolve_standard_audio_url(obj) -> str | None:
+        return obj.standard_audio.url if obj.standard_audio else None
+
+    @staticmethod
     def resolve_audio_url(obj) -> str | None:
-        return obj.audio.url if obj.audio else None
+        return obj.education_audio.url if obj.education_audio else None
 
 
 class SentenceIn(Schema):
