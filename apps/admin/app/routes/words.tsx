@@ -1,9 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ImageIcon, ImageOff, PlusIcon, SearchIcon, Volume2, VolumeX } from 'lucide-react';
+import {
+  AudioLines,
+  ImageIcon,
+  ImageOff,
+  PlusIcon,
+  SearchIcon,
+  Volume2,
+  VolumeX,
+} from 'lucide-react';
 import { FetchError } from 'ofetch';
 import { useId, useState } from 'react';
 import { toast } from 'sonner';
 
+import { type MediaFilter, MediaToggleGroup } from '~/components/media-toggle-group';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,14 +25,11 @@ import {
 } from '~/components/ui/alert-dialog';
 import { Button } from '~/components/ui/button';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '~/components/ui/input-group';
-import { ToggleGroup, ToggleGroupItem } from '~/components/ui/toggle-group';
 import { WordCard, WordCardSkeleton } from '~/components/word-card';
 import { WordFormDialog } from '~/components/word-form-dialog';
 import { api } from '~/lib/api';
 import { type Word, wordsQueryOptions } from '~/lib/game';
 import { pageTitle } from '~/lib/page-title';
-
-type MediaFilter = 'with' | 'without';
 
 function getErrorDescription(error: unknown): string | undefined {
   if (error instanceof FetchError) {
@@ -38,20 +44,24 @@ export default function WordsPage() {
   const { data: words, isPending, isError, error } = useQuery(wordsQueryOptions);
   const [query, setQuery] = useState('');
   const [imageFilter, setImageFilter] = useState<MediaFilter[]>([]);
-  const [audioFilter, setAudioFilter] = useState<MediaFilter[]>([]);
+  const [educationAudioFilter, setEducationAudioFilter] = useState<MediaFilter[]>([]);
+  const [standardAudioFilter, setStandardAudioFilter] = useState<MediaFilter[]>([]);
   const [formOpen, setFormOpen] = useState(false);
   const [wordToEdit, setWordToEdit] = useState<Word | null>(null);
   const [wordToDelete, setWordToDelete] = useState<Word | null>(null);
 
   const imageMode = imageFilter[0];
-  const audioMode = audioFilter[0];
+  const educationAudioMode = educationAudioFilter[0];
+  const standardAudioMode = standardAudioFilter[0];
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const filteredWords =
     words?.filter((word) => {
       if (imageMode === 'with' && !word.image) return false;
       if (imageMode === 'without' && word.image) return false;
-      if (audioMode === 'with' && !word.audio) return false;
-      if (audioMode === 'without' && word.audio) return false;
+      if (educationAudioMode === 'with' && !word.education_audio) return false;
+      if (educationAudioMode === 'without' && word.education_audio) return false;
+      if (standardAudioMode === 'with' && !word.standard_audio) return false;
+      if (standardAudioMode === 'without' && word.standard_audio) return false;
       if (normalizedQuery) {
         const haystack = [word.word, word.translation, word.target_letter]
           .filter(Boolean)
@@ -114,36 +124,33 @@ export default function WordsPage() {
 
       <div className="sticky top-0 z-10 -mx-4 flex flex-col gap-2 bg-background/80 px-4 py-4 backdrop-blur-md md:-mx-6 md:px-6 lg:-mx-8 lg:px-8">
         <div className="flex flex-wrap items-center gap-2">
-          <ToggleGroup
-            variant="outline"
+          <MediaToggleGroup
+            label="Filter by image"
             value={imageFilter}
-            onValueChange={(value) => setImageFilter(value as MediaFilter[])}
-            aria-label="Filter by image"
-          >
-            <ToggleGroupItem value="with" aria-label="Show only words with an image">
-              <ImageIcon data-icon="inline-start" />
-              Has image
-            </ToggleGroupItem>
-            <ToggleGroupItem value="without" aria-label="Show only words missing an image">
-              <ImageOff data-icon="inline-start" />
-              Missing image
-            </ToggleGroupItem>
-          </ToggleGroup>
-          <ToggleGroup
-            variant="outline"
-            value={audioFilter}
-            onValueChange={(value) => setAudioFilter(value as MediaFilter[])}
-            aria-label="Filter by audio"
-          >
-            <ToggleGroupItem value="with" aria-label="Show only words with audio">
-              <Volume2 data-icon="inline-start" />
-              Has audio
-            </ToggleGroupItem>
-            <ToggleGroupItem value="without" aria-label="Show only words missing audio">
-              <VolumeX data-icon="inline-start" />
-              Missing audio
-            </ToggleGroupItem>
-          </ToggleGroup>
+            onChange={setImageFilter}
+            withIcon={ImageIcon}
+            withoutIcon={ImageOff}
+            withLabel="Has image"
+            withoutLabel="Missing image"
+          />
+          <MediaToggleGroup
+            label="Filter by education audio"
+            value={educationAudioFilter}
+            onChange={setEducationAudioFilter}
+            withIcon={Volume2}
+            withoutIcon={VolumeX}
+            withLabel="Has education audio"
+            withoutLabel="Missing education audio"
+          />
+          <MediaToggleGroup
+            label="Filter by standard audio"
+            value={standardAudioFilter}
+            onChange={setStandardAudioFilter}
+            withIcon={AudioLines}
+            withoutIcon={VolumeX}
+            withLabel="Has standard audio"
+            withoutLabel="Missing standard audio"
+          />
         </div>
         <InputGroup className="w-full max-w-sm">
           <InputGroupInput

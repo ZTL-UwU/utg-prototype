@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { ImageIcon, ImageOff, SearchIcon, Volume2 } from 'lucide-react';
+import { AudioLines, ImageIcon, ImageOff, SearchIcon, Volume2 } from 'lucide-react';
 import { useId, useState } from 'react';
 
 import { Button } from '~/components/ui/button';
@@ -29,7 +29,10 @@ export function WordIdsSelector({
   const searchId = useId();
   const [query, setQuery] = useState('');
   const [onlyWithImage, setOnlyWithImage] = useState(true);
-  const [onlyWithAudio, setOnlyWithAudio] = useState(true);
+  // Both default off: standard audio is unrecorded for most words, so defaulting either
+  // on would leave the picker empty.
+  const [onlyWithEducationAudio, setOnlyWithEducationAudio] = useState(false);
+  const [onlyWithStandardAudio, setOnlyWithStandardAudio] = useState(false);
   const { data: words = [], isPending, isError } = useQuery(wordsQueryOptions);
   const selectedSet = new Set(value);
   const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -40,7 +43,8 @@ export function WordIdsSelector({
       if (/\s/.test(text) || text.length > maxLength) return false;
     }
     if (onlyWithImage && !word.image) return false;
-    if (onlyWithAudio && !word.audio) return false;
+    if (onlyWithEducationAudio && !word.education_audio) return false;
+    if (onlyWithStandardAudio && !word.standard_audio) return false;
     if (normalizedQuery) {
       const haystack = [word.word, word.translation, word.target_letter]
         .filter(Boolean)
@@ -101,12 +105,21 @@ export function WordIdsSelector({
           </Toggle>
           <Toggle
             variant="outline"
-            pressed={onlyWithAudio}
-            onPressedChange={setOnlyWithAudio}
-            aria-label="Show only words with audio"
+            pressed={onlyWithEducationAudio}
+            onPressedChange={setOnlyWithEducationAudio}
+            aria-label="Show only words with education audio"
           >
             <Volume2 data-icon="inline-start" />
-            Has audio
+            Has education audio
+          </Toggle>
+          <Toggle
+            variant="outline"
+            pressed={onlyWithStandardAudio}
+            onPressedChange={setOnlyWithStandardAudio}
+            aria-label="Show only words with standard audio"
+          >
+            <AudioLines data-icon="inline-start" />
+            Has standard audio
           </Toggle>
           <InputGroup className="inline-flex w-fit">
             <InputGroupInput

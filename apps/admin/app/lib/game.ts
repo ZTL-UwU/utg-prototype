@@ -106,8 +106,6 @@ export interface WordImage {
   name: string;
   url: string;
   filename: string;
-  width: number;
-  height: number;
 }
 
 /** Mirrors AudioOut from apps/game/schemas.py. */
@@ -125,7 +123,10 @@ export interface Word {
   translation: string | null;
   is_tutorial_word: boolean;
   image: WordImage | null;
-  audio: WordAudio | null;
+  /** Voice actor saying the target letter and then the word; used by education levels. */
+  education_audio: WordAudio | null;
+  /** Voice actor saying only the word; used by typing and game levels. */
+  standard_audio: WordAudio | null;
 }
 
 export const wordsQueryOptions = queryOptions({
