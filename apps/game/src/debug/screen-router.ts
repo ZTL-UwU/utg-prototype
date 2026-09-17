@@ -1,4 +1,5 @@
 import { AvatarSelectScreen } from '../app/screens/avatar-select';
+import { DrawingScreen } from '../app/screens/drawing';
 import { EducationTutorialScreen } from '../app/screens/education-level/level-tutorial';
 import { HomeScreen } from '../app/screens/home';
 import { AuthScreen } from '../app/screens/home/auth';
@@ -70,6 +71,7 @@ function buildScreenRoutes(): ScreenRoute[] {
     route('/home', HomeScreen),
     route('/auth', AuthScreen),
     route('/avatar-select', AvatarSelectScreen),
+    route('/drawing', DrawingScreen),
     route('/layers', LayerSelectScreen),
     ...mapRoutes('education', getLayerMaps('education')),
     ...mapRoutes('typing', getLayerMaps('typing')),
@@ -123,6 +125,7 @@ class DebugScreenRouter {
       path !== '/home' &&
       path !== '/auth' &&
       path !== '/avatar-select' &&
+      path !== '/drawing' &&
       path !== '/' &&
       path !== ''
     ) {
