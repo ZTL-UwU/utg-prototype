@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import '@pixi/layout';
 
 import './index.css';
+import { FeedbackOverlay } from './components/feedback/FeedbackOverlay';
 import { MobileBlockerBanner } from './components/MobileBlockerBanner';
 import { queryClient } from './components/queryClient';
 import { ScreenOverlay } from './components/ScreenOverlay';
@@ -60,6 +61,7 @@ export default function App() {
       <div id="pixi-container" />
       <QueryClientProvider client={queryClient}>
         <ScreenOverlay />
+        <FeedbackOverlay />
       </QueryClientProvider>
     </>
   );

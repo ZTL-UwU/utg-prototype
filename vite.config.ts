@@ -23,6 +23,7 @@ export default defineConfig({
   },
   test: {
     include: [
+      'apps/game/src/**/*.test.ts',
       'packages/script-converter/tests/**/*.test.ts',
       'packages/level-types/tests/**/*.test.ts',
     ],

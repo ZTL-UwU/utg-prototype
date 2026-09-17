@@ -30,6 +30,32 @@ extensions.add(CreationNavigationPlugin);
  * It also initializes the PixiJS application and loads any assets in the `preload` bundle.
  */
 export class CreationEngine extends Application {
+  private feedbackAudioSuspended = false;
+  private visibilityAudioPaused?: boolean;
+
+  public suspendAudioForFeedback(): () => void {
+    const paused = this.visibilityAudioPaused ?? sound.context.paused;
+    const disableAutoPause = sound.disableAutoPause;
+    this.feedbackAudioSuspended = true;
+    sound.disableAutoPause = true;
+    sound.pauseAll();
+    let restored = false;
+    return () => {
+      if (restored) return;
+      restored = true;
+      this.feedbackAudioSuspended = false;
+      sound.disableAutoPause = disableAutoPause;
+      if (document.hidden) {
+        this.visibilityAudioPaused = paused;
+        sound.pauseAll();
+      } else {
+        this.visibilityAudioPaused = undefined;
+        if (paused) sound.pauseAll();
+        else sound.resumeAll();
+      }
+    };
+  }
+
   /** Initialize the application */
   public async init(opts: Partial<ApplicationOptions>): Promise<void> {
     opts.resizeTo ??= window;
@@ -72,7 +98,10 @@ export class CreationEngine extends Application {
       sound.pauseAll();
       this.navigation.blur();
     } else {
-      sound.resumeAll();
+      if (!this.feedbackAudioSuspended) {
+        if (!this.visibilityAudioPaused) sound.resumeAll();
+        this.visibilityAudioPaused = undefined;
+      }
       this.navigation.focus();
     }
   };

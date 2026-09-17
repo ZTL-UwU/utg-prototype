@@ -77,8 +77,139 @@ export class Navigation {
   /** Popups suspended underneath the current popup */
   private readonly popupStack: AppScreen[] = [];
 
+  private screenChange: Promise<void> = Promise.resolve();
+  private readonly transitions = new Set<Promise<void>>();
+  private feedbackFocusPending = false;
+  private feedbackGate?: Promise<void>;
+  private feedbackSuspension?: {
+    users: number;
+    ready: Promise<() => Promise<void>>;
+    releasing?: Promise<void>;
+  };
+
   public init(app: CreationEngine) {
     this.app = app;
+  }
+
+  private runTransition(operation: () => Promise<void>): Promise<void> {
+    if (this.feedbackGate) {
+      return this.feedbackGate.then(() => this.runTransition(operation));
+    }
+
+    let finish!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    this.transitions.add(pending);
+    return (async () => {
+      try {
+        await operation();
+      } finally {
+        this.transitions.delete(pending);
+        finish();
+      }
+    })();
+  }
+
+  public async suspendForFeedback(): Promise<() => Promise<void>> {
+    if (this.feedbackSuspension?.releasing) {
+      await this.feedbackSuspension.releasing;
+      return this.suspendForFeedback();
+    }
+
+    const suspension = (this.feedbackSuspension ??= {
+      users: 0,
+      ready: Promise.resolve().then(() => this.acquireFeedbackSuspension()),
+    });
+    suspension.users++;
+    let restore: () => Promise<void>;
+    try {
+      restore = await suspension.ready;
+    } catch (error) {
+      if (this.feedbackSuspension === suspension) this.feedbackSuspension = undefined;
+      throw error;
+    }
+
+    let released: Promise<void> | undefined;
+    return () => {
+      released ??= (async () => {
+        if (--suspension.users !== 0) return;
+        suspension.releasing = Promise.resolve().then(restore);
+        try {
+          await suspension.releasing;
+        } finally {
+          if (this.feedbackSuspension === suspension) this.feedbackSuspension = undefined;
+        }
+      })();
+      return released;
+    };
+  }
+
+  private async acquireFeedbackSuspension(): Promise<() => Promise<void>> {
+    while (this.transitions.size) {
+      await Promise.all(this.transitions);
+    }
+
+    let unlock!: () => void;
+    this.feedbackGate = new Promise<void>((resolve) => {
+      unlock = resolve;
+    });
+    const { stage, ticker } = this.app;
+    const started = ticker.started;
+    const interactiveChildren = stage.interactiveChildren;
+    const eventMode = stage.eventMode;
+    const target = this.currentPopup ?? this.currentScreen;
+    let paused = false;
+    let restoreAudio: (() => void) | undefined;
+    const restore = async () => {
+      try {
+        if (
+          paused &&
+          target &&
+          !target.destroyed &&
+          !stage.destroyed &&
+          target === (this.currentPopup ?? this.currentScreen)
+        ) {
+          await target.resume?.();
+        }
+      } finally {
+        try {
+          restoreAudio?.();
+        } finally {
+          if (!stage.destroyed && this.app.stage === stage) {
+            stage.interactiveChildren = interactiveChildren;
+            stage.eventMode = eventMode;
+            if (started && this.app.ticker === ticker) ticker.start();
+          }
+          this.feedbackGate = undefined;
+          unlock();
+          if (this.feedbackFocusPending && !stage.destroyed) {
+            this.feedbackFocusPending = false;
+            if (document.hidden) this.blur();
+            else this.focus();
+          }
+        }
+      }
+    };
+
+    try {
+      stage.interactiveChildren = false;
+      stage.eventMode = 'none';
+      ticker.stop();
+      restoreAudio = this.app.suspendAudioForFeedback();
+      if (target?.pause) {
+        paused = true;
+        await target.pause();
+      }
+      return restore;
+    } catch (error) {
+      try {
+        await restore();
+      } catch {
+        throw error;
+      }
+      throw error;
+    }
   }
 
   /**
@@ -108,8 +239,10 @@ export class Navigation {
 
   /** Set the  default load screen */
   public setBackground(ctor: AppScreenConstructor) {
-    this.background = new ctor();
-    void this.addAndShowScreen(this.background);
+    void this.runTransition(async () => {
+      this.background = new ctor();
+      await this.addAndShowScreen(this.background);
+    });
   }
 
   /** Add screen to the stage, link update & resize functions */
@@ -183,6 +316,14 @@ export class Navigation {
   public async showScreen(ctor: AppScreenConstructor): Promise<void>;
   public async showScreen<P>(ctor: AppScreenConstructor<[P]>, props: P): Promise<void>;
   public async showScreen(ctor: AppScreenConstructor, props?: unknown) {
+    const change = this.screenChange.then(() =>
+      this.runTransition(() => this.changeScreen(ctor, props)),
+    );
+    this.screenChange = change.catch(() => {});
+    return change;
+  }
+
+  private async changeScreen(ctor: AppScreenConstructor, props?: unknown) {
     // Block interactivity in current screen
     if (this.currentScreen) {
       this.currentScreen.interactiveChildren = false;
@@ -246,6 +387,14 @@ export class Navigation {
     options?: TransitionOptions,
   ): Promise<void>;
   public async showPopup(ctor: AppScreenConstructor, props?: unknown, options?: TransitionOptions) {
+    return this.runTransition(() => this.openPopup(ctor, props, options));
+  }
+
+  private async openPopup(
+    ctor: AppScreenConstructor,
+    props?: unknown,
+    options?: TransitionOptions,
+  ) {
     const animate = options?.animate ?? true;
 
     if (this.currentScreen) {
@@ -280,6 +429,10 @@ export class Navigation {
   public async showNestedPopup(ctor: AppScreenConstructor): Promise<void>;
   public async showNestedPopup<P>(ctor: AppScreenConstructor<[P]>, props: P): Promise<void>;
   public async showNestedPopup(ctor: AppScreenConstructor, props?: unknown) {
+    return this.runTransition(() => this.openNestedPopup(ctor, props));
+  }
+
+  private async openNestedPopup(ctor: AppScreenConstructor, props?: unknown) {
     if (!this.currentPopup) {
       await this.showPopup(ctor, props);
       return;
@@ -304,6 +457,10 @@ export class Navigation {
    * Dismiss current popup, if there is one
    */
   public async hidePopup() {
+    return this.runTransition(() => this.closePopup());
+  }
+
+  private async closePopup() {
     if (!this.currentPopup) return;
     const popup = this.currentPopup;
     this.currentPopup = undefined;
@@ -319,7 +476,7 @@ export class Navigation {
 
     if (this.currentScreen) {
       this.currentScreen.interactiveChildren = true;
-      void this.currentScreen.resume?.();
+      await this.currentScreen.resume?.();
     }
   }
 
@@ -327,6 +484,10 @@ export class Navigation {
    * Blur screens when lose focus
    */
   public blur() {
+    if (this.feedbackGate) {
+      this.feedbackFocusPending = true;
+      return;
+    }
     this.currentScreen?.blur?.();
     this.currentPopup?.blur?.();
     this.background?.blur?.();
@@ -336,6 +497,10 @@ export class Navigation {
    * Focus screens
    */
   public focus() {
+    if (this.feedbackGate) {
+      this.feedbackFocusPending = true;
+      return;
+    }
     this.currentScreen?.focus?.();
     this.currentPopup?.focus?.();
     this.background?.focus?.();
