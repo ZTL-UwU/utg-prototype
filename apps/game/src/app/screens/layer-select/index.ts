@@ -11,6 +11,7 @@ import { ensureResultsReady } from '../../../zustandStores/resultStore';
 import { PassportPopup } from '../../popups/passport';
 import { UserStatsPopup } from '../../popups/user-stats';
 import { HomeScreen } from '../home';
+import { LetterReferenceScreen } from '../letter-reference';
 import { LevelMapScreen } from '../level-map';
 import { getLayerMaps, type TLayer } from '../level-map/units';
 import { EducationLevelSelect } from '../level-select/education-level-select';
@@ -184,10 +185,32 @@ export class LayerSelectScreen extends Container {
       void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
       void engine().navigation.showPopup(PassportPopup);
     });
+    const notebookButton = new FancyButton({
+      defaultView: Texture.from('layer-select/notebook.svg'),
+      animations: {
+        hover: {
+          props: {
+            scale: { x: 1.1, y: 1.1 },
+          },
+          duration: 100,
+        },
+      },
+      anchor: 0.5,
+    });
+    notebookButton.layout = {
+      position: 'absolute',
+      top: '15%',
+      right: '10%',
+    };
+    notebookButton.onPress.connect(() => {
+      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+      void engine().navigation.showScreen(LetterReferenceScreen);
+    });
     this.innerContainer = new Container({ layout: true });
     this.innerContainer.addChild(
       this.mapBackground,
       this.closeButton,
+      notebookButton,
       ...this.layerButtons.map(({ button }) => button),
     );
 
