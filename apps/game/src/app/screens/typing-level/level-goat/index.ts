@@ -5,7 +5,11 @@ import { engine } from '../../../../engine/getEngine';
 import { createTypingSentenceStyle, getSentenceMarkup } from '../../../../utils/example-words';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
-import { REMOTE_SENTENCES_BUNDLE } from '../../../../zustandStores/sentenceStore';
+import {
+  getSentenceAudioAlias,
+  playSentenceAudio,
+  REMOTE_SENTENCES_BUNDLE,
+} from '../../../../zustandStores/sentenceStore';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
@@ -221,6 +225,7 @@ export class TypingGoatsScreen extends Container {
     this.updateSentenceDisplay();
     this.timerRunning = !this.paused;
     this.layoutContent();
+    playSentenceAudio(getSentenceAudioAlias(this.currentRound.sentenceId));
   }
 
   private async onSentenceTimeout() {
