@@ -1,6 +1,8 @@
+import { sound } from '@pixi/sound';
 import { Assets } from 'pixi.js';
 import { create } from 'zustand';
 
+import { engine } from '../engine/getEngine';
 import { api } from '../lib/api';
 import { ensureRemoteReady, type RemoteStatus } from '../lib/remoteResource';
 
@@ -68,6 +70,14 @@ function registerSentencesBundle(sentences: SentenceSimple[]): void {
   if (entries.length > 0) {
     void Assets.backgroundLoadBundle(REMOTE_SENTENCES_BUNDLE);
   }
+}
+export async function playSentenceAudio(alias: string): Promise<void> {
+  if (!sound.exists(alias)) return;
+  const instance = await engine().audio.sfx.play(alias);
+  await new Promise<void>((resolve) => {
+    instance.once('end', resolve);
+    instance.once('stop', resolve);
+  });
 }
 
 const useSentenceStore = create<SentenceStore>((set, get) => ({

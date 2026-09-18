@@ -1,21 +1,12 @@
 import { useForm } from '@tanstack/react-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { EDUCATION_LETTERS } from '@utg/letters';
-import { Image, Music, XIcon } from 'lucide-react';
 import { FetchError } from 'ofetch';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import {
-  Attachment,
-  AttachmentAction,
-  AttachmentActions,
-  AttachmentContent,
-  AttachmentDescription,
-  AttachmentMedia,
-  AttachmentTitle,
-} from '~/components/ui/attachment';
+import { MediaFileField } from '~/components/media-file-field';
 import { Button } from '~/components/ui/button';
 import {
   Dialog,
@@ -24,14 +15,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '~/components/ui/dialog';
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from '~/components/ui/empty';
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
 import {
@@ -45,7 +28,6 @@ import {
 import { Switch } from '~/components/ui/switch';
 import { api } from '~/lib/api';
 import { type Word, wordsQueryOptions } from '~/lib/game';
-import { cn, mediaUrl } from '~/lib/utils';
 
 const NO_TARGET_LETTER = '__none__';
 
@@ -55,17 +37,26 @@ type WordFormValues = {
   translation: string;
   is_tutorial_word: boolean;
   image: File | null;
-  audio: File | null;
+  education_audio: File | null;
+  standard_audio: File | null;
+};
+
+type ClearFlags = {
+  clearImage: boolean;
+  clearEducationAudio: boolean;
+  clearStandardAudio: boolean;
 };
 
 function createWordFormSchema() {
+  const file = z.custom<File | null>((value) => value instanceof File || value === null);
   return z.object({
     word: z.string().trim().min(1, 'Word is required.').max(255),
     target_letter: z.string().max(255),
     translation: z.string().max(255),
     is_tutorial_word: z.boolean(),
-    image: z.custom<File | null>((value) => value instanceof File || value === null),
-    audio: z.custom<File | null>((value) => value instanceof File || value === null),
+    image: file,
+    education_audio: file,
+    standard_audio: file,
   });
 }
 
@@ -76,10 +67,7 @@ function getErrorDescription(error: unknown): string | undefined {
   return error instanceof Error ? error.message : undefined;
 }
 
-function buildWordFormData(
-  values: WordFormValues,
-  options?: { clearImage?: boolean; clearAudio?: boolean },
-): FormData {
+function buildWordFormData(values: WordFormValues, flags: ClearFlags): FormData {
   const formData = new FormData();
   formData.append('word', values.word.trim());
   formData.append('target_letter', values.target_letter);
@@ -90,47 +78,20 @@ function buildWordFormData(
   formData.append('is_tutorial_word', String(values.is_tutorial_word));
   if (values.image) {
     formData.append('image', values.image);
-  } else if (options?.clearImage) {
+  } else if (flags.clearImage) {
     formData.append('clear_image', 'true');
   }
-  if (values.audio) {
-    formData.append('audio', values.audio);
-  } else if (options?.clearAudio) {
-    formData.append('clear_audio', 'true');
+  if (values.education_audio) {
+    formData.append('education_audio', values.education_audio);
+  } else if (flags.clearEducationAudio) {
+    formData.append('clear_education_audio', 'true');
+  }
+  if (values.standard_audio) {
+    formData.append('standard_audio', values.standard_audio);
+  } else if (flags.clearStandardAudio) {
+    formData.append('clear_standard_audio', 'true');
   }
   return formData;
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function isImageFile(file: File): boolean {
-  return file.type.startsWith('image/');
-}
-
-const AUDIO_EXTENSIONS = new Set([
-  '.mp3',
-  '.wav',
-  '.ogg',
-  '.oga',
-  '.opus',
-  '.m4a',
-  '.aac',
-  '.flac',
-  '.webm',
-]);
-
-function isAudioFile(file: File): boolean {
-  if (file.type.startsWith('audio/') || file.type === 'application/ogg') {
-    return true;
-  }
-  // Some systems report .ogg as empty or application/octet-stream — fall back to extension.
-  const dot = file.name.lastIndexOf('.');
-  if (dot === -1) return false;
-  return AUDIO_EXTENSIONS.has(file.name.slice(dot).toLowerCase());
 }
 
 function wordToFormValues(word: Word): WordFormValues {
@@ -140,7 +101,8 @@ function wordToFormValues(word: Word): WordFormValues {
     translation: word.translation ?? '',
     is_tutorial_word: word.is_tutorial_word,
     image: null,
-    audio: null,
+    education_audio: null,
+    standard_audio: null,
   };
 }
 
@@ -150,7 +112,8 @@ const defaultWordFormValues: WordFormValues = {
   translation: '',
   is_tutorial_word: false,
   image: null,
-  audio: null,
+  education_audio: null,
+  standard_audio: null,
 };
 
 export function WordFormDialog({
@@ -172,7 +135,7 @@ export function WordFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" showCloseButton={false}>
+      <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col" showCloseButton={false}>
         <WordFormDialogBody
           key={`${sessionRef.current}-${word?.id ?? 'new'}`}
           word={word}
@@ -191,31 +154,15 @@ function WordFormDialogBody({
   onOpenChange: (open: boolean) => void;
 }) {
   const queryClient = useQueryClient();
-  const imageInputId = useId();
-  const audioInputId = useId();
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const audioInputRef = useRef<HTMLInputElement>(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
-  const [isDraggingImage, setIsDraggingImage] = useState(false);
-  const [isDraggingAudio, setIsDraggingAudio] = useState(false);
   const [dismissedExistingImage, setDismissedExistingImage] = useState(false);
-  const [dismissedExistingAudio, setDismissedExistingAudio] = useState(false);
+  const [dismissedExistingEducationAudio, setDismissedExistingEducationAudio] = useState(false);
+  const [dismissedExistingStandardAudio, setDismissedExistingStandardAudio] = useState(false);
   const isEditing = word !== null;
   const wordFormSchema = createWordFormSchema();
-  const existingImageUrl = word?.image ? mediaUrl(word.image.url) : null;
-  const existingAudio = word?.audio ?? null;
 
   const saveWord = useMutation({
-    mutationFn: ({
-      values,
-      clearImage,
-      clearAudio,
-    }: {
-      values: WordFormValues;
-      clearImage: boolean;
-      clearAudio: boolean;
-    }) => {
-      const body = buildWordFormData(values, { clearImage, clearAudio });
+    mutationFn: ({ values, flags }: { values: WordFormValues; flags: ClearFlags }) => {
+      const body = buildWordFormData(values, flags);
       if (isEditing) {
         return api<Word>(`/words/${word.id}`, {
           method: 'PATCH',
@@ -241,11 +188,18 @@ function WordFormDialogBody({
       try {
         await saveWord.mutateAsync({
           values: parsed.data,
-          clearImage: isEditing && dismissedExistingImage && !parsed.data.image,
-          clearAudio: isEditing && dismissedExistingAudio && !parsed.data.audio,
+          flags: {
+            clearImage: isEditing && dismissedExistingImage && !parsed.data.image,
+            clearEducationAudio:
+              isEditing && dismissedExistingEducationAudio && !parsed.data.education_audio,
+            clearStandardAudio:
+              isEditing && dismissedExistingStandardAudio && !parsed.data.standard_audio,
+          },
         });
         toast.success(isEditing ? 'Word updated' : 'Word created');
-        await queryClient.invalidateQueries({ queryKey: wordsQueryOptions.queryKey });
+        await queryClient.invalidateQueries({
+          queryKey: wordsQueryOptions.queryKey,
+        });
         onOpenChange(false);
       } catch (error) {
         toast.error(isEditing ? 'Failed to update word' : 'Failed to create word', {
@@ -255,23 +209,6 @@ function WordFormDialogBody({
     },
   });
 
-  useEffect(() => {
-    return () => {
-      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
-    };
-  }, [imagePreviewUrl]);
-
-  function updateImagePreview(file: File | null) {
-    setImagePreviewUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return file ? URL.createObjectURL(file) : null;
-    });
-
-    if (!file && imageInputRef.current) {
-      imageInputRef.current.value = '';
-    }
-  }
-
   return (
     <>
       <DialogHeader>
@@ -280,7 +217,7 @@ function WordFormDialogBody({
 
       <form
         id="word-form"
-        className="flex flex-col gap-5"
+        className="flex-1 overflow-y-auto min-h-0 pr-1 my-2"
         onSubmit={(event) => {
           event.preventDefault();
           void form.handleSubmit();
@@ -404,249 +341,46 @@ function WordFormDialogBody({
 
           <form.Field
             name="image"
-            children={(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-              const selectedFile = field.state.value;
-              const previewSrc =
-                imagePreviewUrl ??
-                (!dismissedExistingImage && !selectedFile ? existingImageUrl : null);
-
-              function setImageFile(file: File | null) {
-                if (file && !isImageFile(file)) {
-                  toast.error('Please choose an image file');
-                  return;
-                }
-
-                if (!file) setDismissedExistingImage(true);
-                field.handleChange(file);
-                field.handleBlur();
-                updateImagePreview(file);
-              }
-
-              return (
-                <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={imageInputId}>Image</FieldLabel>
-                  <input
-                    ref={imageInputRef}
-                    id={imageInputId}
-                    name={field.name}
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    onBlur={field.handleBlur}
-                    onChange={(event) => {
-                      setImageFile(event.target.files?.[0] ?? null);
-                    }}
-                    aria-invalid={isInvalid}
-                  />
-
-                  {previewSrc ? (
-                    <Attachment className="w-full">
-                      <AttachmentMedia variant="image">
-                        <img src={previewSrc} alt="" />
-                      </AttachmentMedia>
-                      <AttachmentContent>
-                        <AttachmentTitle>
-                          {selectedFile?.name ??
-                            word?.image?.filename ??
-                            (isEditing ? 'Current image' : 'Image')}
-                        </AttachmentTitle>
-                        {selectedFile ? (
-                          <AttachmentDescription>
-                            {formatFileSize(selectedFile.size)}
-                          </AttachmentDescription>
-                        ) : null}
-                      </AttachmentContent>
-                      <AttachmentActions>
-                        <AttachmentAction
-                          type="button"
-                          aria-label={selectedFile ? `Remove ${selectedFile.name}` : 'Remove image'}
-                          onClick={() => setImageFile(null)}
-                        >
-                          <XIcon />
-                        </AttachmentAction>
-                      </AttachmentActions>
-                    </Attachment>
-                  ) : (
-                    <Empty
-                      className={cn(
-                        'border border-dashed',
-                        isDraggingImage && 'border-primary bg-muted/40',
-                        isInvalid && 'border-destructive',
-                      )}
-                      onDragEnter={(event) => {
-                        event.preventDefault();
-                        setIsDraggingImage(true);
-                      }}
-                      onDragOver={(event) => {
-                        event.preventDefault();
-                        setIsDraggingImage(true);
-                      }}
-                      onDragLeave={(event) => {
-                        event.preventDefault();
-                        if (!event.currentTarget.contains(event.relatedTarget as Node)) {
-                          setIsDraggingImage(false);
-                        }
-                      }}
-                      onDrop={(event) => {
-                        event.preventDefault();
-                        setIsDraggingImage(false);
-                        setImageFile(event.dataTransfer.files?.[0] ?? null);
-                      }}
-                    >
-                      <EmptyHeader>
-                        <EmptyMedia variant="icon">
-                          <Image />
-                        </EmptyMedia>
-                        <EmptyTitle>Upload image</EmptyTitle>
-                        <EmptyDescription>PNG, JPG, 500x500px</EmptyDescription>
-                      </EmptyHeader>
-                      <EmptyContent>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => imageInputRef.current?.click()}
-                        >
-                          Browse Files
-                        </Button>
-                      </EmptyContent>
-                    </Empty>
-                  )}
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              );
-            }}
+            children={(field) => (
+              <MediaFileField
+                field={field}
+                label="Image"
+                kind="image"
+                existing={word?.image ?? null}
+                dismissed={dismissedExistingImage}
+                onDismiss={() => setDismissedExistingImage(true)}
+              />
+            )}
           />
 
           <form.Field
-            name="audio"
-            children={(field) => {
-              const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
-              const selectedFile = field.state.value;
-              const showExisting =
-                !dismissedExistingAudio && !selectedFile && existingAudio !== null;
+            name="education_audio"
+            children={(field) => (
+              <MediaFileField
+                field={field}
+                label="Education audio"
+                description="Voice actor saying the target letter and then the word. Used by education levels."
+                kind="audio"
+                existing={word?.education_audio ?? null}
+                dismissed={dismissedExistingEducationAudio}
+                onDismiss={() => setDismissedExistingEducationAudio(true)}
+              />
+            )}
+          />
 
-              function setAudioFile(file: File | null) {
-                if (file && !isAudioFile(file)) {
-                  toast.error('Please choose an audio file');
-                  return;
-                }
-
-                if (!file) {
-                  setDismissedExistingAudio(true);
-                  if (audioInputRef.current) audioInputRef.current.value = '';
-                }
-                field.handleChange(file);
-                field.handleBlur();
-              }
-
-              return (
-                <Field data-invalid={isInvalid}>
-                  <FieldLabel htmlFor={audioInputId}>Audio</FieldLabel>
-                  <FieldDescription>Optional pronunciation audio for the word.</FieldDescription>
-                  <input
-                    ref={audioInputRef}
-                    id={audioInputId}
-                    name={field.name}
-                    type="file"
-                    accept="audio/*,.ogg,.oga,.opus,application/ogg"
-                    className="sr-only"
-                    onBlur={field.handleBlur}
-                    onChange={(event) => {
-                      setAudioFile(event.target.files?.[0] ?? null);
-                    }}
-                    aria-invalid={isInvalid}
-                  />
-
-                  {selectedFile || showExisting ? (
-                    <Attachment className="w-full">
-                      <AttachmentMedia variant="icon">
-                        <Music />
-                      </AttachmentMedia>
-                      <AttachmentContent>
-                        <AttachmentTitle>
-                          {selectedFile?.name ??
-                            existingAudio?.filename ??
-                            (isEditing ? 'Current audio' : 'Audio')}
-                        </AttachmentTitle>
-                        {selectedFile ? (
-                          <AttachmentDescription>
-                            {formatFileSize(selectedFile.size)}
-                          </AttachmentDescription>
-                        ) : existingAudio ? (
-                          <AttachmentDescription>
-                            <a
-                              href={mediaUrl(existingAudio.url)}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="underline-offset-2 hover:underline"
-                            >
-                              Preview
-                            </a>
-                          </AttachmentDescription>
-                        ) : null}
-                      </AttachmentContent>
-                      <AttachmentActions>
-                        <AttachmentAction
-                          type="button"
-                          aria-label={selectedFile ? `Remove ${selectedFile.name}` : 'Remove audio'}
-                          onClick={() => setAudioFile(null)}
-                        >
-                          <XIcon />
-                        </AttachmentAction>
-                      </AttachmentActions>
-                    </Attachment>
-                  ) : (
-                    <Empty
-                      className={cn(
-                        'border border-dashed',
-                        isDraggingAudio && 'border-primary bg-muted/40',
-                        isInvalid && 'border-destructive',
-                      )}
-                      onDragEnter={(event) => {
-                        event.preventDefault();
-                        setIsDraggingAudio(true);
-                      }}
-                      onDragOver={(event) => {
-                        event.preventDefault();
-                        setIsDraggingAudio(true);
-                      }}
-                      onDragLeave={(event) => {
-                        event.preventDefault();
-                        if (!event.currentTarget.contains(event.relatedTarget as Node)) {
-                          setIsDraggingAudio(false);
-                        }
-                      }}
-                      onDrop={(event) => {
-                        event.preventDefault();
-                        setIsDraggingAudio(false);
-                        setAudioFile(event.dataTransfer.files?.[0] ?? null);
-                      }}
-                    >
-                      <EmptyHeader>
-                        <EmptyMedia variant="icon">
-                          <Music />
-                        </EmptyMedia>
-                        <EmptyTitle>Upload audio</EmptyTitle>
-                        <EmptyDescription>MP3, WAV, OGG, or similar</EmptyDescription>
-                      </EmptyHeader>
-                      <EmptyContent>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => audioInputRef.current?.click()}
-                        >
-                          Browse Files
-                        </Button>
-                      </EmptyContent>
-                    </Empty>
-                  )}
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
-              );
-            }}
+          <form.Field
+            name="standard_audio"
+            children={(field) => (
+              <MediaFileField
+                field={field}
+                label="Standard audio"
+                description="Voice actor saying only the word. Used by typing and game levels."
+                kind="audio"
+                existing={word?.standard_audio ?? null}
+                dismissed={dismissedExistingStandardAudio}
+                onDismiss={() => setDismissedExistingStandardAudio(true)}
+              />
+            )}
           />
         </FieldGroup>
       </form>

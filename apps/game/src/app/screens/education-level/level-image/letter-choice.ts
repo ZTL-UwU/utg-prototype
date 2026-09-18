@@ -1,4 +1,3 @@
-import { sound, type IMediaInstance } from '@pixi/sound';
 import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
 import { Container, HTMLText, Texture } from 'pixi.js';
@@ -8,8 +7,9 @@ import { createExampleWordStyle, getCompletedWordMarkup } from '../../../../util
 import { convertToCurrentScript } from '../../../../utils/script';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import {
-  getWordAudioAlias,
+  getWordEducationAudioAlias,
   getWordImageAlias,
+  playWordAudio,
   type WordSimple,
 } from '../../../../zustandStores/wordStore';
 
@@ -93,14 +93,7 @@ export class LetterChoice extends Container {
       { duration: 0.4, ease: 'easeOut' },
     );
     this.imageButton.tint = 0xffffff;
-    const wordAudioAlias = getWordAudioAlias(this.word.id);
-    if (sound.exists(wordAudioAlias)) {
-      const audio: IMediaInstance = await engine().audio.sfx.play(wordAudioAlias);
-      await new Promise<void>((resolve) => {
-        audio.once('end', resolve);
-        audio.once('stop', resolve);
-      });
-    }
+    await playWordAudio(getWordEducationAudioAlias(this.word.id));
     this.onCorrect?.();
   }
 

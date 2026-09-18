@@ -16,7 +16,12 @@ import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { convertToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
-import { REMOTE_WORDS_BUNDLE, resolveWordsByIds } from '../../../../zustandStores/wordStore';
+import {
+  getWordStandardAudioAlias,
+  playWordAudio,
+  REMOTE_WORDS_BUNDLE,
+  resolveWordsByIds,
+} from '../../../../zustandStores/wordStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
@@ -60,14 +65,14 @@ function rectsOverlap(a: Bounds, b: Bounds) {
  * Randomises the word order; `totalWords` of 0 (or ≥ the pool size) plays every word once,
  * otherwise a random subset of that size. Mirrors the fruit-fall selection.
  */
-function pickWords(words: string[], totalWords: number): string[] {
+function pickWords(words: Round[], totalWords: number): Round[] {
   const shuffled = [...words].sort(() => Math.random() - 0.5);
   return totalWords === 0 ? shuffled : shuffled.slice(0, totalWords);
 }
 
 // playing → dying (cosmetic fall after a hit) → over (gameOver already fired).
 type FlyingState = 'playing' | 'dying' | 'over';
-
+type Round = { word: string; wordId: number };
 export class GameLevelFlying extends Container {
   public static assetBundles = ['game-level-flying', 'ui', REMOTE_WORDS_BUNDLE];
   public static splashBackgroundAsset = 'game-levels/game-level-flying/background.png';
@@ -91,9 +96,9 @@ export class GameLevelFlying extends Container {
   private hud: HUD;
   private wordStyle: HTMLTextStyle;
   private wordText: HTMLText;
-  private words: string[];
+  private words: Round[];
   private wordIndex = 0;
-  private activeWord: string;
+  private activeRound: Round;
   private activeLetterIdx = 0;
   private feedbackTimeouts: number[] = [];
   private readonly level: TLevel;
@@ -127,11 +132,15 @@ export class GameLevelFlying extends Container {
     this.livesBar = new LivesBar(props.maxLives);
     this.bird.anchor.set(0.5);
 
-    const wordPool = resolveWordsByIds(props.wordIds).map((word) => word.word);
-    this.words = pickWords(wordPool, props.totalWords).map((word) =>
-      convertToCurrentScript(word, { autoCapitalize: false }),
-    );
-    this.activeWord = this.words[0];
+    const wordPool: Round[] = resolveWordsByIds(props.wordIds).map((word) => {
+      const round: Round = {
+        word: convertToCurrentScript(word.word, { autoCapitalize: false }),
+        wordId: word.id,
+      };
+      return round;
+    });
+    this.words = pickWords(wordPool, props.totalWords);
+    this.activeRound = this.words[0];
     this.wordStyle = createTypingWordStyle(props.wordFontSize, WORD_BASE_COLOR);
     this.wordText = new HTMLText({ style: this.wordStyle });
     this.wordText.anchor.set(0.5);
@@ -269,7 +278,7 @@ export class GameLevelFlying extends Container {
     const typed = getMappedFromKeyboardEvent(event);
     if (!typed) return;
 
-    if (typed === this.activeWord[this.activeLetterIdx]) {
+    if (typed === this.activeRound.word[this.activeLetterIdx]) {
       useSessionStore.getState().recordCorrect();
       this.keyboard.setKeyFeedback(event.code, 'success');
       void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
@@ -294,30 +303,32 @@ export class GameLevelFlying extends Container {
   }
 
   private get currentTargetLetter() {
-    return this.activeWord[this.activeLetterIdx];
+    return this.activeRound.word[this.activeLetterIdx];
   }
 
   private renderWord() {
-    const len = this.activeWord[this.activeLetterIdx]?.length ?? 1;
-    this.wordText.text = getHighlightedWordMarkup(this.activeWord, this.activeLetterIdx, len);
+    const len = this.activeRound.word[this.activeLetterIdx]?.length ?? 1;
+    this.wordText.text = getHighlightedWordMarkup(this.activeRound.word, this.activeLetterIdx, len);
     this.keyboard.setHintedLetter(this.currentTargetLetter);
   }
 
   private advanceLetter() {
-    this.activeLetterIdx += this.activeWord[this.activeLetterIdx].length;
-    if (this.activeLetterIdx < this.activeWord.length) {
+    this.activeLetterIdx += this.activeRound.word[this.activeLetterIdx].length;
+    if (this.activeLetterIdx < this.activeRound.word.length) {
       this.renderWord();
       return;
     }
 
     // current word finished — move on, or end the run once every word has been played
     this.wordIndex += 1;
+
     if (this.wordIndex >= this.words.length) {
       this.gameOver();
       return;
     }
-    this.activeWord = this.words[this.wordIndex];
+    this.activeRound = this.words[this.wordIndex];
     this.activeLetterIdx = 0;
+    void playWordAudio(getWordStandardAudioAlias(this.activeRound.wordId));
     this.renderWord();
   }
 
@@ -419,7 +430,7 @@ export class GameLevelFlying extends Container {
     this.clearFeedbackTimeouts();
     this.keyboard.clearAllKeyFeedback();
     this.wordIndex = 0;
-    this.activeWord = this.words[0];
+    this.activeRound = this.words[0];
     this.activeLetterIdx = 0;
     this.renderWord();
   }
