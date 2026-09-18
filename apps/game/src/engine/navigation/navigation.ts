@@ -100,6 +100,23 @@ export class Navigation {
     }
   }
 
+  /**
+   * Load screen bundles without letting one bad asset take the screen down.
+   *
+   * Pixi's loader defaults to `strategy: 'throw'` and resolves bundles with `Promise.all`,
+   * so a single 404 rejects the whole bundle. Every `showScreen` call site is `void`-ed, so
+   * that rejection would leave the screen unconstructed and the outgoing screen stuck with
+   * `interactiveChildren = false` — the game appears frozen. Remote word media is the
+   * realistic failure source (a missing recording), and a quiet screen beats a dead one.
+   */
+  private async loadBundlesSafely(assetBundles: string[], onProgress?: (progress: number) => void) {
+    try {
+      await Assets.loadBundle(assetBundles, onProgress);
+    } catch (error) {
+      console.warn(`[navigation] Failed to load bundles: ${assetBundles.join(', ')}`, error);
+    }
+  }
+
   /** Subscribe to completed screen changes. */
   public onScreenChange(listener: (ctor: AppScreenConstructor<any[]>, props?: unknown) => void) {
     this.screenChangeListeners.add(listener);
@@ -192,7 +209,7 @@ export class Navigation {
     if (ctor.assetBundles) {
       await this.ensureBundlesReady(ctor.assetBundles);
       // Load all assets required by this new screen
-      await Assets.loadBundle(ctor.assetBundles, (progress) => {
+      await this.loadBundlesSafely(ctor.assetBundles, (progress) => {
         if (this.currentScreen?.onLoad) {
           this.currentScreen.onLoad(progress * 100);
         }
@@ -257,7 +274,7 @@ export class Navigation {
     // This is safe against multiple calls, since Repeated Loads Are Safe (https://pixijs.com/8.x/guides/components/assets#repeated-loads-are-safe)
     if (ctor.assetBundles) {
       await this.ensureBundlesReady(ctor.assetBundles);
-      await Assets.loadBundle(ctor.assetBundles);
+      await this.loadBundlesSafely(ctor.assetBundles);
     }
 
     if (ctor.prepareAssets) {
@@ -291,7 +308,7 @@ export class Navigation {
 
     if (ctor.assetBundles) {
       await this.ensureBundlesReady(ctor.assetBundles);
-      await Assets.loadBundle(ctor.assetBundles);
+      await this.loadBundlesSafely(ctor.assetBundles);
     }
 
     this.popupStack.push(parentPopup);

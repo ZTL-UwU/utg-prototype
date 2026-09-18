@@ -1,6 +1,8 @@
+import { sound } from '@pixi/sound';
 import { Assets } from 'pixi.js';
 import { create } from 'zustand';
 
+import { engine } from '../engine/getEngine';
 import { api } from '../lib/api';
 import { ensureRemoteReady, type RemoteStatus } from '../lib/remoteResource';
 
@@ -12,9 +14,31 @@ export function getWordImageAlias(wordId: number): string {
   return `remote-words/${wordId}`;
 }
 
-/** Alias used with `@pixi/sound` / `Assets.load` for a word audio clip. */
-export function getWordAudioAlias(wordId: number): string {
-  return `remote-words-audio/${wordId}`;
+/** Alias for the clip saying the target letter and then the word (education levels). */
+export function getWordEducationAudioAlias(wordId: number): string {
+  return `remote-words-education-audio/${wordId}`;
+}
+
+/** Alias for the clip saying only the word (typing and game levels). */
+export function getWordStandardAudioAlias(wordId: number): string {
+  return `remote-words-standard-audio/${wordId}`;
+}
+
+/**
+ * Play a word clip, resolving when it finishes.
+ *
+ * Resolves immediately when the word has no such recording: words without audio never get
+ * a bundle entry, so `sound.exists` is the reliable guard. `Assets.resolver.hasKey` is not —
+ * it is true the moment the bundle is registered, whether or not the file ever loaded, and
+ * `sfx.play` throws synchronously on an unloaded alias.
+ */
+export async function playWordAudio(alias: string): Promise<void> {
+  if (!sound.exists(alias)) return;
+  const instance = await engine().audio.sfx.play(alias);
+  await new Promise<void>((resolve) => {
+    instance.once('end', resolve);
+    instance.once('stop', resolve);
+  });
 }
 
 /** Mirrors WordSimpleOut from the backend `/words/list-simple` endpoint. */
@@ -24,7 +48,10 @@ export interface WordSimple {
   target_letter: string | null;
   is_tutorial_word: boolean;
   image_url: string | null;
-  audio_url: string | null;
+  /** Letter + word, spoken. Used by education levels. */
+  education_audio_url: string | null;
+  /** Word only, spoken. Used by typing and game levels. */
+  standard_audio_url: string | null;
 }
 
 interface WordStore {
@@ -60,10 +87,16 @@ function registerWordsBundle(words: WordSimple[]): void {
         src: word.image_url,
       });
     }
-    if (word.audio_url) {
+    if (word.education_audio_url) {
       entries.push({
-        alias: getWordAudioAlias(word.id),
-        src: word.audio_url,
+        alias: getWordEducationAudioAlias(word.id),
+        src: word.education_audio_url,
+      });
+    }
+    if (word.standard_audio_url) {
+      entries.push({
+        alias: getWordStandardAudioAlias(word.id),
+        src: word.standard_audio_url,
       });
     }
   }

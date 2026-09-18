@@ -5,7 +5,12 @@ import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { convertToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
-import { REMOTE_WORDS_BUNDLE, resolveWordsByIds } from '../../../../zustandStores/wordStore';
+import {
+  getWordStandardAudioAlias,
+  playWordAudio,
+  REMOTE_WORDS_BUNDLE,
+  resolveWordsByIds,
+} from '../../../../zustandStores/wordStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
@@ -356,6 +361,8 @@ export class GameLevelTrout extends Container {
     this.timerRunning = true;
     this.resetProgressBar();
     this.keyboard.setHintedLetter(trout.currentLetter);
+    // Hear the word as it becomes the target; silent when unrecorded.
+    void playWordAudio(getWordStandardAudioAlias(trout.wordId));
   }
 
   private activateNextAvailableTrout() {

@@ -2,14 +2,14 @@ import { sound } from '@pixi/sound';
 import { FancyButton } from '@pixi/ui';
 import { EDUCATION_LETTERS, type EducationLetter } from '@utg/letters';
 import { animate } from 'motion';
-import { Assets, Container, Graphics, HTMLText, Sprite, Texture } from 'pixi.js';
+import { Container, Graphics, HTMLText, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { createExampleWordStyle, getCompletedWordMarkup } from '../../../../utils/example-words';
 import { convertToCurrentScript } from '../../../../utils/script';
 import {
   getTutorialWordForLetter,
-  getWordAudioAlias,
+  getWordEducationAudioAlias,
   getWordImageAlias,
   REMOTE_WORDS_BUNDLE,
   type WordSimple,
@@ -131,9 +131,11 @@ export class LetterPopup extends Container {
   }
 
   private getSoundAlias(): string {
-    if (this.remoteWord?.audio_url) {
-      const remoteAlias = getWordAudioAlias(this.remoteWord.id);
-      if (Assets.resolver.hasKey(remoteAlias)) return remoteAlias;
+    if (this.remoteWord?.education_audio_url) {
+      const remoteAlias = getWordEducationAudioAlias(this.remoteWord.id);
+      // `sound.exists` rather than `Assets.resolver.hasKey`: the latter is true as soon as
+      // the bundle is registered, even if the file 404'd, which would skip this fallback.
+      if (sound.exists(remoteAlias)) return remoteAlias;
     }
 
     return `education-levels/education-letters-audio/${this.letter}.m4a`;
@@ -197,7 +199,7 @@ export class LetterPopup extends Container {
   // spam safe playSound method
   private async playSound(alias: string) {
     if (this.isPlaying) return;
-    if (!Assets.resolver.hasKey(alias)) return;
+    if (!sound.exists(alias)) return;
 
     this.isPlaying = true;
     const duration = sound.find(alias)?.duration ?? 0;

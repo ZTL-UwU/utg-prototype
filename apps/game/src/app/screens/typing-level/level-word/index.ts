@@ -5,7 +5,12 @@ import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { convertToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
-import { REMOTE_WORDS_BUNDLE, resolveWordsByIds } from '../../../../zustandStores/wordStore';
+import {
+  getWordStandardAudioAlias,
+  playWordAudio,
+  REMOTE_WORDS_BUNDLE,
+  resolveWordsByIds,
+} from '../../../../zustandStores/wordStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
@@ -21,7 +26,18 @@ export type Round = {
   word: string;
   activeLetterIdx: number;
   hasImage: boolean;
+  hasStandardAudio: boolean;
 };
+
+/**
+ * Plays the word-only recording as a round starts, so the player hears the word then types
+ * it. Fire-and-forget: playback must never gate input, and words without a standard
+ * recording are simply silent.
+ */
+export function playRoundAudio(round: Round): void {
+  if (!round.hasStandardAudio) return;
+  void playWordAudio(getWordStandardAudioAlias(round.wordId));
+}
 
 /**
  *
@@ -40,6 +56,7 @@ export function generateRoundsDictionary(wordIds: number[] = [], roundCount = 5)
       word: convertToCurrentScript(word.word.trim(), { autoCapitalize: false }),
       activeLetterIdx: 0,
       hasImage: !!word.image_url,
+      hasStandardAudio: !!word.standard_audio_url,
     }));
 
   return [...pool].sort(() => Math.random() - 0.5).slice(0, roundCount);
@@ -127,6 +144,7 @@ export class TypingWordScreen extends Container {
     if (!this.currentRound) return;
     this.wordCard.setRound(this.currentRound); // always highlights first letter, letterIdx for new round always at 0
     this.keyboard.setHintedLetter(this.currentTargetLetter);
+    playRoundAudio(this.currentRound);
   }
   /**
    * ======= GAME LOGIC HELPERS =======

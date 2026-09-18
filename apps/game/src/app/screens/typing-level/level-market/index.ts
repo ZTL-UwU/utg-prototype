@@ -17,7 +17,7 @@ import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
 import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
-import { generateRoundsDictionary, type Round } from '../level-word';
+import { generateRoundsDictionary, playRoundAudio, type Round } from '../level-word';
 
 const FONT_SIZE = 100;
 const PAD_Y = 75;
@@ -215,6 +215,7 @@ export class TypingMarketScreen extends Container {
     if (!this.currentRound) return Promise.resolve();
     const { wordId, word, activeLetterIdx } = this.currentRound;
     const image = new Sprite(Texture.from(getWordImageAlias(wordId)));
+    playRoundAudio(this.currentRound);
     return this.updateContentContainer(image, word, activeLetterIdx);
   }
 

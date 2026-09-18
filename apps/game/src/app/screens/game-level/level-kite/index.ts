@@ -5,7 +5,12 @@ import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { convertToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
-import { REMOTE_WORDS_BUNDLE, resolveWordsByIds } from '../../../../zustandStores/wordStore';
+import {
+  getWordStandardAudioAlias,
+  playWordAudio,
+  REMOTE_WORDS_BUNDLE,
+  resolveWordsByIds,
+} from '../../../../zustandStores/wordStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
@@ -22,7 +27,10 @@ const WORD_COMPLETE_HOLD_MS = 350; // let the last letter read as completed befo
 const HUD_MARGIN = 40;
 const SCORE_COUNTER_TOP = 172; // clears the back button, which is centred at y 90 and 123 tall
 const MAX_FRAME_MS = 50; // a backgrounded tab must not eat the timer
-
+type Round = {
+  word: string;
+  wordId: number;
+};
 export class GameLevelKite extends Container {
   public static assetBundles = ['game-level-kite', 'ui', REMOTE_WORDS_BUNDLE];
   public static splashBackgroundAsset = 'game-levels/game-level-kite/splash.png';
@@ -42,7 +50,7 @@ export class GameLevelKite extends Container {
 
   // gust
   private gust?: Gust;
-  private wordPool: string[];
+  private wordPool: Round[];
   private activeWordIdx: number = 0;
   private wordTimerMs: number = 0;
   private timerRunning: boolean = false;
@@ -80,9 +88,14 @@ export class GameLevelKite extends Container {
     });
     this.keyboard = new KeyboardLayout();
 
-    this.wordPool = resolveWordsByIds(props.wordIds).map((word) =>
-      convertToCurrentScript(word.word, { autoCapitalize: false }),
-    );
+    this.wordPool = resolveWordsByIds(props.wordIds).map((word) => {
+      const round: Round = {
+        word: convertToCurrentScript(word.word, { autoCapitalize: false }),
+        wordId: word.id,
+      };
+
+      return round;
+    });
     this.wordPool.sort(() => Math.random() - 0.5);
 
     this.kite = new Kite();
@@ -160,13 +173,17 @@ export class GameLevelKite extends Container {
   private spawnGust() {
     const word = this.wordPool[this.activeWordIdx] ?? this.wordPool[0]; // carousel, game only ends on mistakes
     if (!word) return; // no words configured
-    this.gust = new Gust({ word, fontSize: this.wordFontSize });
+    this.gust = new Gust({ word: word.word, fontSize: this.wordFontSize });
     this.gust.resize(this.screenWidth, this.screenHeight);
     this.addChildAt(this.gust, this.getChildIndex(this.hud)); // gusts pass under the hud
     this.keyboard.setHintedLetter(this.gust.currentLetter);
     this.resolving = false;
     this.timerRunning = false;
-    void Promise.all([this.gust.playEntryAnimation(), this.kite.playEntryAnimation()]).then(() => {
+    void Promise.all([
+      this.gust.playEntryAnimation(),
+      this.kite.playEntryAnimation(),
+      playWordAudio(getWordStandardAudioAlias(word.wordId)),
+    ]).then(() => {
       if (this.completed || this.resolving) return; // screen left, or already resolved
       this.wordTimerMs = this.gustDurationMs;
       this.timerRunning = true;

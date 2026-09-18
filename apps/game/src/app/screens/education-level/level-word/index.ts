@@ -1,4 +1,4 @@
-import { sound, type IMediaInstance } from '@pixi/sound';
+import { sound } from '@pixi/sound';
 import { animate } from 'motion';
 import { Container, Graphics, HTMLText, Sprite, Text, Texture } from 'pixi.js';
 
@@ -14,8 +14,9 @@ import { convertToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import {
-  getWordAudioAlias,
+  getWordEducationAudioAlias,
   getWordImageAlias,
+  playWordAudio,
   REMOTE_WORDS_BUNDLE,
   resolveWordsByIds,
   type WordSimple,
@@ -270,14 +271,7 @@ export class EducationWordScreen extends Container {
       animate(this.feedback, { alpha: 1 }, { duration: 0.35, ease: 'backOut' }),
       animate(this.feedback.scale, { x: 1, y: 1 }, { duration: 0.35, ease: 'backOut' }),
     ]);
-    const wordAudioAlias = getWordAudioAlias(this.correctWordId);
-    if (sound.exists(wordAudioAlias)) {
-      const audio: IMediaInstance = await engine().audio.sfx.play(wordAudioAlias);
-      await new Promise<void>((resolve) => {
-        audio.once('end', resolve);
-        audio.once('stop', resolve);
-      });
-    }
+    await playWordAudio(getWordEducationAudioAlias(this.correctWordId));
     await waitFor(0.65);
     this.endRound();
   }

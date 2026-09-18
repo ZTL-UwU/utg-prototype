@@ -1,4 +1,4 @@
-import { Image, Pencil, Trash2, Volume2 } from 'lucide-react';
+import { AudioLines, Image, Pencil, Trash2, Volume2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { Button } from '~/components/ui/button';
@@ -45,21 +45,38 @@ export function WordCard({
             <Image className="size-10" aria-hidden />
           </div>
         )}
-        {word.audio ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="absolute start-2 top-2 md:opacity-0 transition-opacity group-hover:opacity-100"
-            aria-label={`Play audio for ${word.word}`}
-            onClick={() => {
-              const audio = new Audio(mediaUrl(word.audio!.url));
-              void audio.play();
-            }}
-          >
-            <Volume2 className="size-4" />
-          </Button>
-        ) : null}
+        <div className="absolute start-2 top-2 flex gap-1 md:opacity-0 transition-opacity group-hover:opacity-100">
+          {word.education_audio ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label={`Play education audio for ${word.word}`}
+              title="Education audio (letter + word)"
+              onClick={() => {
+                const audio = new Audio(mediaUrl(word.education_audio!.url));
+                void audio.play();
+              }}
+            >
+              <Volume2 className="size-4" />
+            </Button>
+          ) : null}
+          {word.standard_audio ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label={`Play standard audio for ${word.word}`}
+              title="Standard audio (word only)"
+              onClick={() => {
+                const audio = new Audio(mediaUrl(word.standard_audio!.url));
+                void audio.play();
+              }}
+            >
+              <AudioLines className="size-4" />
+            </Button>
+          ) : null}
+        </div>
         <div className="absolute end-2 top-2 flex gap-1 md:opacity-0 transition-opacity group-hover:opacity-100">
           <Button
             type="button"
