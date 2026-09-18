@@ -135,7 +135,7 @@ export function WordFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" showCloseButton={false}>
+      <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col" showCloseButton={false}>
         <WordFormDialogBody
           key={`${sessionRef.current}-${word?.id ?? 'new'}`}
           word={word}
@@ -197,7 +197,9 @@ function WordFormDialogBody({
           },
         });
         toast.success(isEditing ? 'Word updated' : 'Word created');
-        await queryClient.invalidateQueries({ queryKey: wordsQueryOptions.queryKey });
+        await queryClient.invalidateQueries({
+          queryKey: wordsQueryOptions.queryKey,
+        });
         onOpenChange(false);
       } catch (error) {
         toast.error(isEditing ? 'Failed to update word' : 'Failed to create word', {
@@ -215,7 +217,7 @@ function WordFormDialogBody({
 
       <form
         id="word-form"
-        className="flex flex-col gap-5"
+        className="flex-1 overflow-y-auto min-h-0 pr-1 my-2"
         onSubmit={(event) => {
           event.preventDefault();
           void form.handleSubmit();
