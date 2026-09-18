@@ -5,7 +5,7 @@ import { Container, Graphics, HTMLText } from 'pixi.js';
 import { createTypingSentenceStyle, getSentenceMarkup } from '../../../../utils/example-words';
 import { isCurrentScriptRtl } from '../../../../utils/script';
 import { TypingLetter } from '../../../ui/typing-letter';
-import type { Round } from '../level-word';
+import { playRoundAudio, type Round } from '../level-word';
 import { TypingWordCard } from '../level-word/word-card';
 import {
   createLetterSource,
@@ -235,6 +235,7 @@ class WordImageView extends TypingWordCard implements PromptView {
     const round = this.source.next();
     if (!round) return '';
     this.setRound(round);
+    playRoundAudio(round);
     return round.word;
   }
 
