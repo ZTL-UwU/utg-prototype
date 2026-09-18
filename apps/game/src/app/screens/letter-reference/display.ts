@@ -3,7 +3,9 @@ import { Container, Graphics, GraphicsContext, Text } from 'pixi.js';
 
 import type { LETTER_FORMS } from '.';
 import { SoundButton } from '../../ui/sound-button';
+import { createGlyphMaskContext } from './glyph-mask';
 import outlinesJson from './letters.json';
+import { StrokeTracer } from './stroke-tracer';
 
 const HAMZA = 'ئ';
 export const FRAME_COLOR = 0x844f01;
@@ -36,8 +38,10 @@ const FORM_LABELS: Record<LETTER_FORMS, string> = {
   final: 'Final',
 };
 
-// only the base forms are looked up; the `_2` variant keys are ignored
-const outlines = outlinesJson as Record<string, Partial<Record<string, { svgString: string }>>>;
+// only the base forms are looked up; the `_2` variant keys are ignored.
+// `strokePath` is `pathString` fitted onto the outline by scripts/fit-letter-paths.mjs
+type OutlineEntry = { svgString: string; pathString?: string; strokePath?: string };
+const outlines = outlinesJson as Record<string, Partial<Record<string, OutlineEntry>>>;
 
 function getBaseForm(letter: string) {
   const base = letter.length > 1 && letter.startsWith(HAMZA) ? letter.slice(1) : letter;
@@ -46,6 +50,10 @@ function getBaseForm(letter: string) {
 
 function hasForm(base: string, form: LETTER_FORMS) {
   return Boolean(outlines[base]?.[form]);
+}
+
+function getStrokePath(base: string, form: LETTER_FORMS) {
+  return outlines[base]?.[form]?.strokePath;
 }
 
 function createButtonView(color: number, shadowColor: number) {
@@ -95,7 +103,14 @@ function createTextButton(label: string, color: number, shadowColor: number, onP
 
 export class OutlineDisplay extends Container {
   private frame: Container;
+  /** Holds the outline and its tracer so they share one transform. */
+  private glyph: Container;
   private outline: Graphics;
+  private tracer: StrokeTracer;
+  /** Filled glyph interior that keeps the thick trace brush inside the outline. */
+  private glyphMask: Graphics;
+  private maskCache = new Map<string, GraphicsContext>();
+  private traceButton: FancyButton;
   private border: Graphics;
   private buttonRow: Container;
   private formButtons: Map<
@@ -122,6 +137,11 @@ export class OutlineDisplay extends Container {
     super({ layout: { flexDirection: 'column', alignItems: 'center', gap: ROW_GAP } });
     this.contextCache = new Map();
     this.outline = new Graphics();
+    this.tracer = new StrokeTracer();
+    this.glyphMask = new Graphics();
+    this.tracer.mask = this.glyphMask;
+    // tracer underneath so the outline stays crisp on top of it
+    this.glyph = new Container({ children: [this.glyphMask, this.tracer, this.outline] });
     this.border = new Graphics();
     this.frame = new Container({ layout: true });
     this.soundButton = new SoundButton({
@@ -129,7 +149,18 @@ export class OutlineDisplay extends Container {
       size: SOUND_BUTTON_SIZE,
       variant: 'brown',
     });
-    this.frame.addChild(this.border, this.outline, this.counter, this.soundButton);
+    this.traceButton = createTextButton('Trace', NAV_BUTTON_COLOR, NAV_BUTTON_SHADOW_COLOR, () =>
+      this.tracer.play(),
+    );
+    this.traceButton.layout = {
+      position: 'absolute',
+      right: COUNTER_INSET,
+      bottom: COUNTER_INSET,
+      width: FORM_BUTTON_WIDTH,
+      height: ROW_HEIGHT,
+      isLeaf: true,
+    };
+    this.frame.addChild(this.border, this.glyph, this.counter, this.soundButton, this.traceButton);
 
     this.formButtons = new Map();
     for (const buttonForm of Object.keys(FORM_LABELS) as LETTER_FORMS[]) {
@@ -176,10 +207,13 @@ export class OutlineDisplay extends Container {
     this.letter = letter;
     this.form = form;
     this.outline.context = this.getCachedContext(base, form);
+    this.glyphMask.context = this.getCachedMaskContext(base, form);
+    // also stops and clears any trace in progress
+    this.tracer.setPath(getStrokePath(base, form));
 
     // recentre pivot on this letter's actual geometry
     const b = this.outline.getLocalBounds();
-    this.outline.pivot.set(b.x + b.width / 2, b.y + b.height / 2);
+    this.glyph.pivot.set(b.x + b.width / 2, b.y + b.height / 2);
 
     this.fit(); // reposition + rescale for current size
     this.refreshButtons();
@@ -213,6 +247,7 @@ export class OutlineDisplay extends Container {
 
   private refreshButtons() {
     const base = getBaseForm(this.letter);
+    this.traceButton.enabled = this.tracer.hasPath;
     for (const [form, { button, view, selectedView }] of this.formButtons) {
       button.enabled = hasForm(base, form);
       const targetView = form === this.form ? selectedView : view;
@@ -230,8 +265,8 @@ export class OutlineDisplay extends Container {
     const margin = 0.75;
     const scale = Math.min(this.w / b.width, this.h / b.height) * margin;
 
-    this.outline.scale.set(scale);
-    this.outline.position.set(this.w / 2, this.h / 2);
+    this.glyph.scale.set(scale);
+    this.glyph.position.set(this.w / 2, this.h / 2);
   }
 
   // returns context if cached
@@ -242,6 +277,17 @@ export class OutlineDisplay extends Container {
     if (!context) {
       context = new GraphicsContext().svg(outlines[letter]![form]!.svgString);
       this.contextCache.set(key, context);
+    }
+    return context;
+  }
+
+  private getCachedMaskContext(letter: string, form: LETTER_FORMS) {
+    const key = `${letter}/${form}`;
+    let context = this.maskCache.get(key);
+    if (!context) {
+      const svg = outlines[letter]![form]!.svgString;
+      context = createGlyphMaskContext([...svg.matchAll(/ d="([^"]+)"/g)].map((m) => m[1]));
+      this.maskCache.set(key, context);
     }
     return context;
   }
