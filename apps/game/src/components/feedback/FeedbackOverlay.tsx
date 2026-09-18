@@ -1,21 +1,33 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { engine } from '../../engine/getEngine';
-import { encodeFeedbackImage, submitFeedbackDemo, type FeedbackReceipt } from '../../lib/feedback';
+import {
+  encodeFeedbackImage,
+  FEEDBACK_REQUEST_TYPE_LABELS,
+  FEEDBACK_REQUEST_TYPES,
+  submitFeedbackDemo,
+  type FeedbackReceipt,
+  type FeedbackRequestType,
+} from '../../lib/feedback';
 import { CloseButton } from '../ui/CloseButton';
 import { PrimaryButton } from '../ui/PrimaryButton';
 import { AnnotationCanvas } from './AnnotationCanvas';
 
+const FIELD_CLASS =
+  'w-full rounded-xl border-2 border-ink bg-white/70 p-3 outline-none focus:ring-4 focus:ring-forest/30 disabled:opacity-60';
+
 export function FeedbackOverlay() {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const descriptionRef = useRef<HTMLTextAreaElement>(null);
+  const typeRef = useRef<HTMLSelectElement>(null);
   const activeRef = useRef(false);
   const sessionRef = useRef(0);
   const releaseRef = useRef<(() => Promise<void>) | null>(null);
   const closeRef = useRef<() => void>(() => {});
   const [open, setOpen] = useState(false);
   const [screenshot, setScreenshot] = useState<HTMLCanvasElement | null>(null);
+  const [requestType, setRequestType] = useState<FeedbackRequestType>('issue');
+  const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
@@ -58,6 +70,8 @@ export function FeedbackOverlay() {
       previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       activeRef.current = true;
       setOpen(true);
+      setRequestType('issue');
+      setTitle('');
       setDescription('');
       setError('');
       setSending(false);
@@ -81,7 +95,7 @@ export function FeedbackOverlay() {
         await encodeFeedbackImage(capture);
         if (!mounted || currentGeneration !== generation) return;
         setScreenshot(capture);
-        descriptionRef.current?.focus();
+        typeRef.current?.focus();
       } catch {
         if (mounted && currentGeneration === generation) {
           setError('Could not capture the game. Close this window and try again.');
@@ -135,7 +149,12 @@ export function FeedbackOverlay() {
     setError('');
     try {
       const image = await encodeFeedbackImage(canvasRef.current);
-      const result = await submitFeedbackDemo(description, image);
+      const result = await submitFeedbackDemo({
+        type: requestType,
+        title,
+        description,
+        image,
+      });
       if (activeRef.current && sessionRef.current === session) setReceipt(result);
     } catch {
       if (activeRef.current && sessionRef.current === session)
@@ -164,14 +183,12 @@ export function FeedbackOverlay() {
           <>
             <header className="mb-5 flex items-start justify-between gap-4">
               <div>
-                <p className="mb-1 text-xs font-bold tracking-widest text-forest uppercase">
-                  Game paused · Frontend demo
-                </p>
                 <h1 id="feedback-title" className="font-display text-3xl font-semibold">
                   Share feedback
                 </h1>
                 <p id="feedback-help" className="mt-2 text-sm">
-                  Describe what happened and mark the screenshot. Only the game canvas is captured.
+                  Report an issue or suggest an improvement. You can attach a screenshot to help us
+                  understand.
                 </p>
               </div>
               <CloseButton
@@ -183,10 +200,14 @@ export function FeedbackOverlay() {
               <section className="space-y-4" aria-live="polite">
                 <h2 className="font-display text-2xl text-forest">Demo upload received</h2>
                 <p className="text-sm">
-                  The local receiver decoded a multipart POST containing your description and
-                  annotated PNG. Nothing was sent to a server or saved.
+                  The local receiver decoded a multipart POST containing your request type, title,
+                  description, and annotated PNG. Nothing was sent to a server or saved.
                 </p>
                 <dl className="grid gap-2 rounded-xl border border-forest/30 bg-white/60 p-4 text-sm">
+                  <dt className="font-bold">type</dt>
+                  <dd>{FEEDBACK_REQUEST_TYPE_LABELS[receipt.type]}</dd>
+                  <dt className="font-bold">title</dt>
+                  <dd>{receipt.title || '—'}</dd>
                   <dt className="font-bold">description</dt>
                   <dd className="max-h-28 overflow-auto whitespace-pre-wrap break-words">
                     {receipt.description}
@@ -220,21 +241,7 @@ export function FeedbackOverlay() {
                 }}
                 className="space-y-4"
               >
-                <label className="block text-sm font-bold" htmlFor="feedback-description">
-                  Description
-                </label>
-                <textarea
-                  ref={descriptionRef}
-                  id="feedback-description"
-                  required
-                  maxLength={5000}
-                  rows={3}
-                  value={description}
-                  disabled={sending}
-                  onChange={(event) => setDescription(event.target.value)}
-                  placeholder="What went wrong, or what could be better?"
-                  className="w-full resize-y rounded-xl border-2 border-ink bg-white/70 p-3 outline-none focus:ring-4 focus:ring-forest/30 disabled:opacity-60"
-                />
+                <label className="mb-2 block text-sm font-bold">Screenshot</label>
                 {screenshot ? (
                   <AnnotationCanvas
                     screenshot={screenshot}
@@ -244,16 +251,63 @@ export function FeedbackOverlay() {
                 ) : (
                   !error && <p role="status">Pausing game and capturing screenshot…</p>
                 )}
+                <div>
+                  <label className="mb-2 block text-sm font-bold" htmlFor="feedback-type">
+                    Type of request
+                  </label>
+                  <select
+                    ref={typeRef}
+                    id="feedback-type"
+                    required
+                    value={requestType}
+                    disabled={sending}
+                    onChange={(event) => setRequestType(event.target.value as FeedbackRequestType)}
+                    className={FIELD_CLASS}
+                  >
+                    {FEEDBACK_REQUEST_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {FEEDBACK_REQUEST_TYPE_LABELS[type]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-bold" htmlFor="feedback-subject">
+                    Title
+                  </label>
+                  <input
+                    id="feedback-subject"
+                    type="text"
+                    maxLength={200}
+                    value={title}
+                    disabled={sending}
+                    onChange={(event) => setTitle(event.target.value)}
+                    placeholder="Short title (optional)"
+                    className={FIELD_CLASS}
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-bold" htmlFor="feedback-description">
+                    Description
+                  </label>
+                  <textarea
+                    id="feedback-description"
+                    required
+                    maxLength={5000}
+                    rows={3}
+                    value={description}
+                    disabled={sending}
+                    onChange={(event) => setDescription(event.target.value)}
+                    placeholder="What went wrong, or what could be better?"
+                    className={`${FIELD_CLASS} resize-y`}
+                  />
+                </div>
                 {error && (
                   <p role="alert" className="text-sm text-alert">
                     {error}
                   </p>
                 )}
-                <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-ink/15 pt-4">
-                  <p className="max-w-sm text-xs">
-                    Demo only: Send prepares and reads a real multipart payload locally. No network
-                    request is made.
-                  </p>
+                <footer className="flex flex-wrap items-center justify-between gap-4 pt-4">
                   <PrimaryButton
                     type="submit"
                     disabled={!screenshot || !description.trim() || sending}

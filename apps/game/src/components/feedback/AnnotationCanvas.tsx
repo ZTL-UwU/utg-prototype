@@ -1,4 +1,4 @@
-import { useCallback, useId, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import type { PointerEvent, RefObject } from 'react';
 
 const COLORS = [
@@ -42,7 +42,6 @@ export function AnnotationCanvas({
   canvasRef: RefObject<HTMLCanvasElement | null>;
   disabled: boolean;
 }) {
-  const instructionsId = useId();
   const strokes = useRef<Stroke[]>([]);
   const active = useRef<{ pointerId: number; stroke: Stroke } | null>(null);
   const [color, setColor] = useState(COLORS[0]!.value);
@@ -148,8 +147,6 @@ export function AnnotationCanvas({
     repaint();
   }
 
-  const aspectRatio = screenshot.width / (screenshot.height || 1);
-
   return (
     <div className="min-w-0 space-y-3 bg-cream font-body text-ink">
       <fieldset disabled={disabled} className="flex flex-wrap items-center gap-2">
@@ -194,20 +191,15 @@ export function AnnotationCanvas({
           </button>
         </div>
       </fieldset>
-      <p id={instructionsId} className="text-xs text-ink/70">
-        Draw with a mouse, pen or touch. Undo or clear marks to keep the original image.
-      </p>
       <canvas
         ref={canvasRef}
         width={screenshot.width}
         height={screenshot.height}
         role="img"
         aria-label="Screenshot annotation canvas"
-        aria-describedby={instructionsId}
         aria-disabled={disabled}
         tabIndex={0}
-        className={`mx-auto block h-auto max-w-full touch-none select-none rounded-lg ring-1 ring-forest/30 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-forest/40 ${disabled || count >= MAX_STROKES ? 'cursor-not-allowed' : 'cursor-crosshair'}`}
-        style={{ width: `min(100%, ${48 * aspectRatio}vh)` }}
+        className={`mx-auto block h-auto w-auto max-h-100 max-w-full object-contain touch-none select-none rounded-lg ring-1 ring-forest/30 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-forest/40 ${disabled || count >= MAX_STROKES ? 'cursor-not-allowed' : 'cursor-crosshair'}`}
         onPointerDown={startStroke}
         onPointerMove={extendStroke}
         onPointerUp={endStroke}
@@ -216,9 +208,6 @@ export function AnnotationCanvas({
       >
         Screenshot preview. Freehand annotations require a canvas-capable browser.
       </canvas>
-      <p role="status" className="text-xs text-ink/70">
-        {count >= MAX_STROKES ? '50-stroke limit reached. Undo or clear to draw again.' : ''}
-      </p>
     </div>
   );
 }
