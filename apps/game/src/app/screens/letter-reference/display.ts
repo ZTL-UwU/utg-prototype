@@ -1,102 +1,248 @@
-import { Assets, Container, Graphics, GraphicsContext } from 'pixi.js';
+import { FancyButton } from '@pixi/ui';
+import { Container, Graphics, GraphicsContext, Text } from 'pixi.js';
 
 import type { LETTER_FORMS } from '.';
+import { SoundButton } from '../../ui/sound-button';
+import outlinesJson from './letters.json';
 
-/** Uniform stroke width of every outline SVG. Graphics bounds exclude the stroke. */
-const STROKE_WIDTH = 0.8;
-/** Fraction of the display box a glyph fills on its constrained axis. */
-const FIT_FRACTION = 0.7;
-/** Vertical space kept clear at the top for the HUD buttons. */
-const TOP_INSET = 180;
-/** Education letters are spelled with a leading hamza that the outline folders drop. */
-const HAMZA = '\u0626';
+const HAMZA = 'ئ';
+export const FRAME_COLOR = 0x844f01;
+const LABEL_COLOR = 0xf3e3c6;
 
-const contextCache = new Map<string, GraphicsContext>();
+const FORM_BUTTON_WIDTH = 220;
+const FORM_BUTTON_HEIGHT = 90;
+const FORM_BUTTON_RADIUS = 30;
+const FORM_BUTTON_SHADOW_OFFSET = 10;
+const FORM_BUTTON_SHADOW_COLOR = 0x5a3601;
+const FORM_BUTTON_SELECTED_COLOR = 0xc98144;
+const FORM_BUTTON_SELECTED_RING_WIDTH = 6;
+const NAV_BUTTON_COLOR = 0x2f6f73;
+const NAV_BUTTON_SHADOW_COLOR = 0x1d4649;
+const FORM_BUTTON_DISABLED_COLOR = 0xa39a8c;
+const FORM_BUTTON_DISABLED_SHADOW_COLOR = 0x6f685e;
+const FORM_BUTTON_ANIMATIONS = {
+  hover: { props: { scale: { x: 1.06, y: 1.06 } }, duration: 100 },
+  pressed: { props: { scale: { x: 0.94, y: 0.94 } }, duration: 80 },
+};
+const ROW_HEIGHT = FORM_BUTTON_HEIGHT + FORM_BUTTON_SHADOW_OFFSET;
+const ROW_GAP = 32;
+const COUNTER_INSET = 28;
+const SOUND_BUTTON_SIZE = 90;
 
-function outlineAssetKey(letter: string, form: LETTER_FORMS) {
+const FORM_LABELS: Record<LETTER_FORMS, string> = {
+  isolated: 'Isolated',
+  initial: 'Initial',
+  medial: 'Medial',
+  final: 'Final',
+};
+
+// only the base forms are looked up; the `_2` variant keys are ignored
+const outlines = outlinesJson as Record<string, Partial<Record<string, { svgString: string }>>>;
+
+function getBaseForm(letter: string) {
   const base = letter.length > 1 && letter.startsWith(HAMZA) ? letter.slice(1) : letter;
-  return `letter-reference/${base}/${form}.svg`;
+  return base;
 }
 
-/**
- * Loads an outline as a vector GraphicsContext so it stays crisp however far it is scaled up —
- * the SVGs are authored around 23 units wide and get blown up ~30x.
- *
- * Deliberately bypasses `Assets.load`: the loader caches by URL alone and the engine
- * background-loads every bundle, so these aliases are likely already cached as raster textures.
- */
-async function loadOutlineContext(key: string) {
-  const cached = contextCache.get(key);
-  if (cached) return cached;
+function hasForm(base: string, form: LETTER_FORMS) {
+  return Boolean(outlines[base]?.[form]);
+}
 
-  const response = await fetch(Assets.resolver.resolveUrl(key) as string);
-  if (!response.ok) throw new Error(`Letter outline ${key} not found (${response.status})`);
+function createButtonView(color: number, shadowColor: number) {
+  return new Graphics()
+    .roundRect(
+      0,
+      FORM_BUTTON_SHADOW_OFFSET,
+      FORM_BUTTON_WIDTH,
+      FORM_BUTTON_HEIGHT,
+      FORM_BUTTON_RADIUS,
+    )
+    .fill(shadowColor)
+    .roundRect(0, 0, FORM_BUTTON_WIDTH, FORM_BUTTON_HEIGHT, FORM_BUTTON_RADIUS)
+    .fill(color);
+}
 
-  const context = new GraphicsContext().svg(await response.text());
-  contextCache.set(key, context);
-  return context;
+// lighter fill with a dark ring, swapped in as the default view of the current form's button
+function createSelectedButtonView() {
+  const inset = FORM_BUTTON_SELECTED_RING_WIDTH / 2;
+  return createButtonView(FORM_BUTTON_SELECTED_COLOR, FORM_BUTTON_SHADOW_COLOR)
+    .roundRect(
+      inset,
+      inset,
+      FORM_BUTTON_WIDTH - FORM_BUTTON_SELECTED_RING_WIDTH,
+      FORM_BUTTON_HEIGHT - FORM_BUTTON_SELECTED_RING_WIDTH,
+      FORM_BUTTON_RADIUS - inset,
+    )
+    .stroke({ width: FORM_BUTTON_SELECTED_RING_WIDTH, color: FORM_BUTTON_SHADOW_COLOR });
+}
+
+function createTextButton(label: string, color: number, shadowColor: number, onPress: () => void) {
+  const button = new FancyButton({
+    defaultView: createButtonView(color, shadowColor),
+    disabledView: createButtonView(FORM_BUTTON_DISABLED_COLOR, FORM_BUTTON_DISABLED_SHADOW_COLOR),
+    text: new Text({
+      text: label,
+      resolution: 2,
+      style: { fontFamily: 'Concert One', fontSize: 40, fill: LABEL_COLOR },
+    }),
+    animations: FORM_BUTTON_ANIMATIONS,
+    anchor: 0.5,
+  });
+  button.layout = { width: FORM_BUTTON_WIDTH, height: ROW_HEIGHT, isLeaf: true };
+  button.onPress.connect(onPress);
+  return button;
 }
 
 export class OutlineDisplay extends Container {
-  /** Scaled and centred by hand, so the outline itself stays in artboard units. */
-  private frame = new Container();
-  private outline = new Graphics();
-  private boxWidth = 0;
-  private boxHeight = 0;
-  private glyphWidth = 0;
-  private glyphHeight = 0;
+  private frame: Container;
+  private outline: Graphics;
+  private border: Graphics;
+  private buttonRow: Container;
+  private formButtons: Map<
+    LETTER_FORMS,
+    { button: FancyButton; view: Container; selectedView: Container }
+  >;
+  private contextCache: Map<string, GraphicsContext>;
+  private letter = '';
+  private form: LETTER_FORMS = 'isolated';
+  private w = 0;
+  private h = 0;
+  private soundButton: SoundButton;
+  private counter = new Text({
+    resolution: 2,
+    style: { fontFamily: 'Concert One', fontSize: 40, fill: FRAME_COLOR },
+    position: { x: COUNTER_INSET, y: COUNTER_INSET },
+  });
 
-  constructor(letter: string, form: LETTER_FORMS = 'isolated') {
-    super({ layout: { position: 'absolute', width: '100%', height: '100%' } });
+  constructor(
+    letter: string,
+    handlers: { onPrev: () => void; onNext: () => void; onSound: () => void },
+    form: LETTER_FORMS = 'isolated',
+  ) {
+    super({ layout: { flexDirection: 'column', alignItems: 'center', gap: ROW_GAP } });
+    this.contextCache = new Map();
+    this.outline = new Graphics();
+    this.border = new Graphics();
+    this.frame = new Container({ layout: true });
+    this.soundButton = new SoundButton({
+      onClick: handlers.onSound,
+      size: SOUND_BUTTON_SIZE,
+      variant: 'brown',
+    });
+    this.frame.addChild(this.border, this.outline, this.counter, this.soundButton);
 
-    this.frame.addChild(this.outline);
-    this.addChild(this.frame);
+    this.formButtons = new Map();
+    for (const buttonForm of Object.keys(FORM_LABELS) as LETTER_FORMS[]) {
+      const button = createTextButton(
+        FORM_LABELS[buttonForm],
+        FRAME_COLOR,
+        FORM_BUTTON_SHADOW_COLOR,
+        () => this.setForm(buttonForm),
+      );
+      // FancyButton only detaches a replaced view, so both can be swapped back and forth
+      this.formButtons.set(buttonForm, {
+        button,
+        view: button.defaultView!,
+        selectedView: createSelectedButtonView(),
+      });
+    }
+    const prevButton = createTextButton(
+      'Prev',
+      NAV_BUTTON_COLOR,
+      NAV_BUTTON_SHADOW_COLOR,
+      handlers.onPrev,
+    );
+    const nextButton = createTextButton(
+      'Next',
+      NAV_BUTTON_COLOR,
+      NAV_BUTTON_SHADOW_COLOR,
+      handlers.onNext,
+    );
+    this.buttonRow = new Container({
+      layout: { flexDirection: 'row', alignItems: 'center', gap: ROW_GAP },
+      children: [
+        prevButton,
+        ...[...this.formButtons.values()].map(({ button }) => button),
+        nextButton,
+      ],
+    });
 
-    void this.setLetter(letter, form);
+    this.addChild(this.frame, this.buttonRow);
+    this.setLetter(letter, form);
   }
 
-  async setLetter(letter: string, form: LETTER_FORMS = 'isolated') {
-    const key = outlineAssetKey(letter, form);
+  setLetter(letter: string, form: LETTER_FORMS = 'isolated') {
+    const base = getBaseForm(letter);
+    this.letter = letter;
+    this.form = form;
+    this.outline.context = this.getCachedContext(base, form);
 
-    let context: GraphicsContext;
-    try {
-      context = await loadOutlineContext(key);
-    } catch (error) {
-      // Not every letter has every form: non-connecting letters only have final and isolated.
-      console.warn(error);
-      return;
-    }
-    this.outline.context = context;
+    // recentre pivot on this letter's actual geometry
+    const b = this.outline.getLocalBounds();
+    this.outline.pivot.set(b.x + b.width / 2, b.y + b.height / 2);
 
-    // Pixi's SVG parser ignores viewBox, so the glyph sits at its master artboard coordinates.
-    const bounds = this.outline.getLocalBounds();
-    this.outline.position.set(-bounds.x, -bounds.y);
-    this.glyphWidth = bounds.width + STROKE_WIDTH;
-    this.glyphHeight = bounds.height + STROKE_WIDTH;
+    this.fit(); // reposition + rescale for current size
+    this.refreshButtons();
+  }
 
-    this.applyFit();
+  // 1-based position of the letter, shown top-left of the frame
+  setCounter(position: number, total: number) {
+    this.counter.text = `${position}/${total}`;
+  }
+
+  setForm(form: LETTER_FORMS) {
+    if (form === this.form || !hasForm(getBaseForm(this.letter), form)) return;
+    this.setLetter(this.letter, form);
   }
 
   resize(width: number, height: number) {
-    this.boxWidth = width;
-    this.boxHeight = height;
-    this.applyFit();
+    this.w = width;
+    this.h = Math.max(0, height - ROW_HEIGHT - ROW_GAP);
+    this.frame.layout = { width: this.w, height: this.h };
+    this.border
+      .clear()
+      .roundRect(0, 0, this.w, this.h, 20)
+      .stroke({ width: 8, color: FRAME_COLOR });
+    // anchored at its centre, mirroring the counter in the top-right corner
+    this.soundButton.position.set(
+      this.w - COUNTER_INSET - SOUND_BUTTON_SIZE / 2,
+      COUNTER_INSET + SOUND_BUTTON_SIZE / 2,
+    );
+    this.fit();
   }
 
-  /** Contains the glyph in the box preserving its aspect ratio, then centres it below the HUD. */
-  private applyFit() {
-    // The load and the first resize race, so wait until both have landed.
-    if (!this.boxWidth || !this.boxHeight || !this.glyphWidth || !this.glyphHeight) return;
+  private refreshButtons() {
+    const base = getBaseForm(this.letter);
+    for (const [form, { button, view, selectedView }] of this.formButtons) {
+      button.enabled = hasForm(base, form);
+      const targetView = form === this.form ? selectedView : view;
+      if (button.defaultView !== targetView) button.defaultView = targetView;
+    }
+  }
 
-    const scale = Math.min(
-      (this.boxWidth * FIT_FRACTION) / this.glyphWidth,
-      (this.boxHeight * FIT_FRACTION) / this.glyphHeight,
-    );
+  private fit() {
+    if (!this.w || !this.h) return; // resize hasn't run yet
 
-    this.frame.scale.set(scale);
-    this.frame.position.set(
-      Math.round((this.boxWidth - this.glyphWidth * scale) / 2),
-      Math.round((this.boxHeight - this.glyphHeight * scale) / 2 + TOP_INSET / 2),
-    );
+    const b = this.outline.getLocalBounds();
+    if (!b.width || !b.height) return; // context not set yet
+
+    // scale to fit inside the frame, keeping aspect ratio, with margin
+    const margin = 0.75;
+    const scale = Math.min(this.w / b.width, this.h / b.height) * margin;
+
+    this.outline.scale.set(scale);
+    this.outline.position.set(this.w / 2, this.h / 2);
+  }
+
+  // returns context if cached
+  // creates, caches, and returns if not
+  private getCachedContext(letter: string, form: LETTER_FORMS) {
+    const key = `${letter}/${form}`;
+    let context = this.contextCache.get(key);
+    if (!context) {
+      context = new GraphicsContext().svg(outlines[letter]![form]!.svgString);
+      this.contextCache.set(key, context);
+    }
+    return context;
   }
 }
