@@ -3,6 +3,7 @@ import { EducationTutorialScreen } from '../app/screens/education-level/level-tu
 import { HomeScreen } from '../app/screens/home';
 import { AuthScreen } from '../app/screens/home/auth';
 import { LayerSelectScreen } from '../app/screens/layer-select';
+import { LetterReferenceScreen } from '../app/screens/letter-reference';
 import { LevelMapScreen } from '../app/screens/level-map';
 import { getLayerMaps, type TLayer, type TMapUnit } from '../app/screens/level-map/units';
 import { LevelSplashScreen } from '../app/screens/level-splash';
@@ -71,6 +72,7 @@ function buildScreenRoutes(): ScreenRoute[] {
     route('/auth', AuthScreen),
     route('/avatar-select', AvatarSelectScreen),
     route('/layers', LayerSelectScreen),
+    route('/letters', LetterReferenceScreen),
     ...mapRoutes('education', getLayerMaps('education')),
     ...mapRoutes('typing', getLayerMaps('typing')),
     ...mapRoutes('game', getLayerMaps('game')),
