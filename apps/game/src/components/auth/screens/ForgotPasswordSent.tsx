@@ -1,5 +1,4 @@
-import { LinkButton } from '../../ui/LinkButton';
-import { StatusIcon } from '../../ui/StatusIcon';
+import { Button, DialogDescription, DialogTitle, StatusIcon } from '../../ui';
 
 export interface ForgotPasswordSentProps {
   onBack: () => void;
@@ -10,15 +9,15 @@ export function ForgotPasswordSent({ onBack }: ForgotPasswordSentProps) {
     <div className="flex flex-col items-center gap-4">
       <StatusIcon />
 
-      <h2 className="text-center font-display text-3xl font-semibold text-ink">Check your email</h2>
+      <DialogTitle className="text-3xl">Check your email</DialogTitle>
 
-      <p className="text-center font-body text-lg text-muted">
+      <DialogDescription>
         If an account exists for that email, we sent a link to reset your password.
-      </p>
+      </DialogDescription>
 
-      <div className="flex justify-center">
-        <LinkButton onClick={onBack}>Back to login</LinkButton>
-      </div>
+      <Button variant="link" onClick={onBack}>
+        Back to login
+      </Button>
     </div>
   );
 }

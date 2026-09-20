@@ -1,9 +1,8 @@
 import { convert, type TargetScript } from '@utg/script-converter';
 import { useState } from 'react';
-import type { ChangeEvent, TextareaHTMLAttributes } from 'react';
+import type { ChangeEvent } from 'react';
 
-import { BackButton } from '../../ui/BackButton';
-import { cn } from '../../ui/utils';
+import { BackButton, Field, FieldLabel, Textarea } from '../../ui';
 
 export interface MenuConverterScreenProps {
   onBack: () => void;
@@ -17,31 +16,28 @@ const FIELD_SCRIPT = {
   cyrillic: 'Cyrillic',
 } as const satisfies Record<ConverterFieldId, TargetScript>;
 
-type ConverterFieldProps = {
+interface ConverterFieldProps {
   id: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
-} & Pick<TextareaHTMLAttributes<HTMLTextAreaElement>, 'dir' | 'lang'>;
+  dir?: 'rtl' | 'ltr';
+  lang?: string;
+}
 
 function ConverterField({ id, label, value, onChange, dir, lang }: ConverterFieldProps) {
   return (
-    <label className="flex w-full flex-col gap-2" htmlFor={id}>
-      <span className="font-body text-lg font-bold text-forest md:text-xl">{label}</span>
-      <textarea
+    <Field>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <Textarea
         id={id}
         value={value}
         dir={dir}
         lang={lang}
         rows={3}
         onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onChange(event.target.value)}
-        className={cn(
-          'w-full resize-none rounded-2xl border-[3px] border-forest bg-cream px-4 py-3',
-          'font-body text-xl text-ink outline-none',
-          'focus-visible:ring-4 focus-visible:ring-forest/30',
-        )}
       />
-    </label>
+    </Field>
   );
 }
 

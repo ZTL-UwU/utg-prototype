@@ -1,6 +1,4 @@
-import { useOverlayStore } from '../../../zustandStores/overlayStore';
-import { CloseButton } from '../../ui/CloseButton';
-import { PrimaryButton } from '../../ui/PrimaryButton';
+import { Button, CardTitle, CloseButton } from '../../ui';
 
 export interface MenuHomeScreenProps {
   onAlphabet: () => void;
@@ -17,26 +15,19 @@ export function MenuHomeScreen({
 }: MenuHomeScreenProps) {
   return (
     <>
-      <CloseButton
-        className="absolute top-4 left-4"
-        onClick={() => useOverlayStore.getState().hide()}
-      />
+      <CloseButton className="absolute top-4 left-4" />
 
       <div className="flex flex-col items-center gap-8">
         <section className="flex w-full flex-col items-center gap-4">
-          <h2 className="font-display text-3xl font-bold tracking-wide text-forest uppercase">
-            About
-          </h2>
-          <PrimaryButton onClick={onProject}>PROJECT</PrimaryButton>
-          <PrimaryButton onClick={onTeam}>TEAM</PrimaryButton>
+          <CardTitle>About</CardTitle>
+          <Button onClick={onProject}>PROJECT</Button>
+          <Button onClick={onTeam}>TEAM</Button>
         </section>
 
         <section className="flex w-full flex-col items-center gap-4">
-          <h2 className="font-display text-3xl font-bold tracking-wide text-forest uppercase">
-            References
-          </h2>
-          <PrimaryButton onClick={onAlphabet}>ALPHABET</PrimaryButton>
-          <PrimaryButton onClick={onConverter}>CONVERTER</PrimaryButton>
+          <CardTitle>References</CardTitle>
+          <Button onClick={onAlphabet}>ALPHABET</Button>
+          <Button onClick={onConverter}>CONVERTER</Button>
         </section>
       </div>
     </>

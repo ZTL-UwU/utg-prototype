@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
-import { LinkButton } from '../../ui/LinkButton';
-import { PillInput } from '../../ui/PillInput';
-import { PrimaryButton } from '../../ui/PrimaryButton';
+import { Button, Input } from '../../ui';
 import type { LoginCredentials } from '../types';
 
 export interface LoginFormProps {
@@ -31,44 +29,47 @@ export function LoginForm({ onSubmit, onGuest, onTester, onForgot, onSignUpNav }
 
   return (
     <form className="flex flex-col gap-4" onSubmit={(event) => void handleSubmit(event)}>
-      <PillInput
+      <Input
         name="email"
+        type="email"
         autoComplete="email"
+        required
         placeholder="Email"
         value={email}
-        onChange={(event) => setEmail(event.target.value)}
+        onValueChange={setEmail}
       />
 
-      <PillInput
+      <Input
         name="password"
         type="password"
         autoComplete="current-password"
+        required
         placeholder="Password"
         value={password}
-        onChange={(event) => setPassword(event.target.value)}
+        onValueChange={setPassword}
       />
 
-      <div className="flex justify-center">
-        <LinkButton onClick={onForgot}>Forgot Password?</LinkButton>
-      </div>
+      <Button variant="link" onClick={onForgot}>
+        Forgot Password?
+      </Button>
 
-      <PrimaryButton type="submit" disabled={submitting}>
+      <Button type="submit" disabled={submitting}>
         {submitting ? 'Logging in…' : 'Log in'}
-      </PrimaryButton>
+      </Button>
 
-      <PrimaryButton variant="ghost" onClick={onGuest}>
+      <Button variant="secondary" onClick={onGuest}>
         Continue as guest
-      </PrimaryButton>
+      </Button>
 
-      <PrimaryButton variant="ghost" onClick={onTester}>
+      <Button variant="secondary" onClick={onTester}>
         Tester mode
-      </PrimaryButton>
+      </Button>
 
       <p className="mt-2 text-center font-body text-base text-muted">New to the game?</p>
 
-      <PrimaryButton variant="ghost" onClick={onSignUpNav}>
+      <Button variant="secondary" onClick={onSignUpNav}>
         Sign up
-      </PrimaryButton>
+      </Button>
     </form>
   );
 }

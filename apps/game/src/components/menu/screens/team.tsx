@@ -1,7 +1,15 @@
 import { useState } from 'react';
 
-import { BackButton } from '../../ui/BackButton';
-import { CloseButton } from '../../ui/CloseButton';
+import {
+  BackButton,
+  Button,
+  CardTitle,
+  CloseButton,
+  Dialog,
+  DialogDescription,
+  DialogPopup,
+  DialogTitle,
+} from '../../ui';
 import aaditPhoto from './team_photos/Aadit.jpg';
 import danaPhoto from './team_photos/Dana.jpeg';
 import jadePhoto from './team_photos/Jade.jpg';
@@ -11,6 +19,7 @@ import nikitaPhoto from './team_photos/Nikita.jpg';
 import patriciaPhoto from './team_photos/Patricia.jpg';
 import sarvenazPhoto from './team_photos/Sarvenaz.jpeg';
 import tianliPhoto from './team_photos/tianli.jpg';
+
 export interface MenuTeamScreenProps {
   onBack: () => void;
 }
@@ -128,23 +137,24 @@ export function MenuTeamScreen({ onBack }: MenuTeamScreenProps) {
   return (
     <>
       <BackButton className="absolute top-4 left-4 z-10" onClick={onBack} />
-      <h2 className="absolute top-4 right-14 left-14 flex h-10 items-center justify-center font-display text-3xl font-bold tracking-wide text-forest uppercase">
+      <CardTitle className="absolute top-4 right-14 left-14 flex h-10 items-center justify-center">
         Team
-      </h2>
+      </CardTitle>
       <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto py-2">
         <div className="flex min-h-full justify-center">
           <div className="grid w-full auto-rows-fr grid-cols-3 gap-5 px-2">
             {TEAM.map((member) => (
-              <button
-                type="button"
+              <Button
                 key={member.name}
+                variant="ghost"
+                data-slot="team-card"
                 onClick={() => setSelected(member)}
-                className="flex min-h-40 cursor-pointer items-center gap-5 rounded-[16px] border border-ink/15 bg-white px-6 py-5 text-left transition duration-100 hover:scale-[1.03] focus-visible:ring-4 focus-visible:ring-forest/40 focus-visible:outline-none"
+                className="min-h-40 items-center gap-5 rounded-[16px] border border-ink/15 bg-white px-6 py-5 text-left hover:scale-[1.03]"
               >
                 <img
                   src={member.photo}
                   alt={member.name}
-                  className="size-32 shrink-0 rounded-lg xl:size-40 object-cover object-top"
+                  className="size-32 shrink-0 rounded-lg object-cover object-top xl:size-40"
                 />
                 <div className="min-w-0">
                   <p className="font-display text-xl font-semibold text-forest xl:text-2xl">
@@ -152,49 +162,53 @@ export function MenuTeamScreen({ onBack }: MenuTeamScreenProps) {
                   </p>
                   <p className="font-body text-base text-forest xl:text-lg">{member.role}</p>
                 </div>
-              </button>
+              </Button>
             ))}
           </div>
         </div>
       </div>
 
-      {selected !== null && (
-        <div
-          className="absolute inset-0 z-20 grid place-items-center bg-black/40 p-6"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) setSelected(null);
-          }}
-        >
-          <div className="relative flex max-h-full w-full max-w-5xl items-start gap-8 overflow-y-auto rounded-[16px] border border-ink/15 bg-white px-10 py-10">
-            <CloseButton className="absolute top-2 right-2" onClick={() => setSelected(null)} />
-            <img
-              src={selected.photo}
-              alt={selected.name}
-              className="size-80 shrink-0 rounded-lg object-cover object-top xl:size-96"
-            />
-            <div className="min-w-0">
-              <p className="font-display text-3xl font-semibold text-forest xl:text-4xl">
-                {selected.name}
-              </p>
-              <p className="font-body text-xl text-forest">{selected.role}</p>
-              {DESC_FIELDS.some(({ key }) => selected[key]) && (
-                <ul className="mt-4 list-none space-y-2 p-0 font-body text-lg text-forest xl:text-xl">
-                  {DESC_FIELDS.map(({ key, label }) => {
-                    const value = selected[key];
-                    if (!value) return null;
-                    return (
-                      <li key={key}>
-                        <span className="font-semibold">{label}: </span>
-                        {value}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
+      <Dialog
+        open={selected !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelected(null);
+        }}
+      >
+        {selected !== null && (
+          <DialogPopup variant="panel">
+            <CloseButton className="absolute top-2 right-2" />
+            <div className="flex w-full items-start gap-8">
+              <img
+                src={selected.photo}
+                alt={selected.name}
+                className="size-80 shrink-0 rounded-lg object-cover object-top xl:size-96"
+              />
+              <div className="min-w-0">
+                <DialogTitle className="text-left font-display text-3xl font-semibold text-forest normal-case xl:text-4xl">
+                  {selected.name}
+                </DialogTitle>
+                <DialogDescription className="text-left font-body text-xl text-forest">
+                  {selected.role}
+                </DialogDescription>
+                {DESC_FIELDS.some(({ key }) => selected[key]) && (
+                  <ul className="mt-4 flex list-none flex-col gap-2 p-0 font-body text-lg text-forest xl:text-xl">
+                    {DESC_FIELDS.map(({ key, label }) => {
+                      const value = selected[key];
+                      if (!value) return null;
+                      return (
+                        <li key={key}>
+                          <span className="font-semibold">{label}: </span>
+                          {value}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </DialogPopup>
+        )}
+      </Dialog>
     </>
   );
 }

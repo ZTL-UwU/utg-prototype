@@ -143,12 +143,10 @@ export function ScreenOverlay() {
     },
   });
 
+  // Auth and menu own their Base UI dialog (backdrop, focus trap, Escape to
+  // close), so the overlay only decides *which* flow is mounted.
   if (activeOverlay === 'menu') {
-    return (
-      <div className="fixed inset-0 grid place-items-center bg-black/40 p-4">
-        <MenuParent />
-      </div>
-    );
+    return <MenuParent />;
   }
 
   if (activeOverlay === 'youtube-embeds') {
@@ -161,39 +159,37 @@ export function ScreenOverlay() {
 
   if (activeOverlay === 'auth') {
     return (
-      <div className="z-10">
-        <AuthParent
-          initialView={resetParams !== null ? 'reset' : 'login'}
-          onClose={goToHomeScreen}
-          onPlay={goToAvatarSelectScreen}
-          onLogin={async (credentials) => {
-            await login(credentials);
-          }}
-          onGuest={() => {
-            useAuthStore.getState().enterGuestMode();
-            const { user } = useAuthStore.getState();
-            if (user) continueAfterLogin(user);
-          }}
-          onTester={(password) => {
-            if (!useAuthStore.getState().enterTesterMode(password)) return false;
-            goToAvatarSelectScreen();
-            return true;
-          }}
-          onSignUp={async (data) => {
-            // Rejecting here is what keeps AuthParent off the success screen.
-            await signUp(data);
-          }}
-          onForgotPassword={async (email) => {
-            await requestPasswordReset(email);
-          }}
-          onResetPassword={async (password) => {
-            if (resetParams === null) {
-              throw new Error('Missing reset link.');
-            }
-            await confirmPasswordReset({ ...resetParams, password });
-          }}
-        />
-      </div>
+      <AuthParent
+        initialView={resetParams !== null ? 'reset' : 'login'}
+        onClose={goToHomeScreen}
+        onPlay={goToAvatarSelectScreen}
+        onLogin={async (credentials) => {
+          await login(credentials);
+        }}
+        onGuest={() => {
+          useAuthStore.getState().enterGuestMode();
+          const { user } = useAuthStore.getState();
+          if (user) continueAfterLogin(user);
+        }}
+        onTester={(password) => {
+          if (!useAuthStore.getState().enterTesterMode(password)) return false;
+          goToAvatarSelectScreen();
+          return true;
+        }}
+        onSignUp={async (data) => {
+          // Rejecting here is what keeps AuthParent off the success screen.
+          await signUp(data);
+        }}
+        onForgotPassword={async (email) => {
+          await requestPasswordReset(email);
+        }}
+        onResetPassword={async (password) => {
+          if (resetParams === null) {
+            throw new Error('Missing reset link.');
+          }
+          await confirmPasswordReset({ ...resetParams, password });
+        }}
+      />
     );
   }
 

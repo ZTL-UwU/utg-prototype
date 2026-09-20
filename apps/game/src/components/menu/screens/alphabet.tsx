@@ -1,8 +1,7 @@
 import { EDUCATION_LETTERS } from '@utg/letters';
 import { convertArabic } from '@utg/script-converter';
 
-import { BackButton } from '../../ui/BackButton';
-import { cn } from '../../ui/utils';
+import { BackButton, cn } from '../../ui';
 
 export interface MenuAlphabetScreenProps {
   onBack: () => void;

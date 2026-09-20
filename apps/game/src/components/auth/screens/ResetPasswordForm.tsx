@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
-import { PillInput } from '../../ui/PillInput';
-import { PrimaryButton } from '../../ui/PrimaryButton';
+import { Button, DialogDescription, DialogTitle, FormError, Input } from '../../ui';
 
 export interface ResetPasswordFormProps {
   onSubmit: (password: string) => void | Promise<void>;
@@ -33,39 +32,35 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
 
   return (
     <form className="flex flex-col gap-4" onSubmit={(event) => void handleSubmit(event)}>
-      <h2 className="text-center font-display text-4xl font-semibold text-ink">New password</h2>
+      <DialogTitle>New password</DialogTitle>
 
-      <p className="text-center font-body text-lg text-muted">
-        Pick a new password for your account.
-      </p>
+      <DialogDescription>Pick a new password for your account.</DialogDescription>
 
-      <PillInput
+      <Input
         name="password"
         type="password"
         autoComplete="new-password"
+        required
         placeholder="Password"
         value={password}
-        onChange={(event) => setPassword(event.target.value)}
+        onValueChange={setPassword}
       />
 
-      <PillInput
+      <Input
         name="confirmPassword"
         type="password"
         autoComplete="new-password"
+        required
         placeholder="Confirm password"
         value={confirmPassword}
-        onChange={(event) => setConfirmPassword(event.target.value)}
+        onValueChange={setConfirmPassword}
       />
 
-      {error !== null && (
-        <p role="alert" className="flex justify-center font-body text-lg text-alert">
-          {error}
-        </p>
-      )}
+      {error !== null && <FormError>{error}</FormError>}
 
-      <PrimaryButton type="submit" disabled={submitting}>
+      <Button type="submit" disabled={submitting}>
         {submitting ? 'Saving…' : 'Save new password'}
-      </PrimaryButton>
+      </Button>
     </form>
   );
 }

@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
-import { LinkButton } from '../../ui/LinkButton';
-import { PillInput } from '../../ui/PillInput';
-import { PrimaryButton } from '../../ui/PrimaryButton';
+import { Button, DialogDescription, DialogTitle, Input } from '../../ui';
 
 export interface ForgotPasswordFormProps {
   onSubmit: (email: string) => void | Promise<void>;
@@ -26,28 +24,29 @@ export function ForgotPasswordForm({ onSubmit, onBack }: ForgotPasswordFormProps
 
   return (
     <form className="flex flex-col gap-4" onSubmit={(event) => void handleSubmit(event)}>
-      <h2 className="text-center font-display text-4xl font-semibold text-ink">Forgot Password?</h2>
+      <DialogTitle>Forgot Password?</DialogTitle>
 
-      <p className="text-center font-body text-lg text-muted">
-        Type your email and we'll send you a link to pick a new password.
-      </p>
+      <DialogDescription>
+        Type your email and we&apos;ll send you a link to pick a new password.
+      </DialogDescription>
 
-      <PillInput
+      <Input
         name="email"
         type="email"
         autoComplete="email"
+        required
         placeholder="Email"
         value={email}
-        onChange={(event) => setEmail(event.target.value)}
+        onValueChange={setEmail}
       />
 
-      <PrimaryButton type="submit" disabled={submitting}>
+      <Button type="submit" disabled={submitting}>
         {submitting ? 'Sending…' : 'Send reset link'}
-      </PrimaryButton>
+      </Button>
 
-      <div className="flex justify-center">
-        <LinkButton onClick={onBack}>Back to login</LinkButton>
-      </div>
+      <Button variant="link" onClick={onBack}>
+        Back to login
+      </Button>
     </form>
   );
 }
