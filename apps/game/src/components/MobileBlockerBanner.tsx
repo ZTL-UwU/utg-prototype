@@ -1,10 +1,12 @@
 import { useState } from 'react';
 
+import { Button } from './ui';
+
 const MOBILE_USER_AGENT = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
 
 export function MobileBlockerBanner() {
-  const isMobile = MOBILE_USER_AGENT.test(navigator.userAgent);
   const [dismissed, setDismissed] = useState(false);
+  const [isMobile] = useState(() => MOBILE_USER_AGENT.test(navigator.userAgent));
 
   if (!isMobile || dismissed) {
     return null;
@@ -16,13 +18,13 @@ export function MobileBlockerBanner() {
         <p className="p-6 text-center text-lg font-bold text-black">
           This experience works best on a tablet or desktop. Please use a larger screen to continue.
         </p>
-        <button
-          type="button"
-          className="text-lg font-bold text-black underline"
+        <Button
+          variant="link"
+          className="text-lg font-bold text-black underline hover:text-black"
           onClick={() => setDismissed(true)}
         >
           Continue anyway
-        </button>
+        </Button>
       </div>
     </div>
   );

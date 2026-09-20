@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { Dialog } from '../ui';
 import { AuthCard } from './AuthCard';
 import { AuthSuccess } from './screens/AuthSuccess';
 import { ForgotPasswordForm } from './screens/ForgotPasswordForm';
@@ -103,21 +104,20 @@ export function AuthParent({
   };
 
   return (
-    <div
-      className={
-        backdrop
-          ? 'fixed inset-0 grid place-items-center bg-black/40 p-4'
-          : 'fixed inset-0 grid place-items-center p-4'
-      }
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose?.();
+      }}
     >
       <AuthCard
         avatarVariant={view === 'success' || view === 'forgot-sent' ? 'filled' : 'outline'}
-        onClose={onClose}
+        backdrop={backdrop}
       >
         <div key={view} className="auth-screen-enter">
           {renderScreen()}
         </div>
       </AuthCard>
-    </div>
+    </Dialog>
   );
 }

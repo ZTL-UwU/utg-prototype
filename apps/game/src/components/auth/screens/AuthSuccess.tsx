@@ -1,5 +1,4 @@
-import { PrimaryButton } from '../../ui/PrimaryButton';
-import { StatusIcon } from '../../ui/StatusIcon';
+import { Button, CardTitle, StatusIcon } from '../../ui';
 
 export interface AuthSuccessProps {
   onPlay: () => void;
@@ -10,9 +9,7 @@ export function AuthSuccess({ onPlay }: AuthSuccessProps) {
     <div className="flex flex-col items-center gap-4">
       <StatusIcon />
 
-      <h2 className="text-center font-display text-3xl font-bold tracking-wide text-forest uppercase">
-        You're all set!
-      </h2>
+      <CardTitle>You&apos;re all set!</CardTitle>
 
       <p className="text-center font-body text-sm text-muted">
         Your account is ready.
@@ -20,9 +17,9 @@ export function AuthSuccess({ onPlay }: AuthSuccessProps) {
         The mountains are waiting for you.
       </p>
 
-      <PrimaryButton className="mt-2 uppercase" onClick={onPlay}>
-        Let's play the game!
-      </PrimaryButton>
+      <Button className="mt-2 uppercase" onClick={onPlay}>
+        Let&apos;s play the game!
+      </Button>
     </div>
   );
 }

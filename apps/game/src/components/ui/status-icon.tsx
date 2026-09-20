@@ -1,14 +1,10 @@
 import { cn } from './utils';
 
-export interface StatusIconProps {
-  className?: string;
-}
-
-/** The friendly face that greets the player on the success screen. */
-export function StatusIcon({ className }: StatusIconProps) {
+export function StatusIcon({ className }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 64 64"
+      data-slot="status-icon"
       className={cn('size-16 text-forest', className)}
       fill="none"
       aria-hidden="true"

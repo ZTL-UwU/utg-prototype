@@ -1,4 +1,4 @@
-import type { AvatarVariant } from '../ui/Avatar';
+import type { AvatarVariant } from '../ui';
 
 export type { AvatarVariant };
 

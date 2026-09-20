@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@assetpack/core": "^1.7.0",
+    "@base-ui/react": "^1.6.0",
     "@pixi/devtools": "^2.0.1",
     "@pixi/layout": "^3.2.0",
     "@pixi/sound": "^6.0.1",
@@ -21,12 +22,15 @@
     "@utg/letters": "workspace:*",
     "@utg/level-types": "workspace:*",
     "@utg/script-converter": "workspace:*",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "motion": "^12.40.0",
     "ofetch": "^1.5.1",
     "pixi-filters": "^6.1.5",
     "pixi.js": "^8.18.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.0",
     "zod": "^4.4.3",
     "zustand": "^5.0.13"

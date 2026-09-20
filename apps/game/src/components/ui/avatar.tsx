@@ -16,6 +16,8 @@ export function Avatar({ variant = 'outline', className }: AvatarProps) {
 
   return (
     <div
+      data-slot="avatar"
+      data-variant={variant}
       className={cn(
         'grid size-24 place-items-center rounded-full border-[3px] border-ink bg-cream',
         'shadow-[0_6px_14px_rgba(28,28,28,0.28)]',

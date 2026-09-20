@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
-import { PillInput } from '../../ui/PillInput';
-import { PrimaryButton } from '../../ui/PrimaryButton';
+import { Button, FormError, Input } from '../../ui';
 import type { SignUpData } from '../types';
 
 export interface SignUpFormProps {
@@ -36,50 +35,50 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
 
   return (
     <form className="flex flex-col gap-4" onSubmit={(event) => void handleSubmit(event)}>
-      <PillInput
+      <Input
         name="username"
         autoComplete="username"
+        required
         placeholder="Username"
         value={username}
-        onChange={(event) => setUsername(event.target.value)}
+        onValueChange={setUsername}
       />
 
-      <PillInput
+      <Input
         name="email"
         type="email"
         autoComplete="email"
+        required
         placeholder="Email"
         value={email}
-        onChange={(event) => setEmail(event.target.value)}
+        onValueChange={setEmail}
       />
 
-      <PillInput
+      <Input
         name="password"
         type="password"
         autoComplete="new-password"
+        required
         placeholder="Password"
         value={password}
-        onChange={(event) => setPassword(event.target.value)}
+        onValueChange={setPassword}
       />
 
-      <PillInput
+      <Input
         name="confirmPassword"
         type="password"
         autoComplete="new-password"
+        required
         placeholder="Confirm password"
         value={confirmPassword}
-        onChange={(event) => setConfirmPassword(event.target.value)}
+        onValueChange={setConfirmPassword}
       />
 
-      {error !== null && (
-        <p role="alert" className="font-body text-lg text-alert justify-center flex">
-          {error}
-        </p>
-      )}
+      {error !== null && <FormError>{error}</FormError>}
 
-      <PrimaryButton type="submit" disabled={submitting}>
+      <Button type="submit" disabled={submitting}>
         {submitting ? 'Creating account…' : 'Sign up'}
-      </PrimaryButton>
+      </Button>
     </form>
   );
 }
