@@ -1,3 +1,7 @@
+import uuid
+from pathlib import Path
+
+from django.conf import settings
 from django.db import models
 
 from apps.common.models import AuditingMixin, Layer
@@ -154,3 +158,42 @@ class Sentence(AuditingMixin, models.Model):
 
     def __str__(self) -> str:
         return self.sentence
+
+
+class FeedbackRequestType(models.TextChoices):
+    ISSUE = "issue", "Issue"
+    NEW_FEATURE = "new_feature", "New feature"
+    CONTENT = "content", "Content"
+    OTHER = "other", "Other"
+
+
+def feedback_image_upload_to(_instance, filename: str) -> str:
+    ext = Path(filename).suffix.lower()
+    if ext not in {".jpg", ".jpeg", ".png", ".webp"}:
+        ext = ".jpg"
+    return f"feedback/{uuid.uuid4().hex}{ext}"
+
+
+class Feedback(models.Model):
+    request_type = models.CharField(max_length=32, choices=FeedbackRequestType.choices)
+    title = models.CharField(max_length=255, blank=True)
+    description = models.TextField()
+    image = models.ImageField(upload_to=feedback_image_upload_to)
+    screen = models.CharField(max_length=255, blank=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="feedback",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    is_resolved = models.BooleanField(default=False, db_index=True)
+
+    class Meta:
+        db_table = "feedback_reports"
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self) -> str:
+        label = self.title.strip() or self.get_request_type_display()
+        return f"{label} ({self.pk})"

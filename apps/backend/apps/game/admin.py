@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps.game.models import Level, Mascot, Sentence, Story, Unit, Word
+from apps.game.models import Feedback, Level, Mascot, Sentence, Story, Unit, Word
 
 
 @admin.register(Unit)
@@ -63,3 +63,13 @@ class SentenceAdmin(admin.ModelAdmin):
     search_fields = ("sentence", "translation")
     autocomplete_fields = ("story",)
     ordering = ("story", "sort_order", "id")
+
+
+@admin.register(Feedback)
+class FeedbackAdmin(admin.ModelAdmin):
+    list_display = ("id", "request_type", "title", "user", "is_resolved", "created_at")
+    list_filter = ("request_type", "is_resolved")
+    search_fields = ("title", "description", "screen", "user__email", "user__name")
+    readonly_fields = ("created_at",)
+    autocomplete_fields = ("user",)
+    ordering = ("-created_at", "-id")

@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal
 
@@ -353,6 +354,49 @@ class UnitOrderIn(Schema):
 class SentenceOrderIn(Schema):
     story_id: int | None = None
     sentence_ids: list[int]
+
+
+FeedbackRequestTypeLiteral = Literal["issue", "new_feature", "content", "other"]
+
+
+class FeedbackIn(Schema):
+    request_type: FeedbackRequestTypeLiteral
+    title: str = ""
+    description: str
+    screen: str = ""
+
+
+class FeedbackUserOut(Schema):
+    id: int
+    name: str | None
+    email: str
+
+
+class FeedbackResolveIn(Schema):
+    is_resolved: bool
+
+
+class FeedbackOut(Schema):
+    id: int
+    request_type: FeedbackRequestTypeLiteral
+    title: str
+    description: str
+    image: ImageOut
+    screen: str
+    user: FeedbackUserOut | None
+    created_at: datetime
+    is_resolved: bool
+
+    @staticmethod
+    def resolve_image(obj) -> ImageOut:
+        return _image_out(obj.image)
+
+    @staticmethod
+    def resolve_user(obj) -> FeedbackUserOut | None:
+        user = obj.user
+        if user is None:
+            return None
+        return FeedbackUserOut(id=user.id, name=user.name, email=user.email)
 
 
 class ErrorOut(Schema):
