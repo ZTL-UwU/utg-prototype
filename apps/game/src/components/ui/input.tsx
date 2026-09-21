@@ -14,7 +14,7 @@ export function Input({
       placeholder={placeholder}
       aria-label={ariaLabel ?? placeholder}
       className={cn(
-        'mx-auto w-4/5 rounded-pill border-[3px] border-ink bg-cream px-5 py-4.5 text-center',
+        'mx-auto block w-4/5 rounded-pill border-[3px] border-ink bg-cream px-5 py-4.5 text-center',
         'font-body text-2xl text-ink outline-none placeholder:text-muted',
         'shadow-[0_3px_0_0_var(--color-ink)] transition',
         'focus-visible:border-forest focus-visible:ring-4 focus-visible:ring-forest/30',

@@ -1,4 +1,4 @@
-import { BookOpen, PawPrint, TextQuote, Trophy, Users } from 'lucide-react';
+import { BookOpen, MessageSquareWarning, PawPrint, TextQuote, Trophy, Users } from 'lucide-react';
 import { Link, useLocation } from 'react-router';
 
 import {
@@ -16,7 +16,10 @@ const contentItems = [
   { title: 'Rewards', url: '/rewards', icon: Trophy },
 ] as const;
 
-const playerItems = [{ title: 'Users', url: '/users', icon: Users }] as const;
+const playerItems = [
+  { title: 'Users', url: '/users', icon: Users },
+  { title: 'Feedback', url: '/feedback', icon: MessageSquareWarning },
+] as const;
 
 export function NavContent() {
   const location = useLocation();

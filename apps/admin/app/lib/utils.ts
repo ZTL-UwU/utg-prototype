@@ -10,6 +10,6 @@ export function cn(...inputs: ClassValue[]) {
 /** Resolve a media path that may be relative (local MEDIA_URL) or absolute (S3). */
 export function mediaUrl(path: string): string {
   if (/^https?:\/\//i.test(path)) return path;
-  const base = backendUrl.replace(/\/$/, '');
-  return path.startsWith('/') ? `${base}${path}` : `${base}/${path}`;
+  const origin = backendUrl.replace(/\/+$/, '').replace(/\/api$/, '');
+  return path.startsWith('/') ? `${origin}${path}` : `${origin}/${path}`;
 }
