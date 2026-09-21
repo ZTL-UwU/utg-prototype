@@ -5,7 +5,7 @@ import { Graphics, GraphicsPath, Polygon } from 'pixi.js';
  * Stroke width in outline units. 6 reaches every point of every glyph interior (most need 4–5),
  * so the trace fills the whole letter; the glyph mask clips whatever spills past the outline.
  */
-const TRACE_WIDTH = 6;
+const TRACE_WIDTH = 5.5;
 const TRACE_COLOR = 0x844f01;
 /** Outline units drawn per second, clamped so short and long letters both read well. */
 const TRACE_SPEED = 25;
@@ -48,6 +48,11 @@ export class StrokeTracer extends Graphics {
 
   get hasPath() {
     return this.strokes.length > 0;
+  }
+
+  /** True from `play()` until the next reset, whether the trace is still animating or done. */
+  get hasTrace() {
+    return this.animation !== undefined;
   }
 
   setPath(d: string | undefined) {
