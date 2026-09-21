@@ -16,6 +16,7 @@ export function createGlyphMaskContext(pathDs: string[]): GraphicsContext {
   );
 
   const containers = contours.map((contour, i) =>
+    // assumes that contours never cross over each other
     contours.filter((other, j) => j !== i && other.contains(contour.points[0], contour.points[1])),
   );
   const depths = containers.map((list) => list.length);

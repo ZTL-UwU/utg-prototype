@@ -1,9 +1,14 @@
 import { FancyButton } from '@pixi/ui';
-import { Container, Graphics, GraphicsContext, Text } from 'pixi.js';
+import { Container, Graphics, GraphicsContext, Sprite, Text, Texture } from 'pixi.js';
 
 import type { LETTER_FORMS } from '.';
-import { DrawingCanvas } from '../../ui/drawing-canvas';
+import { DrawingCanvas, type StrokePoint } from '../../ui/drawing-canvas';
 import { SoundButton } from '../../ui/sound-button';
+import {
+  calculateGlyphCoverage,
+  calculateGlyphStrokeAccuracy,
+  sampleGlyphInterior,
+} from './calculate-accuracy';
 import { createGlyphMaskContext } from './glyph-mask';
 import outlinesJson from './letters.json';
 import { StrokeTracer } from './stroke-tracer';
@@ -35,6 +40,17 @@ const SOUND_BUTTON_SIZE = 90;
 const DRAW_COLOR = NAV_BUTTON_COLOR;
 /** Brush width in outline units: a fine pen line, far thinner than the demo trace. */
 const DRAW_WIDTH = 1;
+/** Space between the stacked Submit and Clear buttons. */
+const BUTTON_STACK_GAP = 16;
+/** Darkness of the tint behind the results message. */
+const OVERLAY_ALPHA = 0.6;
+/** Grid spacing, in glyph units, of the interior points coverage is measured against. */
+const COVERAGE_SAMPLE_STEP = 0.25;
+/**
+ * How close, in glyph units, a drawn stroke must pass to count a point of the letter as covered.
+ * Wider than the ink so one pass down the middle of a body (about 2.4 units thick) covers it.
+ */
+const COVERAGE_RADIUS = 2;
 
 const FORM_LABELS: Record<LETTER_FORMS, string> = {
   isolated: 'Isolated',
@@ -47,6 +63,13 @@ const FORM_LABELS: Record<LETTER_FORMS, string> = {
 // `strokePath` is `pathString` fitted onto the outline by scripts/fit-letter-paths.mjs
 type OutlineEntry = { svgString: string; pathString?: string; strokePath?: string };
 const outlines = outlinesJson as Record<string, Partial<Record<string, OutlineEntry>>>;
+
+// TODO: write the results message; the scores are percentages from 0 to 100
+function getResultsMessage(accuracy: number, coverage: number): string {
+  return `Drawing Results
+Accuracy: ${Math.round(accuracy)}%
+Coverage: ${Math.round(coverage)}%`;
+}
 
 function getBaseForm(letter: string) {
   const base = letter.length > 1 && letter.startsWith(HAMZA) ? letter.slice(1) : letter;
@@ -115,10 +138,15 @@ export class OutlineDisplay extends Container {
   /** Filled glyph interior that keeps the thick trace brush inside the outline. */
   private glyphMask: Graphics;
   private maskCache = new Map<string, GraphicsContext>();
+  private sampleCache = new Map<string, StrokePoint[]>();
   private traceButton: FancyButton;
   /** Freehand practice layer under the glyph, left unclipped so strokes off the letter show. */
   private drawingCanvas: DrawingCanvas;
   private clearButton: FancyButton;
+  private submitButton: FancyButton;
+  /** Darkens the whole display and shows the scores after Submit. */
+  private resultsOverlay: Container;
+  private resultsText: Text;
   private border: Graphics;
   private buttonRow: Container;
   private formButtons: Map<
@@ -139,7 +167,7 @@ export class OutlineDisplay extends Container {
 
   constructor(
     letter: string,
-    handlers: { onPrev: () => void; onNext: () => void; onSound: () => void },
+    handlers: { onPrev: () => void; onNext: () => void; onSound: () => void; onHome: () => void },
     form: LETTER_FORMS = 'isolated',
   ) {
     super({ layout: { flexDirection: 'column', alignItems: 'center', gap: ROW_GAP } });
@@ -185,6 +213,21 @@ export class OutlineDisplay extends Container {
       height: ROW_HEIGHT,
       isLeaf: true,
     };
+    this.submitButton = createTextButton(
+      'Submit',
+      NAV_BUTTON_COLOR,
+      NAV_BUTTON_SHADOW_COLOR,
+      this.handleSubmit,
+    );
+    // stacked directly above Clear
+    this.submitButton.layout = {
+      position: 'absolute',
+      left: COUNTER_INSET,
+      bottom: COUNTER_INSET + ROW_HEIGHT + BUTTON_STACK_GAP,
+      width: FORM_BUTTON_WIDTH,
+      height: ROW_HEIGHT,
+      isLeaf: true,
+    };
     // canvas under the glyph so the outline and demo trace draw over the user's ink
     this.frame.addChild(
       this.border,
@@ -194,6 +237,7 @@ export class OutlineDisplay extends Container {
       this.soundButton,
       this.traceButton,
       this.clearButton,
+      this.submitButton,
     );
 
     this.formButtons = new Map();
@@ -232,13 +276,51 @@ export class OutlineDisplay extends Container {
       ],
     });
 
-    this.addChild(this.frame, this.buttonRow);
+    // tint catches pointer events so nothing underneath can be used while results show
+    const tint = new Sprite({
+      texture: Texture.WHITE,
+      tint: 0x000000,
+      alpha: OVERLAY_ALPHA,
+      eventMode: 'static',
+      layout: { position: 'absolute', width: '100%', height: '100%' },
+    });
+    // flow label: anchored text and @pixi/layout fight over the origin
+    this.resultsText = new Text({
+      resolution: 2,
+      style: { fontFamily: 'Concert One', fontSize: 56, fill: LABEL_COLOR, align: 'center' },
+      layout: true,
+    });
+    const resultsButtons = new Container({
+      layout: { flexDirection: 'row', alignItems: 'center', gap: ROW_GAP },
+      children: [
+        createTextButton('Continue', NAV_BUTTON_COLOR, NAV_BUTTON_SHADOW_COLOR, () =>
+          this.continueDrawing(),
+        ),
+        createTextButton('Go Home', FRAME_COLOR, FORM_BUTTON_SHADOW_COLOR, handlers.onHome),
+      ],
+    });
+    this.resultsOverlay = new Container({
+      layout: {
+        position: 'absolute',
+        width: '100%',
+        height: '100%',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: ROW_GAP,
+      },
+      children: [tint, this.resultsText, resultsButtons],
+    });
+    this.resultsOverlay.visible = false;
+
+    this.addChild(this.frame, this.buttonRow, this.resultsOverlay);
     this.setLetter(letter, form);
   }
 
   setLetter(letter: string, form: LETTER_FORMS = 'isolated') {
     const base = getBaseForm(letter);
     this.letter = letter;
+    this.resultsOverlay.visible = false;
     this.form = form;
     this.outline.context = this.getCachedContext(base, form);
     this.glyphMask.context = this.getCachedMaskContext(base, form);
@@ -290,6 +372,7 @@ export class OutlineDisplay extends Container {
     const base = getBaseForm(this.letter);
     this.traceButton.enabled = this.tracer.hasPath;
     this.clearButton.enabled = !this.drawingCanvas.isEmpty || this.tracer.hasTrace;
+    this.submitButton.enabled = !this.drawingCanvas.isEmpty;
     for (const [form, { button, view, selectedView }] of this.formButtons) {
       button.enabled = hasForm(base, form);
       const targetView = form === this.form ? selectedView : view;
@@ -336,5 +419,48 @@ export class OutlineDisplay extends Container {
       this.maskCache.set(key, context);
     }
     return context;
+  }
+  private readonly handleSubmit = () => {
+    // drawn points are in canvas pixels; the mask is in the glyph's artboard units
+    const glyphStrokes: StrokePoint[][] = this.drawingCanvas
+      .getStrokes()
+      .map((stroke) =>
+        stroke.points.map((point) => this.glyphMask.toLocal(point, this.drawingCanvas)),
+      );
+    const accuracy = calculateGlyphStrokeAccuracy(glyphStrokes.flat(), this.glyphMask.context);
+    const coverage = calculateGlyphCoverage(
+      glyphStrokes,
+      this.getCachedInteriorSamples(getBaseForm(this.letter), this.form),
+      COVERAGE_RADIUS,
+    );
+    // harmonic mean: only high when the drawing is both on the letter and covers it
+    const combined =
+      accuracy + coverage === 0 ? 0 : (2 * accuracy * coverage) / (accuracy + coverage);
+    console.log(
+      `The accuracy is: ${accuracy.toFixed(1)}, coverage: ${coverage.toFixed(1)}, combined: ${combined.toFixed(1)}`,
+    );
+    this.showResults(accuracy, coverage);
+  };
+
+  private showResults(accuracy: number, coverage: number) {
+    this.resultsText.text = getResultsMessage(accuracy, coverage);
+    this.tracer.reset(); // don't keep a demo trace animating underneath
+    this.resultsOverlay.visible = true;
+  }
+
+  // back to the same letter and form with nothing drawn
+  private continueDrawing() {
+    this.resultsOverlay.visible = false;
+    this.clearDrawing();
+  }
+
+  private getCachedInteriorSamples(letter: string, form: LETTER_FORMS) {
+    const key = `${letter}/${form}`;
+    let samples = this.sampleCache.get(key);
+    if (!samples) {
+      samples = sampleGlyphInterior(this.getCachedMaskContext(letter, form), COVERAGE_SAMPLE_STEP);
+      this.sampleCache.set(key, samples);
+    }
+    return samples;
   }
 }

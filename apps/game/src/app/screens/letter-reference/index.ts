@@ -41,10 +41,7 @@ export class LetterReferenceScreen extends Container {
     layout: { position: 'absolute', width: '100%', height: '100%' },
   });
   private HUD = new HUD({
-    onBack: () => {
-      this.stopLetterSound();
-      void engine().navigation.showScreen(HomeScreen);
-    },
+    onBack: () => this.goHome(),
   });
   private outlineDisplay: OutlineDisplay;
   private letterIndex = 0;
@@ -57,10 +54,17 @@ export class LetterReferenceScreen extends Container {
       onPrev: () => this.stepLetter(-1),
       onNext: () => this.stepLetter(1),
       onSound: () => this.playLetterSound(),
+      onHome: () => this.goHome(),
     });
     this.outlineDisplay.setCounter(this.letterIndex + 1, EDUCATION_LETTERS.length);
 
     this.addChild(this.background, this.HUD, this.outlineDisplay);
+  }
+
+  // shared by the HUD back button and the results overlay, so both stop the letter audio
+  private goHome() {
+    this.stopLetterSound();
+    void engine().navigation.showScreen(HomeScreen);
   }
 
   async show() {
