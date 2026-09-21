@@ -2,6 +2,7 @@ import { FancyButton } from '@pixi/ui';
 import { Container, Graphics, GraphicsContext, Text } from 'pixi.js';
 
 import type { LETTER_FORMS } from '.';
+import { DrawingCanvas } from '../../ui/drawing-canvas';
 import { SoundButton } from '../../ui/sound-button';
 import { createGlyphMaskContext } from './glyph-mask';
 import outlinesJson from './letters.json';
@@ -30,6 +31,10 @@ const ROW_HEIGHT = FORM_BUTTON_HEIGHT + FORM_BUTTON_SHADOW_OFFSET;
 const ROW_GAP = 32;
 const COUNTER_INSET = 28;
 const SOUND_BUTTON_SIZE = 90;
+/** Teal so the user's own ink reads apart from the brown demo trace. */
+const DRAW_COLOR = NAV_BUTTON_COLOR;
+/** Brush width in outline units: a fine pen line, far thinner than the demo trace. */
+const DRAW_WIDTH = 1;
 
 const FORM_LABELS: Record<LETTER_FORMS, string> = {
   isolated: 'Isolated',
@@ -111,6 +116,9 @@ export class OutlineDisplay extends Container {
   private glyphMask: Graphics;
   private maskCache = new Map<string, GraphicsContext>();
   private traceButton: FancyButton;
+  /** Freehand practice layer under the glyph, left unclipped so strokes off the letter show. */
+  private drawingCanvas: DrawingCanvas;
+  private clearButton: FancyButton;
   private border: Graphics;
   private buttonRow: Container;
   private formButtons: Map<
@@ -149,9 +157,10 @@ export class OutlineDisplay extends Container {
       size: SOUND_BUTTON_SIZE,
       variant: 'brown',
     });
-    this.traceButton = createTextButton('Trace', NAV_BUTTON_COLOR, NAV_BUTTON_SHADOW_COLOR, () =>
-      this.tracer.play(),
-    );
+    this.traceButton = createTextButton('Trace', NAV_BUTTON_COLOR, NAV_BUTTON_SHADOW_COLOR, () => {
+      this.tracer.play();
+      this.refreshButtons();
+    });
     this.traceButton.layout = {
       position: 'absolute',
       right: COUNTER_INSET,
@@ -160,7 +169,32 @@ export class OutlineDisplay extends Container {
       height: ROW_HEIGHT,
       isLeaf: true,
     };
-    this.frame.addChild(this.border, this.glyph, this.counter, this.soundButton, this.traceButton);
+    this.drawingCanvas = new DrawingCanvas({
+      background: false,
+      color: DRAW_COLOR,
+      onChange: () => this.refreshButtons(),
+    });
+    this.clearButton = createTextButton('Clear', NAV_BUTTON_COLOR, NAV_BUTTON_SHADOW_COLOR, () =>
+      this.clearDrawing(),
+    );
+    this.clearButton.layout = {
+      position: 'absolute',
+      left: COUNTER_INSET,
+      bottom: COUNTER_INSET,
+      width: FORM_BUTTON_WIDTH,
+      height: ROW_HEIGHT,
+      isLeaf: true,
+    };
+    // canvas under the glyph so the outline and demo trace draw over the user's ink
+    this.frame.addChild(
+      this.border,
+      this.drawingCanvas,
+      this.glyph,
+      this.counter,
+      this.soundButton,
+      this.traceButton,
+      this.clearButton,
+    );
 
     this.formButtons = new Map();
     for (const buttonForm of Object.keys(FORM_LABELS) as LETTER_FORMS[]) {
@@ -237,6 +271,7 @@ export class OutlineDisplay extends Container {
       .clear()
       .roundRect(0, 0, this.w, this.h, 20)
       .stroke({ width: 8, color: FRAME_COLOR });
+    this.drawingCanvas.resize(this.w, this.h);
     // anchored at its centre, mirroring the counter in the top-right corner
     this.soundButton.position.set(
       this.w - COUNTER_INSET - SOUND_BUTTON_SIZE / 2,
@@ -245,9 +280,16 @@ export class OutlineDisplay extends Container {
     this.fit();
   }
 
+  // wipes both the demo trace and the user's own strokes
+  private clearDrawing() {
+    this.tracer.reset();
+    this.drawingCanvas.clear(); // its onChange refreshes the buttons
+  }
+
   private refreshButtons() {
     const base = getBaseForm(this.letter);
     this.traceButton.enabled = this.tracer.hasPath;
+    this.clearButton.enabled = !this.drawingCanvas.isEmpty || this.tracer.hasTrace;
     for (const [form, { button, view, selectedView }] of this.formButtons) {
       button.enabled = hasForm(base, form);
       const targetView = form === this.form ? selectedView : view;
@@ -267,6 +309,10 @@ export class OutlineDisplay extends Container {
 
     this.glyph.scale.set(scale);
     this.glyph.position.set(this.w / 2, this.h / 2);
+
+    // strokes are in frame pixels, so they'd drift off a rescaled or recentred glyph
+    this.drawingCanvas.setSize(DRAW_WIDTH * scale);
+    this.drawingCanvas.clear();
   }
 
   // returns context if cached
