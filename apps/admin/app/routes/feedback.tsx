@@ -7,11 +7,14 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { FetchError } from 'ofetch';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
-import { DataTable } from '~/components/data-table';
-import { getFeedbackColumns } from '~/components/feedback-columns';
+import {
+  FeedbackIssueList,
+  FeedbackIssueListSkeleton,
+  FeedbackTypeLabel,
+} from '~/components/feedback-issue-list';
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
 import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
@@ -29,23 +32,12 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '~/components/ui/empty';
-import { Skeleton } from '~/components/ui/skeleton';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '~/components/ui/table';
 import { api } from '~/lib/api';
 import {
-  FEEDBACK_REQUEST_TYPE_LABELS,
   type FeedbackReport,
   feedbackAuthor,
   feedbackHeadline,
   feedbackListQueryOptions,
-  feedbackTypeBadgeVariant,
   formatFeedbackDate,
 } from '~/lib/feedback';
 import { pageTitle } from '~/lib/page-title';
@@ -82,8 +74,6 @@ export default function FeedbackPage() {
     },
   });
 
-  const columns = useMemo(() => getFeedbackColumns(), []);
-
   return (
     <div className="mx-auto flex w-full min-w-0 max-w-5xl flex-col gap-4">
       <title>{pageTitle('Feedback')}</title>
@@ -91,14 +81,13 @@ export default function FeedbackPage() {
         <div className="flex max-w-2xl flex-col gap-2">
           <h1 className="text-3xl font-semibold tracking-tight">Feedback</h1>
           <p className="text-muted-foreground">
-            Reports sent from the game. Search, sort, and open a report to see the screenshot and
-            notes.
+            Reports sent from the game. Open a report to see the screenshot and notes.
           </p>
         </div>
       </header>
 
       {isPending ? (
-        <FeedbackTableSkeleton />
+        <FeedbackIssueListSkeleton />
       ) : isError ? (
         <Alert variant="destructive">
           <CircleAlertIcon />
@@ -120,17 +109,12 @@ export default function FeedbackPage() {
           </EmptyHeader>
         </Empty>
       ) : (
-        <DataTable
-          columns={columns}
-          data={data}
-          getRowId={(feedback) => String(feedback.id)}
-          onRowClick={(feedback) => {
+        <FeedbackIssueList
+          reports={data}
+          onSelect={(feedback) => {
             setSelected(feedback);
             setDialogOpen(true);
           }}
-          searchColumn="report"
-          searchPlaceholder="Search (title, user, or type)"
-          emptyMessage="No matching reports found."
         />
       )}
 
@@ -139,12 +123,10 @@ export default function FeedbackPage() {
           <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-xl">
             <DialogHeader className="gap-1.5 pr-8 text-left">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <Badge variant={feedbackTypeBadgeVariant(selected.request_type)}>
-                  {FEEDBACK_REQUEST_TYPE_LABELS[selected.request_type]}
-                </Badge>
+                <FeedbackTypeLabel type={selected.request_type} />
                 {selected.is_resolved ? <Badge variant="secondary">Resolved</Badge> : null}
                 <span className="text-xs text-muted-foreground">
-                  {formatFeedbackDate(selected.created_at)}
+                  #{selected.id} · {formatFeedbackDate(selected.created_at)}
                 </span>
               </div>
               <DialogTitle className="text-xl leading-snug break-words">
@@ -234,61 +216,6 @@ export default function FeedbackPage() {
           </DialogContent>
         ) : null}
       </Dialog>
-    </div>
-  );
-}
-
-function FeedbackTableSkeleton() {
-  return (
-    <div className="flex flex-col gap-4">
-      <Skeleton className="h-8 w-full max-w-sm" />
-      <div className="overflow-hidden rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Report</TableHead>
-              <TableHead className="w-36">Type</TableHead>
-              <TableHead>User</TableHead>
-              <TableHead className="w-40">Screen</TableHead>
-              <TableHead className="w-40">Submitted</TableHead>
-              <TableHead className="w-28">Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {Array.from({ length: 6 }, (_, index) => (
-              <TableRow key={index}>
-                <TableCell className="min-w-0">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <Skeleton className="size-10 shrink-0 rounded-md" />
-                    <div className="flex min-w-0 flex-1 flex-col gap-1">
-                      <Skeleton className="h-4 w-36 max-w-full" />
-                      <Skeleton className="h-3 w-48 max-w-full" />
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-5 w-20 rounded-full" />
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col gap-1">
-                    <Skeleton className="h-4 w-24 max-w-full" />
-                    <Skeleton className="h-3 w-36 max-w-full" />
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-20" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-4 w-24" />
-                </TableCell>
-                <TableCell>
-                  <Skeleton className="h-5 w-16 rounded-full" />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
     </div>
   );
 }

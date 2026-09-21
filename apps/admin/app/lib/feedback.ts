@@ -48,20 +48,13 @@ export function formatFeedbackDate(iso: string): string {
   });
 }
 
-export function feedbackTypeBadgeVariant(
-  type: FeedbackRequestType,
-): 'destructive' | 'default' | 'secondary' | 'outline' {
-  switch (type) {
-    case 'issue':
-      return 'destructive';
-    case 'new_feature':
-      return 'default';
-    case 'content':
-      return 'secondary';
-    default:
-      return 'outline';
-  }
-}
+/** Solid label colors, in the same role as GitHub issue labels. */
+export const FEEDBACK_TYPE_LABEL_CLASS: Record<FeedbackRequestType, string> = {
+  issue: 'bg-red-600 text-white',
+  new_feature: 'bg-green-700 text-white',
+  content: 'bg-blue-600 text-white',
+  other: 'bg-zinc-500 text-white',
+};
 
 export function feedbackSearchText(feedback: FeedbackReport): string {
   return [
