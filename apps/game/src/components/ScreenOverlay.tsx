@@ -1,18 +1,21 @@
 import { useMutation } from '@tanstack/react-query';
 import { FetchError } from 'ofetch';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { z } from 'zod';
 
 import { engine } from '../engine/getEngine';
 import { api } from '../lib/api';
+import { isFeedbackHotkey } from '../lib/feedback';
 import {
   clearPasswordResetUrl,
   getPasswordResetParams,
   type PasswordResetParams,
 } from '../lib/passwordReset';
 import { useAuthStore, type AuthUser } from '../zustandStores/auth';
+import { useFeedbackStore } from '../zustandStores/feedbackStore';
 import { useOverlayStore } from '../zustandStores/overlayStore';
 import { AuthParent, type SignUpData } from './auth';
+import { FeedbackOverlay, openFeedback } from './feedback/FeedbackOverlay';
 import { MenuParent } from './menu/MenuParent';
 import { YoutubeEmbedOverlay } from './YoutubeEmbedOverlay';
 
@@ -71,6 +74,8 @@ function alertApiError(error: unknown, fallback: string) {
 
 export function ScreenOverlay() {
   const activeOverlay = useOverlayStore((state) => state.activeOverlay);
+  const feedbackOpen = useFeedbackStore((state) => state.isOpen);
+  const screenshot = useFeedbackStore((state) => state.screenshot);
   const setAuth = useAuthStore((state) => state.setAuth);
   const [resetParams, setResetParams] = useState<PasswordResetParams | null>(() =>
     getPasswordResetParams(),
@@ -81,6 +86,18 @@ export function ScreenOverlay() {
       useOverlayStore.getState().show('auth');
     }
   }, [resetParams]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!isFeedbackHotkey(event)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (useFeedbackStore.getState().isOpen) return;
+      void openFeedback();
+    };
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => window.removeEventListener('keydown', onKeyDown, true);
+  }, []);
 
   const { mutateAsync: login } = useMutation({
     mutationFn: loginRequest,
@@ -144,21 +161,20 @@ export function ScreenOverlay() {
   });
 
   // Auth and menu own their Base UI dialog (backdrop, focus trap, Escape to
-  // close), so the overlay only decides *which* flow is mounted.
-  if (activeOverlay === 'menu') {
-    return <MenuParent />;
-  }
+  // close), so the overlay only decides *which* flow is mounted. Feedback is
+  // a separate dialog rendered on top so it can open over those flows too.
+  let overlay: ReactNode = null;
 
-  if (activeOverlay === 'youtube-embeds') {
-    return (
+  if (activeOverlay === 'menu') {
+    overlay = <MenuParent />;
+  } else if (activeOverlay === 'youtube-embeds') {
+    overlay = (
       <div className="pointer-events-none absolute inset-0 z-10">
         <YoutubeEmbedOverlay />
       </div>
     );
-  }
-
-  if (activeOverlay === 'auth') {
-    return (
+  } else if (activeOverlay === 'auth') {
+    overlay = (
       <AuthParent
         initialView={resetParams !== null ? 'reset' : 'login'}
         onClose={goToHomeScreen}
@@ -193,5 +209,10 @@ export function ScreenOverlay() {
     );
   }
 
-  return null;
+  return (
+    <>
+      {overlay}
+      {feedbackOpen && screenshot ? <FeedbackOverlay screenshot={screenshot} /> : null}
+    </>
+  );
 }

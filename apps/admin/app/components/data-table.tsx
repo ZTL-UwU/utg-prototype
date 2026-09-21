@@ -1,17 +1,16 @@
 import { useTable, type Column, type ColumnDef, type RowData } from '@tanstack/react-table';
-import { ArrowDownIcon, ArrowUpIcon, ChevronsUpDownIcon, SearchIcon } from 'lucide-react';
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronsUpDownIcon,
+  SearchIcon,
+} from 'lucide-react';
 import { useId } from 'react';
 
 import { Button } from '~/components/ui/button';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '~/components/ui/input-group';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '~/components/ui/select';
 import {
   Table,
   TableBody,
@@ -23,17 +22,22 @@ import {
 import { dataTableFeatures, type DataTableFeatures } from '~/lib/data-table-features';
 import { cn } from '~/lib/utils';
 
-const PAGE_SIZE_ITEMS = [
-  { label: '10', value: '10' },
-  { label: '20', value: '20' },
-  { label: '50', value: '50' },
-] as const;
+const PAGE_WINDOW = 5;
+
+function visiblePageIndexes(pageIndex: number, pageCount: number): number[] {
+  if (pageCount <= PAGE_WINDOW) {
+    return Array.from({ length: pageCount }, (_, index) => index);
+  }
+  const start = Math.min(Math.max(pageIndex - 2, 0), pageCount - PAGE_WINDOW);
+  return Array.from({ length: PAGE_WINDOW }, (_, index) => start + index);
+}
 
 interface DataTableProps<TData extends RowData> {
   columns: ColumnDef<DataTableFeatures, TData>[];
   data: TData[];
   emptyMessage?: string;
   getRowId?: (originalRow: TData) => string;
+  onRowClick?: (row: TData) => void;
   searchColumn?: string;
   searchPlaceholder?: string;
 }
@@ -73,6 +77,7 @@ export function DataTable<TData extends RowData>({
   data,
   emptyMessage = 'No results.',
   getRowId,
+  onRowClick,
   searchColumn,
   searchPlaceholder = 'Search',
 }: DataTableProps<TData>) {
@@ -90,7 +95,6 @@ export function DataTable<TData extends RowData>({
   const search = searchColumn ? table.getColumn(searchColumn) : undefined;
   const pageCount = Math.max(table.getPageCount(), 1);
   const pageIndex = table.state.pagination.pageIndex;
-  const pageSize = table.state.pagination.pageSize;
 
   return (
     <div className="flex flex-col gap-4">
@@ -131,7 +135,31 @@ export function DataTable<TData extends RowData>({
           <TableBody>
             {table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
+                <TableRow
+                  key={row.id}
+                  className={onRowClick ? 'cursor-pointer' : undefined}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  onClick={
+                    onRowClick
+                      ? (event) => {
+                          const target = event.target as HTMLElement;
+                          if (target.closest('a, button, input, select, textarea')) return;
+                          onRowClick(row.original);
+                        }
+                      : undefined
+                  }
+                  onKeyDown={
+                    onRowClick
+                      ? (event) => {
+                          if (event.key !== 'Enter' && event.key !== ' ') return;
+                          const target = event.target as HTMLElement;
+                          if (target !== event.currentTarget) return;
+                          event.preventDefault();
+                          onRowClick(row.original);
+                        }
+                      : undefined
+                  }
+                >
                   {row.getAllCells().map((cell) => (
                     <TableCell key={cell.id} className={cell.column.columnDef.meta?.cellClassName}>
                       <table.FlexRender cell={cell} />
@@ -153,57 +181,47 @@ export function DataTable<TData extends RowData>({
         </Table>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">
-          {table.getRowCount()} {table.getRowCount() === 1 ? 'row' : 'rows'}
-        </p>
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Rows per page</span>
-            <Select
-              items={PAGE_SIZE_ITEMS}
-              value={String(pageSize)}
-              onValueChange={(value) => {
-                if (typeof value === 'string') table.setPageSize(Number(value));
-              }}
-            >
-              <SelectTrigger size="sm" aria-label="Rows per page">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false} align="end">
-                <SelectGroup>
-                  {PAGE_SIZE_ITEMS.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Page {pageIndex + 1} of {pageCount}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
-      </div>
+      {pageCount > 1 ? (
+        <nav aria-label="Pagination" className="flex items-center justify-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Previous page"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            <ChevronLeftIcon />
+          </Button>
+          {visiblePageIndexes(pageIndex, pageCount).map((index) => {
+            const current = index === pageIndex;
+            return (
+              <Button
+                key={index}
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Page ${index + 1}`}
+                aria-current={current ? 'page' : undefined}
+                className={cn('font-normal tabular-nums', current && 'border-border')}
+                onClick={() => table.setPageIndex(index)}
+              >
+                {index + 1}
+              </Button>
+            );
+          })}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Next page"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            <ChevronRightIcon />
+          </Button>
+        </nav>
+      ) : null}
     </div>
   );
 }

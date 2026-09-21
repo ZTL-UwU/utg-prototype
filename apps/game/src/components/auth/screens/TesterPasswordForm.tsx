@@ -31,7 +31,7 @@ export function TesterPasswordForm({ onSubmit, onBack }: TesterPasswordFormProps
         Enter the tester password to unlock every level. Progress stays on this device.
       </DialogDescription>
 
-      <div key={shakeKey} className={cn(error && 'auth-shake')}>
+      <div key={shakeKey} className={cn('flex justify-center', error && 'auth-shake')}>
         <Input
           name="tester-password"
           type="password"
