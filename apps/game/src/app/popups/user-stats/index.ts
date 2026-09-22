@@ -79,6 +79,7 @@ export class UserStatsPopup extends Container {
   public readonly screenName = 'UserStatsPopup';
   public static assetBundles = ['stats-popup', 'layer-select', 'avatar-select', 'ui'];
 
+  private dismissOverlay: Sprite;
   private panel: Container;
   private backButton: BackButton;
   private totalStarsValue: Text;
@@ -96,6 +97,19 @@ export class UserStatsPopup extends Container {
         alignItems: 'center',
         justifyContent: 'center',
       },
+    });
+
+    // Invisible full-screen catcher behind the card: a tap here means "outside the card".
+    // Alpha does not affect hit testing, so it stays fully transparent.
+    this.dismissOverlay = new Sprite({ texture: Texture.WHITE, alpha: 0 });
+    this.dismissOverlay.eventMode = 'static';
+    this.dismissOverlay.layout = {
+      position: 'absolute',
+      width: '100%',
+      height: '100%',
+    };
+    this.dismissOverlay.on('pointertap', () => {
+      void engine().navigation.hidePopup();
     });
 
     this.backButton = new BackButton(() => {
@@ -243,6 +257,8 @@ export class UserStatsPopup extends Container {
     });
 
     this.panel = new Container({ layout: true });
+    // Absorbs taps on the card so they never reach the overlay behind it.
+    this.panel.eventMode = 'static';
     this.panel.addChild(background, content);
 
     // No-op when already loading or ready; retries when the bootstrap fetch errored.
@@ -252,7 +268,7 @@ export class UserStatsPopup extends Container {
     });
     this.updateStats();
 
-    this.addChild(this.panel, this.backButton);
+    this.addChild(this.dismissOverlay, this.panel, this.backButton);
   }
 
   private updateStats() {
