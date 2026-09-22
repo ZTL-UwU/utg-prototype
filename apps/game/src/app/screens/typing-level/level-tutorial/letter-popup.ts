@@ -152,6 +152,7 @@ function getAdjacentLetter(letter: string, delta: number): string {
 }
 
 export class LetterPopup extends Container {
+  public readonly screenName = 'LetterPopup';
   public static assetBundles = ['typing-tutorial', 'end-screen', 'ui'];
 
   private readonly letter: string;

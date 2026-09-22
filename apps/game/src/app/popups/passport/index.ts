@@ -179,6 +179,7 @@ function createArrowButton(flip: boolean) {
 }
 
 export class PassportPopup extends Container {
+  public readonly screenName = 'PassportPopup';
   public static assetBundles = ['passport', REMOTE_REWARDS_BUNDLE];
   private dismissOverlay: Sprite;
   private passportContainer: Container;

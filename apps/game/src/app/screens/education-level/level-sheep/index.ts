@@ -47,6 +47,7 @@ function getSheepFacingScale(currentScaleX: number, sheepX: number, targetX: num
 }
 
 export class EducationSheepScreen extends Container {
+  public readonly screenName = 'EducationSheepScreen';
   public static assetBundles = [
     'education-level-sheep',
     'ui',

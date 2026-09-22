@@ -14,6 +14,8 @@ export type TransitionOptions = {
 
 /** Interface for app screens */
 export interface AppScreen extends Container {
+  /** Class name. A string so production minification cannot rename it. */
+  readonly screenName: string;
   /** Show the screen. Pass `false` to skip enter motion when supported. */
   show?(animate?: boolean): Promise<void>;
   /** Hide the screen. Pass `false` to skip exit motion when supported. */

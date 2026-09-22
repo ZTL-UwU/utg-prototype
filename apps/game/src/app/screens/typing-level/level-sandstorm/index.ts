@@ -43,6 +43,7 @@ function randomBetween(min: number, max: number) {
 }
 
 export class TypingSandstormScreen extends Container {
+  public readonly screenName = 'TypingSandstormScreen';
   public static assetBundles = ['typing-level-sandstorm', 'ui'];
   public static splashBackgroundAsset = 'typing-levels/typing-level-sandstorm/splash.png';
   public static helpAssets = ['tutorial-popups/typing-tutorial.png'];

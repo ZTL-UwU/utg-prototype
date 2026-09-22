@@ -18,6 +18,7 @@ interface EndScreenProps {
 }
 
 export class EndScreen extends Container {
+  public readonly screenName = 'EndScreen';
   public static assetBundles = ['end-screen', 'ui'];
 
   private background: Sprite;

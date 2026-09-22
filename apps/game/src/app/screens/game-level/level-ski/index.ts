@@ -153,6 +153,7 @@ function lerp(a: number, b: number, t: number) {
 }
 
 export class GameLevelSki extends Container {
+  public readonly screenName = 'GameLevelSki';
   public static assetBundles = ['game-level-ski', 'ui', REMOTE_SENTENCES_BUNDLE];
   public static splashBackgroundAsset = 'game-levels/game-level-ski/splash.png';
   public static helpAssets: string[] = ['tutorial-popups/game-level-ski.png'];

@@ -38,6 +38,7 @@ const COLORS = {
 let lastSettings: TypingTestSettings | undefined;
 
 export class TypingTestScreen extends Container {
+  public readonly screenName = 'TypingTestScreen';
   public static assetBundles = [
     'typing-level-test',
     REMOTE_WORDS_BUNDLE,

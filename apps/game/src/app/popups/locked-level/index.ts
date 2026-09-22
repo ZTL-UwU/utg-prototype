@@ -19,6 +19,7 @@ export type LockedLevelPopupProps = {
 };
 
 export class LockedLevelPopup extends Container {
+  public readonly screenName = 'LockedLevelPopup';
   public static assetBundles = ['locked-popup'];
 
   private popupMask: Sprite;

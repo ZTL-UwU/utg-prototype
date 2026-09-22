@@ -29,6 +29,7 @@ function createMapNavButton(label: string) {
 }
 
 export class EducationLevelSelect extends Container {
+  public readonly screenName = 'EducationLevelSelect';
   public static assetBundles = ['education-level', 'education-level-map', 'ui'];
 
   private background: Sprite;

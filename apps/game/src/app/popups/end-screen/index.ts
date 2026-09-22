@@ -113,6 +113,7 @@ function goToNextLevel(nextLevel: NonNullable<ReturnType<typeof getNextLevelAfte
 }
 
 export class EndScreenPopup extends Container {
+  public readonly screenName = 'EndScreenPopup';
   // 'layer-select' is here for the passport button's texture
   public static assetBundles = [
     'end-screen',

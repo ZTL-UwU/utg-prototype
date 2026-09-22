@@ -70,6 +70,7 @@ function getRound(
 }
 
 export class EducationWordScreen extends Container {
+  public readonly screenName = 'EducationWordScreen';
   public static assetBundles = [
     'education-level',
     'ui',

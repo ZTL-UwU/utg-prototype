@@ -16,6 +16,7 @@ import { ScriptButton } from './script-button';
 const TITLE_ENTER_OFFSET = 60;
 /** The screen that holds the app */
 export class HomeScreen extends Container {
+  public readonly screenName = 'HomeScreen';
   /** Assets bundles required by this screen */
   public static assetBundles = ['home'];
 

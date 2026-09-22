@@ -40,6 +40,7 @@ export type { SentenceRound };
 export { generateSentenceRounds };
 
 export class TypingSpringScreen extends Container {
+  public readonly screenName = 'TypingSpringScreen';
   public static assetBundles = ['typing-level-spring', REMOTE_SENTENCES_BUNDLE];
   public static splashBackgroundAsset = 'typing-levels/typing-level-spring/background.png';
   public static helpAssets: string[] = [];

@@ -38,6 +38,7 @@ function playableWords(wordIds: number[]): string[] {
 }
 
 export class GameWordSearchScreen extends Container {
+  public readonly screenName = 'GameWordSearchScreen';
   public static assetBundles = ['ui', REMOTE_WORDS_BUNDLE];
   public static splashBackgroundAsset = 'game-levels/game-level-map/background.png';
   public static helpAssets: string[] = [];

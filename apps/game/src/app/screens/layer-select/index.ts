@@ -17,6 +17,7 @@ import { getLayerMaps, type TLayer } from '../level-map/units';
 import { EducationLevelSelect } from '../level-select/education-level-select';
 
 export class LayerSelectScreen extends Container {
+  public readonly screenName = 'LayerSelectScreen';
   public static assetBundles = ['layer-select', 'home', 'avatar-select'];
 
   private innerContainer: Container;

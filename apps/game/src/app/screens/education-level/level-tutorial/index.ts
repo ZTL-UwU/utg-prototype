@@ -32,6 +32,7 @@ function drawStopButton(size: number, state: 'default' | 'hover') {
 }
 
 export class EducationTutorialScreen extends Container {
+  public readonly screenName: string = 'EducationTutorialScreen';
   public static assetBundles = [
     'education-level',
     'ui',
@@ -252,6 +253,7 @@ export class EducationTutorialScreen extends Container {
 }
 
 export class EducationTutorialPopup extends EducationTutorialScreen {
+  public readonly screenName = 'EducationTutorialPopup';
   constructor(mapUnit: TMapUnit) {
     super({ mapUnit, presentation: 'popup' });
   }

@@ -31,6 +31,7 @@ function getDefaultColorScheme(layer: TLayer): SplashColorScheme {
 }
 
 export class LevelSplashScreen extends Container {
+  public readonly screenName = 'LevelSplashScreen';
   public static assetBundles = ['level-splash', REMOTE_MASCOTS_BUNDLE, 'ui'];
 
   public static async prepareAssets(props?: unknown) {

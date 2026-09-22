@@ -19,6 +19,7 @@ const SUBTITLE_TOP = 300;
 const OFF_SCREEN_MARGIN = 40;
 
 export class LevelMapScreen extends Container {
+  public readonly screenName = 'LevelMapScreen';
   public static assetBundles = ['typing-level-map', 'education-level-map', 'game-level-map', 'ui'];
 
   private background: Sprite;

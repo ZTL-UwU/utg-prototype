@@ -15,6 +15,7 @@ const TITLE_LAYOUT_TOP = 30;
 const TITLE_OFFSCREEN = 200;
 
 export class TypingLevelScreen extends Container {
+  public readonly screenName = 'TypingLevelScreen';
   public static assetBundles = ['typing-level', 'typing-level-desert', 'ui'];
   public static splashBackgroundAsset = 'typing-levels/typing-level/background-taklamakan.png';
   public static helpAssets = ['tutorial-popups/typing-tutorial.png'];

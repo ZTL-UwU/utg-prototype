@@ -169,6 +169,7 @@ class Toggle extends Container {
 }
 
 export class TypingTestSettingsPopup extends Container {
+  public readonly screenName = 'TypingTestSettingsPopup';
   private readonly popupMask: Sprite;
   private readonly panel: Container;
   private readonly settings: TypingTestSettings;

@@ -7,6 +7,7 @@ import type { TMapUnit } from '../../level-map/units';
 import { EducationTutorialScreen } from '../level-tutorial';
 
 export class EducationYoutubeScreen extends Container {
+  public readonly screenName = 'EducationYoutubeScreen';
   public static assetBundles = ['education-level', 'ui'];
 
   private background: Sprite;

@@ -14,6 +14,7 @@ const textDropShadow: Partial<TextDropShadow> = {
 
 /** Shown when the course catalog fails to load from the backend. */
 export class CourseLoadErrorScreen extends Container {
+  public readonly screenName = 'CourseLoadErrorScreen';
   public static assetBundles = ['home'];
 
   private background: Sprite;

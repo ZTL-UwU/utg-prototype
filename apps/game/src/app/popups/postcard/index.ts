@@ -27,6 +27,7 @@ export function hasPostcard(slug: string): boolean {
 }
 
 export class PostcardPopup extends Container {
+  public readonly screenName = 'PostcardPopup';
   public static assetBundles = ['postcards'];
 
   private dimOverlay: Sprite;

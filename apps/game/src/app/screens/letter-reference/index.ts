@@ -29,6 +29,7 @@ function getLetterSoundAlias(letter: string) {
 
 export type LETTER_FORMS = 'initial' | 'medial' | 'final' | 'isolated';
 export class LetterReferenceScreen extends Container {
+  public readonly screenName = 'LetterReferenceScreen';
   public static assetBundles = [
     'letter-reference',
     'ui',

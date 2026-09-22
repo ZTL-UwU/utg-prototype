@@ -40,6 +40,7 @@ export type { SentenceRound };
 export { generateSentenceRounds };
 
 export class TypingSentenceScreen extends Container {
+  public readonly screenName = 'TypingSentenceScreen';
   public static assetBundles = ['typing-level-story', REMOTE_SENTENCES_BUNDLE];
   public static splashBackgroundAsset = 'typing-levels/typing-level-story/background.png';
   public static helpAssets = [

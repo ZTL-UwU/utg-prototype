@@ -7,6 +7,7 @@ import { useOverlayStore } from '../../../zustandStores/overlayStore';
  * navigates to {@link HomeScreen}, which is what tears this screen down.
  */
 export class AuthScreen extends Container {
+  public readonly screenName = 'AuthScreen';
   /** Assets bundles required by this screen */
   public static assetBundles = ['home'];
 

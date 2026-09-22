@@ -109,6 +109,7 @@ function getClosestRotation(currentRotation: number, targetRotation: number) {
 }
 
 export class EducationSheepJumpScreen extends Container {
+  public readonly screenName = 'EducationSheepJumpScreen';
   public static assetBundles = [
     'education-level-sheep-jump',
     'mascots',

@@ -39,6 +39,7 @@ export type { SentenceRound };
 export { generateSentenceRounds };
 
 export class TypingGoatsScreen extends Container {
+  public readonly screenName = 'TypingGoatsScreen';
   public static assetBundles = ['typing-level-goat', REMOTE_SENTENCES_BUNDLE];
   public static helpAssets = [
     'tutorial-popups/typing-level-goat-1.png',

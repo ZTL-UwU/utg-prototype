@@ -13,6 +13,7 @@ function formatScoreContent(correctCount: number, mistakeCount: number) {
 const POPUP_MASK_OPACITY = 0.7;
 
 export class HelpPopup extends Container {
+  public readonly screenName = 'HelpPopup';
   private popupMask: Graphics;
   private dialog: Dialog;
   private scoreContent: Text;

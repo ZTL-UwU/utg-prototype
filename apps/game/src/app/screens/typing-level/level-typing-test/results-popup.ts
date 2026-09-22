@@ -94,6 +94,7 @@ function createProblemKeyChip(code: string) {
 }
 
 export class TypingTestResultsPopup extends Container {
+  public readonly screenName = 'TypingTestResultsPopup';
   public static assetBundles = ['ui'];
 
   private readonly innerContainer: Container;

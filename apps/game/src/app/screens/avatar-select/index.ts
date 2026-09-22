@@ -15,6 +15,7 @@ type AvatarSelectMode = {
 };
 
 export class AvatarSelectScreen extends Container {
+  public readonly screenName = 'AvatarSelectScreen';
   public static assetBundles = ['avatar-select', 'home'];
 
   private background: Sprite;

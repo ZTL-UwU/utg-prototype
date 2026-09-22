@@ -43,6 +43,7 @@ function playableWords(wordIds: number[]): WordSimple[] {
 }
 
 export class EducationImageScreen extends Container {
+  public readonly screenName = 'EducationImageScreen';
   public static assetBundles = [
     'education-level',
     'ui',

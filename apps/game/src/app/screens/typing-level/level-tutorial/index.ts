@@ -11,6 +11,7 @@ import { LetterPopup } from './letter-popup';
 type TutorialPresentation = 'popup' | 'screen';
 
 export class TypingTutorialScreen extends Container {
+  public readonly screenName: string = 'TypingTutorialScreen';
   public static assetBundles = ['typing-level', 'ui'];
 
   private background?: Sprite;
@@ -90,6 +91,7 @@ export class TypingTutorialScreen extends Container {
 }
 
 export class TypingTutorialPopup extends TypingTutorialScreen {
+  public readonly screenName = 'TypingTutorialPopup';
   constructor(mapUnit: TMapUnit) {
     super(mapUnit, 'popup');
   }

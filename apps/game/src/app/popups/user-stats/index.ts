@@ -76,6 +76,7 @@ function createStatRow(label: string, valueText: Text) {
 }
 
 export class UserStatsPopup extends Container {
+  public readonly screenName = 'UserStatsPopup';
   public static assetBundles = ['stats-popup', 'layer-select', 'avatar-select', 'ui'];
 
   private panel: Container;

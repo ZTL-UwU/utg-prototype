@@ -10,6 +10,7 @@ import { LetterGrid } from './letter-grid';
 import { MessageContainer } from './message-container';
 
 export class EducationLevelScreen extends Container {
+  public readonly screenName = 'EducationLevelScreen';
   public static assetBundles = ['education-level', 'ui', 'education-letters-audio'];
   public static splashBackgroundAsset = 'education-levels/education-level/background.png';
   public static helpAssets = ['tutorial-popups/education-level-letter-grid.png'];

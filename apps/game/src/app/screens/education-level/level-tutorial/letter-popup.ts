@@ -30,6 +30,7 @@ function getAdjacentLetter(letter: string, delta: number): string {
 }
 
 export class LetterPopup extends Container {
+  public readonly screenName = 'LetterPopup';
   public static assetBundles = [
     'education-tutorial',
     'education-letter-variants',

@@ -52,6 +52,7 @@ function createRound(correctLetter: string, pool: string[]): Round {
 }
 
 export class EducationWhackAMoleScreen extends Container {
+  public readonly screenName = 'EducationWhackAMoleScreen';
   public static assetBundles = [
     'education-level-whack-a-mole',
     'mascots',

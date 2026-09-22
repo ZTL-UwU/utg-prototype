@@ -103,7 +103,7 @@ export function captureGameScreenshot(): HTMLCanvasElement {
 export function currentGameScreenLabel(): string {
   try {
     const nav = engine().navigation;
-    return [nav.currentScreen?.constructor.name, nav.currentPopup?.constructor.name]
+    return [nav.currentScreen?.screenName, nav.currentPopup?.screenName]
       .filter(Boolean)
       .join(' / ');
   } catch {

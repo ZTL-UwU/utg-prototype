@@ -22,6 +22,7 @@ function resolveAssets(assets: string[], isFullscreen: boolean, onNext?: () => v
 }
 
 export class TutorialPopup extends Container {
+  public readonly screenName = 'TutorialPopup';
   public static assetBundles = ['tutorial-popups'];
   private background: Sprite;
   private exitButton: FancyButton;

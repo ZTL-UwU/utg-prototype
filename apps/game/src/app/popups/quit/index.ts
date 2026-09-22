@@ -14,6 +14,7 @@ export type QuitPopupProps = {
 };
 
 export class QuitPopup extends Container {
+  public readonly screenName = 'QuitPopup';
   public static assetBundles = ['quit', REMOTE_MASCOTS_BUNDLE, 'mascots'];
 
   private popupMask: Sprite;

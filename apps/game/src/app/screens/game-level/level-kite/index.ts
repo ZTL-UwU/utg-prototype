@@ -32,6 +32,7 @@ type Round = {
   wordId: number;
 };
 export class GameLevelKite extends Container {
+  public readonly screenName = 'GameLevelKite';
   public static assetBundles = ['game-level-kite', 'ui', REMOTE_WORDS_BUNDLE];
   public static splashBackgroundAsset = 'game-levels/game-level-kite/splash.png';
   public static helpAssets: string[] = [];
