@@ -178,7 +178,6 @@ class Feedback(models.Model):
     request_type = models.CharField(max_length=32, choices=FeedbackRequestType.choices)
     title = models.CharField(max_length=255, blank=True)
     description = models.TextField()
-    image = models.ImageField(upload_to=feedback_image_upload_to)
     screen = models.CharField(max_length=255, blank=True)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -197,3 +196,26 @@ class Feedback(models.Model):
     def __str__(self) -> str:
         label = self.title.strip() or self.get_request_type_display()
         return f"{label} ({self.pk})"
+
+
+class FeedbackImageKind(models.TextChoices):
+    SCREENSHOT = "screenshot", "Screenshot"
+    UPLOAD = "upload", "Upload"
+
+
+class FeedbackImage(models.Model):
+    feedback = models.ForeignKey(Feedback, on_delete=models.CASCADE, related_name="images")
+    image = models.ImageField(upload_to=feedback_image_upload_to)
+    kind = models.CharField(
+        max_length=16,
+        choices=FeedbackImageKind.choices,
+        default=FeedbackImageKind.UPLOAD,
+    )
+    sort_order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        db_table = "feedback_images"
+        ordering = ["sort_order", "id"]
+
+    def __str__(self) -> str:
+        return f"{self.get_kind_display()} for feedback {self.feedback_id}"

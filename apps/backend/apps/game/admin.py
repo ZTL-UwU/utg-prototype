@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps.game.models import Feedback, Level, Mascot, Sentence, Story, Unit, Word
+from apps.game.models import Feedback, FeedbackImage, Level, Mascot, Sentence, Story, Unit, Word
 
 
 @admin.register(Unit)
@@ -65,6 +65,12 @@ class SentenceAdmin(admin.ModelAdmin):
     ordering = ("story", "sort_order", "id")
 
 
+class FeedbackImageInline(admin.TabularInline):
+    model = FeedbackImage
+    extra = 0
+    fields = ("image", "kind", "sort_order")
+
+
 @admin.register(Feedback)
 class FeedbackAdmin(admin.ModelAdmin):
     list_display = ("id", "request_type", "title", "user", "is_resolved", "created_at")
@@ -73,3 +79,4 @@ class FeedbackAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at",)
     autocomplete_fields = ("user",)
     ordering = ("-created_at", "-id")
+    inlines = [FeedbackImageInline]

@@ -8,6 +8,8 @@ from apps.common.auth import jwt_auth
 from apps.common.permissions import require_perm
 from apps.game.models import (
     Feedback,
+    FeedbackImage,
+    FeedbackImageKind,
     Layer,
     Level,
     LevelType,
@@ -869,11 +871,37 @@ def delete_story(request, story_id: int):
 
 
 MAX_FEEDBACK_IMAGE_BYTES = 8 * 1024 * 1024
+MAX_FEEDBACK_UPLOADS = 3
 MAX_FEEDBACK_DESCRIPTION_LENGTH = 10_000
 ALLOWED_FEEDBACK_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
 
-def _create_feedback(data: FeedbackIn, image: UploadedFile, user):
+def _feedback_queryset():
+    return Feedback.objects.select_related("user").prefetch_related("images")
+
+
+def _feedback_files(files: list[UploadedFile] | UploadedFile | None) -> list[UploadedFile]:
+    if not files:
+        return []
+    if isinstance(files, list):
+        return files
+    return [files]
+
+
+def _reject_feedback_image(image: UploadedFile) -> Status | None:
+    if image.size and image.size > MAX_FEEDBACK_IMAGE_BYTES:
+        return Status(400, {"detail": "Image is too large."})
+    if image.content_type and image.content_type not in ALLOWED_FEEDBACK_IMAGE_TYPES:
+        return Status(400, {"detail": "Image must be JPEG, PNG, or WebP."})
+    return None
+
+
+def _create_feedback(
+    data: FeedbackIn,
+    screenshot: UploadedFile | None,
+    images: list[UploadedFile] | UploadedFile | None,
+    user,
+):
     description = (data.description or "").strip()
     if not description:
         return Status(400, {"detail": "Description is required."})
@@ -881,33 +909,62 @@ def _create_feedback(data: FeedbackIn, image: UploadedFile, user):
         return Status(400, {"detail": "Description is too long."})
 
     title = (data.title or "").strip()
+    if not title:
+        return Status(400, {"detail": "Title is required."})
     if len(title) > 255:
         return Status(400, {"detail": "Title is too long."})
 
-    if image.size and image.size > MAX_FEEDBACK_IMAGE_BYTES:
-        return Status(400, {"detail": "Image is too large."})
-    if image.content_type and image.content_type not in ALLOWED_FEEDBACK_IMAGE_TYPES:
-        return Status(400, {"detail": "Image must be JPEG, PNG, or WebP."})
+    uploads = _feedback_files(images)
+    if len(uploads) > MAX_FEEDBACK_UPLOADS:
+        return Status(400, {"detail": "You can attach up to 3 images."})
 
-    feedback = Feedback.objects.create(
-        request_type=data.request_type,
-        title=title,
-        description=description,
-        image=image,
-        screen=(data.screen or "").strip()[:255],
-        user=user,
-    )
-    return Status(201, feedback)
+    for image in ([screenshot] if screenshot else []) + uploads:
+        rejected = _reject_feedback_image(image)
+        if rejected:
+            return rejected
+
+    with transaction.atomic():
+        feedback = Feedback.objects.create(
+            request_type=data.request_type,
+            title=title,
+            description=description,
+            screen=(data.screen or "").strip()[:255],
+            user=user,
+        )
+        order = 0
+        if screenshot:
+            FeedbackImage.objects.create(
+                feedback=feedback,
+                image=screenshot,
+                kind=FeedbackImageKind.SCREENSHOT,
+                sort_order=order,
+            )
+            order += 1
+        for upload in uploads:
+            FeedbackImage.objects.create(
+                feedback=feedback,
+                image=upload,
+                kind=FeedbackImageKind.UPLOAD,
+                sort_order=order,
+            )
+            order += 1
+
+    return Status(201, _feedback_queryset().get(pk=feedback.pk))
 
 
 @router.post(
     "/feedback",
     response={201: FeedbackOut, 400: ErrorOut},
-    summary="[Public] Submit anonymous in-game feedback with an annotated screenshot",
+    summary="[Public] Submit anonymous in-game feedback with optional images",
     throttle=AnonRateThrottle("10/h"),
 )
-def create_feedback(request, data: Form[FeedbackIn], image: File[UploadedFile]):
-    return _create_feedback(data, image, user=None)
+def create_feedback(
+    request,
+    data: Form[FeedbackIn],
+    screenshot: File[UploadedFile] = None,
+    images: File[list[UploadedFile]] = None,
+):
+    return _create_feedback(data, screenshot, images, user=None)
 
 
 @router.post(
@@ -917,8 +974,13 @@ def create_feedback(request, data: Form[FeedbackIn], image: File[UploadedFile]):
     summary="[Public] Submit in-game feedback for the signed-in player",
     throttle=AuthRateThrottle("50/h"),
 )
-def create_user_feedback(request, data: Form[FeedbackIn], image: File[UploadedFile]):
-    return _create_feedback(data, image, user=request.auth)
+def create_user_feedback(
+    request,
+    data: Form[FeedbackIn],
+    screenshot: File[UploadedFile] = None,
+    images: File[list[UploadedFile]] = None,
+):
+    return _create_feedback(data, screenshot, images, user=request.auth)
 
 
 @router.get(
@@ -929,7 +991,7 @@ def create_user_feedback(request, data: Form[FeedbackIn], image: File[UploadedFi
 )
 @require_perm("game.view_feedback", message="You do not have permission to view feedback")
 def list_feedback(request):
-    return Feedback.objects.select_related("user").all()
+    return _feedback_queryset().all()
 
 
 @router.patch(
@@ -941,7 +1003,7 @@ def list_feedback(request):
 @require_perm("game.change_feedback", message="You do not have permission to update feedback")
 def update_feedback(request, feedback_id: int, payload: FeedbackResolveIn):
     try:
-        feedback = Feedback.objects.select_related("user").get(id=feedback_id)
+        feedback = _feedback_queryset().get(id=feedback_id)
     except Feedback.DoesNotExist:
         return Status(404, {"detail": "Feedback not found."})
     feedback.is_resolved = payload.is_resolved

@@ -361,7 +361,7 @@ FeedbackRequestTypeLiteral = Literal["issue", "new_feature", "content", "other"]
 
 class FeedbackIn(Schema):
     request_type: FeedbackRequestTypeLiteral
-    title: str = ""
+    title: str
     description: str
     screen: str = ""
 
@@ -376,20 +376,32 @@ class FeedbackResolveIn(Schema):
     is_resolved: bool
 
 
+FeedbackImageKindLiteral = Literal["screenshot", "upload"]
+
+
+class FeedbackImageOut(Schema):
+    id: int
+    kind: FeedbackImageKindLiteral
+    image: ImageOut
+
+
 class FeedbackOut(Schema):
     id: int
     request_type: FeedbackRequestTypeLiteral
     title: str
     description: str
-    image: ImageOut
+    images: list[FeedbackImageOut]
     screen: str
     user: FeedbackUserOut | None
     created_at: datetime
     is_resolved: bool
 
     @staticmethod
-    def resolve_image(obj) -> ImageOut:
-        return _image_out(obj.image)
+    def resolve_images(obj) -> list[FeedbackImageOut]:
+        return [
+            FeedbackImageOut(id=item.id, kind=item.kind, image=_image_out(item.image))
+            for item in obj.images.all()
+        ]
 
     @staticmethod
     def resolve_user(obj) -> FeedbackUserOut | None:
