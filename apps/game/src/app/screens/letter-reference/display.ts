@@ -1,5 +1,5 @@
 import { FancyButton } from '@pixi/ui';
-import { Container, Graphics, GraphicsContext, Sprite, Text, Texture } from 'pixi.js';
+import { Container, Graphics, GraphicsContext, GraphicsPath, Sprite, Text, Texture } from 'pixi.js';
 
 import type { LETTER_FORMS } from '.';
 import { DrawingCanvas, type StrokePoint } from '../../ui/drawing-canvas';
@@ -9,9 +9,9 @@ import {
   calculateGlyphStrokeAccuracy,
   sampleGlyphInterior,
 } from './calculate-accuracy';
-import { createGlyphMaskContext } from './glyph-mask';
-import outlinesJson from './letters.json';
-import { StrokeTracer } from './stroke-tracer';
+import { createGlyphMaskContext, type GlyphPart } from './glyph-mask';
+import lettersJson from './letters.json';
+import { StrokeTracer, type TraceStroke } from './stroke-tracer';
 
 const HAMZA = 'ئ';
 export const FRAME_COLOR = 0x844f01;
@@ -51,6 +51,9 @@ const COVERAGE_SAMPLE_STEP = 0.25;
  * Wider than the ink so one pass down the middle of a body (about 2.4 units thick) covers it.
  */
 const COVERAGE_RADIUS = 2;
+/** Line width of the letter's outline, in outline units. */
+const OUTLINE_WIDTH = 0.8;
+const OUTLINE_COLOR = 0x000000;
 
 const FORM_LABELS: Record<LETTER_FORMS, string> = {
   isolated: 'Isolated',
@@ -59,10 +62,14 @@ const FORM_LABELS: Record<LETTER_FORMS, string> = {
   final: 'Final',
 };
 
-// only the base forms are looked up; the `_2` variant keys are ignored.
-// `strokePath` is `pathString` fitted onto the outline by scripts/fit-letter-paths.mjs
-type OutlineEntry = { svgString: string; pathString?: string; strokePath?: string };
-const outlines = outlinesJson as Record<string, Partial<Record<string, OutlineEntry>>>;
+// each form's outline, split into parts, and the strokes it's written in, each clipped to the
+// part at index `part`. baked from Noto Naskh Arabic by scripts/stroke-order/build.py
+type LetterEntry = {
+  parts: GlyphPart[];
+  /** `label` is an [x, y] pair, but JSON imports only type it as an array. */
+  strokes: { d: string; width: number; part: number; label?: number[] }[];
+};
+const letters = lettersJson as Record<string, Partial<Record<string, LetterEntry>>>;
 
 // TODO: write the results message; the scores are percentages from 0 to 100
 function getResultsMessage(accuracy: number, coverage: number): string {
@@ -77,11 +84,7 @@ function getBaseForm(letter: string) {
 }
 
 function hasForm(base: string, form: LETTER_FORMS) {
-  return Boolean(outlines[base]?.[form]);
-}
-
-function getStrokePath(base: string, form: LETTER_FORMS) {
-  return outlines[base]?.[form]?.strokePath;
+  return Boolean(letters[base]?.[form]);
 }
 
 function createButtonView(color: number, shadowColor: number) {
@@ -135,12 +138,13 @@ export class OutlineDisplay extends Container {
   private glyph: Container;
   private outline: Graphics;
   private tracer: StrokeTracer;
-  /** Filled glyph interior that keeps the thick trace brush inside the outline. */
+  /** Filled glyph interior, for scoring; never drawn itself. */
   private glyphMask: Graphics;
   private maskCache = new Map<string, GraphicsContext>();
   private sampleCache = new Map<string, StrokePoint[]>();
+  private strokeCache = new Map<string, TraceStroke[]>();
   private traceButton: FancyButton;
-  /** Freehand practice layer under the glyph, left unclipped so strokes off the letter show. */
+  /** Freehand practice layer over the glyph, left unclipped so strokes off the letter show. */
   private drawingCanvas: DrawingCanvas;
   private clearButton: FancyButton;
   private submitButton: FancyButton;
@@ -174,8 +178,8 @@ export class OutlineDisplay extends Container {
     this.contextCache = new Map();
     this.outline = new Graphics();
     this.tracer = new StrokeTracer();
-    this.glyphMask = new Graphics();
-    this.tracer.mask = this.glyphMask;
+    // kept in the glyph only so drawn points can be mapped into its coordinates
+    this.glyphMask = new Graphics({ renderable: false });
     // tracer underneath so the outline stays crisp on top of it
     this.glyph = new Container({ children: [this.glyphMask, this.tracer, this.outline] });
     this.border = new Graphics();
@@ -228,11 +232,11 @@ export class OutlineDisplay extends Container {
       height: ROW_HEIGHT,
       isLeaf: true,
     };
-    // canvas under the glyph so the outline and demo trace draw over the user's ink
+    // canvas over the glyph so the user's ink stays on top of the outline and demo trace
     this.frame.addChild(
       this.border,
-      this.drawingCanvas,
       this.glyph,
+      this.drawingCanvas,
       this.counter,
       this.soundButton,
       this.traceButton,
@@ -325,7 +329,7 @@ export class OutlineDisplay extends Container {
     this.outline.context = this.getCachedContext(base, form);
     this.glyphMask.context = this.getCachedMaskContext(base, form);
     // also stops and clears any trace in progress
-    this.tracer.setPath(getStrokePath(base, form));
+    this.tracer.setStrokes(this.getCachedStrokes(base, form));
 
     // recentre pivot on this letter's actual geometry
     const b = this.outline.getLocalBounds();
@@ -404,7 +408,10 @@ export class OutlineDisplay extends Container {
     const key = `${letter}/${form}`;
     let context = this.contextCache.get(key);
     if (!context) {
-      context = new GraphicsContext().svg(outlines[letter]![form]!.svgString);
+      const outline = letters[letter]![form]!.parts.flatMap(({ d, holes = [] }) => [d, ...holes]);
+      context = new GraphicsContext()
+        .path(new GraphicsPath(outline.join('')))
+        .stroke({ width: OUTLINE_WIDTH, color: OUTLINE_COLOR, cap: 'round', join: 'round' });
       this.contextCache.set(key, context);
     }
     return context;
@@ -414,14 +421,32 @@ export class OutlineDisplay extends Container {
     const key = `${letter}/${form}`;
     let context = this.maskCache.get(key);
     if (!context) {
-      const svg = outlines[letter]![form]!.svgString;
-      context = createGlyphMaskContext([...svg.matchAll(/ d="([^"]+)"/g)].map((m) => m[1]));
+      context = createGlyphMaskContext(letters[letter]![form]!.parts);
       this.maskCache.set(key, context);
     }
     return context;
   }
+
+  // each stroke is clipped to its own part of the glyph, so a thick pen can't spill onto the next
+  private getCachedStrokes(letter: string, form: LETTER_FORMS) {
+    const key = `${letter}/${form}`;
+    let strokes = this.strokeCache.get(key);
+    if (!strokes) {
+      const { parts, strokes: entries } = letters[letter]![form]!;
+      const clips = parts.map((part) => createGlyphMaskContext([part]));
+      strokes = entries.map(({ d, width, part, label }) => ({
+        d,
+        width,
+        clip: clips[part],
+        label: label && [label[0], label[1]],
+      }));
+      this.strokeCache.set(key, strokes);
+    }
+    return strokes;
+  }
+
   private readonly handleSubmit = () => {
-    // drawn points are in canvas pixels; the mask is in the glyph's artboard units
+    // drawn points are in canvas pixels; the mask is in the glyph's outline units
     const glyphStrokes: StrokePoint[][] = this.drawingCanvas
       .getStrokes()
       .map((stroke) =>
