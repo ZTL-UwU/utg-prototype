@@ -37,6 +37,7 @@ import {
   type FeedbackReport,
   feedbackAuthor,
   feedbackHeadline,
+  feedbackImageCaption,
   feedbackListQueryOptions,
   formatFeedbackDate,
 } from '~/lib/feedback';
@@ -81,7 +82,7 @@ export default function FeedbackPage() {
         <div className="flex max-w-2xl flex-col gap-2">
           <h1 className="text-3xl font-semibold tracking-tight">Feedback</h1>
           <p className="text-muted-foreground">
-            Reports sent from the game. Open a report to see the screenshot and notes.
+            Reports sent from the game. Open a report to see attached images and notes.
           </p>
         </div>
       </header>
@@ -134,33 +135,48 @@ export default function FeedbackPage() {
               </DialogTitle>
             </DialogHeader>
             <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto py-1">
-              <figure className="flex flex-col gap-2">
-                <figcaption className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium">Screenshot</span>
-                  <a
-                    href={mediaUrl(selected.image.url)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-                  >
-                    Open full size
-                    <ExternalLink className="size-3" aria-hidden />
-                  </a>
-                </figcaption>
-                <a
-                  href={mediaUrl(selected.image.url)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="group block overflow-hidden rounded-lg border bg-muted"
-                >
-                  <img
-                    src={mediaUrl(selected.image.url)}
-                    alt={`Annotated screenshot for ${feedbackHeadline(selected)}`}
-                    loading="lazy"
-                    className="max-h-[38vh] w-full object-contain transition group-hover:opacity-95"
-                  />
-                </a>
-              </figure>
+              {selected.images.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">No images attached.</p>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  {selected.images.map((item) => {
+                    const uploadIndex =
+                      selected.images
+                        .filter((image) => image.kind === 'upload')
+                        .findIndex((image) => image.id === item.id) + 1;
+                    const caption = feedbackImageCaption(item, uploadIndex);
+                    return (
+                      <figure key={item.id} className="flex flex-col gap-2">
+                        <figcaption className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium">{caption}</span>
+                          <a
+                            href={mediaUrl(item.image.url)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                          >
+                            Open full size
+                            <ExternalLink className="size-3" aria-hidden />
+                          </a>
+                        </figcaption>
+                        <a
+                          href={mediaUrl(item.image.url)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="group block overflow-hidden rounded-lg border bg-muted"
+                        >
+                          <img
+                            src={mediaUrl(item.image.url)}
+                            alt={`${caption} for ${feedbackHeadline(selected)}`}
+                            loading="lazy"
+                            className="max-h-[38vh] w-full object-contain transition group-hover:opacity-95"
+                          />
+                        </a>
+                      </figure>
+                    );
+                  })}
+                </div>
+              )}
               <div className="flex flex-col gap-1.5">
                 <p className="text-sm font-medium">Description</p>
                 {selected.description.trim() ? (

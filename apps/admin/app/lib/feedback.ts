@@ -20,16 +20,30 @@ export interface FeedbackUser {
 }
 
 /** Mirrors FeedbackOut from the backend apps/game/schemas.py. */
+export const FEEDBACK_IMAGE_KINDS = ['screenshot', 'upload'] as const;
+export type FeedbackImageKind = (typeof FEEDBACK_IMAGE_KINDS)[number];
+
+export interface FeedbackImage {
+  id: number;
+  kind: FeedbackImageKind;
+  image: MediaImage;
+}
+
 export interface FeedbackReport {
   id: number;
   request_type: FeedbackRequestType;
   title: string;
   description: string;
-  image: MediaImage;
+  images: FeedbackImage[];
   screen: string;
   user: FeedbackUser | null;
   created_at: string;
   is_resolved: boolean;
+}
+
+export function feedbackImageCaption(image: FeedbackImage, uploadIndex: number): string {
+  if (image.kind === 'screenshot') return 'Screenshot';
+  return `Image ${uploadIndex}`;
 }
 
 export function feedbackAuthor(feedback: FeedbackReport): string {

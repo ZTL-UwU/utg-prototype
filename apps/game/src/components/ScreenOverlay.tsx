@@ -15,6 +15,7 @@ import { useAuthStore, type AuthUser } from '../zustandStores/auth';
 import { useFeedbackStore } from '../zustandStores/feedbackStore';
 import { useOverlayStore } from '../zustandStores/overlayStore';
 import { AuthParent, type SignUpData } from './auth';
+import { FeedbackButton } from './feedback/FeedbackButton';
 import { FeedbackOverlay, openFeedback } from './feedback/FeedbackOverlay';
 import { MenuParent } from './menu/MenuParent';
 import { YoutubeEmbedOverlay } from './YoutubeEmbedOverlay';
@@ -212,6 +213,7 @@ export function ScreenOverlay() {
   return (
     <>
       {overlay}
+      {feedbackOpen ? null : <FeedbackButton />}
       {feedbackOpen && screenshot ? <FeedbackOverlay screenshot={screenshot} /> : null}
     </>
   );

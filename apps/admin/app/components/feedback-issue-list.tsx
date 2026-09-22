@@ -242,11 +242,17 @@ export function FeedbackIssueList({
                       ) : null}
                     </span>
                   </span>
-                  <img
-                    src={mediaUrl(report.image.url)}
-                    alt=""
-                    className="h-17 w-20 shrink-0 rounded-md object-cover ring-1 ring-foreground/10"
-                  />
+                  {report.images[0] ? (
+                    <img
+                      src={mediaUrl(report.images[0].image.url)}
+                      alt=""
+                      className="h-17 w-20 shrink-0 rounded-md object-cover ring-1 ring-foreground/10"
+                    />
+                  ) : (
+                    <span className="flex h-17 w-20 shrink-0 items-center justify-center rounded-md bg-muted text-center text-[10px] leading-tight text-muted-foreground ring-1 ring-foreground/10">
+                      No image
+                    </span>
+                  )}
                 </button>
               </li>
             ))}

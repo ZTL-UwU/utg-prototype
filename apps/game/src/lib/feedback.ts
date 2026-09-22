@@ -25,6 +25,29 @@ export function feedbackHotkeyLabel(): string {
   return isMac ? '⌘⇧F' : 'Ctrl+Shift+F';
 }
 
+export const MAX_FEEDBACK_UPLOADS = 3;
+export const MAX_FEEDBACK_IMAGE_BYTES = 8 * 1024 * 1024;
+const FEEDBACK_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+export function feedbackImageType(file: File): string {
+  if (file.type) return file.type;
+  const extension = file.name.split('.').pop()?.toLowerCase();
+  if (extension === 'jpg' || extension === 'jpeg') return 'image/jpeg';
+  if (extension === 'png') return 'image/png';
+  if (extension === 'webp') return 'image/webp';
+  return '';
+}
+
+export function feedbackImageError(file: File): string | null {
+  if (!FEEDBACK_IMAGE_TYPES.has(feedbackImageType(file))) {
+    return 'Images must be JPEG, PNG, or WebP.';
+  }
+  if (file.size > MAX_FEEDBACK_IMAGE_BYTES) {
+    return 'Each image must be 8 MB or smaller.';
+  }
+  return null;
+}
+
 export function feedbackErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof FetchError && typeof error.data?.detail === 'string') {
     return error.data.detail;
@@ -164,14 +187,20 @@ export function submitFeedback(input: {
   title: string;
   description: string;
   screen: string;
-  image: Blob;
+  screenshot: Blob | null;
+  images: File[];
 }) {
   const body = new FormData();
   body.append('request_type', input.requestType);
   body.append('title', input.title);
   body.append('description', input.description);
   body.append('screen', input.screen);
-  body.append('image', input.image, 'screenshot.jpg');
+  if (input.screenshot) {
+    body.append('screenshot', input.screenshot, 'screenshot.jpg');
+  }
+  for (const image of input.images) {
+    body.append('images', image, image.name);
+  }
   // Signed-in players use the authenticated route so an expired access token
   // 401s and the shared client refreshes it. The public route always stores a guest.
   const path = useAuthStore.getState().accessToken ? '/user/feedback' : '/feedback';
