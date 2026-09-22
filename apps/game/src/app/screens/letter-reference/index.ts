@@ -4,38 +4,20 @@ import { EDUCATION_LETTERS } from '@utg/letters';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import {
-  getTutorialWordForLetter,
-  getWordEducationAudioAlias,
-  REMOTE_WORDS_BUNDLE,
-} from '../../../zustandStores/wordStore';
 import { HUD } from '../../ui/hud';
 import { HomeScreen } from '../home';
 import { OutlineDisplay } from './display';
 const BACKGROUND_COLOR = 0xf3e3c6;
 
-// same clip as the education tutorial's letter popup: the tutorial word's education audio,
-// falling back to the plain letter recording
+// the bundled recording of the letter itself
 function getLetterSoundAlias(letter: string) {
-  const tutorialWord = getTutorialWordForLetter(letter);
-  if (tutorialWord?.education_audio_url) {
-    const remoteAlias = getWordEducationAudioAlias(tutorialWord.id);
-    // `sound.exists` rather than `Assets.resolver.hasKey`: the latter is true as soon as
-    // the bundle is registered, even if the file 404'd, which would skip this fallback.
-    if (sound.exists(remoteAlias)) return remoteAlias;
-  }
   return `education-levels/education-letters-audio/${letter}.m4a`;
 }
 
 export type LETTER_FORMS = 'initial' | 'medial' | 'final' | 'isolated';
 export class LetterReferenceScreen extends Container {
   public readonly screenName = 'LetterReferenceScreen';
-  public static assetBundles = [
-    'letter-reference',
-    'ui',
-    'education-letters-audio',
-    REMOTE_WORDS_BUNDLE,
-  ];
+  public static assetBundles = ['letter-reference', 'ui', 'education-letters-audio'];
   private background = new Sprite({
     texture: Texture.WHITE,
     tint: BACKGROUND_COLOR,
