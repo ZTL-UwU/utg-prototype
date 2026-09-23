@@ -154,7 +154,7 @@ export class WordSearchTile extends FancyButton {
     this.alpha = 0;
     this.scale.set(0.6);
     await Promise.all([
-      animate(this.alpha, 1, { duration: 0.3, ease: 'backOut', delay }),
+      animate(this as Container, { alpha: 1 }, { duration: 0.3, ease: 'backOut', delay }),
       animate(this.scale, { x: 1, y: 1 }, { duration: 0.3, ease: 'backOut', delay }),
     ]);
   }
