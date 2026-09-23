@@ -28,7 +28,7 @@ export function LoginForm({ onSubmit, onGuest, onTester, onForgot, onSignUpNav }
   };
 
   return (
-    <form className="flex flex-col gap-4" onSubmit={(event) => void handleSubmit(event)}>
+    <form className="flex flex-col gap-3" onSubmit={(event) => void handleSubmit(event)}>
       <Input
         name="email"
         type="email"
@@ -37,6 +37,7 @@ export function LoginForm({ onSubmit, onGuest, onTester, onForgot, onSignUpNav }
         placeholder="Email"
         value={email}
         onValueChange={setEmail}
+        className="py-4"
       />
 
       <Input
@@ -47,27 +48,30 @@ export function LoginForm({ onSubmit, onGuest, onTester, onForgot, onSignUpNav }
         placeholder="Password"
         value={password}
         onValueChange={setPassword}
+        className="py-4"
       />
 
       <Button variant="link" onClick={onForgot}>
         Forgot Password?
       </Button>
 
-      <Button type="submit" disabled={submitting}>
+      <Button type="submit" className="py-4" disabled={submitting}>
         {submitting ? 'Logging in…' : 'Log in'}
       </Button>
 
-      <Button variant="secondary" onClick={onGuest}>
-        Continue as guest
-      </Button>
+      <div className="mx-auto flex w-4/5 gap-3">
+        <Button variant="secondary" className="mx-0 w-auto flex-1 px-4 py-4" onClick={onGuest}>
+          Guest mode
+        </Button>
 
-      <Button variant="secondary" onClick={onTester}>
-        Tester mode
-      </Button>
+        <Button variant="secondary" className="mx-0 w-auto flex-1 px-4 py-4" onClick={onTester}>
+          Tester mode
+        </Button>
+      </div>
 
-      <p className="mt-2 text-center font-body text-base text-muted">New to the game?</p>
+      <p className="text-center font-body text-base text-muted">New to the game?</p>
 
-      <Button variant="secondary" onClick={onSignUpNav}>
+      <Button variant="secondary" className="py-4" onClick={onSignUpNav}>
         Sign up
       </Button>
     </form>
