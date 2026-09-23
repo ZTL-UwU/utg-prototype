@@ -4,6 +4,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.common.models import AuditingMixin, Layer
+from apps.common.storage import UniqueUploadTo, public_storage
 from apps.users.managers import UserManager
 
 
@@ -19,7 +20,7 @@ class RewardType(models.TextChoices):
 
 class RewardImage(AuditingMixin, models.Model):
     name = models.CharField(max_length=255)
-    image = models.ImageField(upload_to="rewards/")
+    image = models.ImageField(upload_to=UniqueUploadTo("rewards/"), storage=public_storage)
 
     class Meta:
         db_table = "reward_images"

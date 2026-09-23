@@ -5,6 +5,7 @@ from django.conf import settings
 from django.db import models
 
 from apps.common.models import AuditingMixin, Layer
+from apps.common.storage import UniqueUploadTo, public_storage
 
 
 class LevelType(models.TextChoices):
@@ -68,12 +69,16 @@ class Unit(AuditingMixin, models.Model):
 
 class Mascot(AuditingMixin, models.Model):
     name = models.CharField(max_length=255, null=True, blank=True)
-    idle_image = models.ImageField(upload_to="mascots/")
-    sad_image = models.ImageField(upload_to="mascots/")
-    zero_star_image = models.ImageField(upload_to="mascots/")
-    one_star_image = models.ImageField(upload_to="mascots/")
-    two_star_image = models.ImageField(upload_to="mascots/")
-    three_star_image = models.ImageField(upload_to="mascots/")
+    idle_image = models.ImageField(upload_to=UniqueUploadTo("mascots/"), storage=public_storage)
+    sad_image = models.ImageField(upload_to=UniqueUploadTo("mascots/"), storage=public_storage)
+    zero_star_image = models.ImageField(
+        upload_to=UniqueUploadTo("mascots/"), storage=public_storage
+    )
+    one_star_image = models.ImageField(upload_to=UniqueUploadTo("mascots/"), storage=public_storage)
+    two_star_image = models.ImageField(upload_to=UniqueUploadTo("mascots/"), storage=public_storage)
+    three_star_image = models.ImageField(
+        upload_to=UniqueUploadTo("mascots/"), storage=public_storage
+    )
 
     class Meta:
         db_table = "mascots"
@@ -116,11 +121,20 @@ class Word(AuditingMixin, models.Model):
     target_letter = models.CharField(null=True, blank=True, max_length=255)
     translation = models.CharField(null=True, blank=True, max_length=255)
     is_tutorial_word = models.BooleanField(default=False)
-    image = models.ImageField(upload_to="words/", null=True, blank=True)
+    image = models.ImageField(
+        upload_to=UniqueUploadTo("words/"), storage=public_storage, null=True, blank=True
+    )
     # Voice actor saying the target letter and then the word; used by education levels.
-    education_audio = models.FileField(upload_to="words/audio/", null=True, blank=True)
+    education_audio = models.FileField(
+        upload_to=UniqueUploadTo("words/audio/"), storage=public_storage, null=True, blank=True
+    )
     # Voice actor saying only the word; used by typing and game levels.
-    standard_audio = models.FileField(upload_to="words/audio/standard/", null=True, blank=True)
+    standard_audio = models.FileField(
+        upload_to=UniqueUploadTo("words/audio/standard/"),
+        storage=public_storage,
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = "words"
@@ -142,7 +156,9 @@ class Story(AuditingMixin, models.Model):
 class Sentence(AuditingMixin, models.Model):
     sentence = models.TextField()
     translation = models.TextField(null=True, blank=True)
-    audio = models.FileField(upload_to="sentences/audio/", null=True, blank=True)
+    audio = models.FileField(
+        upload_to=UniqueUploadTo("sentences/audio/"), storage=public_storage, null=True, blank=True
+    )
     story = models.ForeignKey(
         Story,
         on_delete=models.SET_NULL,

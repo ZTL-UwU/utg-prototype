@@ -127,15 +127,32 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Game media (word/sentence audio, word/mascot/reward images) lives in this bucket. When
+# AWS_S3_CUSTOM_DOMAIN points a public, CDN-cached domain at it, media URLs are stable and unsigned
+# so browsers can cache them across sessions.
 AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME", "").strip()
+# Private uploads (feedback screenshots) must never share a publicly served bucket.
+AWS_PRIVATE_STORAGE_BUCKET_NAME = os.getenv("AWS_PRIVATE_STORAGE_BUCKET_NAME", "").strip()
+# Not named AWS_S3_CUSTOM_DOMAIN: django-storages would read that setting as the default for every
+# S3 storage and hand the public domain to private files too.
+PUBLIC_MEDIA_DOMAIN = os.getenv("AWS_S3_CUSTOM_DOMAIN", "").strip()
+if PUBLIC_MEDIA_DOMAIN and not AWS_PRIVATE_STORAGE_BUCKET_NAME:
+    raise ImproperlyConfigured(
+        "AWS_PRIVATE_STORAGE_BUCKET_NAME must be set when AWS_S3_CUSTOM_DOMAIN makes "
+        "AWS_STORAGE_BUCKET_NAME public"
+    )
+
+# Public media keys are unique per upload (see apps.common.storage.UniqueUploadTo), so a URL
+# never changes content and can be cached forever.
+PUBLIC_MEDIA_CACHE_CONTROL = "public, max-age=31536000, immutable"
 
 
-def default_file_storage() -> dict[str, object]:
-    if not AWS_STORAGE_BUCKET_NAME:
+def s3_storage(bucket_name: str, *, public: bool) -> dict[str, object]:
+    if not bucket_name:
         return {"BACKEND": "django.core.files.storage.FileSystemStorage"}
 
     options: dict[str, object] = {
-        "bucket_name": AWS_STORAGE_BUCKET_NAME,
+        "bucket_name": bucket_name,
         "file_overwrite": False,
         "default_acl": None,
         "querystring_auth": env_bool("AWS_QUERYSTRING_AUTH", True),
@@ -150,14 +167,24 @@ def default_file_storage() -> dict[str, object]:
         options["region_name"] = region_name
     if endpoint_url := os.getenv("AWS_S3_ENDPOINT_URL", "").strip():
         options["endpoint_url"] = endpoint_url
-    if custom_domain := os.getenv("AWS_S3_CUSTOM_DOMAIN", "").strip():
-        options["custom_domain"] = custom_domain
+    if public:
+        options["object_parameters"] = {"CacheControl": PUBLIC_MEDIA_CACHE_CONTROL}
+        if PUBLIC_MEDIA_DOMAIN:
+            # django-storages returns plain `https://<domain>/<key>` URLs for a custom domain.
+            options["custom_domain"] = PUBLIC_MEDIA_DOMAIN
+            options["querystring_auth"] = False
 
     return {"BACKEND": "storages.backends.s3.S3Storage", "OPTIONS": options}
 
 
 STORAGES = {
-    "default": default_file_storage(),
+    # Until a private bucket is configured, private uploads keep sharing the media bucket
+    # behind signed URLs (safe only while that bucket has no public domain; enforced above).
+    "default": s3_storage(
+        AWS_PRIVATE_STORAGE_BUCKET_NAME or AWS_STORAGE_BUCKET_NAME,
+        public=False,
+    ),
+    "public": s3_storage(AWS_STORAGE_BUCKET_NAME, public=True),
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
