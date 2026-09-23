@@ -40,6 +40,8 @@ const SOUND_BUTTON_SIZE = 90;
 const DRAW_COLOR = NAV_BUTTON_COLOR;
 /** Brush width in outline units: a fine pen line, far thinner than the demo trace. */
 const DRAW_WIDTH = 1;
+/** Seconds after a letter or form comes up before its demo plays by itself. */
+const AUTO_DEMO_DELAY = 0.6;
 /** Space between the stacked Submit and Clear buttons. */
 const BUTTON_STACK_GAP = 16;
 /** Darkness of the tint behind the results message. */
@@ -189,9 +191,10 @@ export class OutlineDisplay extends Container {
       size: SOUND_BUTTON_SIZE,
       variant: 'brown',
     });
-    this.traceButton = createTextButton('Trace', NAV_BUTTON_COLOR, NAV_BUTTON_SHADOW_COLOR, () => {
+    // replays the demo on a clean slate
+    this.traceButton = createTextButton('Watch', NAV_BUTTON_COLOR, NAV_BUTTON_SHADOW_COLOR, () => {
+      this.drawingCanvas.clear();
       this.tracer.play();
-      this.refreshButtons();
     });
     this.traceButton.layout = {
       position: 'absolute',
@@ -204,7 +207,16 @@ export class OutlineDisplay extends Container {
     this.drawingCanvas = new DrawingCanvas({
       background: false,
       color: DRAW_COLOR,
-      onChange: () => this.refreshButtons(),
+      onChange: (strokes) => {
+        // each stroke drawn moves the hint on to the next; a demo in progress keeps playing
+        // through the clears that come with a letter change or resize
+        if (!this.tracer.isPlaying) this.tracer.showHints(strokes.length);
+        this.refreshButtons();
+      },
+    });
+    // starting to draw cuts a demo short, so the practice is on a clean outline
+    this.drawingCanvas.on('pointerdown', () => {
+      if (this.tracer.isPlaying) this.tracer.showHints(this.drawingCanvas.getStrokes().length);
     });
     this.clearButton = createTextButton('Clear', NAV_BUTTON_COLOR, NAV_BUTTON_SHADOW_COLOR, () =>
       this.clearDrawing(),
@@ -336,6 +348,8 @@ export class OutlineDisplay extends Container {
     this.glyph.pivot.set(b.x + b.width / 2, b.y + b.height / 2);
 
     this.fit(); // reposition + rescale for current size
+    // show how it's written first; the practice hints follow once the demo is done
+    this.tracer.play(AUTO_DEMO_DELAY);
     this.refreshButtons();
   }
 
@@ -366,16 +380,15 @@ export class OutlineDisplay extends Container {
     this.fit();
   }
 
-  // wipes both the demo trace and the user's own strokes
+  // wipes the user's strokes; its onChange puts the hints back to the first stroke
   private clearDrawing() {
-    this.tracer.reset();
-    this.drawingCanvas.clear(); // its onChange refreshes the buttons
+    this.drawingCanvas.clear();
   }
 
   private refreshButtons() {
     const base = getBaseForm(this.letter);
     this.traceButton.enabled = this.tracer.hasPath;
-    this.clearButton.enabled = !this.drawingCanvas.isEmpty || this.tracer.hasTrace;
+    this.clearButton.enabled = !this.drawingCanvas.isEmpty;
     this.submitButton.enabled = !this.drawingCanvas.isEmpty;
     for (const [form, { button, view, selectedView }] of this.formButtons) {
       button.enabled = hasForm(base, form);
@@ -469,7 +482,6 @@ export class OutlineDisplay extends Container {
 
   private showResults(accuracy: number, coverage: number) {
     this.resultsText.text = getResultsMessage(accuracy, coverage);
-    this.tracer.reset(); // don't keep a demo trace animating underneath
     this.resultsOverlay.visible = true;
   }
 

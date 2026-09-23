@@ -14,6 +14,19 @@ const PEN_LIFT = 0.35;
 /** Seconds a stroke's badge fades in ahead of it, and its pen dot lingers after. */
 const BADGE_FADE = 0.3;
 const NIB_FADE = 0.2;
+/** Seconds the finished demo keeps its ink, then takes to fade it, so practice starts clean. */
+const DEMO_HOLD = 0.8;
+const DEMO_FADE = 0.5;
+/** Practice hints: numbers of strokes already drawn, and of those still to come. */
+const DONE_BADGE_ALPHA = 0.35;
+const LATER_BADGE_ALPHA = 0.7;
+/**
+ * The next stroke's number grows to this scale and back, taking this many seconds each way. Run
+ * per frame rather than with motion: an endless motion animation, even once stopped, starves
+ * every motion animation after it of frames, the demo's included.
+ */
+const PULSE_SCALE = 1.3;
+const PULSE_DURATION = 0.5;
 /** Each stroke eases in and out, like a pen setting off and slowing to a stop. */
 const STROKE_EASE = cubicBezier(0.45, 0.05, 0.55, 0.95);
 /** Sizes in outline units. */
@@ -116,35 +129,47 @@ function createBadge(number: number, [x, y]: [number, number]) {
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
 /**
- * Animates the strokes of a letter in order: each one numbered, inked by a pen that eases along
- * its centerline and clipped to the part of the glyph it belongs to, with a pause between them
- * like a pen-lift.
+ * Demonstrates the strokes of a letter in order: each one numbered, inked by a pen that eases
+ * along its centerline and clipped to the part of the glyph it belongs to, with a pause between
+ * them like a pen-lift. Once the demo has been seen its ink fades, leaving the numbers as hints
+ * for practising, with the next stroke's number pulsing.
  */
 export class StrokeTracer extends Container {
   private strokes: TimedStroke[] = [];
   private duration = 0;
+  /** When the last stroke finishes; the demo holds its ink a moment, then fades it. */
+  private inkEnd = 0;
+  private inkLayer = new Container();
+  private badgeLayer = new Container();
   private nib = new Graphics().circle(0, 0, NIB_RADIUS).fill(ACCENT_COLOR);
   private animation?: { stop: () => void };
+  private pulsing?: Container;
+
+  constructor() {
+    super();
+    // badges and the pen ride above every stroke's ink
+    this.addChild(this.inkLayer, this.badgeLayer, this.nib);
+    this.nib.visible = false;
+  }
 
   get hasPath() {
     return this.strokes.length > 0;
   }
 
-  /** True from `play()` until the next reset, whether the trace is still animating or done. */
-  get hasTrace() {
+  /** True from `play()` until the demo finishes or is stopped, including its opening delay. */
+  get isPlaying() {
     return this.animation !== undefined;
   }
 
   setStrokes(strokes: TraceStroke[]) {
-    this.reset();
-    for (const child of this.removeChildren()) {
-      // masks don't own the clip contexts they were handed, so those survive for reuse
-      if (child !== this.nib) child.destroy({ children: true });
+    this.stop();
+    // masks don't own the clip contexts they were handed, so those survive for reuse
+    for (const child of [...this.inkLayer.removeChildren(), ...this.badgeLayer.removeChildren()]) {
+      child.destroy({ children: true });
     }
     this.strokes = [];
 
     let time = LEAD_IN;
-    const badges: Container[] = [];
     for (const { d, width, clip, label } of strokes) {
       const polylines = new GraphicsPath(d).shapePath.shapePrimitives
         .map(({ shape }) => shape)
@@ -163,8 +188,8 @@ export class StrokeTracer extends Container {
         this.strokes.length + 1,
         label ?? defaultBadgePosition(polylines[0]),
       );
-      this.addChild(mask, ink);
-      badges.push(badge);
+      this.inkLayer.addChild(mask, ink);
+      this.badgeLayer.addChild(badge);
       this.strokes.push({
         polylines,
         length,
@@ -177,35 +202,61 @@ export class StrokeTracer extends Container {
       });
       time += duration + PEN_LIFT;
     }
-    this.duration = time - PEN_LIFT + NIB_FADE;
-    // badges and the pen ride above every stroke's ink
-    this.addChild(...badges, this.nib);
-    this.nib.visible = false;
+    this.inkEnd = time - PEN_LIFT;
+    this.duration = this.inkEnd + DEMO_HOLD + DEMO_FADE;
   }
 
-  play() {
+  /** Plays the demo from the start, after `delay` seconds, then leaves the practice hints. */
+  play(delay = 0) {
     if (!this.hasPath) return;
-    this.reset();
+    this.stop();
+    for (const { badge } of this.strokes) badge.alpha = 0;
     this.animation = animate(0, this.duration, {
       duration: this.duration,
+      delay,
       ease: 'linear',
       onUpdate: (time) => this.drawAt(time),
+      onComplete: () => this.showHints(0),
     });
   }
 
-  reset() {
+  /**
+   * Stops any demo and shows every stroke's number as a hint for practising: the ones before
+   * `next` (0-based) faded as done, the one at `next` pulsing, the rest waiting.
+   */
+  showHints(next: number) {
+    this.stop();
+    this.strokes.forEach(({ badge }, i) => {
+      badge.alpha = i < next ? DONE_BADGE_ALPHA : i === next ? 1 : LATER_BADGE_ALPHA;
+    });
+    const badge = this.strokes[next]?.badge;
+    if (!badge) return;
+    this.pulsing = badge;
+    badge.onRender = () => {
+      const phase = (performance.now() / 1000 / PULSE_DURATION) * Math.PI;
+      badge.scale.set(1 + ((PULSE_SCALE - 1) * (1 - Math.cos(phase))) / 2);
+    };
+  }
+
+  /** Stops the demo and any pulse, and wipes the ink and hints. */
+  private stop() {
     this.animation?.stop();
     this.animation = undefined;
+    if (this.pulsing) this.pulsing.onRender = null;
+    this.pulsing = undefined;
     for (const stroke of this.strokes) {
       stroke.ink.clear();
       stroke.drawn = 0;
       stroke.badge.alpha = 0;
+      stroke.badge.scale.set(1);
     }
+    this.inkLayer.alpha = 1;
     this.nib.visible = false;
   }
 
   private drawAt(time: number) {
     this.nib.visible = false;
+    this.inkLayer.alpha = 1 - clamp01((time - this.inkEnd - DEMO_HOLD) / DEMO_FADE);
     for (const stroke of this.strokes) {
       const { start, end, length } = stroke;
       stroke.badge.alpha = clamp01((time - start + BADGE_FADE) / BADGE_FADE);
@@ -225,7 +276,6 @@ export class StrokeTracer extends Container {
       }
     }
   }
-
   /** Where the pen is `distance` into the stroke, carried from one polyline to the next. */
   private tipAt({ polylines }: TimedStroke, distance: number) {
     let remaining = distance;
