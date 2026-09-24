@@ -34,7 +34,6 @@ export class CreationEngine extends Application {
   public async init(opts: Partial<ApplicationOptions>): Promise<void> {
     opts.resizeTo ??= window;
     opts.resolution ??= getResolution();
-
     await super.init(opts);
 
     // Append the application canvas to the document body

@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import '@pixi/layout';
 
 import './index.css';
+import { FpsCounter } from './components/FpsCounter';
 import { MobileBlockerBanner } from './components/MobileBlockerBanner';
 import { queryClient } from './components/queryClient';
 import { ScreenOverlay } from './components/ScreenOverlay';
@@ -26,7 +27,7 @@ export default function App() {
       await engine.init({
         background: '#000000',
         resizeOptions: { minWidth: 768, minHeight: 1024, letterbox: false },
-        antialias: true,
+        antialias: false,
       });
 
       bootstrapRemoteData();
@@ -58,6 +59,7 @@ export default function App() {
     <>
       <MobileBlockerBanner />
       <div id="pixi-container" />
+      {import.meta.env.DEV && <FpsCounter />}
       <QueryClientProvider client={queryClient}>
         <ScreenOverlay />
       </QueryClientProvider>
