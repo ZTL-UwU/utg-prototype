@@ -1,5 +1,5 @@
 import { FancyButton } from '@pixi/ui';
-import { Container, Graphics, GraphicsContext, Sprite, Text, Texture } from 'pixi.js';
+import { Container, Graphics, GraphicsContext, GraphicsPath, Sprite, Text, Texture } from 'pixi.js';
 
 import type { LETTER_FORMS } from '.';
 import { DrawingCanvas, type StrokePoint } from '../../ui/drawing-canvas';
@@ -9,9 +9,9 @@ import {
   calculateGlyphStrokeAccuracy,
   sampleGlyphInterior,
 } from './calculate-accuracy';
-import { createGlyphMaskContext } from './glyph-mask';
-import outlinesJson from './letters.json';
-import { StrokeTracer } from './stroke-tracer';
+import { createGlyphMaskContext, type GlyphPart } from './glyph-mask';
+import lettersJson from './letters.json';
+import { StrokeTracer, type TraceStroke } from './stroke-tracer';
 
 const HAMZA = 'ئ';
 export const FRAME_COLOR = 0x844f01;
@@ -40,6 +40,8 @@ const SOUND_BUTTON_SIZE = 90;
 const DRAW_COLOR = NAV_BUTTON_COLOR;
 /** Brush width in outline units: a fine pen line, far thinner than the demo trace. */
 const DRAW_WIDTH = 1;
+/** Seconds after a letter or form comes up before its demo plays by itself. */
+const AUTO_DEMO_DELAY = 0.6;
 /** Space between the stacked Submit and Clear buttons. */
 const BUTTON_STACK_GAP = 16;
 /** Darkness of the tint behind the results message. */
@@ -51,6 +53,14 @@ const COVERAGE_SAMPLE_STEP = 0.25;
  * Wider than the ink so one pass down the middle of a body (about 2.4 units thick) covers it.
  */
 const COVERAGE_RADIUS = 2;
+/** Line width of the letter's outline, in outline units. */
+const OUTLINE_WIDTH = 0.8;
+const OUTLINE_COLOR = 0x000000;
+/**
+ * The tatweel's outline: the black at 30% over the background, faint so it reads as a guide rather
+ * than part of the letter. Solid rather than translucent so its overlapping joins don't darken.
+ */
+const JOIN_COLOR = 0xaa9f8a;
 
 const FORM_LABELS: Record<LETTER_FORMS, string> = {
   isolated: 'Isolated',
@@ -59,10 +69,16 @@ const FORM_LABELS: Record<LETTER_FORMS, string> = {
   final: 'Final',
 };
 
-// only the base forms are looked up; the `_2` variant keys are ignored.
-// `strokePath` is `pathString` fitted onto the outline by scripts/fit-letter-paths.mjs
-type OutlineEntry = { svgString: string; pathString?: string; strokePath?: string };
-const outlines = outlinesJson as Record<string, Partial<Record<string, OutlineEntry>>>;
+// each form's outline, split into parts, and the strokes it's written in, each clipped to the
+// part at index `part`. baked from Noto Naskh Arabic by scripts/stroke-order/build.py
+type LetterEntry = {
+  parts: GlyphPart[];
+  /** Tatweel (ـ) on each side a connected form joins; only drawn, never traced or scored. */
+  joins?: string[];
+  /** `label` is an [x, y] pair, but JSON imports only type it as an array. */
+  strokes: { d: string; width: number; part: number; label?: number[] }[];
+};
+const letters = lettersJson as Record<string, Partial<Record<string, LetterEntry>>>;
 
 // TODO: write the results message; the scores are percentages from 0 to 100
 function getResultsMessage(accuracy: number, coverage: number): string {
@@ -77,11 +93,7 @@ function getBaseForm(letter: string) {
 }
 
 function hasForm(base: string, form: LETTER_FORMS) {
-  return Boolean(outlines[base]?.[form]);
-}
-
-function getStrokePath(base: string, form: LETTER_FORMS) {
-  return outlines[base]?.[form]?.strokePath;
+  return Boolean(letters[base]?.[form]);
 }
 
 function createButtonView(color: number, shadowColor: number) {
@@ -135,12 +147,13 @@ export class OutlineDisplay extends Container {
   private glyph: Container;
   private outline: Graphics;
   private tracer: StrokeTracer;
-  /** Filled glyph interior that keeps the thick trace brush inside the outline. */
+  /** Filled glyph interior, for scoring; never drawn itself. */
   private glyphMask: Graphics;
   private maskCache = new Map<string, GraphicsContext>();
   private sampleCache = new Map<string, StrokePoint[]>();
+  private strokeCache = new Map<string, TraceStroke[]>();
   private traceButton: FancyButton;
-  /** Freehand practice layer under the glyph, left unclipped so strokes off the letter show. */
+  /** Freehand practice layer over the glyph, left unclipped so strokes off the letter show. */
   private drawingCanvas: DrawingCanvas;
   private clearButton: FancyButton;
   private submitButton: FancyButton;
@@ -174,10 +187,12 @@ export class OutlineDisplay extends Container {
     this.contextCache = new Map();
     this.outline = new Graphics();
     this.tracer = new StrokeTracer();
-    this.glyphMask = new Graphics();
-    this.tracer.mask = this.glyphMask;
-    // tracer underneath so the outline stays crisp on top of it
-    this.glyph = new Container({ children: [this.glyphMask, this.tracer, this.outline] });
+    // kept in the glyph only so drawn points can be mapped into its coordinates
+    this.glyphMask = new Graphics({ renderable: false });
+    // tracer underneath so the outline stays crisp on top of it, but its stroke numbers above
+    this.glyph = new Container({
+      children: [this.glyphMask, this.tracer, this.outline, this.tracer.badgeLayer],
+    });
     this.border = new Graphics();
     this.frame = new Container({ layout: true });
     this.soundButton = new SoundButton({
@@ -185,9 +200,10 @@ export class OutlineDisplay extends Container {
       size: SOUND_BUTTON_SIZE,
       variant: 'brown',
     });
-    this.traceButton = createTextButton('Trace', NAV_BUTTON_COLOR, NAV_BUTTON_SHADOW_COLOR, () => {
+    // replays the demo on a clean slate
+    this.traceButton = createTextButton('Watch', NAV_BUTTON_COLOR, NAV_BUTTON_SHADOW_COLOR, () => {
+      this.drawingCanvas.clear();
       this.tracer.play();
-      this.refreshButtons();
     });
     this.traceButton.layout = {
       position: 'absolute',
@@ -200,7 +216,16 @@ export class OutlineDisplay extends Container {
     this.drawingCanvas = new DrawingCanvas({
       background: false,
       color: DRAW_COLOR,
-      onChange: () => this.refreshButtons(),
+      onChange: (strokes) => {
+        // each stroke drawn moves the hint on to the next; a demo in progress keeps playing
+        // through the clears that come with a letter change or resize
+        if (!this.tracer.isPlaying) this.tracer.showHints(strokes.length);
+        this.refreshButtons();
+      },
+    });
+    // starting to draw cuts a demo short, so the practice is on a clean outline
+    this.drawingCanvas.on('pointerdown', () => {
+      if (this.tracer.isPlaying) this.tracer.showHints(this.drawingCanvas.getStrokes().length);
     });
     this.clearButton = createTextButton('Clear', NAV_BUTTON_COLOR, NAV_BUTTON_SHADOW_COLOR, () =>
       this.clearDrawing(),
@@ -228,11 +253,11 @@ export class OutlineDisplay extends Container {
       height: ROW_HEIGHT,
       isLeaf: true,
     };
-    // canvas under the glyph so the outline and demo trace draw over the user's ink
+    // canvas over the glyph so the user's ink stays on top of the outline and demo trace
     this.frame.addChild(
       this.border,
-      this.drawingCanvas,
       this.glyph,
+      this.drawingCanvas,
       this.counter,
       this.soundButton,
       this.traceButton,
@@ -325,13 +350,15 @@ export class OutlineDisplay extends Container {
     this.outline.context = this.getCachedContext(base, form);
     this.glyphMask.context = this.getCachedMaskContext(base, form);
     // also stops and clears any trace in progress
-    this.tracer.setPath(getStrokePath(base, form));
+    this.tracer.setStrokes(this.getCachedStrokes(base, form));
 
     // recentre pivot on this letter's actual geometry
     const b = this.outline.getLocalBounds();
     this.glyph.pivot.set(b.x + b.width / 2, b.y + b.height / 2);
 
     this.fit(); // reposition + rescale for current size
+    // show how it's written first; the practice hints follow once the demo is done
+    this.tracer.play(AUTO_DEMO_DELAY);
     this.refreshButtons();
   }
 
@@ -362,21 +389,22 @@ export class OutlineDisplay extends Container {
     this.fit();
   }
 
-  // wipes both the demo trace and the user's own strokes
+  // wipes the user's strokes; its onChange puts the hints back to the first stroke
   private clearDrawing() {
-    this.tracer.reset();
-    this.drawingCanvas.clear(); // its onChange refreshes the buttons
+    this.drawingCanvas.clear();
   }
 
   private refreshButtons() {
     const base = getBaseForm(this.letter);
     this.traceButton.enabled = this.tracer.hasPath;
-    this.clearButton.enabled = !this.drawingCanvas.isEmpty || this.tracer.hasTrace;
+    this.clearButton.enabled = !this.drawingCanvas.isEmpty;
     this.submitButton.enabled = !this.drawingCanvas.isEmpty;
     for (const [form, { button, view, selectedView }] of this.formButtons) {
-      button.enabled = hasForm(base, form);
+      // swapped before enabling: FancyButton's defaultView setter hides the disabled view if the
+      // button isn't in its default state, so a swap on a disabled button left it looking enabled
       const targetView = form === this.form ? selectedView : view;
       if (button.defaultView !== targetView) button.defaultView = targetView;
+      button.enabled = hasForm(base, form);
     }
   }
 
@@ -387,7 +415,7 @@ export class OutlineDisplay extends Container {
     if (!b.width || !b.height) return; // context not set yet
 
     // scale to fit inside the frame, keeping aspect ratio, with margin
-    const margin = 0.75;
+    const margin = 0.65;
     const scale = Math.min(this.w / b.width, this.h / b.height) * margin;
 
     this.glyph.scale.set(scale);
@@ -404,7 +432,21 @@ export class OutlineDisplay extends Container {
     const key = `${letter}/${form}`;
     let context = this.contextCache.get(key);
     if (!context) {
-      context = new GraphicsContext().svg(outlines[letter]![form]!.svgString);
+      const { parts, joins = [] } = letters[letter]![form]!;
+      const outline = parts.flatMap(({ d, holes = [] }) => [d, ...holes]);
+      const style = {
+        width: OUTLINE_WIDTH,
+        color: OUTLINE_COLOR,
+        cap: 'round',
+        join: 'round',
+      } as const;
+      context = new GraphicsContext();
+      // first, so the letter's own outline is drawn over the end it shares with the tatweel;
+      // in the outline's bounds, so the letter is centred along with it
+      if (joins.length) {
+        context.path(new GraphicsPath(joins.join(''))).stroke({ ...style, color: JOIN_COLOR });
+      }
+      context.path(new GraphicsPath(outline.join(''))).stroke(style);
       this.contextCache.set(key, context);
     }
     return context;
@@ -414,14 +456,32 @@ export class OutlineDisplay extends Container {
     const key = `${letter}/${form}`;
     let context = this.maskCache.get(key);
     if (!context) {
-      const svg = outlines[letter]![form]!.svgString;
-      context = createGlyphMaskContext([...svg.matchAll(/ d="([^"]+)"/g)].map((m) => m[1]));
+      context = createGlyphMaskContext(letters[letter]![form]!.parts);
       this.maskCache.set(key, context);
     }
     return context;
   }
+
+  // each stroke is clipped to its own part of the glyph, so a thick pen can't spill onto the next
+  private getCachedStrokes(letter: string, form: LETTER_FORMS) {
+    const key = `${letter}/${form}`;
+    let strokes = this.strokeCache.get(key);
+    if (!strokes) {
+      const { parts, strokes: entries } = letters[letter]![form]!;
+      const clips = parts.map((part) => createGlyphMaskContext([part]));
+      strokes = entries.map(({ d, width, part, label }) => ({
+        d,
+        width,
+        clip: clips[part],
+        label: label && [label[0], label[1]],
+      }));
+      this.strokeCache.set(key, strokes);
+    }
+    return strokes;
+  }
+
   private readonly handleSubmit = () => {
-    // drawn points are in canvas pixels; the mask is in the glyph's artboard units
+    // drawn points are in canvas pixels; the mask is in the glyph's outline units
     const glyphStrokes: StrokePoint[][] = this.drawingCanvas
       .getStrokes()
       .map((stroke) =>
@@ -444,7 +504,6 @@ export class OutlineDisplay extends Container {
 
   private showResults(accuracy: number, coverage: number) {
     this.resultsText.text = getResultsMessage(accuracy, coverage);
-    this.tracer.reset(); // don't keep a demo trace animating underneath
     this.resultsOverlay.visible = true;
   }
 

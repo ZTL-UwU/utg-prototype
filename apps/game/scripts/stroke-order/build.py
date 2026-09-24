@@ -1,0 +1,449 @@
+"""Bakes letters.py into the letter reference screen's letters.json.
+
+Every form of every letter is looked up in Noto Naskh Arabic and split into its body, marks and
+dots, which get their strokes from letters.py: bodies and marks by glyph name, dots
+automatically. Each stroke is a pen centerline the screen reveals in order, clipped to the part
+of the glyph it inks. The guide paths in letters.py only need to be roughly right: each point is
+pulled to the middle of its part, measured across the stroke.
+
+A vowel on its own is written after a hamza seat, so its isolated form is ئا, ئە and so on: the
+seat's initial form joined to the vowel's final form, their overlapping bodies merged into one.
+
+Connected forms also get a tatweel (ـ) on each side they join, butted up against the end of the
+letter's joining stroke. It's kept apart from the parts: the screen shows it as a faint guide,
+never traced or scored.
+
+Output is flipped to y-down and scaled so a letter's body is about 2.5 units thick, the scale the
+screen's drawing and scoring constants are tuned for.
+
+Needs fontTools and skia-pathops (`pip install fonttools skia-pathops`) and the font. `--check` also renders each form fully
+inked, with anything the strokes miss in red and each centerline drawn in, for tuning guides
+(needs rsvg-convert).
+
+Usage: python apps/game/scripts/stroke-order/build.py [--check] [--font path/to/font.ttf]
+       or, without installing anything: uv run --no-project --with fonttools --with skia-pathops
+       python apps/game/scripts/stroke-order/build.py
+       then `vp check --fix` to format the JSON
+"""
+import json
+import math
+import re
+import subprocess
+import sys
+import tempfile
+import unicodedata
+from pathlib import Path
+
+sys.dont_write_bytecode = True  # keep __pycache__ out of the repo
+
+from fontTools.pens.basePen import BasePen
+from fontTools.pens.recordingPen import DecomposingRecordingPen
+from fontTools.pens.transformPen import TransformPen
+from fontTools.ttLib import TTFont
+from pathops import Path as SkPath
+
+from letters import BODIES, LETTERS, MARKS, RIGHT_JOINING, VOWELS
+
+FONT = "/usr/share/fonts/noto/NotoNaskhArabic-Regular.ttf"
+OUT = Path(__file__).parents[2] / "src/app/screens/letter-reference/letters.json"
+FORMS = ["isolated", "initial", "medial", "final"]
+FEATURES = {"initial": "init", "medial": "medi", "final": "fina"}
+TATWEEL = 0x0640
+HAMZA = "ئ"
+# the sides each connected form joins its neighbours on
+JOINS = {"initial": ["left"], "medial": ["right", "left"], "final": ["right"]}
+SCALE = 1 / 32
+# Curves are flattened to lines about this long, in font units: Pixi divides curves by their
+# length in local units, so at this scale it would leave them visibly faceted.
+FLATTEN_STEP = 6
+DOT_REACH = 30  # half the diagonal pull across a dot, in font units
+DOT_WIDTH = 100
+DOT_LABEL_GAP = 95  # how far out from the middle of its group a dot's badge sits
+# A guide point is only centred where its part is at most this many pen widths across, so it
+# isn't dragged into the middle of a junction.
+SNAP_SPAN = 1.6
+SMOOTHING = 2  # guide points averaged either side, after centring
+# Points closer than this to the line through their neighbours are dropped from the output, in
+# font units: well under a pixel on screen, but it keeps the JSON small.
+SIMPLIFY = 1
+
+
+def num(v):
+    return f"{v:.2f}".rstrip("0").rstrip(".")
+
+
+def curve_point(points, t):
+    """Point at t on a quadratic or cubic Bézier through `points`."""
+    while len(points) > 1:
+        points = [((1 - t) * a[0] + t * b[0], (1 - t) * a[1] + t * b[1])
+                  for a, b in zip(points, points[1:])]
+    return points[0]
+
+
+def flatten(points):
+    """The curve through `points` (current point first) as line ends, start excluded."""
+    hull = sum(math.dist(a, b) for a, b in zip(points, points[1:]))
+    steps = max(2, math.ceil(hull / FLATTEN_STEP))
+    return [curve_point(points, i / steps) for i in range(1, steps + 1)]
+
+
+class PolygonPen(BasePen):
+    """Collects each contour as a list of points, curves flattened."""
+
+    def __init__(self):
+        super().__init__(None)
+        self.contours = []
+
+    def _moveTo(self, pt):
+        self.contours.append([pt])
+
+    def _lineTo(self, pt):
+        self.contours[-1].append(pt)
+
+    def _qCurveToOne(self, pt1, pt2):
+        self.contours[-1] += flatten([self._getCurrentPoint(), pt1, pt2])
+
+    def _curveToOne(self, pt1, pt2, pt3):
+        self.contours[-1] += flatten([self._getCurrentPoint(), pt1, pt2, pt3])
+
+
+def path_points(d):
+    """A one-subpath M/L/C path as a flattened list of points."""
+    points = []
+    for cmd, args in re.findall(r"([MLC])([^MLC]*)", d):
+        nums = [float(n) for n in re.findall(r"-?[\d.]+", args)]
+        pairs = list(zip(nums[0::2], nums[1::2]))
+        if cmd == "C":
+            for i in range(0, len(pairs), 3):
+                points += flatten([points[-1], *pairs[i:i + 3]])
+        else:
+            # lines are split up too, so centring and smoothing see them as finely as curves
+            for pair in pairs:
+                points += flatten([points[-1], pair]) if points else [pair]
+    return points
+
+
+def edges(polygon):
+    return zip(polygon, polygon[1:] + polygon[:1])
+
+
+def area(polygon):
+    """Signed; outer contours come out negative and holes positive."""
+    return sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in edges(polygon)) / 2
+
+
+def contains(polygon, point):
+    x, y = point
+    inside = False
+    for (x0, y0), (x1, y1) in edges(polygon):
+        if (y0 > y) != (y1 > y) and x < x0 + (y - y0) * (x1 - x0) / (y1 - y0):
+            inside = not inside
+    return inside
+
+
+def glyph_name(font, char, form):
+    """The glyph for a letter's form: its presentation form, else the font's own substitution."""
+    cmap = font.getBestCmap()
+    if form == "isolated":
+        return cmap[ord(char)]
+    for cp in [*range(0xFB50, 0xFE00), *range(0xFE70, 0xFF00)]:
+        if unicodedata.decomposition(chr(cp)) == f"<{form}> {ord(char):04X}" and cp in cmap:
+            return cmap[cp]
+    gsub = font["GSUB"].table
+    for record in gsub.FeatureList.FeatureRecord:
+        if record.FeatureTag != FEATURES[form]:
+            continue
+        for index in record.Feature.LookupListIndex:
+            for table in gsub.LookupList.Lookup[index].SubTable:
+                mapped = getattr(table, "mapping", {}).get(cmap[ord(char)])
+                if mapped:
+                    return mapped if isinstance(mapped, str) else mapped[0]
+    raise KeyError(f"no {form} glyph for {char}")
+
+
+def components(font, name):
+    """[(glyph name, x offset, y offset)]: a simple glyph is its own only component."""
+    glyph = font["glyf"][name]
+    if not glyph.isComposite():
+        return [(name, 0, 0)]
+    return [(c.glyphName, c.x, c.y) for c in glyph.components]
+
+
+def component_contours(font, name, dx, dy):
+    glyphs = font.getGlyphSet()
+    rec = DecomposingRecordingPen(glyphs)
+    glyphs[name].draw(rec)
+    pen = PolygonPen()
+    rec.replay(TransformPen(pen, (1, 0, 0, 1, dx, dy)))
+    return pen.contours
+
+
+def snap(points, part, width):
+    """Pulls each guide point to the middle of the part, across the guide's direction."""
+    part_edges = [edge for polygon in part for edge in edges(polygon)]
+    centred = []
+    for i, (px, py) in enumerate(points):
+        (ax, ay), (bx, by) = points[max(0, i - 1)], points[min(len(points) - 1, i + 1)]
+        length = math.hypot(bx - ax, by - ay) or 1
+        nx, ny = (ay - by) / length, (bx - ax) / length
+        # distances along the normal to where it crosses the part's edges; between each pair
+        # of crossings is inside
+        hits = []
+        for (x0, y0), (x1, y1) in part_edges:
+            ex, ey = x1 - x0, y1 - y0
+            denom = nx * ey - ny * ex
+            if denom == 0:
+                continue
+            if 0 <= ((x0 - px) * ny - (y0 - py) * nx) / denom < 1:
+                hits.append(((x0 - px) * ey - (y0 - py) * ex) / denom)
+        hits.sort()
+        spans = list(zip(hits[0::2], hits[1::2]))
+        span = next((s for s in spans if s[0] <= 0 <= s[1]), None)
+        if span is None:
+            # a guide point just off the glyph is pulled into the nearest bit of it
+            span = min(spans, key=lambda s: min(abs(s[0]), abs(s[1])), default=None)
+            if span and min(abs(span[0]), abs(span[1])) > width / 2:
+                span = None
+        if span and span[1] - span[0] <= width * SNAP_SPAN:
+            mid = (span[0] + span[1]) / 2
+            centred.append((px + nx * mid, py + ny * mid))
+        else:
+            centred.append((px, py))
+    # the ends stay put so strokes still start and stop where they were drawn to
+    smooth = [centred[0]]
+    for i in range(1, len(centred) - 1):
+        window = centred[max(0, i - SMOOTHING):i + SMOOTHING + 1]
+        smooth.append((sum(p[0] for p in window) / len(window),
+                       sum(p[1] for p in window) / len(window)))
+    return smooth + centred[-1:]
+
+
+def simplify(points):
+    """Ramer–Douglas–Peucker: keeps only the points that bend the line by more than SIMPLIFY."""
+    if len(points) < 3:
+        return points
+    (ax, ay), (bx, by) = points[0], points[-1]
+    length = math.hypot(bx - ax, by - ay)
+
+    def distance(p):
+        if length == 0:
+            return math.dist(p, points[0])
+        return abs((bx - ax) * (ay - p[1]) - (ax - p[0]) * (by - ay)) / length
+
+    i, farthest = max(enumerate(points[1:-1], 1), key=lambda item: distance(item[1]))
+    if distance(farthest) <= SIMPLIFY:
+        return [points[0], points[-1]]
+    return simplify(points[:i + 1])[:-1] + simplify(points[i:])
+
+
+def to_screen(points):
+    points = simplify(points)
+    return "M" + "L".join(f"{num(x * SCALE)} {num(-y * SCALE)}" for x, y in points)
+
+
+def dot_strokes(contours, group):
+    centres = []
+    for i in group:
+        xs, ys = [p[0] for p in contours[i]], [p[1] for p in contours[i]]
+        centres.append(((min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2))
+    gx = sum(c[0] for c in centres) / len(centres)
+    gy = sum(c[1] for c in centres) / len(centres)
+    strokes = []
+    # rows top to bottom, each right to left, as they're written
+    for i, (cx, cy) in sorted(zip(group, centres), key=lambda d: (-round(d[1][1] / 60), -d[1][0])):
+        r = DOT_REACH
+        stroke = {"clip": i, "width": DOT_WIDTH, "points": [(cx - r, cy + r), (cx + r, cy - r)]}
+        if len(group) > 1:
+            # badges fan out from the middle of the group, so they don't cover each other
+            ox, oy = cx - gx, cy - gy
+            k = DOT_LABEL_GAP / (math.hypot(ox, oy) or 1)
+            stroke["label"] = (cx + ox * k, cy + oy * k)
+        strokes.append(stroke)
+    return strokes
+
+
+def tatweels(font, body, form):
+    """A tatweel on each side the form joins, its end against the end of the joining stroke."""
+    (tatweel,) = component_contours(font, font.getBestCmap()[TATWEEL], 0, 0)
+    t_min, t_max = min(p[0] for p in tatweel), max(p[0] for p in tatweel)
+    t_top = max(p[1] for p in tatweel)
+    # the joining stroke runs along the baseline, as thick as the tatweel
+    baseline = [x for contour in body for x, y in contour if 0 <= y <= t_top]
+    out = []
+    for side in JOINS.get(form, []):
+        dx = max(baseline) - t_min if side == "right" else min(baseline) - t_max
+        out.append(to_screen([(x + dx, y) for x, y in tatweel]) + "Z")
+    return out
+
+
+def glyph_run(font, char, form):
+    """[(glyph name, x offset)] a form is written with, in writing order."""
+    if form == "isolated" and char in VOWELS:
+        # the seat goes on the right, joined to the vowel's final form after it
+        vowel = glyph_name(font, char, "final")
+        return [(glyph_name(font, HAMZA, "initial"), font["hmtx"][vowel][0]), (vowel, 0)]
+    return [(glyph_name(font, char, form), 0)]
+
+
+def bbox(contour):
+    xs, ys = [p[0] for p in contour], [p[1] for p in contour]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def merge(contours, indices):
+    """Unions the contours at `indices` into as few as they make, the rest kept as they are.
+    Returns the new contours and where each old outer contour ended up in them."""
+    path = SkPath()
+    pen = path.getPen()
+    for i in indices:
+        pen.moveTo(contours[i][0])
+        for point in contours[i][1:]:
+            pen.lineTo(point)
+        pen.closePath()
+    path.simplify(clockwise=True)  # clockwise, like the font, so outers stay negative
+    out = PolygonPen()
+    path.draw(out)
+
+    kept = [i for i in range(len(contours)) if i not in indices]
+    merged = [contours[i] for i in kept] + out.contours
+    moved = {old: new for new, old in enumerate(kept)}
+    new_outers = [n for n in range(len(kept), len(merged)) if area(merged[n]) < 0]
+    for i in indices:
+        if area(contours[i]) >= 0:
+            continue
+        # an outer contour ends up in the smallest merged one whose box holds its box
+        x0, y0, x1, y1 = bbox(contours[i])
+        around = []
+        for n in new_outers:
+            bx0, by0, bx1, by1 = bbox(merged[n])
+            if bx0 <= x0 and by0 <= y0 and bx1 >= x1 and by1 >= y1:
+                around.append(n)
+        moved[i] = max(around, key=lambda n: area(merged[n]))
+    return merged, moved
+
+
+def join(stroke, after):
+    """One stroke that carries on into `after` without lifting the pen: a glyph's stroke into
+    the next one's, where they're written joined. `after` starts on the joining stroke from the
+    right, back over the end of `stroke`, so its points up to where `stroke` stops are dropped."""
+    end = stroke["points"][-1][0]
+    rest = [point for i, point in enumerate(after["points"])
+            if any(x < end for x, _ in after["points"][:i + 1])]
+    return {**stroke, "width": max(stroke["width"], after["width"]),
+            "points": stroke["points"] + rest}
+
+
+def build_form(font, char, form):
+    contours, strokes, bodies = [], [], []
+    marks = []
+    run = glyph_run(font, char, form)
+    for index, (glyph, x) in enumerate(run):
+        joined = index > 0  # the glyph before was written joined to this one
+        for component, dx, dy in components(font, glyph):
+            dx += x
+            first = len(contours)
+            contours += component_contours(font, component, dx, dy)
+            if "dot" in component:
+                marks += dot_strokes(contours, range(first, len(contours)))
+                continue
+            is_body = component in BODIES
+            if is_body:
+                bodies += range(first, len(contours))
+            elif component not in MARKS:
+                raise KeyError(f"no strokes for {component} ({char} {form})")
+            for s in (BODIES if is_body else MARKS)[component]:
+                points = [(px + dx, py + dy) for px, py in path_points(s["path"])]
+                stroke = {**s, "clip": first + s["clip"], "points": points}
+                if "label" in s:
+                    stroke["label"] = (s["label"][0] + dx, s["label"][1] + dy)
+                if is_body and joined:
+                    strokes[-1] = join(strokes[-1], stroke)
+                    joined = False
+                else:
+                    (strokes if is_body else marks).append(stroke)
+    # the whole body is written first, then each letter's marks and dots are put in, going
+    # right to left as the letters were written
+    strokes += marks
+    joins = tatweels(font, [contours[i] for i in bodies], form)
+    if len(run) > 1:
+        # the glyphs' joining strokes overlap, which would leave a seam across the outline
+        contours, moved = merge(contours, bodies)
+        strokes = [{**s, "clip": moved[s["clip"]]} for s in strokes]
+
+    # each outer contour is a part, along with the holes inside it
+    outers = [i for i, c in enumerate(contours) if area(c) < 0]
+    holes = {i: [] for i in outers}
+    for i, c in enumerate(contours):
+        if area(c) > 0:
+            parent = max((o for o in outers if contains(contours[o], c[0])),
+                         key=lambda o: area(contours[o]))  # the smallest one around it
+            holes[parent].append(i)
+    parts = []
+    for o in outers:
+        part = {"d": to_screen(contours[o]) + "Z"}
+        if holes[o]:
+            part["holes"] = [to_screen(contours[h]) + "Z" for h in holes[o]]
+        parts.append(part)
+
+    out = []
+    for s in strokes:
+        if s["clip"] not in outers:
+            raise ValueError(f"{char} {form}: a stroke clips to hole contour {s['clip']}")
+        part = [contours[s["clip"]], *(contours[h] for h in holes[s["clip"]])]
+        points = snap(s["points"], part, s["width"]) if len(s["points"]) > 2 else s["points"]
+        stroke = {"d": to_screen(points), "width": round(s["width"] * SCALE, 2),
+                  "part": outers.index(s["clip"])}
+        if "label" in s:
+            stroke["label"] = [round(s["label"][0] * SCALE, 2), round(-s["label"][1] * SCALE, 2)]
+        out.append(stroke)
+    entry = {"parts": parts, "strokes": out}
+    if joins:
+        entry["joins"] = joins
+    return entry
+
+
+def check_svg(form):
+    """The form fully inked over a red copy of the glyph, with its centerlines drawn in."""
+    def part_d(part):
+        return part["d"] + "".join(part.get("holes", []))
+
+    clips = "".join(f'<clipPath id="c{i}"><path d="{part_d(p)}" clip-rule="evenodd"/></clipPath>'
+                    for i, p in enumerate(form["parts"]))
+    red = "".join(f'<path d="{part_d(p)}" fill="#e74c3c" fill-rule="evenodd"/>'
+                  for p in form["parts"])
+    ink = "".join(f'<path d="{d}" fill="#a39a8c"/>' for d in form.get("joins", []))
+    lines = ""
+    for s in form["strokes"]:
+        ink += (f'<path d="{s["d"]}" clip-path="url(#c{s["part"]})" fill="none" stroke="#844f01" '
+                f'stroke-width="{s["width"]}" stroke-linecap="round" stroke-linejoin="round"/>')
+        x, y = s["d"][1:].split("L")[0].split()
+        lines += (f'<path d="{s["d"]}" fill="none" stroke="#2f6f73" stroke-width="0.25"/>'
+                  f'<circle cx="{x}" cy="{y}" r="0.6" fill="#2f6f73"/>')
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="-12 -28 56 44" width="560" '
+            f'height="440"><rect x="-12" y="-28" width="56" height="44" fill="#f3e3c6"/>'
+            f'<defs>{clips}</defs>{red}{ink}{lines}</svg>')
+
+
+def main():
+    font_path = sys.argv[sys.argv.index("--font") + 1] if "--font" in sys.argv else FONT
+    font = TTFont(font_path)
+    data = {}
+    for char in LETTERS:
+        forms = ["isolated", "final"] if char in RIGHT_JOINING else FORMS
+        data[char] = {form: build_form(font, char, form) for form in forms}
+    OUT.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
+    print(f"wrote {OUT}")
+
+    if "--check" in sys.argv:
+        out = Path(tempfile.mkdtemp(prefix="stroke-order-"))
+        for char, forms in data.items():
+            for form_name, form in forms.items():
+                svg = out / f"{ord(char):04x}-{form_name}.svg"
+                svg.write_text(check_svg(form))
+                subprocess.run(["rsvg-convert", svg, "-o", svg.with_suffix(".png")], check=True)
+                svg.unlink()
+        print(f"check renders in {out}")
+
+
+if __name__ == "__main__":
+    main()
