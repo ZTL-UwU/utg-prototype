@@ -1,5 +1,13 @@
 import { animate, cubicBezier } from 'motion';
-import { Container, Graphics, GraphicsContext, GraphicsPath, Polygon, Text } from 'pixi.js';
+import {
+  AlphaFilter,
+  Container,
+  Graphics,
+  GraphicsContext,
+  GraphicsPath,
+  Polygon,
+  Text,
+} from 'pixi.js';
 
 const INK_COLOR = 0x844f01;
 /** Teal, like the nav buttons, so the pen and stroke numbers stand apart from the ink. */
@@ -140,6 +148,11 @@ export class StrokeTracer extends Container {
   /** When the last stroke finishes; the demo holds its ink a moment, then fades it. */
   private inkEnd = 0;
   private inkLayer = new Container();
+  /**
+   * Fades the ink as one flat layer. The layer's own alpha would reach each stroke separately, so
+   * where strokes overlap, or one doubles back on itself, the ink would show through darker.
+   */
+  private fadeFilter = new AlphaFilter({ alpha: 1, resolution: 'inherit', antialias: 'inherit' });
   private badgeLayer = new Container();
   private nib = new Graphics().circle(0, 0, NIB_RADIUS).fill(ACCENT_COLOR);
   private animation?: { stop: () => void };
@@ -250,13 +263,16 @@ export class StrokeTracer extends Container {
       stroke.badge.alpha = 0;
       stroke.badge.scale.set(1);
     }
-    this.inkLayer.alpha = 1;
+    this.inkLayer.filters = null;
     this.nib.visible = false;
   }
 
   private drawAt(time: number) {
     this.nib.visible = false;
-    this.inkLayer.alpha = 1 - clamp01((time - this.inkEnd - DEMO_HOLD) / DEMO_FADE);
+    const fade = 1 - clamp01((time - this.inkEnd - DEMO_HOLD) / DEMO_FADE);
+    // only while fading, so the filter's extra render pass isn't paid for the whole demo
+    this.fadeFilter.alpha = fade;
+    this.inkLayer.filters = fade < 1 ? this.fadeFilter : null;
     for (const stroke of this.strokes) {
       const { start, end, length } = stroke;
       stroke.badge.alpha = clamp01((time - start + BADGE_FADE) / BADGE_FADE);
