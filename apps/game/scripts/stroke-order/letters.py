@@ -18,6 +18,8 @@ import re
 # Every letter the screen shows, and those that only join on the right (isolated and final only)
 LETTERS = "ابتجخدرزسشغفقكلمنوىيپچژڭگھۆۇۈۋېە"
 RIGHT_JOINING = "ادرزژوۆۇۈۋە"
+# Vowels, which on their own are written after a hamza seat (ئا); their isolated forms show that
+VOWELS = "اەوۇۆۈېى"
 
 
 def retrace(d):
@@ -426,6 +428,14 @@ MARKS = {
     # ۇ's damma
     "commaabovear": [
         dict(clip=0, width=80, path="M22 925C30 965 90 975 105 935C110 880 70 820 20 760"),
+    ],
+    # the hamza of ئ — round the head from its inner tip, right along under it to the end of the
+    # bar, then back along the bar to its left corner
+    "uni0654": [
+        # badge beside the head: the default, below it, would sit on the seat's badge
+        dict(clip=0, width=45, label=(215, 880),
+             path="M104 866C116 892 104 918 76 921C42 922 15 894 11 862"
+                  "C9 836 22 818 50 814L125 806L3 752"),
     ],
     # ۈ's small alif
     "uni0670": [

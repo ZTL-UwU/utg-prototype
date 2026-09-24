@@ -153,15 +153,19 @@ export class StrokeTracer extends Container {
    * where strokes overlap, or one doubles back on itself, the ink would show through darker.
    */
   private fadeFilter = new AlphaFilter({ alpha: 1, resolution: 'inherit', antialias: 'inherit' });
-  private badgeLayer = new Container();
+  /**
+   * The stroke numbers. Not a child of the tracer, so its owner can put them above anything drawn
+   * over the ink, such as the glyph's outline; it must share the tracer's transform.
+   */
+  readonly badgeLayer = new Container();
   private nib = new Graphics().circle(0, 0, NIB_RADIUS).fill(ACCENT_COLOR);
   private animation?: { stop: () => void };
   private pulsing?: Container;
 
   constructor() {
     super();
-    // badges and the pen ride above every stroke's ink
-    this.addChild(this.inkLayer, this.badgeLayer, this.nib);
+    // the pen rides above every stroke's ink
+    this.addChild(this.inkLayer, this.nib);
     this.nib.visible = false;
   }
 

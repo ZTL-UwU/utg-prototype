@@ -6,6 +6,9 @@ automatically. Each stroke is a pen centerline the screen reveals in order, clip
 of the glyph it inks. The guide paths in letters.py only need to be roughly right: each point is
 pulled to the middle of its part, measured across the stroke.
 
+A vowel on its own is written after a hamza seat, so its isolated form is ئا, ئە and so on: the
+seat's initial form joined to the vowel's final form, their overlapping bodies merged into one.
+
 Connected forms also get a tatweel (ـ) on each side they join, butted up against the end of the
 letter's joining stroke. It's kept apart from the parts: the screen shows it as a faint guide,
 never traced or scored.
@@ -13,11 +16,13 @@ never traced or scored.
 Output is flipped to y-down and scaled so a letter's body is about 2.5 units thick, the scale the
 screen's drawing and scoring constants are tuned for.
 
-Needs fontTools (`pip install fonttools`) and the font. `--check` also renders each form fully
+Needs fontTools and skia-pathops (`pip install fonttools skia-pathops`) and the font. `--check` also renders each form fully
 inked, with anything the strokes miss in red and each centerline drawn in, for tuning guides
 (needs rsvg-convert).
 
 Usage: python apps/game/scripts/stroke-order/build.py [--check] [--font path/to/font.ttf]
+       or, without installing anything: uv run --no-project --with fonttools --with skia-pathops
+       python apps/game/scripts/stroke-order/build.py
        then `vp check --fix` to format the JSON
 """
 import json
@@ -35,14 +40,16 @@ from fontTools.pens.basePen import BasePen
 from fontTools.pens.recordingPen import DecomposingRecordingPen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.ttLib import TTFont
+from pathops import Path as SkPath
 
-from letters import BODIES, LETTERS, MARKS, RIGHT_JOINING
+from letters import BODIES, LETTERS, MARKS, RIGHT_JOINING, VOWELS
 
 FONT = "/usr/share/fonts/noto/NotoNaskhArabic-Regular.ttf"
 OUT = Path(__file__).parents[2] / "src/app/screens/letter-reference/letters.json"
 FORMS = ["isolated", "initial", "medial", "final"]
 FEATURES = {"initial": "init", "medial": "medi", "final": "fina"}
 TATWEEL = 0x0640
+HAMZA = "ئ"
 # the sides each connected form joins its neighbours on
 JOINS = {"initial": ["left"], "medial": ["right", "left"], "final": ["right"]}
 SCALE = 1 / 32
@@ -269,23 +276,99 @@ def tatweels(font, body, form):
     return out
 
 
-def build_form(font, char, form):
-    contours, strokes = [], []
-    for index, (component, dx, dy) in enumerate(components(font, glyph_name(font, char, form))):
-        first = len(contours)
-        contours += component_contours(font, component, dx, dy)
-        if index == 0:
-            joins = tatweels(font, contours, form)
-        if "dot" in component:
-            strokes += dot_strokes(contours, range(first, len(contours)))
+def glyph_run(font, char, form):
+    """[(glyph name, x offset)] a form is written with, in writing order."""
+    if form == "isolated" and char in VOWELS:
+        # the seat goes on the right, joined to the vowel's final form after it
+        vowel = glyph_name(font, char, "final")
+        return [(glyph_name(font, HAMZA, "initial"), font["hmtx"][vowel][0]), (vowel, 0)]
+    return [(glyph_name(font, char, form), 0)]
+
+
+def bbox(contour):
+    xs, ys = [p[0] for p in contour], [p[1] for p in contour]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def merge(contours, indices):
+    """Unions the contours at `indices` into as few as they make, the rest kept as they are.
+    Returns the new contours and where each old outer contour ended up in them."""
+    path = SkPath()
+    pen = path.getPen()
+    for i in indices:
+        pen.moveTo(contours[i][0])
+        for point in contours[i][1:]:
+            pen.lineTo(point)
+        pen.closePath()
+    path.simplify(clockwise=True)  # clockwise, like the font, so outers stay negative
+    out = PolygonPen()
+    path.draw(out)
+
+    kept = [i for i in range(len(contours)) if i not in indices]
+    merged = [contours[i] for i in kept] + out.contours
+    moved = {old: new for new, old in enumerate(kept)}
+    new_outers = [n for n in range(len(kept), len(merged)) if area(merged[n]) < 0]
+    for i in indices:
+        if area(contours[i]) >= 0:
             continue
-        # a glyph's first component is its body; the others are marks
-        table, kind = (BODIES, "body") if index == 0 else (MARKS, "mark")
-        if component not in table:
-            raise KeyError(f"no strokes for {kind} {component} ({char} {form})")
-        for s in table[component]:
-            points = [(x + dx, y + dy) for x, y in path_points(s["path"])]
-            strokes.append({**s, "clip": first + s["clip"], "points": points})
+        # an outer contour ends up in the smallest merged one whose box holds its box
+        x0, y0, x1, y1 = bbox(contours[i])
+        around = []
+        for n in new_outers:
+            bx0, by0, bx1, by1 = bbox(merged[n])
+            if bx0 <= x0 and by0 <= y0 and bx1 >= x1 and by1 >= y1:
+                around.append(n)
+        moved[i] = max(around, key=lambda n: area(merged[n]))
+    return merged, moved
+
+
+def join(stroke, after):
+    """One stroke that carries on into `after` without lifting the pen: a glyph's stroke into
+    the next one's, where they're written joined. `after` starts on the joining stroke from the
+    right, back over the end of `stroke`, so its points up to where `stroke` stops are dropped."""
+    end = stroke["points"][-1][0]
+    rest = [point for i, point in enumerate(after["points"])
+            if any(x < end for x, _ in after["points"][:i + 1])]
+    return {**stroke, "width": max(stroke["width"], after["width"]),
+            "points": stroke["points"] + rest}
+
+
+def build_form(font, char, form):
+    contours, strokes, bodies = [], [], []
+    marks = []
+    run = glyph_run(font, char, form)
+    for index, (glyph, x) in enumerate(run):
+        joined = index > 0  # the glyph before was written joined to this one
+        for component, dx, dy in components(font, glyph):
+            dx += x
+            first = len(contours)
+            contours += component_contours(font, component, dx, dy)
+            if "dot" in component:
+                marks += dot_strokes(contours, range(first, len(contours)))
+                continue
+            is_body = component in BODIES
+            if is_body:
+                bodies += range(first, len(contours))
+            elif component not in MARKS:
+                raise KeyError(f"no strokes for {component} ({char} {form})")
+            for s in (BODIES if is_body else MARKS)[component]:
+                points = [(px + dx, py + dy) for px, py in path_points(s["path"])]
+                stroke = {**s, "clip": first + s["clip"], "points": points}
+                if "label" in s:
+                    stroke["label"] = (s["label"][0] + dx, s["label"][1] + dy)
+                if is_body and joined:
+                    strokes[-1] = join(strokes[-1], stroke)
+                    joined = False
+                else:
+                    (strokes if is_body else marks).append(stroke)
+    # the whole body is written first, then each letter's marks and dots are put in, going
+    # right to left as the letters were written
+    strokes += marks
+    joins = tatweels(font, [contours[i] for i in bodies], form)
+    if len(run) > 1:
+        # the glyphs' joining strokes overlap, which would leave a seam across the outline
+        contours, moved = merge(contours, bodies)
+        strokes = [{**s, "clip": moved[s["clip"]]} for s in strokes]
 
     # each outer contour is a part, along with the holes inside it
     outers = [i for i, c in enumerate(contours) if area(c) < 0]

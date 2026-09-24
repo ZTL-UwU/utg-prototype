@@ -189,8 +189,10 @@ export class OutlineDisplay extends Container {
     this.tracer = new StrokeTracer();
     // kept in the glyph only so drawn points can be mapped into its coordinates
     this.glyphMask = new Graphics({ renderable: false });
-    // tracer underneath so the outline stays crisp on top of it
-    this.glyph = new Container({ children: [this.glyphMask, this.tracer, this.outline] });
+    // tracer underneath so the outline stays crisp on top of it, but its stroke numbers above
+    this.glyph = new Container({
+      children: [this.glyphMask, this.tracer, this.outline, this.tracer.badgeLayer],
+    });
     this.border = new Graphics();
     this.frame = new Container({ layout: true });
     this.soundButton = new SoundButton({
