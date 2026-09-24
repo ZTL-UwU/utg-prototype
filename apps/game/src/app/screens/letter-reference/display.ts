@@ -398,9 +398,11 @@ export class OutlineDisplay extends Container {
     this.clearButton.enabled = !this.drawingCanvas.isEmpty;
     this.submitButton.enabled = !this.drawingCanvas.isEmpty;
     for (const [form, { button, view, selectedView }] of this.formButtons) {
-      button.enabled = hasForm(base, form);
+      // swapped before enabling: FancyButton's defaultView setter hides the disabled view if the
+      // button isn't in its default state, so a swap on a disabled button left it looking enabled
       const targetView = form === this.form ? selectedView : view;
       if (button.defaultView !== targetView) button.defaultView = targetView;
+      button.enabled = hasForm(base, form);
     }
   }
 
@@ -411,7 +413,7 @@ export class OutlineDisplay extends Container {
     if (!b.width || !b.height) return; // context not set yet
 
     // scale to fit inside the frame, keeping aspect ratio, with margin
-    const margin = 0.75;
+    const margin = 0.65;
     const scale = Math.min(this.w / b.width, this.h / b.height) * margin;
 
     this.glyph.scale.set(scale);
