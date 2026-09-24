@@ -6,6 +6,10 @@ automatically. Each stroke is a pen centerline the screen reveals in order, clip
 of the glyph it inks. The guide paths in letters.py only need to be roughly right: each point is
 pulled to the middle of its part, measured across the stroke.
 
+Connected forms also get a tatweel (ـ) on each side they join, butted up against the end of the
+letter's joining stroke. It's kept apart from the parts: the screen shows it as a faint guide,
+never traced or scored.
+
 Output is flipped to y-down and scaled so a letter's body is about 2.5 units thick, the scale the
 screen's drawing and scoring constants are tuned for.
 
@@ -38,6 +42,9 @@ FONT = "/usr/share/fonts/noto/NotoNaskhArabic-Regular.ttf"
 OUT = Path(__file__).parents[2] / "src/app/screens/letter-reference/letters.json"
 FORMS = ["isolated", "initial", "medial", "final"]
 FEATURES = {"initial": "init", "medial": "medi", "final": "fina"}
+TATWEEL = 0x0640
+# the sides each connected form joins its neighbours on
+JOINS = {"initial": ["left"], "medial": ["right", "left"], "final": ["right"]}
 SCALE = 1 / 32
 # Curves are flattened to lines about this long, in font units: Pixi divides curves by their
 # length in local units, so at this scale it would leave them visibly faceted.
@@ -248,11 +255,27 @@ def dot_strokes(contours, group):
     return strokes
 
 
+def tatweels(font, body, form):
+    """A tatweel on each side the form joins, its end against the end of the joining stroke."""
+    (tatweel,) = component_contours(font, font.getBestCmap()[TATWEEL], 0, 0)
+    t_min, t_max = min(p[0] for p in tatweel), max(p[0] for p in tatweel)
+    t_top = max(p[1] for p in tatweel)
+    # the joining stroke runs along the baseline, as thick as the tatweel
+    baseline = [x for contour in body for x, y in contour if 0 <= y <= t_top]
+    out = []
+    for side in JOINS.get(form, []):
+        dx = max(baseline) - t_min if side == "right" else min(baseline) - t_max
+        out.append(to_screen([(x + dx, y) for x, y in tatweel]) + "Z")
+    return out
+
+
 def build_form(font, char, form):
     contours, strokes = [], []
     for index, (component, dx, dy) in enumerate(components(font, glyph_name(font, char, form))):
         first = len(contours)
         contours += component_contours(font, component, dx, dy)
+        if index == 0:
+            joins = tatweels(font, contours, form)
         if "dot" in component:
             strokes += dot_strokes(contours, range(first, len(contours)))
             continue
@@ -290,7 +313,10 @@ def build_form(font, char, form):
         if "label" in s:
             stroke["label"] = [round(s["label"][0] * SCALE, 2), round(-s["label"][1] * SCALE, 2)]
         out.append(stroke)
-    return {"parts": parts, "strokes": out}
+    entry = {"parts": parts, "strokes": out}
+    if joins:
+        entry["joins"] = joins
+    return entry
 
 
 def check_svg(form):
@@ -302,15 +328,16 @@ def check_svg(form):
                     for i, p in enumerate(form["parts"]))
     red = "".join(f'<path d="{part_d(p)}" fill="#e74c3c" fill-rule="evenodd"/>'
                   for p in form["parts"])
-    ink, lines = "", ""
+    ink = "".join(f'<path d="{d}" fill="#a39a8c"/>' for d in form.get("joins", []))
+    lines = ""
     for s in form["strokes"]:
         ink += (f'<path d="{s["d"]}" clip-path="url(#c{s["part"]})" fill="none" stroke="#844f01" '
                 f'stroke-width="{s["width"]}" stroke-linecap="round" stroke-linejoin="round"/>')
         x, y = s["d"][1:].split("L")[0].split()
         lines += (f'<path d="{s["d"]}" fill="none" stroke="#2f6f73" stroke-width="0.25"/>'
                   f'<circle cx="{x}" cy="{y}" r="0.6" fill="#2f6f73"/>')
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="-5 -28 44 44" width="440" '
-            f'height="440"><rect x="-5" y="-28" width="44" height="44" fill="#f3e3c6"/>'
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="-12 -28 56 44" width="560" '
+            f'height="440"><rect x="-12" y="-28" width="56" height="44" fill="#f3e3c6"/>'
             f'<defs>{clips}</defs>{red}{ink}{lines}</svg>')
 
 

@@ -56,6 +56,11 @@ const COVERAGE_RADIUS = 2;
 /** Line width of the letter's outline, in outline units. */
 const OUTLINE_WIDTH = 0.8;
 const OUTLINE_COLOR = 0x000000;
+/**
+ * The tatweel's outline: the black at 30% over the background, faint so it reads as a guide rather
+ * than part of the letter. Solid rather than translucent so its overlapping joins don't darken.
+ */
+const JOIN_COLOR = 0xaa9f8a;
 
 const FORM_LABELS: Record<LETTER_FORMS, string> = {
   isolated: 'Isolated',
@@ -68,6 +73,8 @@ const FORM_LABELS: Record<LETTER_FORMS, string> = {
 // part at index `part`. baked from Noto Naskh Arabic by scripts/stroke-order/build.py
 type LetterEntry = {
   parts: GlyphPart[];
+  /** Tatweel (ـ) on each side a connected form joins; only drawn, never traced or scored. */
+  joins?: string[];
   /** `label` is an [x, y] pair, but JSON imports only type it as an array. */
   strokes: { d: string; width: number; part: number; label?: number[] }[];
 };
@@ -421,10 +428,21 @@ export class OutlineDisplay extends Container {
     const key = `${letter}/${form}`;
     let context = this.contextCache.get(key);
     if (!context) {
-      const outline = letters[letter]![form]!.parts.flatMap(({ d, holes = [] }) => [d, ...holes]);
-      context = new GraphicsContext()
-        .path(new GraphicsPath(outline.join('')))
-        .stroke({ width: OUTLINE_WIDTH, color: OUTLINE_COLOR, cap: 'round', join: 'round' });
+      const { parts, joins = [] } = letters[letter]![form]!;
+      const outline = parts.flatMap(({ d, holes = [] }) => [d, ...holes]);
+      const style = {
+        width: OUTLINE_WIDTH,
+        color: OUTLINE_COLOR,
+        cap: 'round',
+        join: 'round',
+      } as const;
+      context = new GraphicsContext();
+      // first, so the letter's own outline is drawn over the end it shares with the tatweel;
+      // in the outline's bounds, so the letter is centred along with it
+      if (joins.length) {
+        context.path(new GraphicsPath(joins.join(''))).stroke({ ...style, color: JOIN_COLOR });
+      }
+      context.path(new GraphicsPath(outline.join(''))).stroke(style);
       this.contextCache.set(key, context);
     }
     return context;
