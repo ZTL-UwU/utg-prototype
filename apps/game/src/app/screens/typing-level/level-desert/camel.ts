@@ -15,7 +15,9 @@ export class Camel extends Container {
         ),
       ),
     );
-    this.sprite.anchor.set(0.5);
+    // Frames are cropped from a 1024x1024 canvas to its 616x560 opaque bounds at
+    // (218, 218); anchor on the original canvas center so placement is unchanged.
+    this.sprite.anchor.set((512 - 218) / 616, (512 - 218) / 560);
     this.sprite.animationSpeed = 0.18;
     this.sprite.loop = true;
     this.sprite.scale.set(0.4);
