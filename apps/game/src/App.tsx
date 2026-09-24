@@ -27,7 +27,7 @@ export default function App() {
       await engine.init({
         background: '#000000',
         resizeOptions: { minWidth: 768, minHeight: 1024, letterbox: false },
-        antialias: false,
+        antialias: true,
       });
 
       bootstrapRemoteData();
