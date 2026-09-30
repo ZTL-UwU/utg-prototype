@@ -1,6 +1,7 @@
 import { sound } from '@pixi/sound';
 import type { FancyButton } from '@pixi/ui';
 import { EDUCATION_LETTERS } from '@utg/letters';
+import { animate } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
@@ -36,6 +37,12 @@ const SOUND_BUTTON_SIZE = 110;
 const BODY_TOP = 180;
 const EDGE_MARGIN = 36;
 const COLUMN_GAP = 28;
+/** Seconds each part of the screen takes to come in. */
+const APPEAR_DURATION = 0.4;
+/** Seconds between each ring of the top bar popping in, from the chip outward. */
+const APPEAR_STAGGER = 0.06;
+/** How far below its place the body starts as it rises in. */
+const APPEAR_RISE = 60;
 
 // the bundled recording of the letter itself
 function getLetterSoundAlias(letter: string) {
@@ -135,6 +142,50 @@ export class LetterReferenceScreen extends Container {
 
   async show() {
     this.playLetterSound();
+    await this.playAppearAnimation();
+  }
+
+  // the top bar pops in from the chip outward, and the canvas and forms rise in under it
+  private async playAppearAnimation() {
+    const rings = [
+      [this.chip],
+      [this.nextButton, this.prevButton],
+      [this.watchButton, this.retryButton, this.soundButton],
+    ];
+    // the body is offset by its pivot, so a resize mid-animation still lands it in place
+    const body = [this.outlineDisplay, this.formBar];
+
+    // back to the scale each had: the sound button is sized by its own
+    const scales = new Map(rings.flat().map((target) => [target, target.scale.x]));
+
+    this.HUD.alpha = 0;
+    for (const target of rings.flat()) target.scale.set(0);
+    for (const target of body) {
+      target.alpha = 0;
+      target.pivot.y = -APPEAR_RISE;
+    }
+
+    const duration = APPEAR_DURATION;
+    await Promise.all([
+      animate(this.HUD, { alpha: 1 }, { duration, ease: 'easeOut' }),
+      ...rings.flatMap((ring, i) =>
+        ring.map((target) => {
+          const scale = scales.get(target) ?? 1;
+          return animate(
+            target.scale,
+            { x: scale, y: scale },
+            { duration, delay: i * APPEAR_STAGGER, ease: 'backOut' },
+          );
+        }),
+      ),
+      ...body.flatMap((target, i) => {
+        const delay = (i + 1) * APPEAR_STAGGER;
+        return [
+          animate(target, { alpha: 1 }, { duration, delay, ease: 'easeOut' }),
+          animate(target.pivot, { y: 0 }, { duration, delay, ease: 'backOut' }),
+        ];
+      }),
+    ]);
   }
 
   private get letter() {
