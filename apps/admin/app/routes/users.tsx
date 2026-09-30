@@ -28,6 +28,8 @@ import { pageTitle } from '~/lib/page-title';
 import { type AdminUser, type AdminUserFlag, userLabel, usersQueryOptions } from '~/lib/users';
 import { useAuthStore } from '~/stores/auth';
 
+const usersInitialSorting = [{ id: 'date_joined', desc: true }];
+
 function getErrorDescription(error: unknown): string | undefined {
   if (error instanceof FetchError) {
     return error.data?.detail ?? error.message;
@@ -120,6 +122,7 @@ export default function UsersPage() {
           columns={columns}
           data={users}
           getRowId={(user) => String(user.id)}
+          initialSorting={usersInitialSorting}
           searchColumn="user"
           searchPlaceholder="Search (name or email)"
           emptyMessage="No matching users found."

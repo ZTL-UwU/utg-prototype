@@ -1,4 +1,10 @@
-import { useTable, type Column, type ColumnDef, type RowData } from '@tanstack/react-table';
+import {
+  useTable,
+  type Column,
+  type ColumnDef,
+  type RowData,
+  type SortingState,
+} from '@tanstack/react-table';
 import {
   ArrowDownIcon,
   ArrowUpIcon,
@@ -37,6 +43,7 @@ interface DataTableProps<TData extends RowData> {
   data: TData[];
   emptyMessage?: string;
   getRowId?: (originalRow: TData) => string;
+  initialSorting?: SortingState;
   onRowClick?: (row: TData) => void;
   searchColumn?: string;
   searchPlaceholder?: string;
@@ -77,6 +84,7 @@ export function DataTable<TData extends RowData>({
   data,
   emptyMessage = 'No results.',
   getRowId,
+  initialSorting,
   onRowClick,
   searchColumn,
   searchPlaceholder = 'Search',
@@ -89,6 +97,7 @@ export function DataTable<TData extends RowData>({
     getRowId,
     initialState: {
       pagination: { pageIndex: 0, pageSize: 10 },
+      ...(initialSorting ? { sorting: initialSorting } : {}),
     },
   });
 
