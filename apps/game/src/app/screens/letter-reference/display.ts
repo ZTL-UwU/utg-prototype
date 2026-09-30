@@ -1,136 +1,43 @@
-import { FancyButton } from '@pixi/ui';
-import { Container, Graphics, GraphicsContext, GraphicsPath, Sprite, Text, Texture } from 'pixi.js';
+import { Container, Graphics, GraphicsContext, GraphicsPath, Text } from 'pixi.js';
 
-import type { LETTER_FORMS } from '.';
 import { DrawingCanvas, type StrokePoint } from '../../ui/drawing-canvas';
-import { SoundButton } from '../../ui/sound-button';
 import { calculateDrawingAccuracy, parseStrokePath } from './calculate-accuracy';
-import { createGlyphMaskContext, type GlyphPart } from './glyph-mask';
-import lettersJson from './letters.json';
+import { LABEL_COLOR, NAV_COLOR, NAV_SHADOW_COLOR } from './controls';
+import { createGlyphMaskContext } from './glyph-mask';
+import { getBaseForm, getLetterEntry, GLYPH_EXTENT, type LETTER_FORMS } from './letter-data';
 import { StrokeTracer, type TraceStroke } from './stroke-tracer';
 
-const HAMZA = 'ئ';
-export const FRAME_COLOR = 0x844f01;
-const LABEL_COLOR = 0xf3e3c6;
-
-const FORM_BUTTON_WIDTH = 220;
-const FORM_BUTTON_HEIGHT = 90;
-const FORM_BUTTON_RADIUS = 30;
-const FORM_BUTTON_SHADOW_OFFSET = 10;
-const FORM_BUTTON_SHADOW_COLOR = 0x5a3601;
-const FORM_BUTTON_SELECTED_COLOR = 0xc98144;
-const FORM_BUTTON_SELECTED_RING_WIDTH = 6;
-const NAV_BUTTON_COLOR = 0x2f6f73;
-const NAV_BUTTON_SHADOW_COLOR = 0x1d4649;
-const FORM_BUTTON_DISABLED_COLOR = 0xa39a8c;
-const FORM_BUTTON_DISABLED_SHADOW_COLOR = 0x6f685e;
-const FORM_BUTTON_ANIMATIONS = {
-  hover: { props: { scale: { x: 1.06, y: 1.06 } }, duration: 100 },
-  pressed: { props: { scale: { x: 0.94, y: 0.94 } }, duration: 80 },
-};
-const ROW_HEIGHT = FORM_BUTTON_HEIGHT + FORM_BUTTON_SHADOW_OFFSET;
-const ROW_GAP = 32;
-const COUNTER_INSET = 28;
-const SOUND_BUTTON_SIZE = 90;
 /** Teal so the user's own ink reads apart from the brown demo trace. */
-const DRAW_COLOR = NAV_BUTTON_COLOR;
+const DRAW_COLOR = NAV_COLOR;
 /** Brush width in outline units: a little under the letter's body (about 2.4) and the demo trace. */
-const DRAW_WIDTH = 2;
+const DRAW_WIDTH = 1.8;
 /** Seconds after a letter or form comes up before its demo plays by itself. */
 const AUTO_DEMO_DELAY = 0.6;
-/** Space between the stacked Submit and Clear buttons. */
-const BUTTON_STACK_GAP = 16;
-/** Darkness of the tint behind the results message. */
-const OVERLAY_ALPHA = 0.6;
 /** Line width of the letter's outline, in outline units. */
-const OUTLINE_WIDTH = 0.8;
+const OUTLINE_WIDTH = 0.65;
 const OUTLINE_COLOR = 0x000000;
+/** Share of the canvas the largest form fills. */
+const GLYPH_MARGIN = 0.85;
 /**
  * The tatweel's outline: the black at 30% over the background, faint so it reads as a guide rather
  * than part of the letter. Solid rather than translucent so its overlapping joins don't darken.
  */
 const JOIN_COLOR = 0xaa9f8a;
-
-const FORM_LABELS: Record<LETTER_FORMS, string> = {
-  isolated: 'Isolated',
-  initial: 'Initial',
-  medial: 'Medial',
-  final: 'Final',
-};
-
-// each form's outline, split into parts, and the strokes it's written in, each clipped to the
-// part at index `part`. baked from Noto Naskh Arabic by scripts/stroke-order/build.py
-type LetterEntry = {
-  parts: GlyphPart[];
-  /** Tatweel (ـ) on each side a connected form joins; only drawn, never traced or scored. */
-  joins?: string[];
-  /** `label` is an [x, y] pair, but JSON imports only type it as an array. */
-  strokes: { d: string; width: number; part: number; label?: number[] }[];
-};
-const letters = lettersJson as Record<string, Partial<Record<string, LetterEntry>>>;
+/** The result label, in the top middle of the frame. */
+const RESULT_INSET = 28;
+const RESULT_PAD_X = 32;
+const RESULT_HEIGHT = 72;
 
 // TODO: write the results message; accuracy is a percentage from 0 to 100
 function getResultsMessage(accuracy: number): string {
-  return `Drawing Results
-Accuracy: ${Math.round(accuracy)}%`;
+  return `Accuracy: ${Math.round(accuracy)}%`;
 }
 
-function getBaseForm(letter: string) {
-  const base = letter.length > 1 && letter.startsWith(HAMZA) ? letter.slice(1) : letter;
-  return base;
-}
-
-function hasForm(base: string, form: LETTER_FORMS) {
-  return Boolean(letters[base]?.[form]);
-}
-
-function createButtonView(color: number, shadowColor: number) {
-  return new Graphics()
-    .roundRect(
-      0,
-      FORM_BUTTON_SHADOW_OFFSET,
-      FORM_BUTTON_WIDTH,
-      FORM_BUTTON_HEIGHT,
-      FORM_BUTTON_RADIUS,
-    )
-    .fill(shadowColor)
-    .roundRect(0, 0, FORM_BUTTON_WIDTH, FORM_BUTTON_HEIGHT, FORM_BUTTON_RADIUS)
-    .fill(color);
-}
-
-// lighter fill with a dark ring, swapped in as the default view of the current form's button
-function createSelectedButtonView() {
-  const inset = FORM_BUTTON_SELECTED_RING_WIDTH / 2;
-  return createButtonView(FORM_BUTTON_SELECTED_COLOR, FORM_BUTTON_SHADOW_COLOR)
-    .roundRect(
-      inset,
-      inset,
-      FORM_BUTTON_WIDTH - FORM_BUTTON_SELECTED_RING_WIDTH,
-      FORM_BUTTON_HEIGHT - FORM_BUTTON_SELECTED_RING_WIDTH,
-      FORM_BUTTON_RADIUS - inset,
-    )
-    .stroke({ width: FORM_BUTTON_SELECTED_RING_WIDTH, color: FORM_BUTTON_SHADOW_COLOR });
-}
-
-function createTextButton(label: string, color: number, shadowColor: number, onPress: () => void) {
-  const button = new FancyButton({
-    defaultView: createButtonView(color, shadowColor),
-    disabledView: createButtonView(FORM_BUTTON_DISABLED_COLOR, FORM_BUTTON_DISABLED_SHADOW_COLOR),
-    text: new Text({
-      text: label,
-      resolution: 2,
-      style: { fontFamily: 'Concert One', fontSize: 40, fill: LABEL_COLOR },
-    }),
-    animations: FORM_BUTTON_ANIMATIONS,
-    anchor: 0.5,
-  });
-  button.layout = { width: FORM_BUTTON_WIDTH, height: ROW_HEIGHT, isLeaf: true };
-  button.onPress.connect(onPress);
-  return button;
-}
-
+/**
+ * The practice canvas: the letter's outline, its stroke-order demo and hints, and the user's ink.
+ * The drawing is scored by itself once it has as many strokes as the letter.
+ */
 export class OutlineDisplay extends Container {
-  private frame: Container;
   /** Holds the outline and its tracer so they share one transform. */
   private glyph: Container;
   private outline: Graphics;
@@ -138,65 +45,34 @@ export class OutlineDisplay extends Container {
   /** Each form's stroke centerlines, in the order and direction they're written, for scoring. */
   private referenceCache = new Map<string, StrokePoint[][]>();
   private strokeCache = new Map<string, TraceStroke[]>();
-  private traceButton: FancyButton;
+  private contextCache = new Map<string, GraphicsContext>();
   /** Freehand practice layer under the glyph, left unclipped so strokes off the letter show. */
   private drawingCanvas: DrawingCanvas;
-  private clearButton: FancyButton;
-  private submitButton: FancyButton;
-  /** Darkens the whole display and shows the scores after Submit. */
-  private resultsOverlay: Container;
-  private resultsText: Text;
-  private border: Graphics;
-  private buttonRow: Container;
-  private formButtons: Map<
-    LETTER_FORMS,
-    { button: FancyButton; view: Container; selectedView: Container }
-  >;
-  private contextCache: Map<string, GraphicsContext>;
+  private result: Container;
+  private resultBg = new Graphics();
+  private resultText: Text;
+  /** Set once the drawing is scored; the next touch starts over on a clean outline. */
+  private scored = false;
   private letter = '';
   private form: LETTER_FORMS = 'isolated';
   private w = 0;
   private h = 0;
-  private soundButton: SoundButton;
-  private counter = new Text({
-    resolution: 2,
-    style: { fontFamily: 'Concert One', fontSize: 40, fill: FRAME_COLOR },
-    position: { x: COUNTER_INSET, y: COUNTER_INSET },
-  });
 
-  constructor(
-    letter: string,
-    handlers: { onPrev: () => void; onNext: () => void; onSound: () => void; onHome: () => void },
-    form: LETTER_FORMS = 'isolated',
-  ) {
-    super({ layout: { flexDirection: 'column', alignItems: 'center', gap: ROW_GAP } });
-    this.contextCache = new Map();
+  private readonly handlers: {
+    /** The drawing or the demo changed, so what the tools can do may have too. */
+    onChange: () => void;
+    onScored: (accuracy: number) => void;
+  };
+
+  constructor(handlers: OutlineDisplay['handlers']) {
+    super();
+    this.handlers = handlers;
     this.outline = new Graphics();
     this.tracer = new StrokeTracer();
     // tracer underneath so the outline stays crisp on top of it, but its stroke numbers above
     this.glyph = new Container({
       children: [this.tracer, this.outline, this.tracer.badgeLayer],
     });
-    this.border = new Graphics();
-    this.frame = new Container({ layout: true });
-    this.soundButton = new SoundButton({
-      onClick: handlers.onSound,
-      size: SOUND_BUTTON_SIZE,
-      variant: 'brown',
-    });
-    // replays the demo on a clean slate
-    this.traceButton = createTextButton('Watch', NAV_BUTTON_COLOR, NAV_BUTTON_SHADOW_COLOR, () => {
-      this.drawingCanvas.clear();
-      this.tracer.play();
-    });
-    this.traceButton.layout = {
-      position: 'absolute',
-      right: COUNTER_INSET,
-      bottom: COUNTER_INSET,
-      width: FORM_BUTTON_WIDTH,
-      height: ROW_HEIGHT,
-      isLeaf: true,
-    };
     this.drawingCanvas = new DrawingCanvas({
       background: false,
       color: DRAW_COLOR,
@@ -204,137 +80,45 @@ export class OutlineDisplay extends Container {
         // each stroke drawn moves the hint on to the next; a demo in progress keeps playing
         // through the clears that come with a letter change or resize
         if (!this.tracer.isPlaying) this.tracer.showHints(strokes.length);
-        this.refreshButtons();
+        if (!strokes.length) this.hideResult();
+        else if (!this.scored && strokes.length >= this.reference.length) this.score();
+        handlers.onChange();
       },
     });
-    // starting to draw cuts a demo short, so the practice is on a clean outline
-    this.drawingCanvas.on('pointerdown', () => {
+    // capture runs ahead of the canvas's own handler, so a new attempt is cleared before its first
+    // stroke starts; and starting to draw cuts a demo short, so the practice is on a clean outline
+    this.drawingCanvas.on('pointerdowncapture', () => {
+      if (this.scored) this.drawingCanvas.clear();
       if (this.tracer.isPlaying) this.tracer.showHints(this.drawingCanvas.getStrokes().length);
     });
-    this.clearButton = createTextButton('Clear', NAV_BUTTON_COLOR, NAV_BUTTON_SHADOW_COLOR, () =>
-      this.clearDrawing(),
-    );
-    this.clearButton.layout = {
-      position: 'absolute',
-      left: COUNTER_INSET,
-      bottom: COUNTER_INSET,
-      width: FORM_BUTTON_WIDTH,
-      height: ROW_HEIGHT,
-      isLeaf: true,
-    };
-    this.submitButton = createTextButton(
-      'Submit',
-      NAV_BUTTON_COLOR,
-      NAV_BUTTON_SHADOW_COLOR,
-      this.handleSubmit,
-    );
-    // stacked directly above Clear
-    this.submitButton.layout = {
-      position: 'absolute',
-      left: COUNTER_INSET,
-      bottom: COUNTER_INSET + ROW_HEIGHT + BUTTON_STACK_GAP,
-      width: FORM_BUTTON_WIDTH,
-      height: ROW_HEIGHT,
-      isLeaf: true,
-    };
+
+    // flow label: anchored text and a pill drawn to fit it
+    this.resultText = new Text({
+      anchor: 0.5,
+      resolution: 2,
+      style: { fontFamily: 'Concert One', fontSize: 40, fill: LABEL_COLOR },
+    });
+    this.result = new Container({ children: [this.resultBg, this.resultText], visible: false });
+
     // canvas under the glyph so the outline and stroke numbers stay crisp over the user's ink; the
     // glyph isn't interactive, so pointer events still pass through it to the canvas
-    this.frame.addChild(
-      this.border,
-      this.drawingCanvas,
-      this.glyph,
-      this.counter,
-      this.soundButton,
-      this.traceButton,
-      this.clearButton,
-      this.submitButton,
-    );
-
-    this.formButtons = new Map();
-    for (const buttonForm of Object.keys(FORM_LABELS) as LETTER_FORMS[]) {
-      const button = createTextButton(
-        FORM_LABELS[buttonForm],
-        FRAME_COLOR,
-        FORM_BUTTON_SHADOW_COLOR,
-        () => this.setForm(buttonForm),
-      );
-      // FancyButton only detaches a replaced view, so both can be swapped back and forth
-      this.formButtons.set(buttonForm, {
-        button,
-        view: button.defaultView!,
-        selectedView: createSelectedButtonView(),
-      });
-    }
-    const prevButton = createTextButton(
-      'Prev',
-      NAV_BUTTON_COLOR,
-      NAV_BUTTON_SHADOW_COLOR,
-      handlers.onPrev,
-    );
-    const nextButton = createTextButton(
-      'Next',
-      NAV_BUTTON_COLOR,
-      NAV_BUTTON_SHADOW_COLOR,
-      handlers.onNext,
-    );
-    this.buttonRow = new Container({
-      layout: { flexDirection: 'row', alignItems: 'center', gap: ROW_GAP },
-      children: [
-        prevButton,
-        ...[...this.formButtons.values()].map(({ button }) => button),
-        nextButton,
-      ],
-    });
-
-    // tint catches pointer events so nothing underneath can be used while results show
-    const tint = new Sprite({
-      texture: Texture.WHITE,
-      tint: 0x000000,
-      alpha: OVERLAY_ALPHA,
-      eventMode: 'static',
-      layout: { position: 'absolute', width: '100%', height: '100%' },
-    });
-    // flow label: anchored text and @pixi/layout fight over the origin
-    this.resultsText = new Text({
-      resolution: 2,
-      style: { fontFamily: 'Concert One', fontSize: 56, fill: LABEL_COLOR, align: 'center' },
-      layout: true,
-    });
-    const resultsButtons = new Container({
-      layout: { flexDirection: 'row', alignItems: 'center', gap: ROW_GAP },
-      children: [
-        createTextButton('Continue', NAV_BUTTON_COLOR, NAV_BUTTON_SHADOW_COLOR, () =>
-          this.continueDrawing(),
-        ),
-        createTextButton('Go Home', FRAME_COLOR, FORM_BUTTON_SHADOW_COLOR, handlers.onHome),
-      ],
-    });
-    this.resultsOverlay = new Container({
-      layout: {
-        position: 'absolute',
-        width: '100%',
-        height: '100%',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: ROW_GAP,
-      },
-      children: [tint, this.resultsText, resultsButtons],
-    });
-    this.resultsOverlay.visible = false;
-
-    this.addChild(this.frame, this.buttonRow, this.resultsOverlay);
-    this.setLetter(letter, form);
+    this.addChild(this.drawingCanvas, this.glyph, this.result);
   }
 
-  setLetter(letter: string, form: LETTER_FORMS = 'isolated') {
-    const base = getBaseForm(letter);
+  get canWatch() {
+    return this.tracer.hasPath;
+  }
+
+  get canClear() {
+    return !this.drawingCanvas.isEmpty;
+  }
+
+  setLetter(letter: string, form: LETTER_FORMS) {
     this.letter = letter;
-    this.resultsOverlay.visible = false;
     this.form = form;
-    this.outline.context = this.getCachedContext(base, form);
+    this.outline.context = this.getCachedContext();
     // also stops and clears any trace in progress
-    this.tracer.setStrokes(this.getCachedStrokes(base, form));
+    this.tracer.setStrokes(this.getCachedStrokes());
 
     // recentre pivot on this letter's actual geometry
     const b = this.outline.getLocalBounds();
@@ -343,53 +127,27 @@ export class OutlineDisplay extends Container {
     this.fit(); // reposition + rescale for current size
     // show how it's written first; the practice hints follow once the demo is done
     this.tracer.play(AUTO_DEMO_DELAY);
-    this.refreshButtons();
+    this.handlers.onChange();
   }
 
-  // 1-based position of the letter, shown top-left of the frame
-  setCounter(position: number, total: number) {
-    this.counter.text = `${position}/${total}`;
+  /** Replays the demo on a clean slate. */
+  watch() {
+    this.drawingCanvas.clear();
+    this.tracer.play();
+    this.handlers.onChange();
   }
 
-  setForm(form: LETTER_FORMS) {
-    if (form === this.form || !hasForm(getBaseForm(this.letter), form)) return;
-    this.setLetter(this.letter, form);
+  /** Wipes the user's strokes; the canvas's onChange puts the hints back to the first stroke. */
+  clear() {
+    this.drawingCanvas.clear();
   }
 
   resize(width: number, height: number) {
     this.w = width;
-    this.h = Math.max(0, height - ROW_HEIGHT - ROW_GAP);
-    this.frame.layout = { width: this.w, height: this.h };
-    this.border
-      .clear()
-      .roundRect(0, 0, this.w, this.h, 20)
-      .stroke({ width: 8, color: FRAME_COLOR });
-    this.drawingCanvas.resize(this.w, this.h);
-    // anchored at its centre, mirroring the counter in the top-right corner
-    this.soundButton.position.set(
-      this.w - COUNTER_INSET - SOUND_BUTTON_SIZE / 2,
-      COUNTER_INSET + SOUND_BUTTON_SIZE / 2,
-    );
+    this.h = height;
+    this.drawingCanvas.resize(width, height);
+    this.result.position.set(width / 2, RESULT_INSET + RESULT_HEIGHT / 2);
     this.fit();
-  }
-
-  // wipes the user's strokes; its onChange puts the hints back to the first stroke
-  private clearDrawing() {
-    this.drawingCanvas.clear();
-  }
-
-  private refreshButtons() {
-    const base = getBaseForm(this.letter);
-    this.traceButton.enabled = this.tracer.hasPath;
-    this.clearButton.enabled = !this.drawingCanvas.isEmpty;
-    this.submitButton.enabled = !this.drawingCanvas.isEmpty;
-    for (const [form, { button, view, selectedView }] of this.formButtons) {
-      // swapped before enabling: FancyButton's defaultView setter hides the disabled view if the
-      // button isn't in its default state, so a swap on a disabled button left it looking enabled
-      const targetView = form === this.form ? selectedView : view;
-      if (button.defaultView !== targetView) button.defaultView = targetView;
-      button.enabled = hasForm(base, form);
-    }
   }
 
   private fit() {
@@ -398,9 +156,10 @@ export class OutlineDisplay extends Container {
     const b = this.outline.getLocalBounds();
     if (!b.width || !b.height) return; // context not set yet
 
-    // scale to fit inside the frame, keeping aspect ratio, with margin
-    const margin = 0.65;
-    const scale = Math.min(this.w / b.width, this.h / b.height) * margin;
+    // one scale for every letter and form, the largest that fits the biggest of them with room
+    // for its stroke numbers, so letters keep their sizes relative to each other
+    const scale =
+      Math.min(this.w / GLYPH_EXTENT.width, this.h / GLYPH_EXTENT.height) * GLYPH_MARGIN;
 
     this.glyph.scale.set(scale);
     this.glyph.position.set(this.w / 2, this.h / 2);
@@ -410,13 +169,20 @@ export class OutlineDisplay extends Container {
     this.drawingCanvas.clear();
   }
 
+  private get key() {
+    return `${getBaseForm(this.letter)}/${this.form}`;
+  }
+
+  private get entry() {
+    return getLetterEntry(this.letter, this.form)!;
+  }
+
   // returns context if cached
   // creates, caches, and returns if not
-  private getCachedContext(letter: string, form: LETTER_FORMS) {
-    const key = `${letter}/${form}`;
-    let context = this.contextCache.get(key);
+  private getCachedContext() {
+    let context = this.contextCache.get(this.key);
     if (!context) {
-      const { parts, joins = [] } = letters[letter]![form]!;
+      const { parts, joins = [] } = this.entry;
       const outline = parts.flatMap(({ d, holes = [] }) => [d, ...holes]);
       const style = {
         width: OUTLINE_WIDTH,
@@ -431,17 +197,16 @@ export class OutlineDisplay extends Container {
         context.path(new GraphicsPath(joins.join(''))).stroke({ ...style, color: JOIN_COLOR });
       }
       context.path(new GraphicsPath(outline.join(''))).stroke(style);
-      this.contextCache.set(key, context);
+      this.contextCache.set(this.key, context);
     }
     return context;
   }
 
   // each stroke is clipped to its own part of the glyph, so a thick pen can't spill onto the next
-  private getCachedStrokes(letter: string, form: LETTER_FORMS) {
-    const key = `${letter}/${form}`;
-    let strokes = this.strokeCache.get(key);
+  private getCachedStrokes() {
+    let strokes = this.strokeCache.get(this.key);
     if (!strokes) {
-      const { parts, strokes: entries } = letters[letter]![form]!;
+      const { parts, strokes: entries } = this.entry;
       const clips = parts.map((part) => createGlyphMaskContext([part]));
       strokes = entries.map(({ d, width, part, label }) => ({
         d,
@@ -449,41 +214,45 @@ export class OutlineDisplay extends Container {
         clip: clips[part],
         label: label && [label[0], label[1]],
       }));
-      this.strokeCache.set(key, strokes);
+      this.strokeCache.set(this.key, strokes);
     }
     return strokes;
   }
 
-  private readonly handleSubmit = () => {
+  private get reference() {
+    let reference = this.referenceCache.get(this.key);
+    if (!reference) {
+      reference = this.entry.strokes.map(({ d }) => parseStrokePath(d));
+      this.referenceCache.set(this.key, reference);
+    }
+    return reference;
+  }
+
+  private score() {
     // drawn points are in canvas pixels; the reference strokes are in the glyph's outline units
     const glyphStrokes: StrokePoint[][] = this.drawingCanvas
       .getStrokes()
       .map((stroke) => stroke.points.map((point) => this.glyph.toLocal(point, this.drawingCanvas)));
-    const accuracy = calculateDrawingAccuracy(
-      glyphStrokes,
-      this.getCachedReference(getBaseForm(this.letter), this.form),
-    );
-    this.showResults(accuracy);
-  };
-
-  private showResults(accuracy: number) {
-    this.resultsText.text = getResultsMessage(accuracy);
-    this.resultsOverlay.visible = true;
+    const accuracy = calculateDrawingAccuracy(glyphStrokes, this.reference);
+    this.scored = true;
+    this.showResult(accuracy);
+    this.handlers.onScored(accuracy);
   }
 
-  // back to the same letter and form with nothing drawn
-  private continueDrawing() {
-    this.resultsOverlay.visible = false;
-    this.clearDrawing();
+  private showResult(accuracy: number) {
+    this.resultText.text = getResultsMessage(accuracy);
+    const w = this.resultText.width + RESULT_PAD_X * 2;
+    this.resultBg
+      .clear()
+      .roundRect(-w / 2, -RESULT_HEIGHT / 2 + 6, w, RESULT_HEIGHT, RESULT_HEIGHT / 2)
+      .fill(NAV_SHADOW_COLOR)
+      .roundRect(-w / 2, -RESULT_HEIGHT / 2, w, RESULT_HEIGHT, RESULT_HEIGHT / 2)
+      .fill(NAV_COLOR);
+    this.result.visible = true;
   }
 
-  private getCachedReference(letter: string, form: LETTER_FORMS) {
-    const key = `${letter}/${form}`;
-    let reference = this.referenceCache.get(key);
-    if (!reference) {
-      reference = letters[letter]![form]!.strokes.map(({ d }) => parseStrokePath(d));
-      this.referenceCache.set(key, reference);
-    }
-    return reference;
+  private hideResult() {
+    this.scored = false;
+    this.result.visible = false;
   }
 }
