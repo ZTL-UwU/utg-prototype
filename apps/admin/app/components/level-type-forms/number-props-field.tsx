@@ -32,10 +32,8 @@ export function NumberPropsField({
         step={step}
         value={Number.isFinite(field.state.value as number) ? (field.state.value as number) : ''}
         onBlur={field.handleBlur}
-        onChange={(event) => {
-          const next = event.currentTarget.valueAsNumber;
-          field.handleChange(Number.isNaN(next) ? field.state.value : next);
-        }}
+        // An empty input is stored as NaN so it can be cleared; the Zod schema rejects it on submit.
+        onChange={(event) => field.handleChange(event.currentTarget.valueAsNumber)}
       />
       {isInvalid && <FieldError errors={field.state.meta.errors} />}
     </Field>
