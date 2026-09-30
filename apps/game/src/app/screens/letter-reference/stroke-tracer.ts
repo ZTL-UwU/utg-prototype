@@ -45,6 +45,11 @@ const BADGE_GAP = 2.4;
 /** Badge digits are rendered large and scaled down, so they stay sharp once the glyph scales up. */
 const BADGE_FONT_SIZE = 48;
 const BADGE_TEXT_SIZE = 1;
+/**
+ * Circles are drawn this many times larger and scaled down: Pixi picks a circle's segment count
+ * from its drawn radius, so one drawn at outline size comes out a visible polygon once scaled up.
+ */
+const CIRCLE_DETAIL = 50;
 
 export type TraceStroke = {
   /** Pen centerline, in the coordinates of whatever it traces. */
@@ -115,6 +120,12 @@ function defaultBadgePosition(polyline: Polyline): [number, number] {
   return [sx - dx * k, sy - dy * k];
 }
 
+function createCircle(radius: number, color: number) {
+  return new Graphics({ scale: 1 / CIRCLE_DETAIL })
+    .circle(0, 0, radius * CIRCLE_DETAIL)
+    .fill(color);
+}
+
 function createBadge(number: number, [x, y]: [number, number]) {
   const text = new Text({
     text: String(number),
@@ -130,7 +141,7 @@ function createBadge(number: number, [x, y]: [number, number]) {
   return new Container({
     position: { x, y },
     alpha: 0,
-    children: [new Graphics().circle(0, 0, BADGE_RADIUS).fill(ACCENT_COLOR), text],
+    children: [createCircle(BADGE_RADIUS, ACCENT_COLOR), text],
   });
 }
 
@@ -158,7 +169,7 @@ export class StrokeTracer extends Container {
    * over the ink, such as the glyph's outline; it must share the tracer's transform.
    */
   readonly badgeLayer = new Container();
-  private nib = new Graphics().circle(0, 0, NIB_RADIUS).fill(ACCENT_COLOR);
+  private nib = createCircle(NIB_RADIUS, ACCENT_COLOR);
   private animation?: { stop: () => void };
   private pulsing?: Container;
 
