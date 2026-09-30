@@ -4,11 +4,7 @@ import { Container, Graphics, GraphicsContext, GraphicsPath, Sprite, Text, Textu
 import type { LETTER_FORMS } from '.';
 import { DrawingCanvas, type StrokePoint } from '../../ui/drawing-canvas';
 import { SoundButton } from '../../ui/sound-button';
-import {
-  calculateGlyphCoverage,
-  calculateGlyphStrokeAccuracy,
-  sampleGlyphInterior,
-} from './calculate-accuracy';
+import { calculateDrawingAccuracy, parseStrokePath } from './calculate-accuracy';
 import { createGlyphMaskContext, type GlyphPart } from './glyph-mask';
 import lettersJson from './letters.json';
 import { StrokeTracer, type TraceStroke } from './stroke-tracer';
@@ -38,21 +34,14 @@ const COUNTER_INSET = 28;
 const SOUND_BUTTON_SIZE = 90;
 /** Teal so the user's own ink reads apart from the brown demo trace. */
 const DRAW_COLOR = NAV_BUTTON_COLOR;
-/** Brush width in outline units: a fine pen line, far thinner than the demo trace. */
-const DRAW_WIDTH = 1;
+/** Brush width in outline units: a little under the letter's body (about 2.4) and the demo trace. */
+const DRAW_WIDTH = 2;
 /** Seconds after a letter or form comes up before its demo plays by itself. */
 const AUTO_DEMO_DELAY = 0.6;
 /** Space between the stacked Submit and Clear buttons. */
 const BUTTON_STACK_GAP = 16;
 /** Darkness of the tint behind the results message. */
 const OVERLAY_ALPHA = 0.6;
-/** Grid spacing, in glyph units, of the interior points coverage is measured against. */
-const COVERAGE_SAMPLE_STEP = 0.25;
-/**
- * How close, in glyph units, a drawn stroke must pass to count a point of the letter as covered.
- * Wider than the ink so one pass down the middle of a body (about 2.4 units thick) covers it.
- */
-const COVERAGE_RADIUS = 2;
 /** Line width of the letter's outline, in outline units. */
 const OUTLINE_WIDTH = 0.8;
 const OUTLINE_COLOR = 0x000000;
@@ -80,11 +69,10 @@ type LetterEntry = {
 };
 const letters = lettersJson as Record<string, Partial<Record<string, LetterEntry>>>;
 
-// TODO: write the results message; the scores are percentages from 0 to 100
-function getResultsMessage(accuracy: number, coverage: number): string {
+// TODO: write the results message; accuracy is a percentage from 0 to 100
+function getResultsMessage(accuracy: number): string {
   return `Drawing Results
-Accuracy: ${Math.round(accuracy)}%
-Coverage: ${Math.round(coverage)}%`;
+Accuracy: ${Math.round(accuracy)}%`;
 }
 
 function getBaseForm(letter: string) {
@@ -147,13 +135,11 @@ export class OutlineDisplay extends Container {
   private glyph: Container;
   private outline: Graphics;
   private tracer: StrokeTracer;
-  /** Filled glyph interior, for scoring; never drawn itself. */
-  private glyphMask: Graphics;
-  private maskCache = new Map<string, GraphicsContext>();
-  private sampleCache = new Map<string, StrokePoint[]>();
+  /** Each form's stroke centerlines, in the order and direction they're written, for scoring. */
+  private referenceCache = new Map<string, StrokePoint[][]>();
   private strokeCache = new Map<string, TraceStroke[]>();
   private traceButton: FancyButton;
-  /** Freehand practice layer over the glyph, left unclipped so strokes off the letter show. */
+  /** Freehand practice layer under the glyph, left unclipped so strokes off the letter show. */
   private drawingCanvas: DrawingCanvas;
   private clearButton: FancyButton;
   private submitButton: FancyButton;
@@ -187,11 +173,9 @@ export class OutlineDisplay extends Container {
     this.contextCache = new Map();
     this.outline = new Graphics();
     this.tracer = new StrokeTracer();
-    // kept in the glyph only so drawn points can be mapped into its coordinates
-    this.glyphMask = new Graphics({ renderable: false });
     // tracer underneath so the outline stays crisp on top of it, but its stroke numbers above
     this.glyph = new Container({
-      children: [this.glyphMask, this.tracer, this.outline, this.tracer.badgeLayer],
+      children: [this.tracer, this.outline, this.tracer.badgeLayer],
     });
     this.border = new Graphics();
     this.frame = new Container({ layout: true });
@@ -253,11 +237,12 @@ export class OutlineDisplay extends Container {
       height: ROW_HEIGHT,
       isLeaf: true,
     };
-    // canvas over the glyph so the user's ink stays on top of the outline and demo trace
+    // canvas under the glyph so the outline and stroke numbers stay crisp over the user's ink; the
+    // glyph isn't interactive, so pointer events still pass through it to the canvas
     this.frame.addChild(
       this.border,
-      this.glyph,
       this.drawingCanvas,
+      this.glyph,
       this.counter,
       this.soundButton,
       this.traceButton,
@@ -348,7 +333,6 @@ export class OutlineDisplay extends Container {
     this.resultsOverlay.visible = false;
     this.form = form;
     this.outline.context = this.getCachedContext(base, form);
-    this.glyphMask.context = this.getCachedMaskContext(base, form);
     // also stops and clears any trace in progress
     this.tracer.setStrokes(this.getCachedStrokes(base, form));
 
@@ -452,16 +436,6 @@ export class OutlineDisplay extends Container {
     return context;
   }
 
-  private getCachedMaskContext(letter: string, form: LETTER_FORMS) {
-    const key = `${letter}/${form}`;
-    let context = this.maskCache.get(key);
-    if (!context) {
-      context = createGlyphMaskContext(letters[letter]![form]!.parts);
-      this.maskCache.set(key, context);
-    }
-    return context;
-  }
-
   // each stroke is clipped to its own part of the glyph, so a thick pen can't spill onto the next
   private getCachedStrokes(letter: string, form: LETTER_FORMS) {
     const key = `${letter}/${form}`;
@@ -481,29 +455,19 @@ export class OutlineDisplay extends Container {
   }
 
   private readonly handleSubmit = () => {
-    // drawn points are in canvas pixels; the mask is in the glyph's outline units
+    // drawn points are in canvas pixels; the reference strokes are in the glyph's outline units
     const glyphStrokes: StrokePoint[][] = this.drawingCanvas
       .getStrokes()
-      .map((stroke) =>
-        stroke.points.map((point) => this.glyphMask.toLocal(point, this.drawingCanvas)),
-      );
-    const accuracy = calculateGlyphStrokeAccuracy(glyphStrokes.flat(), this.glyphMask.context);
-    const coverage = calculateGlyphCoverage(
+      .map((stroke) => stroke.points.map((point) => this.glyph.toLocal(point, this.drawingCanvas)));
+    const accuracy = calculateDrawingAccuracy(
       glyphStrokes,
-      this.getCachedInteriorSamples(getBaseForm(this.letter), this.form),
-      COVERAGE_RADIUS,
+      this.getCachedReference(getBaseForm(this.letter), this.form),
     );
-    // harmonic mean: only high when the drawing is both on the letter and covers it
-    const combined =
-      accuracy + coverage === 0 ? 0 : (2 * accuracy * coverage) / (accuracy + coverage);
-    console.log(
-      `The accuracy is: ${accuracy.toFixed(1)}, coverage: ${coverage.toFixed(1)}, combined: ${combined.toFixed(1)}`,
-    );
-    this.showResults(accuracy, coverage);
+    this.showResults(accuracy);
   };
 
-  private showResults(accuracy: number, coverage: number) {
-    this.resultsText.text = getResultsMessage(accuracy, coverage);
+  private showResults(accuracy: number) {
+    this.resultsText.text = getResultsMessage(accuracy);
     this.resultsOverlay.visible = true;
   }
 
@@ -513,13 +477,13 @@ export class OutlineDisplay extends Container {
     this.clearDrawing();
   }
 
-  private getCachedInteriorSamples(letter: string, form: LETTER_FORMS) {
+  private getCachedReference(letter: string, form: LETTER_FORMS) {
     const key = `${letter}/${form}`;
-    let samples = this.sampleCache.get(key);
-    if (!samples) {
-      samples = sampleGlyphInterior(this.getCachedMaskContext(letter, form), COVERAGE_SAMPLE_STEP);
-      this.sampleCache.set(key, samples);
+    let reference = this.referenceCache.get(key);
+    if (!reference) {
+      reference = letters[letter]![form]!.strokes.map(({ d }) => parseStrokePath(d));
+      this.referenceCache.set(key, reference);
     }
-    return samples;
+    return reference;
   }
 }
