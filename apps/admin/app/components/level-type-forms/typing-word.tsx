@@ -42,7 +42,10 @@ export function TypingWordPropsForm({
           return (
             <Field data-invalid={isInvalid}>
               <FieldLabel>Words</FieldLabel>
-              <FieldDescription>Words used in this level.</FieldDescription>
+              <FieldDescription>
+                Word pool for this level. Each play picks one random word per target letter first,
+                then fills any remaining rounds from the rest of the pool.
+              </FieldDescription>
               <WordIdsSelector
                 value={field.state.value}
                 onChange={(wordIds) => {

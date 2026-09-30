@@ -1,6 +1,7 @@
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { randomShuffle } from '../../../../engine/utils/random';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { convertToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
@@ -10,6 +11,7 @@ import {
   playWordAudio,
   REMOTE_WORDS_BUNDLE,
   resolveWordsByIds,
+  type WordSimple,
 } from '../../../../zustandStores/wordStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
@@ -48,18 +50,32 @@ export function playRoundAudio(round: Round): void {
 //   { wordId: 1, word: 'ئايروپىلان', activeLetterIdx: 0 },
 //   { wordId: 2, word: 'تاۋۇز', activeLetterIdx: 0 },
 // ];
+/**
+ * Picks `roundCount` random words from the pool, covering as many distinct target letters as
+ * possible: one random word per letter first, then the remaining words fill any extra rounds.
+ */
 export function generateRoundsDictionary(wordIds: number[] = [], roundCount = 5): Round[] {
-  const pool = resolveWordsByIds(wordIds)
-    // .filter((word) => word.image_url)
-    .map((word) => ({
-      wordId: word.id,
-      word: convertToCurrentScript(word.word.trim(), { autoCapitalize: false }),
-      activeLetterIdx: 0,
-      hasImage: !!word.image_url,
-      hasStandardAudio: !!word.standard_audio_url,
-    }));
+  const perLetter: WordSimple[] = [];
+  const rest: WordSimple[] = [];
+  const coveredLetters = new Set<string>();
+  for (const word of randomShuffle(resolveWordsByIds(wordIds))) {
+    const letter = word.target_letter;
+    if (letter && !coveredLetters.has(letter)) {
+      coveredLetters.add(letter);
+      perLetter.push(word);
+    } else {
+      rest.push(word);
+    }
+  }
 
-  return [...pool].sort(() => Math.random() - 0.5).slice(0, roundCount);
+  const picked = [...perLetter, ...rest].slice(0, roundCount);
+  return randomShuffle(picked).map((word) => ({
+    wordId: word.id,
+    word: convertToCurrentScript(word.word.trim(), { autoCapitalize: false }),
+    activeLetterIdx: 0,
+    hasImage: !!word.image_url,
+    hasStandardAudio: !!word.standard_audio_url,
+  }));
 }
 
 export class TypingWordScreen extends Container {
