@@ -56,11 +56,6 @@ export class PlateStack extends Container {
     return this.stacked.length >= this.capacity;
   }
 
-  /** Horizontal half-width used for stacking hit zones. */
-  public get hitHalfWidth(): number {
-    return this.plate.width * 0.75;
-  }
-
   /** Local Y where the next stacked naan should land (center). */
   public nextStackLocalY(): number {
     return -this.plate.height * 0.18 - this.stacked.length * STACK_OFFSET_Y;

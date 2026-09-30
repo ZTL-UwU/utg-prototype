@@ -237,19 +237,17 @@ export class GameNaanStackScreen extends Container {
     );
   };
 
+  /** Picks the matching naan closest to escaping (leftmost), wherever it is on screen. */
   private findStackableNaan(letter: string) {
+    if (this.plates.every((plate) => plate.isFull)) return -1;
+
     let bestIndex = -1;
-    let bestDistance = Infinity;
+    let bestX = Infinity;
 
     this.movingNaan.forEach((moving, index) => {
       if (moving.resolving || moving.letter !== letter) return;
-
-      const plate = this.findPlateInRange(moving.piece.x);
-      if (!plate) return;
-
-      const distance = Math.abs(moving.piece.x - plate.x);
-      if (distance < bestDistance) {
-        bestDistance = distance;
+      if (moving.piece.x < bestX) {
+        bestX = moving.piece.x;
         bestIndex = index;
       }
     });
@@ -257,14 +255,14 @@ export class GameNaanStackScreen extends Container {
     return bestIndex;
   }
 
-  private findPlateInRange(naanX: number) {
+  private findNearestOpenPlate(naanX: number) {
     let best: PlateStack | undefined;
     let bestDistance = Infinity;
 
     for (const plate of this.plates) {
       if (plate.isFull) continue;
       const distance = Math.abs(naanX - plate.x);
-      if (distance <= plate.hitHalfWidth && distance < bestDistance) {
+      if (distance < bestDistance) {
         best = plate;
         bestDistance = distance;
       }
@@ -277,7 +275,7 @@ export class GameNaanStackScreen extends Container {
     const moving = this.movingNaan[index];
     if (!moving || moving.resolving) return;
 
-    const plate = this.findPlateInRange(moving.piece.x);
+    const plate = this.findNearestOpenPlate(moving.piece.x);
     if (!plate) return;
 
     moving.resolving = true;
@@ -293,10 +291,11 @@ export class GameNaanStackScreen extends Container {
 
     const targetX = plate.x;
     const targetY = plate.y + plate.nextStackLocalY();
+    const flightDistance = Math.hypot(targetX - moving.piece.x, targetY - moving.piece.y);
     const animation = animate(
       moving.piece,
       { x: targetX, y: targetY, rotation: 0 },
-      { duration: 0.28, ease: 'easeOut' },
+      { duration: Math.min(0.28 + flightDistance / 4000, 0.5), ease: 'easeOut' },
     );
     this.effectAnimations.push(animation);
 
