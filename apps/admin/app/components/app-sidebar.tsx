@@ -57,12 +57,12 @@ export function AppSidebar({
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" tooltip="Sozler Saylisi" onClick={() => navigate('/')}>
+            <SidebarMenuButton size="lg" tooltip="Sozler Seylisi" onClick={() => navigate('/')}>
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                 <Gamepad2 className="size-4" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate text-base font-bold">Sozler Saylisi</span>
+                <span className="truncate text-base font-bold">Sozler Seylisi</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
