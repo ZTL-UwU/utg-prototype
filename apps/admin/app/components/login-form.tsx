@@ -66,7 +66,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <div className="select-none">
-        <h1 className="text-3xl text-center font-extrabold">Sozler Saylisi</h1>
+        <h1 className="text-3xl text-center font-extrabold">Sozler Seylisi</h1>
         <h2 className="text-lg text-center text-muted-foreground">Admin Content Portal</h2>
       </div>
       <Card>
