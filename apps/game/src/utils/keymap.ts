@@ -450,7 +450,14 @@ export function getShiftHintLabel(code: string): string {
 }
 
 export function getMappedFromKeyboardEvent(event: KeyboardEvent): string {
-  return getMappedFromKeyCode(event.code, event.shiftKey);
+  const mapped = getMappedFromKeyCode(event.code, event.shiftKey);
+  if (!event.getModifierState('CapsLock')) return mapped;
+  // Caps Lock inverts letter case like the OS does (Shift + Caps Lock → lowercase).
+  // Caseless glyphs (Arabic letters, digits, punctuation) are unaffected.
+  const upper = mapped.toLocaleUpperCase('ug');
+  const lower = mapped.toLocaleLowerCase('ug');
+  if (upper === lower) return mapped;
+  return event.shiftKey ? lower : upper;
 }
 
 export function getKeyFromChar(char: string): string {
