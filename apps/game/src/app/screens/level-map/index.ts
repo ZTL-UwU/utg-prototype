@@ -66,6 +66,7 @@ export class LevelMapScreen extends Container {
       fontSize: mapUnit.title.fontSize,
       fontWeight: '800' as const,
       fill: mapUnit.title.fontColor,
+      padding: 30,
     };
     this.title = mapUnit.title.isCurved
       ? new CurvedText({ text: mapUnit.title.text, style: titleStyle })
