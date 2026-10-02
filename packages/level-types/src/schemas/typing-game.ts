@@ -100,7 +100,7 @@ export function defaultTypingSpringProps(): TypingSpringProps {
 }
 
 export const TYPING_TEST_MODES = ['letters', 'words', 'sentences'] as const;
-export const TYPING_TEST_DURATIONS_SECONDS = [15, 30, 60] as const;
+export const TYPING_TEST_DURATIONS_SECONDS = [15, 30, 60, 300] as const;
 
 export type TypingTestMode = (typeof TYPING_TEST_MODES)[number];
 export type TypingTestDurationSeconds = (typeof TYPING_TEST_DURATIONS_SECONDS)[number];
@@ -110,7 +110,7 @@ export const typingTestPropsSchema = z.object({
   wordIds: z.array(z.number().int().positive()),
   storyIds: z.array(z.number().int().positive()),
   defaultMode: z.enum(TYPING_TEST_MODES),
-  defaultDurationSeconds: z.union([z.literal(15), z.literal(30), z.literal(60)]),
+  defaultDurationSeconds: z.union([z.literal(15), z.literal(30), z.literal(60), z.literal(300)]),
   showKeyboardByDefault: z.boolean(),
 });
 

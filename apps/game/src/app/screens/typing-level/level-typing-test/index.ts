@@ -210,7 +210,11 @@ export class TypingTestScreen extends Container {
     const seconds = Math.ceil(this.remainingMs / 1000);
     if (seconds === this.displayedSeconds) return;
     this.displayedSeconds = seconds;
-    this.timerText.text = String(seconds);
+    // Minute-long tests count down as m:ss so 5 minutes doesn't read as "300".
+    this.timerText.text =
+      this.durationMs >= 60_000
+        ? `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+        : String(seconds);
   }
 
   private loadNextPage() {

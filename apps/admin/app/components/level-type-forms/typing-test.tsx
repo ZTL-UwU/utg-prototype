@@ -34,7 +34,7 @@ const MODE_LABELS: Record<TypingTestMode, string> = {
 };
 
 function durationLabel(seconds: number): string {
-  return seconds === 60 ? '1 min' : `${seconds}s`;
+  return seconds % 60 === 0 ? `${seconds / 60} min` : `${seconds}s`;
 }
 
 export function TypingTestPropsForm({

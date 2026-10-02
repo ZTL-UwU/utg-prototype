@@ -12,7 +12,7 @@ import { engine } from '../../../../engine/getEngine';
 import { availableModes } from './test-content';
 
 const PANEL_WIDTH = 900;
-const PANEL_HEIGHT = 660;
+const PANEL_HEIGHT = 740;
 const PANEL_RADIUS = 40;
 
 const COLORS = {
@@ -217,7 +217,7 @@ export class TypingTestSettingsPopup extends Container {
     const durationControl = new SegmentedControl<number>(
       TYPING_TEST_DURATIONS_SECONDS.map((seconds) => ({
         value: seconds,
-        label: seconds === 60 ? '1 min' : `${seconds}s`,
+        label: seconds % 60 === 0 ? `${seconds / 60} min` : `${seconds}s`,
       })),
       this.settings.durationSeconds,
       (seconds) => {
@@ -231,13 +231,13 @@ export class TypingTestSettingsPopup extends Container {
       this.settings.showKeyboard = showKeyboard;
     });
 
-    const optionsRow = new Container({
+    const keyboardRow = new Container({
       layout: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 32,
+        gap: 24,
       },
-      children: [durationControl, keyboardLabel, keyboardToggle],
+      children: [keyboardLabel, keyboardToggle],
     });
 
     const startButton = new FancyButton({
@@ -271,7 +271,7 @@ export class TypingTestSettingsPopup extends Container {
         justifyContent: 'center',
         gap: 28,
       },
-      children: [title, subtitle, modeControl, optionsRow, startButton],
+      children: [title, subtitle, modeControl, durationControl, keyboardRow, startButton],
     });
 
     this.panel = new Container({ layout: true });
