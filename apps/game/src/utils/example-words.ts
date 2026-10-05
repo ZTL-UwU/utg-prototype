@@ -80,7 +80,8 @@ export function createAdvancedTypingWordStyle(fontSize: number): HTMLTextStyle {
 }
 
 export function getCompletedWordMarkup(letter: string, word: string): string {
-  return `<span>${letter}</span>${word.slice(letter.length)}`;
+  const index = word.indexOf(letter);
+  return `${word.slice(0, index)}<span>${letter}</span>${word.slice(index + letter.length)}`;
 }
 
 export function getMissingWordMarkup(letter: string, word: string): string {
