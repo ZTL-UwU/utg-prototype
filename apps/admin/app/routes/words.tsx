@@ -3,8 +3,10 @@ import {
   AudioLines,
   ImageIcon,
   ImageOff,
+  Images,
   PlusIcon,
   SearchIcon,
+  Volume,
   Volume2,
   VolumeX,
 } from 'lucide-react';
@@ -12,7 +14,7 @@ import { FetchError } from 'ofetch';
 import { useId, useState } from 'react';
 import { toast } from 'sonner';
 
-import { type MediaFilter, MediaToggleGroup } from '~/components/media-toggle-group';
+import { type MediaFilter, MediaFilterMenu } from '~/components/media-filter-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,25 +45,22 @@ export default function WordsPage() {
   const queryClient = useQueryClient();
   const { data: words, isPending, isError, error } = useQuery(wordsQueryOptions);
   const [query, setQuery] = useState('');
-  const [imageFilter, setImageFilter] = useState<MediaFilter[]>([]);
-  const [educationAudioFilter, setEducationAudioFilter] = useState<MediaFilter[]>([]);
-  const [standardAudioFilter, setStandardAudioFilter] = useState<MediaFilter[]>([]);
+  const [imageFilter, setImageFilter] = useState<MediaFilter | null>(null);
+  const [educationAudioFilter, setEducationAudioFilter] = useState<MediaFilter | null>(null);
+  const [standardAudioFilter, setStandardAudioFilter] = useState<MediaFilter | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [wordToEdit, setWordToEdit] = useState<Word | null>(null);
   const [wordToDelete, setWordToDelete] = useState<Word | null>(null);
 
-  const imageMode = imageFilter[0];
-  const educationAudioMode = educationAudioFilter[0];
-  const standardAudioMode = standardAudioFilter[0];
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const filteredWords =
     words?.filter((word) => {
-      if (imageMode === 'with' && !word.image) return false;
-      if (imageMode === 'without' && word.image) return false;
-      if (educationAudioMode === 'with' && !word.education_audio) return false;
-      if (educationAudioMode === 'without' && word.education_audio) return false;
-      if (standardAudioMode === 'with' && !word.standard_audio) return false;
-      if (standardAudioMode === 'without' && word.standard_audio) return false;
+      if (imageFilter === 'with' && !word.image) return false;
+      if (imageFilter === 'without' && word.image) return false;
+      if (educationAudioFilter === 'with' && !word.education_audio) return false;
+      if (educationAudioFilter === 'without' && word.education_audio) return false;
+      if (standardAudioFilter === 'with' && !word.standard_audio) return false;
+      if (standardAudioFilter === 'without' && word.standard_audio) return false;
       if (normalizedQuery) {
         const haystack = [word.word, word.translation, word.target_letter]
           .filter(Boolean)
@@ -122,36 +121,7 @@ export default function WordsPage() {
         </div>
       </header>
 
-      <div className="sticky top-0 z-10 -mx-4 flex flex-col gap-2 bg-background/80 px-4 py-4 backdrop-blur-md md:-mx-6 md:px-6 lg:-mx-8 lg:px-8">
-        <div className="flex flex-wrap items-center gap-2">
-          <MediaToggleGroup
-            label="Filter by image"
-            value={imageFilter}
-            onChange={setImageFilter}
-            withIcon={ImageIcon}
-            withoutIcon={ImageOff}
-            withLabel="Has image"
-            withoutLabel="Missing image"
-          />
-          <MediaToggleGroup
-            label="Filter by education audio"
-            value={educationAudioFilter}
-            onChange={setEducationAudioFilter}
-            withIcon={Volume2}
-            withoutIcon={VolumeX}
-            withLabel="Has education audio"
-            withoutLabel="Missing education audio"
-          />
-          <MediaToggleGroup
-            label="Filter by standard audio"
-            value={standardAudioFilter}
-            onChange={setStandardAudioFilter}
-            withIcon={AudioLines}
-            withoutIcon={VolumeX}
-            withLabel="Has standard audio"
-            withoutLabel="Missing standard audio"
-          />
-        </div>
+      <div className="sticky top-0 z-10 -mx-4 flex flex-wrap items-center gap-x-1 gap-y-2 bg-background/80 px-4 py-4 backdrop-blur-md md:-mx-6 md:px-6 lg:-mx-8 lg:px-8">
         <InputGroup className="w-full max-w-sm">
           <InputGroupInput
             dir="auto"
@@ -166,6 +136,50 @@ export default function WordsPage() {
             <SearchIcon />
           </InputGroupAddon>
         </InputGroup>
+        <div className="mr-auto">
+          {imageFilter || educationAudioFilter || standardAudioFilter ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="font-normal text-muted-foreground"
+              onClick={() => {
+                setImageFilter(null);
+                setEducationAudioFilter(null);
+                setStandardAudioFilter(null);
+              }}
+            >
+              Clear
+            </Button>
+          ) : null}
+        </div>
+        <MediaFilterMenu
+          label="Image"
+          value={imageFilter}
+          onChange={setImageFilter}
+          icon={ImageIcon}
+          anyIcon={Images}
+          withIcon={ImageIcon}
+          withoutIcon={ImageOff}
+        />
+        <MediaFilterMenu
+          label="Education audio"
+          value={educationAudioFilter}
+          onChange={setEducationAudioFilter}
+          icon={Volume2}
+          anyIcon={Volume}
+          withIcon={Volume2}
+          withoutIcon={VolumeX}
+        />
+        <MediaFilterMenu
+          label="Standard audio"
+          value={standardAudioFilter}
+          onChange={setStandardAudioFilter}
+          icon={AudioLines}
+          anyIcon={Volume}
+          withIcon={AudioLines}
+          withoutIcon={VolumeX}
+        />
       </div>
 
       {isPending ? (
