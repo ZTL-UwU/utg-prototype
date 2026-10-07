@@ -1,6 +1,14 @@
 import { Container, Sprite, Texture } from 'pixi.js';
 
+import type { PasswordResetParams } from '../../../lib/passwordReset';
 import { useOverlayStore } from '../../../zustandStores/overlayStore';
+
+export type AuthScreenProps = {
+  /** Opened from a reset-password link: show the reset form for these credentials. */
+  passwordReset?: PasswordResetParams;
+  /** In-app href to continue to once logged in, instead of the layer select. */
+  returnTo?: string;
+};
 
 /**
  * Holds the home background while the React auth card is up. Dismissing the card
@@ -12,9 +20,11 @@ export class AuthScreen extends Container {
   public static assetBundles = ['home'];
 
   private background: Sprite;
+  private props: AuthScreenProps;
 
-  constructor() {
+  constructor(props: AuthScreenProps = {}) {
     super();
+    this.props = props;
 
     this.background = new Sprite({
       texture: Texture.from('home/background.png'),
@@ -36,7 +46,7 @@ export class AuthScreen extends Container {
 
   /** Show screen */
   public async show() {
-    useOverlayStore.getState().show('auth');
+    useOverlayStore.getState().show('auth', this.props);
   }
 
   /** Hide screen */

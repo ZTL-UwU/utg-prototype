@@ -131,3 +131,15 @@ export function findMapUnitForLevel(level: TLevel): TMapUnit {
 export function findLayerForLevelId(levelId: number): TLayer | undefined {
   return allMaps().find((map) => map.levels.some((entry) => entry.id === levelId))?.type;
 }
+
+export function findMapUnit(mapId: number): TMapUnit | undefined {
+  return allMaps().find((map) => map.id === mapId);
+}
+
+/** A catalog level and the map it sits on, or undefined when the course list has no such level. */
+export function findLevel(levelId: number): { level: TLevel; mapUnit: TMapUnit } | undefined {
+  for (const mapUnit of allMaps()) {
+    const level = mapUnit.levels.find((entry) => entry.id === levelId);
+    if (level) return { level, mapUnit };
+  }
+}

@@ -36,6 +36,14 @@ Install once at the repo root with `vp install`.
 
 Admin talks to the backend via `VITE_BACKEND_URL` (see `apps/admin/.env.example`). Backend code lives in `../utg-project-be`.
 
+## Game URLs (`apps/game/src/router`)
+
+Every game screen has a URL, in dev and prod. Screens keep navigating with `navigation.showScreen(Screen, props)`; the router writes the URL from the route table and rebuilds the screen from the URL on load or Back/Forward.
+
+- New screen: add a `defineRoute` entry to `routes.ts` (dev logs a warning for screens without one).
+- New level type: nothing to do; `/:layer/levels/:id/play` covers everything in `LEVEL_TYPE_SCREENS`.
+- Hosting must serve `index.html` for unknown paths (`vercel.json` does).
+
 ## Level types (`@utg/level-types`)
 
 Shared source of truth for level type ids and per-type `level_props` Zod schemas. Admin UI forms stay in `@utg/admin` (`level-type-forms`); keep the Django `LevelType` allow-list in sync when adding ids.

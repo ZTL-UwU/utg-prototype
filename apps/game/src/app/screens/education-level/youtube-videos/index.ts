@@ -12,11 +12,9 @@ export class EducationYoutubeScreen extends Container {
 
   private background: Sprite;
   private hud: HUD;
-  private mapUnit: TMapUnit;
-
-  constructor(mapUnit: TMapUnit) {
+  /** Passed back to the tutorial, so its Back still returns where the player came from. */
+  constructor({ mapUnit }: { mapUnit?: TMapUnit }) {
     super();
-    this.mapUnit = mapUnit;
 
     this.background = new Sprite({
       texture: Texture.from('education-levels/education-level/background.png'),
@@ -29,8 +27,7 @@ export class EducationYoutubeScreen extends Container {
     });
 
     this.hud = new HUD({
-      onBack: () =>
-        void engine().navigation.showScreen(EducationTutorialScreen, { mapUnit: this.mapUnit }),
+      onBack: () => void engine().navigation.showScreen(EducationTutorialScreen, { mapUnit }),
     });
 
     this.addChild(this.background, this.hud);

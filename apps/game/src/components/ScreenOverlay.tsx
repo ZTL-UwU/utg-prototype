@@ -1,16 +1,13 @@
 import { useMutation } from '@tanstack/react-query';
 import { FetchError } from 'ofetch';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { z } from 'zod';
 
 import { engine } from '../engine/getEngine';
 import { api } from '../lib/api';
 import { isFeedbackHotkey } from '../lib/feedback';
-import {
-  clearPasswordResetUrl,
-  getPasswordResetParams,
-  type PasswordResetParams,
-} from '../lib/passwordReset';
+import type { PasswordResetParams } from '../lib/passwordReset';
+import { continueIntoGame } from '../utils/continueIntoGame';
 import { useAuthStore, type AuthUser } from '../zustandStores/auth';
 import { useFeedbackStore } from '../zustandStores/feedbackStore';
 import { useOverlayStore } from '../zustandStores/overlayStore';
@@ -22,31 +19,17 @@ import { YoutubeEmbedOverlay } from './YoutubeEmbedOverlay';
 
 /** Backing out of auth returns to the regular home screen. */
 function goToHomeScreen() {
-  clearPasswordResetUrl();
   void import('../app/screens/home').then(({ HomeScreen }) =>
     engine().navigation.showScreen(HomeScreen),
   );
 }
 
-/** Getting through auth continues into the game. */
-function goToLayerSelectScreen() {
-  clearPasswordResetUrl();
-  void import('../app/screens/layer-select').then(({ LayerSelectScreen }) =>
-    engine().navigation.showScreen(LayerSelectScreen),
-  );
-}
-
-/** A fresh signup picks an avatar before continuing into the game. */
-function goToAvatarSelectScreen() {
-  void import('../app/screens/avatar-select').then(({ AvatarSelectScreen }) =>
-    engine().navigation.showScreen(AvatarSelectScreen),
-  );
-}
-
-/** After auth, users without a chosen avatar must pick one before playing. */
-function continueAfterLogin(user: AuthUser) {
-  if (user.avatar == null) goToAvatarSelectScreen();
-  else goToLayerSelectScreen();
+/**
+ * Getting through auth continues into the game, by way of the avatar select for players
+ * without one, and back to the page that sent them here, if any.
+ */
+function continueAfterAuth(user: AuthUser | null) {
+  if (user) continueIntoGame(user, useOverlayStore.getState().returnTo ?? undefined);
 }
 const loginSchema = z.object({
   email: z.string().min(1, 'Enter your email.').email('Enter a valid email address.'),
@@ -77,16 +60,8 @@ export function ScreenOverlay() {
   const activeOverlay = useOverlayStore((state) => state.activeOverlay);
   const feedbackOpen = useFeedbackStore((state) => state.isOpen);
   const screenshot = useFeedbackStore((state) => state.screenshot);
+  const resetParams = useOverlayStore((state) => state.passwordReset);
   const setAuth = useAuthStore((state) => state.setAuth);
-  const [resetParams, setResetParams] = useState<PasswordResetParams | null>(() =>
-    getPasswordResetParams(),
-  );
-
-  useEffect(() => {
-    if (resetParams !== null) {
-      useOverlayStore.getState().show('auth');
-    }
-  }, [resetParams]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -104,11 +79,10 @@ export function ScreenOverlay() {
     mutationFn: loginRequest,
     onSuccess: (data) => {
       setAuth(data.access, data.refresh, data.user);
-      continueAfterLogin(data.user);
+      continueAfterAuth(data.user);
     },
     onError: () => {
       useAuthStore.getState().clearTokens();
-      useOverlayStore.getState().show('auth');
       window.alert('Login failed. Please log in again.');
     },
   });
@@ -153,8 +127,9 @@ export function ScreenOverlay() {
     },
     onSuccess: (data) => {
       setAuth(data.access, data.refresh, data.user);
-      clearPasswordResetUrl();
-      setResetParams(null);
+      // The token is spent: a refresh from here should not reopen the reset form.
+      useOverlayStore.setState({ passwordReset: null });
+      void import('../router').then(({ router }) => router.replace('/auth'));
     },
     onError: (error) => {
       alertApiError(error, 'Could not reset password. Please try again.');
@@ -179,18 +154,17 @@ export function ScreenOverlay() {
       <AuthParent
         initialView={resetParams !== null ? 'reset' : 'login'}
         onClose={goToHomeScreen}
-        onPlay={goToAvatarSelectScreen}
+        onPlay={() => continueAfterAuth(useAuthStore.getState().user)}
         onLogin={async (credentials) => {
           await login(credentials);
         }}
         onGuest={() => {
           useAuthStore.getState().enterGuestMode();
-          const { user } = useAuthStore.getState();
-          if (user) continueAfterLogin(user);
+          continueAfterAuth(useAuthStore.getState().user);
         }}
         onTester={(password) => {
           if (!useAuthStore.getState().enterTesterMode(password)) return false;
-          goToAvatarSelectScreen();
+          continueAfterAuth(useAuthStore.getState().user);
           return true;
         }}
         onSignUp={async (data) => {

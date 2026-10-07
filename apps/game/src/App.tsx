@@ -10,7 +10,6 @@ import { ScreenOverlay } from './components/ScreenOverlay';
 import { CreationEngine } from './engine/engine';
 import { setEngine } from './engine/getEngine';
 import { bootstrapRemoteData } from './lib/bootstrapRemoteData';
-import { getPasswordResetParams } from './lib/passwordReset';
 
 export default function App() {
   const engineRef = useRef<CreationEngine | null>(null);
@@ -32,26 +31,14 @@ export default function App() {
 
       bootstrapRemoteData();
 
-      if (getPasswordResetParams() !== null) {
-        const { AuthScreen } = await import('./app/screens/home/auth');
-        await engine.navigation.showScreen(AuthScreen);
-      } else if (import.meta.env.DEV) {
-        const { debugScreenRouter } = await import('./debug/screen-router');
-        await debugScreenRouter.start(engine.navigation);
-      } else {
-        const { HomeScreen } = await import('./app/screens/home');
-        await engine.navigation.showScreen(HomeScreen);
-      }
+      const { router } = await import('./router');
+      await router.start(engine.navigation);
     };
 
     void init();
 
     return () => {
-      if (import.meta.env.DEV) {
-        void import('./debug/screen-router').then(({ debugScreenRouter }) => {
-          debugScreenRouter.stop();
-        });
-      }
+      void import('./router').then(({ router }) => router.stop());
     };
   }, []);
 
