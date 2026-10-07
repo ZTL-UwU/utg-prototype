@@ -3,7 +3,6 @@ import { Container, Graphics, Sprite, Text, Texture, type TextDropShadow } from 
 
 import { engine } from '../../../engine/getEngine';
 import useCourseStore from '../../../zustandStores/courseStore';
-import { HomeScreen } from '../home';
 
 const textDropShadow: Partial<TextDropShadow> = {
   color: 0x000000,
@@ -118,7 +117,9 @@ export class CourseLoadErrorScreen extends Container {
     await useCourseStore.getState().fetchCourseStructure();
 
     if (useCourseStore.getState().status === 'ready') {
-      await engine().navigation.showScreen(HomeScreen);
+      // The address bar still holds the URL that needed the catalog; open it for real now.
+      const { router } = await import('../../../router');
+      await router.reload();
       return;
     }
 

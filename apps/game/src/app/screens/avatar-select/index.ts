@@ -4,6 +4,7 @@ import { Container, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { AVATARS, type AvatarDef } from '../../../utils/avatars';
+import { enterGame } from '../../../utils/continueIntoGame';
 import { useAuthStore } from '../../../zustandStores/auth';
 
 const CELL_SIZE = 200;
@@ -12,6 +13,8 @@ const COLUMNS = 3;
 
 type AvatarSelectMode = {
   mode?: 'onboarding' | 'profile';
+  /** Onboarding only: in-app href to continue to instead of the layer select. */
+  returnTo?: string;
 };
 
 export class AvatarSelectScreen extends Container {
@@ -22,8 +25,9 @@ export class AvatarSelectScreen extends Container {
   private card: Container;
   private title: Text;
   private mode: 'onboarding' | 'profile';
+  private returnTo?: string;
 
-  constructor({ mode = 'onboarding' }: AvatarSelectMode = {}) {
+  constructor({ mode = 'onboarding', returnTo }: AvatarSelectMode = {}) {
     super({
       layout: {
         flexDirection: 'column',
@@ -33,6 +37,7 @@ export class AvatarSelectScreen extends Container {
     });
 
     this.mode = mode;
+    this.returnTo = returnTo;
 
     this.background = new Sprite({
       texture: Texture.from('home/background.png'),
@@ -174,9 +179,7 @@ export class AvatarSelectScreen extends Container {
       return;
     }
 
-    void import('../layer-select').then(({ LayerSelectScreen }) =>
-      engine().navigation.showScreen(LayerSelectScreen),
-    );
+    enterGame(this.returnTo);
   }
 
   public resize(width: number, height: number) {

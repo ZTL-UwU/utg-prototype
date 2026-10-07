@@ -9,6 +9,7 @@ import { AlphabetGrid } from '../../../ui/alphabet-grid';
 import { HUD } from '../../../ui/hud';
 import { LevelMapScreen } from '../../level-map';
 import type { TMapUnit } from '../../level-map/units';
+import { EducationLevelSelect } from '../../level-select/education-level-select';
 import { EducationYoutubeScreen } from '../youtube-videos';
 import { LetterPopup } from './letter-popup';
 
@@ -16,6 +17,12 @@ const ALPHABET_SONG_ALIAS = 'education-levels/education-tutorial/uyghur-alphabet
 
 const STOP_BUTTON_SIZE = 115;
 type TutorialPresentation = 'popup' | 'screen';
+
+export type EducationTutorialProps = {
+  /** The map it was opened from, which Back returns to. Without one, Back goes to the alphabet select. */
+  mapUnit?: TMapUnit;
+  presentation?: TutorialPresentation;
+};
 
 function drawStopButton(size: number, state: 'default' | 'hover') {
   const sq = size * 0.38;
@@ -51,24 +58,15 @@ export class EducationTutorialScreen extends Container {
   private timings: { char: string; time: number }[] = [];
   private nextBounceIndex: number = 0;
   private songEndTime?: number;
-  constructor({
-    mapUnit,
-    presentation = 'screen',
-    onBack,
-  }: {
-    mapUnit: TMapUnit;
-    presentation?: TutorialPresentation;
-    onBack?: () => void;
-  }) {
+  constructor({ mapUnit, presentation = 'screen' }: EducationTutorialProps) {
     super();
 
     this.hud = new HUD({
-      onBack:
-        onBack ??
-        (() =>
-          void (presentation === 'popup'
-            ? engine().navigation.hidePopup()
-            : engine().navigation.showScreen(LevelMapScreen, mapUnit))),
+      onBack: () => {
+        if (presentation === 'popup') void engine().navigation.hidePopup();
+        else if (mapUnit) void engine().navigation.showScreen(LevelMapScreen, mapUnit);
+        else void engine().navigation.showScreen(EducationLevelSelect);
+      },
     });
 
     engine().audio.bgm.setVolume(0);
@@ -143,7 +141,7 @@ export class EducationTutorialScreen extends Container {
       });
       this.videoButton.onPress.connect(() => {
         void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-        void engine().navigation.showScreen(EducationYoutubeScreen, mapUnit);
+        void engine().navigation.showScreen(EducationYoutubeScreen, { mapUnit });
       });
       this.videoButton.layout = {
         position: 'absolute',

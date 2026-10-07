@@ -119,7 +119,7 @@ export class Navigation {
     }
   }
 
-  /** Subscribe to completed screen changes. */
+  /** Subscribe to screen changes, announced once the new screen is created. */
   public onScreenChange(listener: (ctor: AppScreenConstructor<any[]>, props?: unknown) => void) {
     this.screenChangeListeners.add(listener);
     return () => this.screenChangeListeners.delete(listener);
@@ -236,9 +236,17 @@ export class Navigation {
       props !== undefined
         ? new (ctor as AppScreenConstructor<[unknown]>)(props)
         : BigPool.get(ctor);
-    await this.addAndShowScreen(this.currentScreen);
+    // Announce before the enter animation so the URL never lags behind what is on screen.
     for (const listener of this.screenChangeListeners) {
       listener(ctor, props);
+    }
+    await this.addAndShowScreen(this.currentScreen);
+  }
+
+  /** Dismiss every popup, nested ones included, and give control back to the screen. */
+  public async hideAllPopups() {
+    while (this.currentPopup) {
+      await this.hidePopup();
     }
   }
 
