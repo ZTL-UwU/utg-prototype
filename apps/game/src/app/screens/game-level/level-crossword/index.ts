@@ -27,6 +27,8 @@ const BUTTON_GAP = 16;
 const BACKGROUND_COLOR = 0xf3e3c6;
 /** Lets the last word's green pulse play out before the end popup. */
 const END_DELAY_SECONDS = 0.6;
+/** Idle time on the grid before one unfound word flashes as a hint. */
+const HINT_INTERVAL_SECONDS = 7.5;
 
 const cellKey = (r: number, c: number) => `${r},${c}`;
 
@@ -55,6 +57,7 @@ export class GameWordSearchScreen extends Container {
   private readonly remaining: PlacedWord[];
   private resolving = false;
   private completed = false;
+  private hintTimer?: ReturnType<typeof setTimeout>;
 
   constructor(level: TLevel) {
     super();
@@ -70,7 +73,7 @@ export class GameWordSearchScreen extends Container {
     this.placed = matrix.placed;
     this.remaining = [...this.placed];
 
-    this.grid = new WordGridPanel(matrix.matrix);
+    this.grid = new WordGridPanel(matrix.matrix, { onTilePress: () => this.scheduleHint() });
     this.wordList = new WordListPanel({ words: this.placed.map((placed) => placed.word) });
     this.submitButton = new SubmitButton(() => void this.handleSubmit());
 
@@ -132,9 +135,11 @@ export class GameWordSearchScreen extends Container {
       ]),
       this.grid.playAppear(),
     ]);
+    this.scheduleHint();
   }
 
   public async hide() {
+    this.stopHints();
     const panels = [this.wordList, this.grid, this.submitButton];
     await Promise.all(
       panels.flatMap((panel) => [
@@ -142,6 +147,40 @@ export class GameWordSearchScreen extends Container {
         animate(panel.scale, { x: 0.65, y: 0.65 }, { duration: 0.3, ease: 'backIn' }),
       ]),
     );
+  }
+
+  public async pause() {
+    this.stopHints();
+  }
+
+  public async resume() {
+    this.scheduleHint();
+  }
+
+  public override destroy(options?: Parameters<Container['destroy']>[0]) {
+    this.stopHints();
+    super.destroy(options);
+  }
+
+  /** (Re)start the idle countdown; every grid tap pushes the next hint back. */
+  private scheduleHint() {
+    this.stopHints();
+    if (this.completed) return;
+    this.hintTimer = setTimeout(() => this.showHint(), HINT_INTERVAL_SECONDS * 1000);
+  }
+
+  private stopHints() {
+    clearTimeout(this.hintTimer);
+    this.hintTimer = undefined;
+  }
+
+  /** Flash one random unfound word, then keep counting down. */
+  private showHint() {
+    if (!this.resolving && !this.completed && this.remaining.length > 0) {
+      const word = this.remaining[Math.floor(Math.random() * this.remaining.length)];
+      this.grid.showHint(word.cells);
+    }
+    this.scheduleHint();
   }
 
   /** Correct only when the selected cells are exactly the cells of one unfound word. */
@@ -184,11 +223,13 @@ export class GameWordSearchScreen extends Container {
 
     this.grid.setLocked(false);
     this.resolving = false;
+    this.scheduleHint();
   }
 
   private endGame() {
     if (this.completed) return;
     this.completed = true;
+    this.stopHints();
     this.grid.setLocked(true);
     const { correct, mistakes } = useSessionStore.getState();
     useScoreManager.getState().addSession(correct, mistakes);

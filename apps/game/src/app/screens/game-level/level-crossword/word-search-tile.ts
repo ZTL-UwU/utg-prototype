@@ -150,6 +150,29 @@ export class WordSearchTile extends FancyButton {
     this.draw(this.baseLook());
   }
 
+  /** Flash green with a little jitter, then fall back to the tile's base color. */
+  public async showHint() {
+    this.draw('found');
+
+    this.feedbackAnimation?.stop();
+    this.scale.set(1);
+    this.rotation = 0;
+    const deg = Math.PI / 180;
+    const hint = animate([
+      [this.scale, { x: 1.06, y: 1.06 }, { duration: 0.1, ease: 'backOut' }],
+      [this, { rotation: -6 * deg }, { duration: 0.06, ease: 'linear', at: 0 }],
+      [this, { rotation: 6 * deg }, { duration: 0.1, ease: 'linear' }],
+      [this, { rotation: -4 * deg }, { duration: 0.1, ease: 'linear' }],
+      [this, { rotation: 3 * deg }, { duration: 0.1, ease: 'linear' }],
+      [this, { rotation: 0 }, { duration: 0.08, ease: 'easeOut' }],
+      [this.scale, { x: 1, y: 1 }, { type: 'spring', bounce: 0.35, duration: 0.3, at: '<' }],
+    ]);
+    this.feedbackAnimation = hint;
+    await hint.finished;
+    // a tap mid-hint has already replaced the animation and redrawn the tile
+    if (this.feedbackAnimation === hint) this.draw(this.baseLook());
+  }
+
   public async playAppear(delay: number) {
     this.alpha = 0;
     this.scale.set(0.6);

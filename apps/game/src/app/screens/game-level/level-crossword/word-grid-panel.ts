@@ -9,19 +9,28 @@ const PADDING = 20;
 const PANEL_RADIUS = 44;
 const APPEAR_STAGGER = 0.015;
 
+export type WordGridPanelOptions = {
+  /** Fires on every tile tap, even while the grid is locked. */
+  onTilePress?: () => void;
+};
+
 export class WordGridPanel extends Container {
   public readonly panelWidth: number;
   public readonly panelHeight: number;
 
   private readonly tiles: WordSearchTile[] = [];
+  private readonly cols: number;
+  private readonly onTilePress?: () => void;
   private selected: WordSearchTile[] = [];
   private locked = false;
 
-  constructor(matrix: GridCell[][]) {
+  constructor(matrix: GridCell[][], { onTilePress }: WordGridPanelOptions = {}) {
     super();
+    this.onTilePress = onTilePress;
 
     const rows = matrix.length;
     const cols = matrix[0]?.length ?? 0;
+    this.cols = cols;
     this.panelWidth = cols * TILE_SIZE + (cols - 1) * TILE_GAP + PADDING * 2;
     this.panelHeight = rows * TILE_SIZE + (rows - 1) * TILE_GAP + PADDING * 2;
 
@@ -72,7 +81,13 @@ export class WordGridPanel extends Container {
     );
   }
 
+  /** Flash the tiles at the given [row, col] cells. */
+  public showHint(cells: readonly [number, number][]) {
+    cells.forEach(([row, col]) => void this.tiles[row * this.cols + col]?.showHint());
+  }
+
   private readonly handleTilePress = (tile: WordSearchTile) => {
+    this.onTilePress?.();
     if (this.locked) return;
 
     if (tile.isSelected) {
