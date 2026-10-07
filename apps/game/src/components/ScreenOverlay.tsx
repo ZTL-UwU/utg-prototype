@@ -7,11 +7,14 @@ import { engine } from '../engine/getEngine';
 import { api } from '../lib/api';
 import { isFeedbackHotkey } from '../lib/feedback';
 import type { PasswordResetParams } from '../lib/passwordReset';
+import { useReauthStore } from '../lib/reauth';
+import { signOut } from '../lib/signOut';
 import { continueIntoGame } from '../utils/continueIntoGame';
 import { useAuthStore, type AuthUser } from '../zustandStores/auth';
 import { useFeedbackStore } from '../zustandStores/feedbackStore';
 import { useOverlayStore } from '../zustandStores/overlayStore';
 import { AuthParent, type SignUpData } from './auth';
+import { ReauthPrompt } from './auth/ReauthPrompt';
 import { FeedbackButton } from './feedback/FeedbackButton';
 import { FeedbackOverlay, openFeedback } from './feedback/FeedbackOverlay';
 import { MenuParent } from './menu/MenuParent';
@@ -62,6 +65,7 @@ export function ScreenOverlay() {
   const screenshot = useFeedbackStore((state) => state.screenshot);
   const resetParams = useOverlayStore((state) => state.passwordReset);
   const setAuth = useAuthStore((state) => state.setAuth);
+  const reauthEmail = useReauthStore((state) => state.email);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -84,6 +88,18 @@ export function ScreenOverlay() {
     onError: () => {
       useAuthStore.getState().clearTokens();
       window.alert('Login failed. Please log in again.');
+    },
+  });
+
+  // Unlike `login`, a failure keeps the session: the requests waiting on it get another try.
+  const { mutateAsync: reauth } = useMutation({
+    mutationFn: loginRequest,
+    onSuccess: (data) => {
+      // Swapping in the new tokens is what releases the waiting requests.
+      setAuth(data.access, data.refresh, data.user);
+    },
+    onError: (error) => {
+      alertApiError(error, 'Login failed. Check your password and try again.');
     },
   });
 
@@ -187,6 +203,15 @@ export function ScreenOverlay() {
   return (
     <>
       {overlay}
+      {reauthEmail !== null ? (
+        <ReauthPrompt
+          email={reauthEmail}
+          onLogin={async (password) => {
+            await reauth({ email: reauthEmail, password });
+          }}
+          onLogOut={() => void signOut()}
+        />
+      ) : null}
       {feedbackOpen ? null : <FeedbackButton />}
       {feedbackOpen && screenshot ? <FeedbackOverlay screenshot={screenshot} /> : null}
     </>
