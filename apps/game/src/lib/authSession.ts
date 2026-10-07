@@ -1,5 +1,6 @@
 import { useAuthStore, type AuthUser } from '../zustandStores/auth';
 import { api } from './api';
+import { trustRefreshToken } from './reauth';
 
 /** Reject entry if refresh would die during a long play session. */
 const MIN_REFRESH_REMAINING_MS = 12 * 60 * 60 * 1000;
@@ -50,6 +51,7 @@ export async function ensureValidSession(): Promise<boolean> {
       method: 'GET',
     });
     useAuthStore.getState().setUser({ ...user, ...profile });
+    trustRefreshToken();
     return true;
   } catch {
     clearTokens();

@@ -2,22 +2,17 @@ import { ofetch } from 'ofetch';
 
 import { useAuthStore } from '../zustandStores/auth';
 import { backendUrl } from './env';
+import { reauthenticate } from './reauth';
 
 const AUTH_ENDPOINTS = ['/user/login', '/user/register', '/user/token/refresh'];
 
-// Shared across concurrent 401s so only one refresh request is in flight.
-let refreshPromise: Promise<string | null> | null = null;
+// Shared across concurrent 401s so only one refresh (or re-login prompt) is in flight.
+let renewal: Promise<string | null> | null = null;
 
+/** Trade the refresh token for a new access token. Null when there is none or it is refused. */
 async function refreshAccessToken(): Promise<string | null> {
-  const { refreshToken, isGuest, setTokens, clearTokens } = useAuthStore.getState();
-  if (!refreshToken) {
-    // Guests have no tokens; a 401 must not wipe the local session.
-    if (!isGuest) clearTokens();
-    // [TODO]:
-    // Although this is unlikely to happen since we have the 12h refresh token expiry check on startup, we should still handle this better.
-    // we need to show the auth overlay, and somehow retry the request (w/ a game result queue for game result reporting for example).
-    return null;
-  }
+  const { refreshToken, setTokens } = useAuthStore.getState();
+  if (!refreshToken) return null;
 
   try {
     const { access } = await ofetch<{ access: string }>('/user/token/refresh', {
@@ -28,10 +23,17 @@ async function refreshAccessToken(): Promise<string | null> {
     setTokens(access, refreshToken);
     return access;
   } catch {
-    if (!useAuthStore.getState().isGuest) clearTokens();
-    // TODO: same as above
     return null;
   }
+}
+
+/**
+ * A new access token from the refresh token, or failing that, from the player logging back
+ * in. The request that 401'd waits for that login and then retries, so nothing it carried
+ * (a level result, say) is lost to an expired session.
+ */
+async function renewAccessToken(): Promise<string | null> {
+  return (await refreshAccessToken()) ?? reauthenticate();
 }
 
 export const api = ofetch.create({
@@ -54,14 +56,11 @@ export const api = ofetch.create({
       return;
     }
 
-    refreshPromise ??= refreshAccessToken().finally(() => {
-      refreshPromise = null;
+    renewal ??= renewAccessToken().finally(() => {
+      renewal = null;
     });
-    const access = await refreshPromise;
-    // Refresh token expired or revoked; retrying would just 401 again.
-    if (!access) {
-      options.retry = false;
-      // TODO: same as above
-    }
+    const access = await renewal;
+    // Signed out (or a guest); retrying would just 401 again.
+    if (!access) options.retry = false;
   },
 });

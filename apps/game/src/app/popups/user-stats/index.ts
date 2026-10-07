@@ -3,17 +3,15 @@ import { animate } from 'motion';
 import { BlurFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { signOut } from '../../../lib/signOut';
 import { getAvatarPath } from '../../../utils/avatars';
 import { formatMonthTitle } from '../../../utils/date';
 import { useAuthStore } from '../../../zustandStores/auth';
-import { useLevelProgress } from '../../../zustandStores/levelProgressStore';
 import useResultStore, {
   selectResultTotals,
   selectStreakDays,
 } from '../../../zustandStores/resultStore';
-import { useUserRewardStore } from '../../../zustandStores/userRewardStore';
 import { AvatarSelectScreen } from '../../screens/avatar-select';
-import { AuthScreen } from '../../screens/home/auth';
 import { BackButton } from '../../ui/back-button';
 import { StreakCalendar } from './streak-calendar';
 
@@ -159,7 +157,7 @@ export class UserStatsPopup extends Container {
     };
     logoutButton.onPress.connect(() => {
       void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      void this.logout();
+      void signOut();
     });
 
     const header = new Container({
@@ -281,18 +279,6 @@ export class UserStatsPopup extends Container {
     this.incorrectAttemptsValue.text = String(mistake);
 
     this.streakCalendar.setActiveDays(selectStreakDays(results));
-  }
-
-  private async logout() {
-    // Dismiss first: hide() unwinds the blur on `navigation.currentScreen`, which is the
-    // wrong screen once showScreen has swapped it.
-    await engine().navigation.hidePopup();
-
-    useAuthStore.getState().clearTokens();
-    useUserRewardStore.getState().clearRewards();
-    useLevelProgress.getState().resetAllAttempts();
-
-    await engine().navigation.showScreen(AuthScreen);
   }
 
   private refreshAvatar() {
