@@ -31,6 +31,7 @@ from apps.users.schemas import (
     LoginTokenPairOut,
     PasswordResetConfirmIn,
     PasswordResetRequestIn,
+    ProfilePatchIn,
     RefreshedAccessTokenOut,
     RefreshTokenIn,
     RegisterIn,
@@ -161,6 +162,19 @@ def password_reset_confirm(request, payload: PasswordResetConfirmIn):
 )
 def profile(request):
     return request.auth
+
+
+@router.patch(
+    "/user/profile",
+    auth=jwt_auth,
+    response=UserOut,
+    summary="[Public] Update the current user profile",
+)
+def update_profile(request, payload: ProfilePatchIn):
+    user = request.auth
+    user.avatar = payload.avatar
+    user.save(update_fields=["avatar"])
+    return user
 
 
 @router.get(

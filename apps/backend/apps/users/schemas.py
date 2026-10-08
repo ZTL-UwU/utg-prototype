@@ -31,13 +31,19 @@ class UserOut(Schema):
     id: int
     name: str | None
     email: str
+    avatar: int | None
     is_cheat: bool
+
+
+class ProfilePatchIn(Schema):
+    avatar: int = Field(ge=0, le=32767)
 
 
 class AdminUserOut(Schema):
     id: int
     name: str | None
     email: str
+    avatar: int | None
     is_staff: bool
     is_active: bool
     is_cheat: bool

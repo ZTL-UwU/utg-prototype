@@ -25,7 +25,7 @@ class UserAdmin(BaseUserAdmin):
     inlines = (UserRewardInline,)
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        ("Profile", {"fields": ("name", "is_cheat")}),
+        ("Profile", {"fields": ("name", "avatar", "is_cheat")}),
         (
             "Permissions",
             {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")},
