@@ -1,5 +1,6 @@
 import { useAuthStore, type AuthUser } from '../zustandStores/auth';
 import { api } from './api';
+import { saveAvatar } from './profile';
 import { trustRefreshToken } from './reauth';
 
 /** Reject entry if refresh would die during a long play session. */
@@ -50,7 +51,10 @@ export async function ensureValidSession(): Promise<boolean> {
     const profile = await api<AuthUser>('/user/profile', {
       method: 'GET',
     });
-    useAuthStore.getState().setUser({ ...user, ...profile });
+    // An avatar picked before the backend stored it lives only here; keep it and upload it.
+    const avatar = profile.avatar ?? user.avatar;
+    if (profile.avatar == null && avatar != null) void saveAvatar(avatar);
+    useAuthStore.getState().setUser({ ...user, ...profile, avatar });
     trustRefreshToken();
     return true;
   } catch {

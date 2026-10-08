@@ -3,6 +3,7 @@ import { animate } from 'motion';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { saveAvatar } from '../../../lib/profile';
 import { AVATARS, type AvatarDef } from '../../../utils/avatars';
 import { enterGame } from '../../../utils/continueIntoGame';
 import { useAuthStore } from '../../../zustandStores/auth';
@@ -173,6 +174,7 @@ export class AvatarSelectScreen extends Container {
     const { user, setUser } = useAuthStore.getState();
 
     if (user) setUser({ ...user, avatar: id });
+    void saveAvatar(id);
 
     if (this.mode === 'profile') {
       void engine().navigation.hidePopup();
