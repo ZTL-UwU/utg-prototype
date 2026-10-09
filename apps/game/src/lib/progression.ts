@@ -9,6 +9,7 @@ import {
 } from '../app/screens/level-map/units';
 import { useAuthStore } from '../zustandStores/auth';
 import useResultStore from '../zustandStores/resultStore';
+import { openAccess } from './env';
 
 const LAYER_PREREQUISITES: Record<TLayer, TLayer[]> = {
   education: [],
@@ -46,7 +47,7 @@ function progressionUnknown(): boolean {
 }
 
 function isCheatUnlocked(): boolean {
-  return useAuthStore.getState().user?.is_cheat === true;
+  return openAccess || useAuthStore.getState().user?.is_cheat === true;
 }
 
 export function hasCompletedLevel(levelId: number): boolean {

@@ -1,5 +1,6 @@
 import { CourseLoadErrorScreen } from '../app/screens/course-load-error';
 import { ensureValidSession } from '../lib/authSession';
+import { openAccess } from '../lib/env';
 import { useAuthStore } from '../zustandStores/auth';
 import { ensureCourseCatalogReady } from '../zustandStores/courseStore';
 import { ensureResultsReady } from '../zustandStores/resultStore';
@@ -24,16 +25,24 @@ async function hasSession(): Promise<boolean> {
   return false;
 }
 
-/** Signed in or playing as a guest. Anyone else logs in first, then comes back. */
+/**
+ * Signed in or playing as a guest. Anyone else logs in first, then comes back; with
+ * `openAccess` they carry on as a guest instead.
+ */
 export const session: Guard = async (href) => {
-  if (!(await hasSession())) return redirect(withNext('/auth', href));
+  if (await hasSession()) return;
+  if (!openAccess) return redirect(withNext('/auth', href));
+  useAuthStore.getState().enterGuestMode();
 };
 
-/** A session with an avatar picked, the same bar `continueIntoGame` sets for entering the game. */
+/**
+ * A session with an avatar picked, the same bar `continueIntoGame` sets for entering the game.
+ * `openAccess` skips the avatar: screens fall back to the default one.
+ */
 export const player: Guard = async (href) => {
   const outcome = await session(href);
   if (outcome) return outcome;
-  if (useAuthStore.getState().user?.avatar == null) {
+  if (!openAccess && useAuthStore.getState().user?.avatar == null) {
     return redirect(withNext('/avatar-select', href));
   }
 };
