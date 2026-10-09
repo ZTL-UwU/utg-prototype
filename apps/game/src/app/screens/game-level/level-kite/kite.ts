@@ -165,21 +165,16 @@ export class Kite extends Container {
     this.stopIdleAnimation();
     const centerX = this.position.x;
     const centerY = this.position.y;
-    const phase = { t: 0 };
 
-    this.idleAnim = animate(
-      phase,
-      { t: Math.PI * 2 },
-      {
-        duration: IDLE_DURATION_S,
-        ease: 'linear',
-        repeat: Infinity,
-        onUpdate: () => {
-          this.position.x = centerX + Math.cos(phase.t) * IDLE_RADIUS_X;
-          this.position.y = centerY + Math.sin(phase.t) * IDLE_RADIUS_Y;
-        },
+    this.idleAnim = animate(0, Math.PI * 2, {
+      duration: IDLE_DURATION_S,
+      ease: 'linear',
+      repeat: Infinity,
+      onUpdate: (t) => {
+        this.position.x = centerX + Math.cos(t) * IDLE_RADIUS_X;
+        this.position.y = centerY + Math.sin(t) * IDLE_RADIUS_Y;
       },
-    );
+    });
   }
 
   private stopIdleAnimation() {

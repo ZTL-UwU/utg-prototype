@@ -62,23 +62,18 @@ export class LeafLetter extends Container {
   }
 
   public async playAppear(delay: number) {
-    const fade = { alpha: 0 };
-    this.alpha = fade.alpha;
+    this.alpha = 0;
     this.content.scale.set(0.6);
 
     await Promise.all([
-      animate(
-        fade,
-        { alpha: 1 },
-        {
-          duration: 0.4,
-          ease: 'backOut',
-          delay,
-          onUpdate: () => {
-            this.alpha = fade.alpha;
-          },
+      animate(0, 1, {
+        duration: 0.4,
+        ease: 'backOut',
+        delay,
+        onUpdate: (alpha) => {
+          this.alpha = alpha;
         },
-      ),
+      }),
       animate(this.content.scale, { x: 1, y: 1 }, { duration: 0.4, ease: 'backOut', delay }),
     ]);
   }

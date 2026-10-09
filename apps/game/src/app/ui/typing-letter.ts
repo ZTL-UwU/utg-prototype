@@ -109,24 +109,19 @@ export class TypingLetter extends Container {
 
   async playAppear(delay: number) {
     const targetScale = this.isActive ? 1.2 : 1;
-    const fade = { alpha: 0 };
-    this.alpha = fade.alpha;
+    this.alpha = 0;
     this.focusContainer.scale.set(0.6);
 
     const duration = 0.4;
     await Promise.all([
-      animate(
-        fade,
-        { alpha: 1 },
-        {
-          duration,
-          ease: 'backOut',
-          delay,
-          onUpdate: () => {
-            this.alpha = fade.alpha;
-          },
+      animate(0, 1, {
+        duration,
+        ease: 'backOut',
+        delay,
+        onUpdate: (alpha) => {
+          this.alpha = alpha;
         },
-      ),
+      }),
       animate(
         this.focusContainer.scale,
         { x: targetScale, y: targetScale },
@@ -139,21 +134,16 @@ export class TypingLetter extends Container {
     this.focusAnimation?.stop();
     this.contentAnimation?.stop();
 
-    const fade = { alpha: this.alpha };
     const duration = 0.2;
     await Promise.all([
-      animate(
-        fade,
-        { alpha: 0 },
-        {
-          duration,
-          ease: 'backIn',
-          delay,
-          onUpdate: () => {
-            this.alpha = fade.alpha;
-          },
+      animate(this.alpha, 0, {
+        duration,
+        ease: 'backIn',
+        delay,
+        onUpdate: (alpha) => {
+          this.alpha = alpha;
         },
-      ),
+      }),
       animate(this.focusContainer.scale, { x: 0, y: 0 }, { duration, ease: 'backIn', delay }),
     ]);
   }

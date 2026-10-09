@@ -118,20 +118,15 @@ export class Gust extends Container {
     const centerY = this.position.y;
     const radiusX = 3;
     const radiusY = 20;
-    const phase = { t: 0 };
 
-    this.idleAnim = animate(
-      phase,
-      { t: Math.PI * 2 },
-      {
-        duration: 5,
-        ease: 'linear',
-        repeat: Infinity,
-        onUpdate: () => {
-          this.position.x = centerX + Math.cos(phase.t) * radiusX;
-          this.position.y = centerY + Math.sin(phase.t) * radiusY;
-        },
+    this.idleAnim = animate(0, Math.PI * 2, {
+      duration: 5,
+      ease: 'linear',
+      repeat: Infinity,
+      onUpdate: (t) => {
+        this.position.x = centerX + Math.cos(t) * radiusX;
+        this.position.y = centerY + Math.sin(t) * radiusY;
       },
-    );
+    });
   }
 }
