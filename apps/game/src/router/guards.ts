@@ -1,5 +1,6 @@
 import { CourseLoadErrorScreen } from '../app/screens/course-load-error';
 import { ensureValidSession } from '../lib/authSession';
+import { openAccess } from '../lib/env';
 import { useAuthStore } from '../zustandStores/auth';
 import { ensureCourseCatalogReady } from '../zustandStores/courseStore';
 import { ensureResultsReady } from '../zustandStores/resultStore';
@@ -36,6 +37,15 @@ export const player: Guard = async (href) => {
   if (useAuthStore.getState().user?.avatar == null) {
     return redirect(withNext('/avatar-select', href));
   }
+};
+
+/**
+ * `player` for a level's own URL. With `openAccess`, a shared level link opens straight into
+ * the level: a visitor with no session plays as a guest, and the avatar is left to the default.
+ */
+export const levelPlayer: Guard = async (href) => {
+  if (!openAccess) return player(href);
+  if (!(await hasSession())) useAuthStore.getState().enterGuestMode();
 };
 
 /**

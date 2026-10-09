@@ -17,7 +17,8 @@
  *   "not found" (falls back home), or `redirect(href)`.
  * - `params`: keys not in the path become the query. Return nothing to let the next route for
  *   the same screen take it (`resetPassword` → `auth`).
- * - `guards`: `[player, course]` for in-game screens, `[session]` for signed-in only.
+ * - `guards`: `[player, course]` for in-game screens, `[session]` for signed-in only,
+ *   `[levelPlayer, course]` for a level's own URL (shareable with `VITE_OPEN_ACCESS`).
  * - `transient`: Back skips this screen (login, level play).
  * - `oneOf(screens, pick)`: one route for several screens (`levelPlay`).
  *
@@ -57,7 +58,7 @@ import {
   type Route,
 } from './core/defineRoute';
 import { formatHref, parseHref } from './core/path';
-import { course, player, session } from './guards';
+import { course, levelPlayer, player, session } from './guards';
 
 function mapById(mapId: string | undefined): TMapUnit | undefined {
   const id = parseId(mapId);
@@ -170,7 +171,7 @@ export const levelMap = defineRoute({
 export const levelSplash = defineRoute({
   path: '/:layer/levels/:levelId',
   screen: LevelSplashScreen,
-  guards: [player, course],
+  guards: [levelPlayer, course],
   load: ({ levelId }) => playableLevel(levelId),
   params: ({ level, mapUnit }) => ({ layer: mapUnit.type, levelId: level.id }),
 });
@@ -183,7 +184,7 @@ export const levelSplash = defineRoute({
 export const levelPlay = defineRoute({
   path: '/:layer/levels/:levelId/play',
   screen: oneOf(Object.values(LEVEL_TYPE_SCREENS), (level: TLevel) => level.screen),
-  guards: [player, course],
+  guards: [levelPlayer, course],
   transient: true,
   load: ({ levelId }) => {
     const found = playableLevel(levelId);
