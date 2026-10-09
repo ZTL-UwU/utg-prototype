@@ -25,26 +25,27 @@ async function hasSession(): Promise<boolean> {
   return false;
 }
 
-/**
- * Signed in or playing as a guest. Anyone else logs in first, then comes back; with
- * `openAccess` they carry on as a guest instead.
- */
+/** Signed in or playing as a guest. Anyone else logs in first, then comes back. */
 export const session: Guard = async (href) => {
-  if (await hasSession()) return;
-  if (!openAccess) return redirect(withNext('/auth', href));
-  useAuthStore.getState().enterGuestMode();
+  if (!(await hasSession())) return redirect(withNext('/auth', href));
 };
 
-/**
- * A session with an avatar picked, the same bar `continueIntoGame` sets for entering the game.
- * `openAccess` skips the avatar: screens fall back to the default one.
- */
+/** A session with an avatar picked, the same bar `continueIntoGame` sets for entering the game. */
 export const player: Guard = async (href) => {
   const outcome = await session(href);
   if (outcome) return outcome;
-  if (!openAccess && useAuthStore.getState().user?.avatar == null) {
+  if (useAuthStore.getState().user?.avatar == null) {
     return redirect(withNext('/avatar-select', href));
   }
+};
+
+/**
+ * `player` for a level's own URL. With `openAccess`, a shared level link opens straight into
+ * the level: a visitor with no session plays as a guest, and the avatar is left to the default.
+ */
+export const levelPlayer: Guard = async (href) => {
+  if (!openAccess) return player(href);
+  if (!(await hasSession())) useAuthStore.getState().enterGuestMode();
 };
 
 /**
