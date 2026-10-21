@@ -12,6 +12,8 @@ const APPEAR_STAGGER = 0.015;
 export type WordGridPanelOptions = {
   /** Fires on every tile tap, even while the grid is locked. */
   onTilePress?: () => void;
+  /** Fires after a tap selects or deselects a tile (never while locked). */
+  onSelectionChange?: () => void;
 };
 
 export class WordGridPanel extends Container {
@@ -21,12 +23,14 @@ export class WordGridPanel extends Container {
   private readonly tiles: WordSearchTile[] = [];
   private readonly cols: number;
   private readonly onTilePress?: () => void;
+  private readonly onSelectionChange?: () => void;
   private selected: WordSearchTile[] = [];
   private locked = false;
 
-  constructor(matrix: GridCell[][], { onTilePress }: WordGridPanelOptions = {}) {
+  constructor(matrix: GridCell[][], { onTilePress, onSelectionChange }: WordGridPanelOptions = {}) {
     super();
     this.onTilePress = onTilePress;
+    this.onSelectionChange = onSelectionChange;
 
     const rows = matrix.length;
     const cols = matrix[0]?.length ?? 0;
@@ -97,5 +101,6 @@ export class WordGridPanel extends Container {
       tile.setSelected(true);
       this.selected.push(tile);
     }
+    this.onSelectionChange?.();
   };
 }

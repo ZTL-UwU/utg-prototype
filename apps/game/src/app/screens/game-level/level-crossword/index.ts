@@ -13,7 +13,6 @@ import { HUD } from '../../../ui/hud';
 import { LevelMapScreen } from '../../level-map';
 import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
 import { Matrix, type PlacedWord } from './grid';
-import { SubmitButton } from './submit-button';
 import { WordGridPanel } from './word-grid-panel';
 import { WordListPanel } from './word-list-panel';
 
@@ -22,8 +21,6 @@ const DESIGN_HEIGHT = 1080;
 const PANEL_SHADOW = 16;
 /** Word bar bottom → grid top; includes the bar's shadow. */
 const PANEL_GAP = PANEL_SHADOW + 12;
-/** Space between the grid's shadow and the submit button. */
-const BUTTON_GAP = 16;
 const BACKGROUND_COLOR = 0xf3e3c6;
 /** Lets the last word's green pulse play out before the end popup. */
 const END_DELAY_SECONDS = 0.6;
@@ -50,7 +47,6 @@ export class GameWordSearchScreen extends Container {
   private readonly content = new Container();
   private readonly grid: WordGridPanel;
   private readonly wordList: WordListPanel;
-  private readonly submitButton: SubmitButton;
   private readonly hud: HUD;
 
   private readonly placed: PlacedWord[];
@@ -73,23 +69,23 @@ export class GameWordSearchScreen extends Container {
     this.placed = matrix.placed;
     this.remaining = [...this.placed];
 
-    this.grid = new WordGridPanel(matrix.matrix, { onTilePress: () => this.scheduleHint() });
+    this.grid = new WordGridPanel(matrix.matrix, {
+      onTilePress: () => this.scheduleHint(),
+      onSelectionChange: () => void this.checkSelection(),
+    });
     this.wordList = new WordListPanel({ words: this.placed.map((placed) => placed.word) });
-    this.submitButton = new SubmitButton(() => void this.handleSubmit());
 
-    // word list, grid, then submit button stacked and centered; panel pivots sit at
-    // their centers so show/hide scale from the middle
+    // word list then grid stacked and centered; panel pivots sit at their centers so
+    // show/hide scale from the middle
     const gridTop = this.wordList.panelHeight + PANEL_GAP;
-    const buttonTop = gridTop + this.grid.panelHeight + PANEL_SHADOW + BUTTON_GAP;
-    const totalHeight = buttonTop + SubmitButton.totalHeight;
+    const totalHeight = gridTop + this.grid.panelHeight + PANEL_SHADOW;
     const top = (DESIGN_HEIGHT - totalHeight) / 2;
     const centerX = DESIGN_WIDTH / 2;
     this.wordList.pivot.set(this.wordList.panelWidth / 2, this.wordList.panelHeight / 2);
     this.wordList.position.set(centerX, top + this.wordList.panelHeight / 2);
     this.grid.pivot.set(this.grid.panelWidth / 2, this.grid.panelHeight / 2);
     this.grid.position.set(centerX, top + gridTop + this.grid.panelHeight / 2);
-    this.submitButton.position.set(centerX, top + buttonTop + SubmitButton.totalHeight / 2);
-    this.content.addChild(this.wordList, this.grid, this.submitButton);
+    this.content.addChild(this.wordList, this.grid);
 
     this.hud = new HUD({
       onBack: () =>
@@ -122,7 +118,7 @@ export class GameWordSearchScreen extends Container {
       return;
     }
 
-    const panels = [this.wordList, this.grid, this.submitButton];
+    const panels = [this.wordList, this.grid];
     panels.forEach((panel) => {
       panel.alpha = 0;
       panel.scale.set(0.65);
@@ -140,7 +136,7 @@ export class GameWordSearchScreen extends Container {
 
   public async hide() {
     this.stopHints();
-    const panels = [this.wordList, this.grid, this.submitButton];
+    const panels = [this.wordList, this.grid];
     await Promise.all(
       panels.flatMap((panel) => [
         animate(panel, { alpha: 0 }, { duration: 0.3, ease: 'backIn' }),
@@ -183,14 +179,14 @@ export class GameWordSearchScreen extends Container {
     this.scheduleHint();
   }
 
-  /** Correct only when the selected cells are exactly the cells of one unfound word. */
-  private async handleSubmit() {
+  /**
+   * Runs on every selection change. Resolves only when the selected cells are exactly
+   * the cells of one unfound word (no extra tiles); anything else is left as-is.
+   */
+  private async checkSelection() {
     if (this.resolving || this.completed) return;
     const tiles = [...this.grid.getSelected()];
     if (tiles.length === 0) return;
-
-    this.resolving = true;
-    this.grid.setLocked(true);
 
     const keys = new Set(tiles.map((tile) => cellKey(tile.row, tile.col)));
     const matches = this.remaining.filter(
@@ -198,24 +194,21 @@ export class GameWordSearchScreen extends Container {
         placed.cells.length === keys.size &&
         placed.cells.every(([r, c]) => keys.has(cellKey(r, c))),
     );
+    if (matches.length !== 1) return;
 
-    if (matches.length === 1) {
-      const [match] = matches;
-      useSessionStore.getState().recordCorrect();
-      void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
-      this.wordList.markFound(this.placed.indexOf(match));
-      this.remaining.splice(this.remaining.indexOf(match), 1);
-      await Promise.all(tiles.map((tile) => tile.showFound()));
-    } else {
-      useSessionStore.getState().recordMistake();
-      void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
-      await Promise.all(tiles.map((tile) => tile.showIncorrect()));
-    }
+    this.resolving = true;
+    this.grid.setLocked(true);
+
+    const [match] = matches;
+    useSessionStore.getState().recordCorrect();
+    void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
+    this.wordList.markFound(this.placed.indexOf(match));
+    this.remaining.splice(this.remaining.indexOf(match), 1);
+    await Promise.all(tiles.map((tile) => tile.showFound()));
 
     this.grid.clearSelection();
 
     if (this.remaining.length === 0) {
-      this.submitButton.enabled = false;
       await waitFor(END_DELAY_SECONDS);
       this.endGame();
       return;
