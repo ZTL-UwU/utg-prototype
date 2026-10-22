@@ -484,11 +484,19 @@ export class KeyboardLayout extends Container {
 
   private readonly onKeyDown = (event: KeyboardEvent) => {
     if (event.repeat) return;
+    // The OS never sees a tapped Shift, so a physical key arrives unshifted:
+    // drop the latch so the labels match what the key actually types.
+    if (event.isTrusted && this.latchedShiftCode) {
+      if (event.code === this.latchedShiftCode) this.latchedShiftCode = '';
+      else this.releaseLatchedShift();
+    }
     this.pressedCodes.add(event.code);
     this.refreshKeys();
   };
 
   private readonly onKeyUp = (event: KeyboardEvent) => {
+    // A physical Shift released over the latch already reports its own keyup.
+    if (event.isTrusted && event.code === this.latchedShiftCode) this.latchedShiftCode = '';
     this.pressedCodes.delete(event.code);
     this.refreshKeys();
   };
