@@ -416,9 +416,15 @@ export function isAuxiliaryKey(code: string): boolean {
   return getAuxiliaryKeys().has(code);
 }
 
-export function getMappedFromKeyCode(code: string, shift: boolean): string {
-  const layer = getLayers()[shift ? 'shift' : 'default'];
-  return layer[code] ?? '';
+export function getMappedFromKeyCode(code: string, shift: boolean, capsLock = false): string {
+  const mapped = getLayers()[shift ? 'shift' : 'default'][code] ?? '';
+  if (!capsLock) return mapped;
+  // Caps Lock inverts letter case like the OS does (Shift + Caps Lock → lowercase).
+  // Caseless glyphs (Arabic letters, digits, punctuation) are unaffected.
+  const upper = mapped.toLocaleUpperCase('ug');
+  const lower = mapped.toLocaleLowerCase('ug');
+  if (upper === lower) return mapped;
+  return shift ? lower : upper;
 }
 
 /** Labels for modifier and special keys shown on the on-screen keyboard. */
@@ -429,8 +435,8 @@ export function formatKeyboardLabel(text: string): string {
   return text;
 }
 
-export function getKeyboardLabel(code: string, shift: boolean): string {
-  const mapped = getMappedFromKeyCode(code, shift);
+export function getKeyboardLabel(code: string, shift: boolean, capsLock = false): string {
+  const mapped = getMappedFromKeyCode(code, shift, capsLock);
   if (mapped.trim().length > 0) {
     return formatKeyboardLabel(mapped);
   }
@@ -450,14 +456,7 @@ export function getShiftHintLabel(code: string): string {
 }
 
 export function getMappedFromKeyboardEvent(event: KeyboardEvent): string {
-  const mapped = getMappedFromKeyCode(event.code, event.shiftKey);
-  if (!event.getModifierState('CapsLock')) return mapped;
-  // Caps Lock inverts letter case like the OS does (Shift + Caps Lock → lowercase).
-  // Caseless glyphs (Arabic letters, digits, punctuation) are unaffected.
-  const upper = mapped.toLocaleUpperCase('ug');
-  const lower = mapped.toLocaleLowerCase('ug');
-  if (upper === lower) return mapped;
-  return event.shiftKey ? lower : upper;
+  return getMappedFromKeyCode(event.code, event.shiftKey, event.getModifierState('CapsLock'));
 }
 
 export function getKeyFromChar(char: string): string {
