@@ -15,6 +15,7 @@ import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map
 import { LivesBar } from './lives-bar';
 import { NaanPiece } from './naan-piece';
 import { PlateStack } from './plate-stack';
+import { SpeedSlider } from './speed-slider';
 
 const DESIGN_WIDTH = 1920;
 const DESIGN_HEIGHT = 1080;
@@ -26,12 +27,12 @@ const LAYOUT = {
   rightPlate: { x: 880, y: 535 },
   naanFlightY: 400,
   lives: { x: 1680, y: 90 },
+  speedSlider: { x: 720, y: 68 },
 } as const;
 
 type MovingNaan = {
   letter: string;
   piece: NaanPiece;
-  speed: number;
   resolving: boolean;
 };
 
@@ -45,7 +46,7 @@ export class GameNaanStackScreen extends Container {
   private readonly letterPool: string[];
   private readonly plateCapacity: number;
   private readonly spawnIntervalMs: number;
-  private readonly moveSpeed: number;
+  private moveSpeed: number;
 
   private readonly background = new Sprite({
     texture: Texture.from('game-levels/game-level-naan-stack/background.png'),
@@ -56,6 +57,7 @@ export class GameNaanStackScreen extends Container {
   private readonly keyboard = new KeyboardLayout();
   private readonly hud: HUD;
   private readonly livesBar: LivesBar;
+  private readonly speedSlider: SpeedSlider;
   private readonly leftPlate: PlateStack;
   private readonly rightPlate: PlateStack;
   private readonly plates: PlateStack[];
@@ -88,6 +90,16 @@ export class GameNaanStackScreen extends Container {
     this.livesBar = new LivesBar(typedLevel.props.maxLives);
     this.livesBar.position.set(LAYOUT.lives.x, LAYOUT.lives.y);
 
+    this.speedSlider = new SpeedSlider({
+      min: this.moveSpeed * 0.5,
+      max: this.moveSpeed * 2,
+      value: this.moveSpeed,
+      onChange: (speed) => {
+        this.moveSpeed = speed;
+      },
+    });
+    this.speedSlider.position.set(LAYOUT.speedSlider.x, LAYOUT.speedSlider.y);
+
     this.leftPlate = new PlateStack({
       texture: 'game-levels/game-level-naan-stack/plate-blue.png',
       capacity: this.plateCapacity,
@@ -106,6 +118,7 @@ export class GameNaanStackScreen extends Container {
       this.rightPlate,
       this.naanLayer,
       this.livesBar,
+      this.speedSlider,
       this.keyboard,
     );
     this.addChild(this.background, this.gameplay, this.hud);
@@ -182,7 +195,7 @@ export class GameNaanStackScreen extends Container {
       const moving = this.movingNaan[index];
       if (!moving || moving.resolving) continue;
 
-      moving.piece.x -= moving.speed * (deltaMs / 1000);
+      moving.piece.x -= this.moveSpeed * (deltaMs / 1000);
 
       if (moving.piece.x + moving.piece.halfWidth < 0) {
         this.missNaan(index);
@@ -202,7 +215,6 @@ export class GameNaanStackScreen extends Container {
     this.movingNaan.push({
       letter,
       piece,
-      speed: this.moveSpeed,
       resolving: false,
     });
   }
