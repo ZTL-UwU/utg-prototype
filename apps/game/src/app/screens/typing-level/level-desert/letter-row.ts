@@ -85,6 +85,7 @@ export class LetterRow extends Container {
   private readonly handleKeyDown = (event: KeyboardEvent) => {
     if (
       event.key === 'Shift' ||
+      event.key === 'CapsLock' ||
       this.letters.length === 0 ||
       this.isRemoving ||
       this.isTransitioning
