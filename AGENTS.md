@@ -20,6 +20,7 @@ Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.de
 ```
 apps/game                  — PixiJS game client (@utg/game)
 apps/admin                 — React Router admin app (@utg/admin)
+apps/backend               — Django + Django Ninja API (Python, uv; not a pnpm workspace package)
 packages/level-types       — Level type ids, labels, and Zod props schemas (@utg/level-types)
 packages/letters           — Education/keyboard letter constants (@utg/letters)
 packages/script-converter  — Uyghur Arabic ↔ Latin ↔ Cyrillic (@utg/script-converter)
@@ -34,7 +35,18 @@ Install once at the repo root with `vp install`.
 | Game build  | `vp run --filter @utg/game build` or `vp run build:game`   |
 | Admin build | `vp run --filter @utg/admin build` or `vp run build:admin` |
 
-Admin talks to the backend via `VITE_BACKEND_URL` (see `apps/admin/.env.example`). Backend code lives in `../utg-project-be`.
+Admin talks to the backend via `VITE_BACKEND_URL` (see `apps/admin/.env.example`).
+
+## Backend (`apps/backend`)
+
+Django app managed with `uv`, not `vp`; it's excluded from Vite+ fmt/lint. Run commands from `apps/backend` — see its `README.md` for setup and env vars.
+
+| Task       | Command (in `apps/backend`)                                |
+| ---------- | ---------------------------------------------------------- |
+| Install    | `uv sync`                                                  |
+| Dev server | `uv run python manage.py runserver`                        |
+| Checks     | `uv run ruff check .`, `uv run ruff format --check .`      |
+| Migrations | `uv run python manage.py makemigrations --check --dry-run` |
 
 ## Game URLs (`apps/game/src/router`)
 
@@ -46,7 +58,7 @@ Every game screen has a URL, in dev and prod. Screens keep navigating with `navi
 
 ## Level types (`@utg/level-types`)
 
-Shared source of truth for level type ids and per-type `level_props` Zod schemas. Admin UI forms stay in `@utg/admin` (`level-type-forms`); keep the Django `LevelType` allow-list in sync when adding ids.
+Shared source of truth for level type ids and per-type `level_props` Zod schemas. Admin UI forms stay in `@utg/admin` (`level-type-forms`); keep the Django `LevelType` allow-list (`apps/backend/apps/game/models.py`) in sync when adding ids.
 
 ## Letters (`@utg/letters`)
 

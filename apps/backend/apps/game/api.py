@@ -1,0 +1,1011 @@
+from django.db import transaction
+from django.db.models import Max, Prefetch
+from django.utils import timezone
+from ninja import File, Form, Router, Status, UploadedFile
+from ninja.throttling import AnonRateThrottle, AuthRateThrottle
+
+from apps.common.auth import jwt_auth
+from apps.common.permissions import require_perm
+from apps.game.models import (
+    Feedback,
+    FeedbackImage,
+    FeedbackImageKind,
+    Layer,
+    Level,
+    LevelType,
+    Mascot,
+    Sentence,
+    Story,
+    Unit,
+    Word,
+)
+from apps.game.schemas import (
+    ErrorOut,
+    FeedbackIn,
+    FeedbackOut,
+    FeedbackResolveIn,
+    LevelOrderIn,
+    LevelOut,
+    LevelWriteIn,
+    MascotIn,
+    MascotOut,
+    SentenceIn,
+    SentenceOrderIn,
+    SentenceOut,
+    SentenceSimpleOut,
+    SidebarUnitOut,
+    StoryIn,
+    StoryOut,
+    StorySimpleOut,
+    UnitByIdOut,
+    UnitByLayerOut,
+    UnitOrderIn,
+    UnitOut,
+    UnitUpdateIn,
+    WordIn,
+    WordOut,
+    WordSimpleOut,
+)
+
+router = Router(tags=["game"])
+
+
+def _unit_with_levels(unit_id: int) -> Unit:
+    levels = Level.objects.select_related("mascot").order_by("sort_order", "id")
+    return Unit.objects.prefetch_related(Prefetch("levels", queryset=levels)).get(id=unit_id)
+
+
+def _admin_units_with_levels(*, layer: Layer | None = None):
+    levels = Level.objects.order_by("sort_order", "id")
+    qs = Unit.objects.prefetch_related(Prefetch("levels", queryset=levels))
+    if layer is not None:
+        qs = qs.filter(layer=layer)
+    return qs.order_by("sort_order", "id")
+
+
+def _apply_unit_payload(unit: Unit, payload: UnitUpdateIn) -> None:
+    unit.layer = payload.layer
+    unit.title = payload.title
+    unit.title_font_size = payload.title_font_size
+    unit.title_font_color = payload.title_font_color
+    unit.title_is_curved = payload.title_is_curved
+    unit.subtitle_text = payload.subtitle_text
+    unit.subtitle_font_size = payload.subtitle_font_size
+    unit.subtitle_font_color = payload.subtitle_font_color
+    unit.background_asset_path = payload.background_asset_path
+    unit.is_published = payload.is_published
+
+
+def _apply_level_payload(level: Level, payload: LevelWriteIn) -> None:
+    level.title = payload.title
+    level.level_type = payload.level_type
+    level.level_props = payload.level_props
+    level.mascot_id = payload.mascot_id
+    level.splash_button_color = payload.splash_button_color
+    level.splash_button_text_color = payload.splash_button_text_color
+    level.splash_level_font_color = payload.splash_level_font_color
+    level.splash_level_title_color = payload.splash_level_title_color
+    level.show_mascot_on_splash = payload.show_mascot_on_splash
+    level.backdrop_color = payload.backdrop_color
+    level.is_published = payload.is_published
+
+
+def _validate_level_relations(payload: LevelWriteIn):
+    if payload.level_type not in LevelType.values:
+        return Status(400, {"detail": "Unknown level type."})
+    if payload.mascot_id is not None and not Mascot.objects.filter(id=payload.mascot_id).exists():
+        return Status(404, {"detail": "Mascot not found."})
+    return None
+
+
+@router.get(
+    "/units/list",
+    response=list[UnitOut],
+    summary="[Public] List published units and their published levels",
+)
+def list_units(request):
+    levels = (
+        Level.objects.filter(is_published=True, is_active=True)
+        .select_related("mascot")
+        .order_by("sort_order", "id")
+    )
+    return (
+        Unit.objects.filter(is_published=True, is_active=True)
+        .prefetch_related(Prefetch("levels", queryset=levels))
+        .order_by("sort_order", "id")
+    )
+
+
+@router.get(
+    "/units/sidebar",
+    auth=jwt_auth,
+    response={200: list[SidebarUnitOut], 403: ErrorOut},
+    summary="[Admin] List units for admin sidebar navigation",
+)
+@require_perm("game.view_unit", message="You do not have permission to view units")
+def list_sidebar_units(request):
+    return Unit.objects.only("id", "layer", "title", "sort_order").order_by("sort_order", "id")
+
+
+MASCOT_IMAGE_LABELS = {
+    "idle_image": "idle",
+    "sad_image": "sad",
+    "zero_star_image": "0-star",
+    "one_star_image": "1-star",
+    "two_star_image": "2-star",
+    "three_star_image": "3-star",
+}
+
+
+def _mascot_name(data: MascotIn) -> str | None:
+    name = (data.name or "").strip()
+    return name or None
+
+
+def _replace_image(instance, attr: str, uploaded: UploadedFile | None) -> None:
+    if uploaded is None:
+        return
+    current = getattr(instance, attr)
+    if current:
+        current.delete(save=False)
+    setattr(instance, attr, uploaded)
+
+
+def _missing_mascot_images(files: dict[str, UploadedFile | None]) -> Status | None:
+    missing = [MASCOT_IMAGE_LABELS[name] for name, uploaded in files.items() if uploaded is None]
+    if missing:
+        return Status(400, {"detail": f"Missing required images: {', '.join(missing)}."})
+    return None
+
+
+@router.post(
+    "/mascots",
+    auth=jwt_auth,
+    response={200: MascotOut, 400: ErrorOut, 403: ErrorOut},
+    summary="[Admin] Create a mascot",
+)
+@require_perm("game.add_mascot", message="You do not have permission to create mascots")
+def create_mascot(
+    request,
+    data: Form[MascotIn],
+    idle_image: File[UploadedFile] = None,
+    sad_image: File[UploadedFile] = None,
+    zero_star_image: File[UploadedFile] = None,
+    one_star_image: File[UploadedFile] = None,
+    two_star_image: File[UploadedFile] = None,
+    three_star_image: File[UploadedFile] = None,
+):
+    files = {
+        "idle_image": idle_image,
+        "sad_image": sad_image,
+        "zero_star_image": zero_star_image,
+        "one_star_image": one_star_image,
+        "two_star_image": two_star_image,
+        "three_star_image": three_star_image,
+    }
+    missing = _missing_mascot_images(files)
+    if missing:
+        return missing
+
+    mascot = Mascot.objects.create(
+        name=_mascot_name(data),
+        idle_image=idle_image,
+        sad_image=sad_image,
+        zero_star_image=zero_star_image,
+        one_star_image=one_star_image,
+        two_star_image=two_star_image,
+        three_star_image=three_star_image,
+        created_by=request.auth,
+        updated_by=request.auth,
+    )
+    return 200, mascot
+
+
+@router.get(
+    "/mascots/list",
+    auth=jwt_auth,
+    response={200: list[MascotOut], 403: ErrorOut},
+    summary="[Admin] List mascots for admin editing",
+)
+@require_perm("game.view_mascot", message="You do not have permission to view mascots")
+def list_mascots(request):
+    return Mascot.objects.order_by("name", "id")
+
+
+@router.patch(
+    "/mascots/{mascot_id}",
+    auth=jwt_auth,
+    response={200: MascotOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Update a mascot",
+)
+@require_perm("game.change_mascot", message="You do not have permission to update mascots")
+def update_mascot(
+    request,
+    mascot_id: int,
+    data: Form[MascotIn],
+    idle_image: File[UploadedFile] = None,
+    sad_image: File[UploadedFile] = None,
+    zero_star_image: File[UploadedFile] = None,
+    one_star_image: File[UploadedFile] = None,
+    two_star_image: File[UploadedFile] = None,
+    three_star_image: File[UploadedFile] = None,
+):
+    try:
+        mascot = Mascot.objects.get(id=mascot_id)
+    except Mascot.DoesNotExist:
+        return Status(404, {"detail": "Mascot not found."})
+
+    mascot.name = _mascot_name(data)
+    files = {
+        "idle_image": idle_image,
+        "sad_image": sad_image,
+        "zero_star_image": zero_star_image,
+        "one_star_image": one_star_image,
+        "two_star_image": two_star_image,
+        "three_star_image": three_star_image,
+    }
+    for attr, uploaded in files.items():
+        _replace_image(mascot, attr, uploaded)
+    mascot.updated_by = request.auth
+    mascot.save()
+    return mascot
+
+
+@router.delete(
+    "/mascots/{mascot_id}",
+    auth=jwt_auth,
+    response={204: None, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Delete a mascot",
+)
+@require_perm("game.delete_mascot", message="You do not have permission to delete mascots")
+def delete_mascot(request, mascot_id: int):
+    deleted, _ = Mascot.objects.filter(id=mascot_id).delete()
+    if not deleted:
+        return Status(404, {"detail": "Mascot not found."})
+    return Status(204, None)
+
+
+@router.get(
+    "/units/list-all",
+    auth=jwt_auth,
+    response={200: list[UnitByLayerOut], 403: ErrorOut},
+    summary="[Admin] List all units and their levels",
+)
+@require_perm("game.view_unit", message="You do not have permission to view units")
+def list_all_units(request):
+    return _admin_units_with_levels()
+
+
+@router.get(
+    "/units/list-by-layer/{layer}",
+    auth=jwt_auth,
+    response={200: list[UnitByLayerOut], 403: ErrorOut},
+    summary="[Admin] List units by layer",
+)
+@require_perm("game.view_unit", message="You do not have permission to view units")
+def list_units_by_layer(request, layer: Layer):
+    return _admin_units_with_levels(layer=layer)
+
+
+@router.post(
+    "/units",
+    auth=jwt_auth,
+    response={200: UnitByIdOut, 400: ErrorOut, 403: ErrorOut},
+    summary="[Admin] Create a unit",
+)
+@require_perm("game.add_unit", message="You do not have permission to create units")
+def create_unit(request, payload: UnitUpdateIn):
+    next_sort_order = (
+        Unit.objects.filter(layer=payload.layer).aggregate(max_sort_order=Max("sort_order"))[
+            "max_sort_order"
+        ]
+        or 0
+    ) + 1
+    unit = Unit(sort_order=next_sort_order)
+    _apply_unit_payload(unit, payload)
+    unit.created_by = request.auth
+    unit.updated_by = request.auth
+    unit.save()
+    return _unit_with_levels(unit.id)
+
+
+@router.get(
+    "/units/{unit_id}",
+    auth=jwt_auth,
+    response={200: UnitByIdOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Get a unit by ID",
+)
+@require_perm("game.view_unit", message="You do not have permission to view units")
+def get_unit(request, unit_id: int):
+    return _unit_with_levels(unit_id)
+
+
+@router.patch(
+    "/units/{unit_id}",
+    auth=jwt_auth,
+    response={200: UnitByIdOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Update a unit",
+)
+@require_perm("game.change_unit", message="You do not have permission to edit units")
+def update_unit(request, unit_id: int, payload: UnitUpdateIn):
+    try:
+        unit = _unit_with_levels(unit_id)
+    except Unit.DoesNotExist:
+        return Status(404, {"detail": "Unit not found."})
+
+    _apply_unit_payload(unit, payload)
+    unit.updated_by = request.auth
+    unit.save()
+    return unit
+
+
+@router.delete(
+    "/units/{unit_id}",
+    auth=jwt_auth,
+    response={204: None, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Delete a unit",
+)
+@require_perm("game.delete_unit", message="You do not have permission to delete units")
+def delete_unit(request, unit_id: int):
+    deleted, _ = Unit.objects.filter(id=unit_id).delete()
+    if not deleted:
+        return Status(404, {"detail": "Unit not found."})
+    return Status(204, None)
+
+
+@router.post(
+    "/units/{unit_id}/levels",
+    auth=jwt_auth,
+    response={200: LevelOut, 400: ErrorOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Create a level in a unit",
+)
+@require_perm("game.add_level", message="You do not have permission to create levels")
+def create_level(request, unit_id: int, payload: LevelWriteIn):
+    try:
+        unit = Unit.objects.get(id=unit_id)
+    except Unit.DoesNotExist:
+        return Status(404, {"detail": "Unit not found."})
+    relation_error = _validate_level_relations(payload)
+    if relation_error:
+        return relation_error
+
+    next_sort_order = (
+        Level.objects.filter(unit_id=unit_id).aggregate(max_sort_order=Max("sort_order"))[
+            "max_sort_order"
+        ]
+        or 0
+    ) + 1
+    level = Level(unit=unit, layer=unit.layer, sort_order=next_sort_order)
+    _apply_level_payload(level, payload)
+    level.created_by = request.auth
+    level.updated_by = request.auth
+    level.save()
+    return Level.objects.select_related("mascot").get(id=level.id)
+
+
+@router.patch(
+    "/levels/{level_id}",
+    auth=jwt_auth,
+    response={200: LevelOut, 400: ErrorOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Update a level",
+)
+@require_perm("game.change_level", message="You do not have permission to edit levels")
+def update_level(request, level_id: int, payload: LevelWriteIn):
+    try:
+        level = Level.objects.select_related("mascot").get(id=level_id)
+    except Level.DoesNotExist:
+        return Status(404, {"detail": "Level not found."})
+    relation_error = _validate_level_relations(payload)
+    if relation_error:
+        return relation_error
+
+    _apply_level_payload(level, payload)
+    level.updated_by = request.auth
+    level.save()
+    return Level.objects.select_related("mascot").get(id=level.id)
+
+
+@router.delete(
+    "/levels/{level_id}",
+    auth=jwt_auth,
+    response={204: None, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Delete a level",
+)
+@require_perm("game.delete_level", message="You do not have permission to delete levels")
+def delete_level(request, level_id: int):
+    deleted, _ = Level.objects.filter(id=level_id).delete()
+    if not deleted:
+        return Status(404, {"detail": "Level not found."})
+    return Status(204, None)
+
+
+@router.put(
+    "/units/{unit_id}/levels/order",
+    auth=jwt_auth,
+    response={200: UnitByIdOut, 400: ErrorOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Reorder levels within a unit",
+)
+@require_perm("game.change_level", message="You do not have permission to reorder levels")
+def reorder_levels(request, unit_id: int, payload: LevelOrderIn):
+    try:
+        unit = Unit.objects.get(id=unit_id)
+    except Unit.DoesNotExist:
+        return Status(404, {"detail": "Unit not found."})
+
+    levels = list(Level.objects.filter(unit_id=unit_id).order_by("sort_order", "id"))
+    existing_ids = {level.id for level in levels}
+    ordered_ids = payload.level_ids
+    if len(ordered_ids) != len(set(ordered_ids)) or set(ordered_ids) != existing_ids:
+        return Status(400, {"detail": "Level order must include each unit level exactly once."})
+
+    levels_by_id = {level.id: level for level in levels}
+    updated_at = timezone.now()
+    with transaction.atomic():
+        for sort_order, level_id in enumerate(ordered_ids, start=1):
+            level = levels_by_id[level_id]
+            level.sort_order = sort_order
+            level.updated_by = request.auth
+            level.updated_at = updated_at
+        Level.objects.bulk_update(levels, ["sort_order", "updated_by", "updated_at"])
+
+    return _unit_with_levels(unit.id)
+
+
+@router.put(
+    "/units/list-by-layer/{layer}/order",
+    auth=jwt_auth,
+    response={200: list[UnitByLayerOut], 400: ErrorOut, 403: ErrorOut},
+    summary="[Admin] Reorder units within a layer",
+)
+@require_perm("game.change_unit", message="You do not have permission to reorder units")
+def reorder_units(request, layer: Layer, payload: UnitOrderIn):
+    units = list(Unit.objects.filter(layer=layer).order_by("sort_order", "id"))
+    existing_ids = {unit.id for unit in units}
+    ordered_ids = payload.unit_ids
+    if len(ordered_ids) != len(set(ordered_ids)) or set(ordered_ids) != existing_ids:
+        return Status(400, {"detail": "Unit order must include each layer unit exactly once."})
+
+    units_by_id = {unit.id: unit for unit in units}
+    updated_at = timezone.now()
+    with transaction.atomic():
+        for sort_order, unit_id in enumerate(ordered_ids, start=1):
+            unit = units_by_id[unit_id]
+            unit.sort_order = sort_order
+            unit.updated_by = request.auth
+            unit.updated_at = updated_at
+        Unit.objects.bulk_update(units, ["sort_order", "updated_by", "updated_at"])
+
+    levels = Level.objects.order_by("sort_order", "id")
+    return (
+        Unit.objects.filter(layer=layer)
+        .prefetch_related(Prefetch("levels", queryset=levels))
+        .order_by("sort_order", "id")
+    )
+
+
+@router.post(
+    "/words",
+    auth=jwt_auth,
+    response={200: WordOut, 403: ErrorOut},
+    summary="[Admin] Create a word",
+)
+@require_perm("game.add_word", message="You do not have permission to create words")
+def create_word(
+    request,
+    data: Form[WordIn],
+    image: File[UploadedFile] = None,
+    education_audio: File[UploadedFile] = None,
+    standard_audio: File[UploadedFile] = None,
+    # Deprecated alias for education_audio; drop once the admin is on the new keys.
+    audio: File[UploadedFile] = None,
+):
+    word = Word.objects.create(
+        word=data.word,
+        target_letter=data.target_letter or None,
+        translation=data.translation or None,
+        is_tutorial_word=data.is_tutorial_word,
+        image=image,
+        education_audio=education_audio if education_audio is not None else audio,
+        standard_audio=standard_audio,
+        created_by=request.auth,
+        updated_by=request.auth,
+    )
+    return 200, word
+
+
+@router.get(
+    "/words/list",
+    auth=jwt_auth,
+    response={200: list[WordOut], 403: ErrorOut},
+    summary="[Admin] List all words",
+)
+@require_perm("game.view_word", message="You do not have permission to view words")
+def list_words(request):
+    return Word.objects.order_by("-updated_at", "-id")
+
+
+@router.get(
+    "/words/list-simple",
+    response=list[WordSimpleOut],
+    summary="[Public] List published words (simple version)",
+)
+def list_words_simple(request):
+    qs = Word.objects.filter(is_active=True, is_published=True)
+    return qs.only(
+        "id",
+        "word",
+        "target_letter",
+        "is_tutorial_word",
+        "image",
+        "education_audio",
+        "standard_audio",
+    )
+
+
+@router.patch(
+    "/words/{word_id}",
+    auth=jwt_auth,
+    response={200: WordOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Update a word",
+)
+@require_perm("game.change_word", message="You do not have permission to update words")
+def update_word(
+    request,
+    word_id: int,
+    data: Form[WordIn],
+    image: File[UploadedFile] = None,
+    education_audio: File[UploadedFile] = None,
+    standard_audio: File[UploadedFile] = None,
+    # Deprecated alias for education_audio; drop once the admin is on the new keys.
+    audio: File[UploadedFile] = None,
+):
+    try:
+        word = Word.objects.get(id=word_id)
+    except Word.DoesNotExist:
+        return Status(404, {"detail": "Word not found."})
+
+    word.word = data.word
+    word.target_letter = data.target_letter or None
+    word.translation = data.translation or None
+    word.is_tutorial_word = data.is_tutorial_word
+    if image is not None:
+        word.image = image
+    elif data.clear_image:
+        if word.image:
+            word.image.delete(save=False)
+        word.image = None
+    new_education_audio = education_audio if education_audio is not None else audio
+    if new_education_audio is not None:
+        word.education_audio = new_education_audio
+    elif data.clear_education_audio or data.clear_audio:
+        if word.education_audio:
+            word.education_audio.delete(save=False)
+        word.education_audio = None
+    if standard_audio is not None:
+        word.standard_audio = standard_audio
+    elif data.clear_standard_audio:
+        if word.standard_audio:
+            word.standard_audio.delete(save=False)
+        word.standard_audio = None
+    word.updated_by = request.auth
+    word.save()
+    return word
+
+
+@router.delete(
+    "/words/{word_id}",
+    auth=jwt_auth,
+    response={204: None, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Delete a word",
+)
+@require_perm("game.delete_word", message="You do not have permission to delete words")
+def delete_word(request, word_id: int):
+    deleted, _ = Word.objects.filter(id=word_id).delete()
+    if not deleted:
+        return Status(404, {"detail": "Word not found."})
+    return Status(204, None)
+
+
+def _next_sentence_sort_order(story_id: int) -> int:
+    return (
+        Sentence.objects.filter(story_id=story_id).aggregate(max_sort_order=Max("sort_order"))[
+            "max_sort_order"
+        ]
+        or 0
+    ) + 1
+
+
+def _apply_sentence_story(sentence: Sentence, story_id: int | None) -> Status | None:
+    if story_id is None:
+        sentence.story_id = None
+        sentence.sort_order = None
+        return None
+    if not Story.objects.filter(id=story_id).exists():
+        return Status(404, {"detail": "Story not found."})
+    if sentence.story_id != story_id:
+        sentence.story_id = story_id
+        sentence.sort_order = _next_sentence_sort_order(story_id)
+    return None
+
+
+def _story_with_sentences(story_id: int) -> Story:
+    return Story.objects.prefetch_related(
+        Prefetch(
+            "sentences",
+            queryset=Sentence.objects.order_by("sort_order", "id"),
+        )
+    ).get(id=story_id)
+
+
+@router.post(
+    "/sentences",
+    auth=jwt_auth,
+    response={200: SentenceOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Create a sentence",
+)
+@require_perm("game.add_sentence", message="You do not have permission to create sentences")
+def create_sentence(
+    request,
+    data: Form[SentenceIn],
+    audio: File[UploadedFile] = None,
+):
+    sentence = Sentence(
+        sentence=data.sentence,
+        translation=data.translation or None,
+        audio=audio,
+        created_by=request.auth,
+        updated_by=request.auth,
+    )
+    story_error = _apply_sentence_story(sentence, data.story_id)
+    if story_error:
+        return story_error
+    sentence.save()
+    return 200, sentence
+
+
+@router.get(
+    "/sentences/list",
+    auth=jwt_auth,
+    response={200: list[SentenceOut], 403: ErrorOut},
+    summary="[Admin] List all sentences",
+)
+@require_perm("game.view_sentence", message="You do not have permission to view sentences")
+def list_sentences(request):
+    return Sentence.objects.order_by("story_id", "sort_order", "id")
+
+
+@router.get(
+    "/sentences/list-simple",
+    response=list[SentenceSimpleOut],
+    summary="[Public] List published sentences (simple version)",
+)
+def list_sentences_simple(request):
+    return Sentence.objects.filter(is_active=True, is_published=True).only(
+        "id", "sentence", "story_id", "sort_order", "audio"
+    )
+
+
+# Static path must be registered before /sentences/{sentence_id}, otherwise
+# "order" is captured as a sentence_id and PUT returns 405.
+@router.put(
+    "/sentences/order",
+    auth=jwt_auth,
+    response={200: list[SentenceOut], 400: ErrorOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Reorder sentences within a story or unassigned list",
+)
+@require_perm("game.change_sentence", message="You do not have permission to update sentences")
+def reorder_sentences(request, payload: SentenceOrderIn):
+    ordered_ids = payload.sentence_ids
+    if len(ordered_ids) != len(set(ordered_ids)):
+        return Status(400, {"detail": "Sentence order cannot contain duplicate ids."})
+
+    story_id = payload.story_id
+    if story_id is not None and not Story.objects.filter(id=story_id).exists():
+        return Status(404, {"detail": "Story not found."})
+
+    sentences = list(Sentence.objects.filter(id__in=ordered_ids))
+    if len(sentences) != len(ordered_ids):
+        return Status(404, {"detail": "One or more sentences were not found."})
+
+    sentences_by_id = {sentence.id: sentence for sentence in sentences}
+    now = timezone.now()
+    with transaction.atomic():
+        for sort_order, sentence_id in enumerate(ordered_ids, start=1):
+            sentence = sentences_by_id[sentence_id]
+            sentence.story_id = story_id
+            sentence.sort_order = sort_order
+            sentence.updated_by = request.auth
+            sentence.updated_at = now
+        Sentence.objects.bulk_update(
+            sentences, ["story_id", "sort_order", "updated_by", "updated_at"]
+        )
+
+    return [sentences_by_id[sentence_id] for sentence_id in ordered_ids]
+
+
+@router.patch(
+    "/sentences/{sentence_id}",
+    auth=jwt_auth,
+    response={200: SentenceOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Update a sentence",
+)
+@require_perm("game.change_sentence", message="You do not have permission to update sentences")
+def update_sentence(
+    request,
+    sentence_id: int,
+    data: Form[SentenceIn],
+    audio: File[UploadedFile] = None,
+):
+    try:
+        sentence = Sentence.objects.get(id=sentence_id)
+    except Sentence.DoesNotExist:
+        return Status(404, {"detail": "Sentence not found."})
+
+    sentence.sentence = data.sentence
+    sentence.translation = data.translation or None
+    story_error = _apply_sentence_story(sentence, data.story_id)
+    if story_error:
+        return story_error
+    if audio is not None:
+        sentence.audio = audio
+    elif data.clear_audio:
+        if sentence.audio:
+            sentence.audio.delete(save=False)
+        sentence.audio = None
+    sentence.updated_by = request.auth
+    sentence.save()
+    return sentence
+
+
+@router.delete(
+    "/sentences/{sentence_id}",
+    auth=jwt_auth,
+    response={204: None, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Delete a sentence",
+)
+@require_perm("game.delete_sentence", message="You do not have permission to delete sentences")
+def delete_sentence(request, sentence_id: int):
+    deleted, _ = Sentence.objects.filter(id=sentence_id).delete()
+    if not deleted:
+        return Status(404, {"detail": "Sentence not found."})
+    return Status(204, None)
+
+
+@router.post(
+    "/stories",
+    auth=jwt_auth,
+    response={200: StoryOut, 403: ErrorOut},
+    summary="[Admin] Create a story",
+)
+@require_perm("game.add_story", message="You do not have permission to create stories")
+def create_story(request, payload: StoryIn):
+    story = Story.objects.create(
+        name=payload.name,
+        is_published=payload.is_published,
+        created_by=request.auth,
+        updated_by=request.auth,
+    )
+    return _story_with_sentences(story.id)
+
+
+@router.get(
+    "/stories/list",
+    auth=jwt_auth,
+    response={200: list[StoryOut], 403: ErrorOut},
+    summary="[Admin] List all stories",
+)
+@require_perm("game.view_story", message="You do not have permission to view stories")
+def list_stories(request):
+    return Story.objects.prefetch_related(
+        Prefetch(
+            "sentences",
+            queryset=Sentence.objects.order_by("sort_order", "id"),
+        )
+    ).order_by("name", "id")
+
+
+@router.get(
+    "/stories/list-simple",
+    response=list[StorySimpleOut],
+    summary="[Public] List published stories (simple version)",
+)
+def list_stories_simple(request):
+    return (
+        Story.objects.filter(is_active=True, is_published=True)
+        .prefetch_related(
+            Prefetch(
+                "sentences",
+                queryset=Sentence.objects.order_by("sort_order", "id").only("id", "story_id"),
+            )
+        )
+        .order_by("name", "id")
+    )
+
+
+@router.get(
+    "/stories/{story_id}",
+    auth=jwt_auth,
+    response={200: StoryOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Get a story by ID",
+)
+@require_perm("game.view_story", message="You do not have permission to view stories")
+def get_story(request, story_id: int):
+    try:
+        return _story_with_sentences(story_id)
+    except Story.DoesNotExist:
+        return Status(404, {"detail": "Story not found."})
+
+
+@router.patch(
+    "/stories/{story_id}",
+    auth=jwt_auth,
+    response={200: StoryOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Update a story",
+)
+@require_perm("game.change_story", message="You do not have permission to update stories")
+def update_story(request, story_id: int, payload: StoryIn):
+    try:
+        story = Story.objects.get(id=story_id)
+    except Story.DoesNotExist:
+        return Status(404, {"detail": "Story not found."})
+
+    story.name = payload.name
+    story.is_published = payload.is_published
+    story.updated_by = request.auth
+    story.save()
+    return _story_with_sentences(story.id)
+
+
+@router.delete(
+    "/stories/{story_id}",
+    auth=jwt_auth,
+    response={204: None, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Delete a story",
+)
+@require_perm("game.delete_story", message="You do not have permission to delete stories")
+def delete_story(request, story_id: int):
+    deleted, _ = Story.objects.filter(id=story_id).delete()
+    if not deleted:
+        return Status(404, {"detail": "Story not found."})
+    return Status(204, None)
+
+
+MAX_FEEDBACK_IMAGE_BYTES = 8 * 1024 * 1024
+MAX_FEEDBACK_UPLOADS = 3
+MAX_FEEDBACK_DESCRIPTION_LENGTH = 10_000
+ALLOWED_FEEDBACK_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
+
+
+def _feedback_queryset():
+    return Feedback.objects.select_related("user").prefetch_related("images")
+
+
+def _feedback_files(files: list[UploadedFile] | UploadedFile | None) -> list[UploadedFile]:
+    if not files:
+        return []
+    if isinstance(files, list):
+        return files
+    return [files]
+
+
+def _reject_feedback_image(image: UploadedFile) -> Status | None:
+    if image.size and image.size > MAX_FEEDBACK_IMAGE_BYTES:
+        return Status(400, {"detail": "Image is too large."})
+    if image.content_type and image.content_type not in ALLOWED_FEEDBACK_IMAGE_TYPES:
+        return Status(400, {"detail": "Image must be JPEG, PNG, or WebP."})
+    return None
+
+
+def _create_feedback(
+    data: FeedbackIn,
+    screenshot: UploadedFile | None,
+    images: list[UploadedFile] | UploadedFile | None,
+    user,
+):
+    description = (data.description or "").strip()
+    if not description:
+        return Status(400, {"detail": "Description is required."})
+    if len(description) > MAX_FEEDBACK_DESCRIPTION_LENGTH:
+        return Status(400, {"detail": "Description is too long."})
+
+    title = (data.title or "").strip()
+    if not title:
+        return Status(400, {"detail": "Title is required."})
+    if len(title) > 255:
+        return Status(400, {"detail": "Title is too long."})
+
+    uploads = _feedback_files(images)
+    if len(uploads) > MAX_FEEDBACK_UPLOADS:
+        return Status(400, {"detail": "You can attach up to 3 images."})
+
+    for image in ([screenshot] if screenshot else []) + uploads:
+        rejected = _reject_feedback_image(image)
+        if rejected:
+            return rejected
+
+    with transaction.atomic():
+        feedback = Feedback.objects.create(
+            request_type=data.request_type,
+            title=title,
+            description=description,
+            screen=(data.screen or "").strip()[:255],
+            user=user,
+        )
+        order = 0
+        if screenshot:
+            FeedbackImage.objects.create(
+                feedback=feedback,
+                image=screenshot,
+                kind=FeedbackImageKind.SCREENSHOT,
+                sort_order=order,
+            )
+            order += 1
+        for upload in uploads:
+            FeedbackImage.objects.create(
+                feedback=feedback,
+                image=upload,
+                kind=FeedbackImageKind.UPLOAD,
+                sort_order=order,
+            )
+            order += 1
+
+    return Status(201, _feedback_queryset().get(pk=feedback.pk))
+
+
+@router.post(
+    "/feedback",
+    response={201: FeedbackOut, 400: ErrorOut},
+    summary="[Public] Submit anonymous in-game feedback with optional images",
+    throttle=AnonRateThrottle("10/h"),
+)
+def create_feedback(
+    request,
+    data: Form[FeedbackIn],
+    screenshot: File[UploadedFile] = None,
+    images: File[list[UploadedFile]] = None,
+):
+    return _create_feedback(data, screenshot, images, user=None)
+
+
+@router.post(
+    "/user/feedback",
+    auth=jwt_auth,
+    response={201: FeedbackOut, 400: ErrorOut},
+    summary="[Public] Submit in-game feedback for the signed-in player",
+    throttle=AuthRateThrottle("50/h"),
+)
+def create_user_feedback(
+    request,
+    data: Form[FeedbackIn],
+    screenshot: File[UploadedFile] = None,
+    images: File[list[UploadedFile]] = None,
+):
+    return _create_feedback(data, screenshot, images, user=request.auth)
+
+
+@router.get(
+    "/feedback/list",
+    auth=jwt_auth,
+    response={200: list[FeedbackOut], 403: ErrorOut},
+    summary="[Admin] List player feedback",
+)
+@require_perm("game.view_feedback", message="You do not have permission to view feedback")
+def list_feedback(request):
+    return _feedback_queryset().all()
+
+
+@router.patch(
+    "/feedback/{feedback_id}",
+    auth=jwt_auth,
+    response={200: FeedbackOut, 403: ErrorOut, 404: ErrorOut},
+    summary="[Admin] Mark a feedback report as resolved or reopen it",
+)
+@require_perm("game.change_feedback", message="You do not have permission to update feedback")
+def update_feedback(request, feedback_id: int, payload: FeedbackResolveIn):
+    try:
+        feedback = _feedback_queryset().get(id=feedback_id)
+    except Feedback.DoesNotExist:
+        return Status(404, {"detail": "Feedback not found."})
+    feedback.is_resolved = payload.is_resolved
+    feedback.save(update_fields=["is_resolved"])
+    return feedback
