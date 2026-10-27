@@ -8,7 +8,10 @@
     "build": "vp build",
     "lint": "vp check",
     "lint:fix": "vp check --fix",
-    "preview": "vp preview"
+    "preview": "vp preview",
+    "cap:sync": "vp build && cap sync",
+    "cap:android": "vp build && cap run android",
+    "cap:ios": "vp build && cap run ios"
   },
   "dependencies": {
     "@assetpack/core": "^1.7.0",

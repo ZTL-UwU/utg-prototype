@@ -52,6 +52,19 @@ Install once at the repo root with `vp install`.
 
 Admin talks to the backend via `VITE_BACKEND_URL` (see `apps/admin/.env.example`).
 
+## Mobile (Capacitor, `apps/game`)
+
+The game ships as native iOS/Android apps via Capacitor (`apps/game/capacitor.config.ts`, native projects in `apps/game/android` and `apps/game/ios`). Each command builds the web app into `dist/` first, then copies it into the native projects.
+
+| Task               | Command                                     |
+| ------------------ | ------------------------------------------- |
+| Build + sync both  | `vp run cap:sync`                           |
+| Run on Android     | `vp run cap:android`                        |
+| Run on iOS (macOS) | `vp run cap:ios`                            |
+| Open in native IDE | `vp exec cap open android` (in `apps/game`) |
+
+Android needs `ANDROID_HOME` set and JDK 21 for Gradle.
+
 ## Backend (`apps/backend`)
 
 Django app managed with `uv`, not `vp`; it's excluded from Vite+ fmt/lint. Run commands from `apps/backend` — see its `README.md` for setup and env vars.
