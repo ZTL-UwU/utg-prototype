@@ -440,7 +440,7 @@ export class LetterPopup extends Container {
       return;
     }
 
-    if (this.completed || event.repeat) return;
+    if (this.completed || event.repeat || event.key === 'CapsLock') return;
 
     const expectedStep = this.steps[this.nextStepIndex];
     if (!expectedStep) return;

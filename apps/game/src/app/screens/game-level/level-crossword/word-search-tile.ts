@@ -27,7 +27,6 @@ export type WordSearchTileOptions = {
   col: number;
   size: number;
   cornerRadius?: number;
-  onPress: (tile: WordSearchTile) => void;
 };
 
 export class WordSearchTile extends FancyButton {
@@ -44,7 +43,7 @@ export class WordSearchTile extends FancyButton {
   private found = false;
   private feedbackAnimation?: AnimationPlaybackControls;
 
-  constructor({ letter, row, col, size, cornerRadius = 14, onPress }: WordSearchTileOptions) {
+  constructor({ letter, row, col, size, cornerRadius = 14 }: WordSearchTileOptions) {
     // drawn before super(): FancyButton sizes its anchor and hit area from the default view
     const shadow = new Graphics();
     const card = new Graphics();
@@ -87,9 +86,9 @@ export class WordSearchTile extends FancyButton {
     this.shadow = shadow;
     this.card = card;
 
+    // selection input is handled by WordGridPanel; the button only supplies hover/press visuals
     this.eventMode = 'static';
     this.cursor = 'pointer';
-    this.onPress.connect(() => onPress(this));
   }
 
   public get isSelected() {
@@ -113,6 +112,34 @@ export class WordSearchTile extends FancyButton {
           [this.scale, { x: 1, y: 1 }, { type: 'spring', bounce: 0.35, duration: 0.3 }],
         ])
       : animate(this.scale, { x: 1, y: 1 }, { duration: 0.1, ease: 'easeOut' });
+  }
+
+  /**
+   * Jelly squash & stretch toward the drag direction, then spring back.
+   * (dr, dc) is the unit step from the previous tile in the drag.
+   */
+  public playStretch(dr: number, dc: number) {
+    this.feedbackAnimation?.stop();
+    this.scale.set(1);
+    this.rotation = 0;
+    const spring = { type: 'spring', bounce: 0.6, duration: 0.45 } as const;
+
+    if (dr !== 0 && dc !== 0) {
+      const tilt = 8 * (Math.PI / 180) * dr * dc;
+      this.feedbackAnimation = animate([
+        [this.scale, { x: 1.12, y: 1.12 }, { duration: 0.08, ease: 'easeOut' }],
+        [this, { rotation: tilt }, { duration: 0.08, ease: 'easeOut', at: 0 }],
+        [this.scale, { x: 1, y: 1 }, spring],
+        [this, { rotation: 0 }, { ...spring, at: '<' }],
+      ]);
+      return;
+    }
+
+    const stretch = dc !== 0 ? { x: 1.2, y: 0.85 } : { x: 0.85, y: 1.2 };
+    this.feedbackAnimation = animate([
+      [this.scale, stretch, { duration: 0.08, ease: 'easeOut' }],
+      [this.scale, { x: 1, y: 1 }, spring],
+    ]);
   }
 
   /** Turn green and settle. Stays tappable: a found tile can be a crossing cell of another word. */

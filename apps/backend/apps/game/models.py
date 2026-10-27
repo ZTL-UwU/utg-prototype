@@ -1,0 +1,237 @@
+import uuid
+from pathlib import Path
+
+from django.conf import settings
+from django.db import models
+
+from apps.common.models import AuditingMixin, Layer
+from apps.common.storage import UniqueUploadTo, public_storage
+
+
+class LevelType(models.TextChoices):
+    EDUCATION_LETTER_GRID = "education-letter-grid", "Education letter grid"
+    EDUCATION_BUBBLE = "education-bubble", "Education bubble"
+    EDUCATION_SHEEP = "education-sheep", "Education sheep"
+    EDUCATION_IMAGE = "education-image", "Education image"
+    EDUCATION_WORD = "education-word", "Education word"
+    EDUCATION_SHEEP_JUMP = "education-sheep-jump", "Education sheep jump"
+    EDUCATION_WHACK_A_MOLE = "education-whack-a-mole", "Education whack-a-mole"
+    TYPING_DESERT = "typing-desert", "Typing desert"
+    TYPING_SANDSTORM = "typing-sandstorm", "Typing sandstorm"
+    TYPING_INSTRUMENT = "typing-instrument", "Typing instrument"
+    TYPING_WORD = "typing-word", "Typing word"
+    TYPING_MARKET = "typing-market", "Typing market"
+    TYPING_STORY = "typing-story", "Typing story"
+    TYPING_GOAT = "typing-goat", "Typing goat"
+    GAME_TANDOOR_RUSH = "game-tandoor-rush", "Game tandoor rush"
+    GAME_NAAN_STACK = "game-naan-stack", "Game stack the naan"
+    GAME_FRUIT_FALL = (
+        "game-fruit-fall",
+        "Game fruit fall",
+    )
+    GAME_KITE = (
+        "game-kite",
+        "Game kite",
+    )
+    GAME_FLYING = (
+        "game-flying",
+        "Game flying",
+    )
+    GAME_SKI = (
+        "game-ski",
+        "Game ski racing",
+    )
+    GAME_TROUT = "game-trout", "Game trout"
+    GAME_WORD_SEARCH = "game-word-search", "Game word search"
+    TYPING_SPRING = "typing-spring", "Typing spring"
+    TYPING_TEST = "typing-test", "Typing test"
+
+
+class Unit(AuditingMixin, models.Model):
+    sort_order = models.IntegerField(db_index=True)
+    layer = models.CharField(max_length=20, choices=Layer.choices)
+    title = models.CharField(max_length=255)
+    title_font_size = models.PositiveIntegerField()
+    title_font_color = models.BigIntegerField(default=0xFFFFFF)
+    title_is_curved = models.BooleanField(default=False)
+    subtitle_text = models.CharField(max_length=255, null=True, blank=True)
+    subtitle_font_size = models.PositiveIntegerField(null=True, blank=True)
+    subtitle_font_color = models.BigIntegerField(null=True, blank=True)
+    background_asset_path = models.CharField(max_length=255)
+
+    class Meta:
+        db_table = "units"
+        ordering = ["sort_order", "id"]
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class Mascot(AuditingMixin, models.Model):
+    name = models.CharField(max_length=255, null=True, blank=True)
+    idle_image = models.ImageField(upload_to=UniqueUploadTo("mascots/"), storage=public_storage)
+    sad_image = models.ImageField(upload_to=UniqueUploadTo("mascots/"), storage=public_storage)
+    zero_star_image = models.ImageField(
+        upload_to=UniqueUploadTo("mascots/"), storage=public_storage
+    )
+    one_star_image = models.ImageField(upload_to=UniqueUploadTo("mascots/"), storage=public_storage)
+    two_star_image = models.ImageField(upload_to=UniqueUploadTo("mascots/"), storage=public_storage)
+    three_star_image = models.ImageField(
+        upload_to=UniqueUploadTo("mascots/"), storage=public_storage
+    )
+
+    class Meta:
+        db_table = "mascots"
+
+    def __str__(self) -> str:
+        return self.name or f"Mascot {self.pk}"
+
+
+class Level(AuditingMixin, models.Model):
+    sort_order = models.IntegerField(db_index=True)
+    unit = models.ForeignKey(Unit, on_delete=models.CASCADE, related_name="levels")
+    layer = models.CharField(max_length=20, choices=Layer.choices)
+    title = models.CharField(max_length=255, null=True, blank=True)
+    level_type = models.CharField(max_length=255)  # allow-list is LevelType; validated in API
+    level_props = models.JSONField()
+    mascot = models.ForeignKey(
+        Mascot,
+        on_delete=models.SET_NULL,
+        related_name="levels",
+        null=True,
+        blank=True,
+    )
+    splash_button_color = models.BigIntegerField(null=True, blank=True)
+    splash_button_text_color = models.BigIntegerField(null=True, blank=True)
+    splash_level_font_color = models.BigIntegerField(null=True, blank=True)
+    splash_level_title_color = models.BigIntegerField(null=True, blank=True)
+    show_mascot_on_splash = models.BooleanField(default=False)
+    backdrop_color = models.BigIntegerField(default=0)
+
+    class Meta:
+        db_table = "levels"
+        ordering = ["unit_id", "sort_order", "id"]
+
+    def __str__(self) -> str:
+        return self.title or f"Level {self.pk}"
+
+
+class Word(AuditingMixin, models.Model):
+    word = models.CharField(max_length=255)
+    target_letter = models.CharField(null=True, blank=True, max_length=255)
+    translation = models.CharField(null=True, blank=True, max_length=255)
+    is_tutorial_word = models.BooleanField(default=False)
+    image = models.ImageField(
+        upload_to=UniqueUploadTo("words/"), storage=public_storage, null=True, blank=True
+    )
+    # Voice actor saying the target letter and then the word; used by education levels.
+    education_audio = models.FileField(
+        upload_to=UniqueUploadTo("words/audio/"), storage=public_storage, null=True, blank=True
+    )
+    # Voice actor saying only the word; used by typing and game levels.
+    standard_audio = models.FileField(
+        upload_to=UniqueUploadTo("words/audio/standard/"),
+        storage=public_storage,
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        db_table = "words"
+
+    def __str__(self) -> str:
+        return self.word
+
+
+class Story(AuditingMixin, models.Model):
+    name = models.CharField(max_length=255)
+
+    class Meta:
+        db_table = "stories"
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class Sentence(AuditingMixin, models.Model):
+    sentence = models.TextField()
+    translation = models.TextField(null=True, blank=True)
+    audio = models.FileField(
+        upload_to=UniqueUploadTo("sentences/audio/"), storage=public_storage, null=True, blank=True
+    )
+    story = models.ForeignKey(
+        Story,
+        on_delete=models.SET_NULL,
+        related_name="sentences",
+        null=True,
+        blank=True,
+    )
+    sort_order = models.IntegerField(db_index=True, null=True, blank=True)
+
+    class Meta:
+        db_table = "sentences"
+        ordering = ["story_id", "sort_order", "id"]
+
+    def __str__(self) -> str:
+        return self.sentence
+
+
+class FeedbackRequestType(models.TextChoices):
+    ISSUE = "issue", "Issue"
+    NEW_FEATURE = "new_feature", "New feature"
+    CONTENT = "content", "Content"
+    OTHER = "other", "Other"
+
+
+def feedback_image_upload_to(_instance, filename: str) -> str:
+    ext = Path(filename).suffix.lower()
+    if ext not in {".jpg", ".jpeg", ".png", ".webp"}:
+        ext = ".jpg"
+    return f"feedback/{uuid.uuid4().hex}{ext}"
+
+
+class Feedback(models.Model):
+    request_type = models.CharField(max_length=32, choices=FeedbackRequestType.choices)
+    title = models.CharField(max_length=255, blank=True)
+    description = models.TextField()
+    screen = models.CharField(max_length=255, blank=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="feedback",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    is_resolved = models.BooleanField(default=False, db_index=True)
+
+    class Meta:
+        db_table = "feedback_reports"
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self) -> str:
+        label = self.title.strip() or self.get_request_type_display()
+        return f"{label} ({self.pk})"
+
+
+class FeedbackImageKind(models.TextChoices):
+    SCREENSHOT = "screenshot", "Screenshot"
+    UPLOAD = "upload", "Upload"
+
+
+class FeedbackImage(models.Model):
+    feedback = models.ForeignKey(Feedback, on_delete=models.CASCADE, related_name="images")
+    image = models.ImageField(upload_to=feedback_image_upload_to)
+    kind = models.CharField(
+        max_length=16,
+        choices=FeedbackImageKind.choices,
+        default=FeedbackImageKind.UPLOAD,
+    )
+    sort_order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        db_table = "feedback_images"
+        ordering = ["sort_order", "id"]
+
+    def __str__(self) -> str:
+        return f"{self.get_kind_display()} for feedback {self.feedback_id}"

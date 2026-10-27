@@ -10,12 +10,12 @@ export default defineConfig({
     '*': 'vp check --fix',
   },
   fmt: {
-    ignorePatterns: ['.agents/**'],
+    ignorePatterns: ['.agents/**', 'apps/backend/**'],
     singleQuote: true,
     sortImports: true,
   },
   lint: {
-    ignorePatterns: ['.agents/**'],
+    ignorePatterns: ['.agents/**', 'apps/backend/**'],
     options: {
       typeAware: true,
       typeCheck: true,

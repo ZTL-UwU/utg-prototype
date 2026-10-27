@@ -1,9 +1,10 @@
 import { animate, type AnimationPlaybackControls } from 'motion';
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, type FederatedPointerEvent, Graphics, Text } from 'pixi.js';
 
 import {
   getKeyFromChar,
   getKeyboardLabel,
+  getMappedFromKeyCode,
   getShiftHintLabel,
   isAuxiliaryKey,
 } from '../../utils/keymap';
@@ -138,6 +139,20 @@ const HOME_KEY_CODES = new Set(['KeyF', 'KeyJ']);
 const HOME_BUMP_WIDTH = 16;
 const HOME_BUMP_HEIGHT = 3;
 const HOME_BUMP_BOTTOM = 7;
+const SHIFT_CODES = new Set(['ShiftLeft', 'ShiftRight']);
+// Keys with no meaning in the game stay inert when tapped.
+const UNTAPPABLE_CODES = new Set(['', 'Tab']);
+// Apple platforms fire Caps Lock keydown when it turns on and keyup when it
+// turns off, and report the new state on both.
+const IS_APPLE = /Mac|iPhone|iPad/.test(navigator.userAgent);
+
+/** `KeyboardEvent.key` a physical press of `code` would report. */
+function getEventKey(code: string, shift: boolean, capsLock: boolean): string {
+  if (SHIFT_CODES.has(code)) return 'Shift';
+  if (code === 'Backspace' || code === 'Enter' || code === 'CapsLock') return code;
+  if (code === 'Space') return ' ';
+  return getMappedFromKeyCode(code, shift, capsLock);
+}
 
 class KeyCap extends Container {
   public readonly code: string;
@@ -165,7 +180,7 @@ class KeyCap extends Container {
     this.code = code;
     this.keyWidth = UNIT * widthMultiplier;
 
-    const isShift = code === 'ShiftLeft' || code === 'ShiftRight';
+    const isShift = SHIFT_CODES.has(code);
 
     this.keyLabel = new Text({
       text: '',
@@ -275,6 +290,14 @@ export class KeyboardLayout extends Container {
   private readonly pressedCodes = new Set<string>();
   private readonly keyboardColorOptions;
   private hintedCode = '';
+  /** Code held by each pointer tapping the on-screen keys. */
+  private readonly tappedCodes = new Map<number, string>();
+  /** Tapped Shift stays held until the next key tap, like a phone keyboard. */
+  private latchedShiftCode = '';
+  /** Caps Lock toggle, synced from the OS state on every physical key event. */
+  private capsLockOn = false;
+  /** Last known OS Caps Lock state; differs from `capsLockOn` after a tap on CAPS. */
+  private osCapsLockOn = false;
 
   private listening = false;
 
@@ -383,6 +406,14 @@ export class KeyboardLayout extends Container {
         );
         cap.setLabel(getKeyboardLabel(code, shiftPressed));
         cap.setHint(getShiftHintLabel(code));
+        if (!UNTAPPABLE_CODES.has(code)) {
+          cap.eventMode = 'static';
+          cap.cursor = 'pointer';
+          cap.on('pointerdown', (event) => this.onKeyPointerDown(cap.code, event));
+          cap.on('pointerup', (event) => this.onKeyPointerUp(event));
+          cap.on('pointerupoutside', (event) => this.onKeyPointerUp(event));
+          cap.on('pointercancel', (event) => this.onKeyPointerUp(event));
+        }
         this.keys.push(cap);
         if (code) {
           this.keyByCode.set(code, cap);
@@ -444,6 +475,8 @@ export class KeyboardLayout extends Container {
       window.removeEventListener('keydown', this.onKeyDown);
       window.removeEventListener('keyup', this.onKeyUp);
       window.removeEventListener('blur', this.onBlur);
+      this.tappedCodes.clear();
+      this.latchedShiftCode = '';
       this.pressedCodes.clear();
       this.clearAllKeyFeedback();
       this.refreshKeys();
@@ -458,26 +491,107 @@ export class KeyboardLayout extends Container {
 
   private readonly onKeyDown = (event: KeyboardEvent) => {
     if (event.repeat) return;
+    this.syncCapsLock(event);
+    // The OS never sees a tapped Shift, so a physical key arrives unshifted:
+    // drop the latch so the labels match what the key actually types.
+    if (event.isTrusted && this.latchedShiftCode) {
+      if (event.code === this.latchedShiftCode) this.latchedShiftCode = '';
+      else this.releaseLatchedShift();
+    }
     this.pressedCodes.add(event.code);
     this.refreshKeys();
   };
 
   private readonly onKeyUp = (event: KeyboardEvent) => {
+    this.syncCapsLock(event);
+    // A physical Shift released over the latch already reports its own keyup.
+    if (event.isTrusted && event.code === this.latchedShiftCode) this.latchedShiftCode = '';
     this.pressedCodes.delete(event.code);
     this.refreshKeys();
   };
 
+  private syncCapsLock(event: KeyboardEvent) {
+    if (!event.isTrusted) return;
+    if (event.code === 'CapsLock' && !IS_APPLE) {
+      // Linux reports the state from before a Caps Lock press (and still "on"
+      // on the keyup that turns it off), so toggle on keydown instead.
+      if (event.type !== 'keydown') return;
+      this.osCapsLockOn = !this.osCapsLockOn;
+    } else {
+      this.osCapsLockOn = event.getModifierState('CapsLock');
+    }
+    this.capsLockOn = this.osCapsLockOn;
+  }
+
   private readonly onBlur = () => {
+    this.tappedCodes.clear();
+    this.latchedShiftCode = '';
     this.pressedCodes.clear();
     this.refreshKeys();
   };
+
+  /**
+   * Taps are replayed as window key events, so levels handle them exactly like
+   * physical presses and the key visuals update through the same listeners.
+   */
+  private onKeyPointerDown(code: string, event: FederatedPointerEvent) {
+    event.stopPropagation();
+    if (!this.listening || this.panel.alpha === 0 || this.tappedCodes.has(event.pointerId)) return;
+
+    if (SHIFT_CODES.has(code)) {
+      if (this.latchedShiftCode) this.releaseLatchedShift();
+      else {
+        this.latchedShiftCode = code;
+        this.dispatchKey('keydown', code);
+      }
+      return;
+    }
+
+    // Like the OS, the toggle flips on keydown so that event already reports it.
+    if (code === 'CapsLock') this.capsLockOn = !this.capsLockOn;
+    this.tappedCodes.set(event.pointerId, code);
+    this.dispatchKey('keydown', code);
+  }
+
+  private onKeyPointerUp(event: FederatedPointerEvent) {
+    const code = this.tappedCodes.get(event.pointerId);
+    if (code === undefined) return;
+    this.tappedCodes.delete(event.pointerId);
+    this.dispatchKey('keyup', code);
+    if (code !== 'CapsLock') this.releaseLatchedShift();
+  }
+
+  private releaseLatchedShift() {
+    if (!this.latchedShiftCode) return;
+    const code = this.latchedShiftCode;
+    this.latchedShiftCode = '';
+    this.dispatchKey('keyup', code);
+  }
+
+  private dispatchKey(type: 'keydown' | 'keyup', code: string) {
+    const shiftKey = SHIFT_CODES.has(code)
+      ? type === 'keydown'
+      : this.pressedCodes.has('ShiftLeft') || this.pressedCodes.has('ShiftRight');
+    window.dispatchEvent(
+      new KeyboardEvent(type, {
+        code,
+        key: getEventKey(code, shiftKey, this.capsLockOn),
+        shiftKey,
+        modifierCapsLock: this.capsLockOn,
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+  }
 
   private refreshKeys() {
     const shiftPressed = this.pressedCodes.has('ShiftLeft') || this.pressedCodes.has('ShiftRight');
 
     for (const cap of this.keys) {
-      cap.setPressed(this.pressedCodes.has(cap.code));
-      cap.setLabel(getKeyboardLabel(cap.code, shiftPressed));
+      cap.setPressed(
+        this.pressedCodes.has(cap.code) || (cap.code === 'CapsLock' && this.capsLockOn),
+      );
+      cap.setLabel(getKeyboardLabel(cap.code, shiftPressed, this.capsLockOn));
       cap.setHint(shiftPressed ? '' : getShiftHintLabel(cap.code));
     }
   }

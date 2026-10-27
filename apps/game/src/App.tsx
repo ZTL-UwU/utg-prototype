@@ -1,4 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { useEffect, useRef } from 'react';
 import '@pixi/layout';
 
@@ -50,6 +51,7 @@ export default function App() {
       <QueryClientProvider client={queryClient}>
         <ScreenOverlay />
       </QueryClientProvider>
+      <SpeedInsights />
     </>
   );
 }
