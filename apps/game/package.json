@@ -13,6 +13,9 @@
   "dependencies": {
     "@assetpack/core": "^1.7.0",
     "@base-ui/react": "^1.6.0",
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/ios": "^8.5.3",
     "@pixi/devtools": "^2.0.1",
     "@pixi/layout": "^3.2.0",
     "@pixi/sound": "^6.0.1",
@@ -36,6 +39,7 @@
     "zustand": "^5.0.13"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
     "@types/node": "^25.9.1",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
