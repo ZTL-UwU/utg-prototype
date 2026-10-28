@@ -209,6 +209,7 @@ export class Navigation {
 
     // Load assets for the new screen, if available
     if (ctor.assetBundles) {
+      window.__trace?.(`showScreen ${ctor.name}: loading ${ctor.assetBundles.join(', ')}`);
       await this.ensureBundlesReady(ctor.assetBundles);
       // Load all assets required by this new screen
       await this.loadBundlesSafely(ctor.assetBundles, (progress) => {
@@ -216,6 +217,7 @@ export class Navigation {
           this.currentScreen.onLoad(progress * 100);
         }
       });
+      window.__trace?.(`showScreen ${ctor.name}: bundles done`);
     }
 
     if (ctor.prepareAssets) {
@@ -240,7 +242,9 @@ export class Navigation {
     for (const listener of this.screenChangeListeners) {
       listener(ctor, props);
     }
+    window.__trace?.(`showScreen ${ctor.name}: showing`);
     await this.addAndShowScreen(this.currentScreen);
+    window.__trace?.(`showScreen ${ctor.name}: shown`);
   }
 
   /** Dismiss every popup, nested ones included, and give control back to the screen. */

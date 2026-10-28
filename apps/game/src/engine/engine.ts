@@ -46,9 +46,19 @@ export class CreationEngine extends Application {
       await initDevtools({ app: this });
     }
 
+    window.__trace?.(
+      `renderer ready: ${this.renderer.name} ${this.canvas.width}x${this.canvas.height}`,
+    );
     // Init PixiJS assets with this asset manifest
-    await Assets.init({ manifest, basePath: `${import.meta.env.BASE_URL}assets` });
+    await Assets.init({
+      manifest,
+      // Absolute URL: Pixi's path utils only find the host of http(s) URLs, so a root-relative
+      // basePath under capacitor://localhost resolved to capacitor://assets/... on iOS.
+      basePath: new URL(`${import.meta.env.BASE_URL}assets`, window.location.href).href,
+    });
+    window.__trace?.('Assets.init done; loading preload bundles');
     await Assets.loadBundle(['preload', 'preload-audio']);
+    window.__trace?.('preload bundles done');
 
     // List all existing bundles names
     // @ts-ignore - This is a dynamically generated file by AssetPack

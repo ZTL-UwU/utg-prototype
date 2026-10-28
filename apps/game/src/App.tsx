@@ -24,16 +24,21 @@ export default function App() {
     const engine = engineRef.current!;
 
     const init = async () => {
+      window.__trace?.('engine.init start');
       await engine.init({
         background: '#000000',
         resizeOptions: { minWidth: 768, minHeight: 1024, letterbox: false },
         antialias: true,
       });
+      window.__trace?.('engine.init done');
 
       bootstrapRemoteData();
+      window.__trace?.('bootstrapRemoteData done');
 
       const { router } = await import('./router');
+      window.__trace?.('router.start');
       await router.start(engine.navigation);
+      window.__trace?.('router.start done');
     };
 
     void init();
