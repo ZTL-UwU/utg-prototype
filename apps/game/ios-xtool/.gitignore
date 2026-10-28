@@ -1,0 +1,4 @@
+.build/
+xtool/
+.swiftpm/
+icon.png

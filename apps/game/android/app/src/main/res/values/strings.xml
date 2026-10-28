@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Sozler Seylisi</string>
+    <string name="title_activity_main">Sozler Seylisi</string>
+    <string name="package_name">ca.codhers.sozlerseylisi</string>
+    <string name="custom_url_scheme">ca.codhers.sozlerseylisi</string>
+</resources>
