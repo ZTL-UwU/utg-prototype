@@ -243,6 +243,7 @@ const useCourseStore = create<CourseStore>((set, get) => ({
       // Lazy-load screens so this module does not cycle with screen → units → store.
       const { LEVEL_TYPE_SCREENS } = await import('../app/screens/level-map/screenRegistry');
       const units = await api<ApiUnit[]>('/units/list');
+      if (!Array.isArray(units)) throw new Error('Unexpected /units/list response');
       registerMascotsBundle(units);
       set({
         status: 'ready',

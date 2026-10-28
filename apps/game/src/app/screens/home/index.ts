@@ -247,7 +247,9 @@ export class HomeScreen extends Container {
 
   /** Show screen with animations */
   public async show(): Promise<void> {
+    window.__trace?.('HomeScreen.show: bgm.play');
     await engine().audio.bgm.play('preload-audio/bgm-main.mp3', { volume: 0.2, start: 20 });
+    window.__trace?.('HomeScreen.show: bgm.play done');
     this.butterfly.alpha = 0;
     this.titleContainer.alpha = 0;
     this.titleContainer.y = TITLE_ENTER_OFFSET;
