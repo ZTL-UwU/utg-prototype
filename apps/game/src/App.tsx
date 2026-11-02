@@ -35,6 +35,9 @@ export default function App() {
       bootstrapRemoteData();
       window.__trace?.('bootstrapRemoteData done');
 
+      const { initScriptPillOverlay } = await import('./app/ui/script-pill/script-pill-overlay');
+      initScriptPillOverlay(engine);
+
       const { router } = await import('./router');
       window.__trace?.('router.start');
       await router.start(engine.navigation);

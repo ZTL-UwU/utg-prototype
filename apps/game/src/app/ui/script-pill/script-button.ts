@@ -1,6 +1,7 @@
 import { FancyButton } from '@pixi/ui';
 import { Graphics, HTMLText } from 'pixi.js';
 
+import { engine } from '../../../engine/getEngine';
 import { getFontFamilyForScript } from '../../../utils/script';
 import { scriptState, type ORTHO_ENUM } from '../../../zustandStores/scriptState';
 
@@ -10,27 +11,25 @@ const LABELS: Record<ORTHO_ENUM, string> = {
   Latin: 'LATIN',
 };
 
-const RADIUS = 18;
-const FILL_COLOR = 0xff914d;
-const ACTIVE_FILL_COLOR = 0xffde59;
-const DISABLED_FILL_COLOR = 0x627065;
+const SELECTED_FILL_COLOR = 0xfdf7e7;
 
+/** A single option segment inside the ScriptPill. The pill decides what a press does. */
 export class ScriptButton extends FancyButton {
   private bg: Graphics;
-  private script: ORTHO_ENUM;
   private unsubscribe: () => void;
-  private onSelected: () => void;
-  private disabled: boolean;
-  public static BTN_WIDTH = 240; // larger
-  public static BTN_HEIGHT = 90; // larger
+  public readonly script: ORTHO_ENUM;
+  public readonly disabled: boolean;
+  public static BTN_WIDTH = 200;
+  public static BTN_HEIGHT = 70;
+  private static RADIUS = ScriptButton.BTN_HEIGHT / 2;
 
-  constructor(script: ORTHO_ENUM, onSelected: () => void, disabled = false) {
+  constructor(script: ORTHO_ENUM, onSelect: (script: ORTHO_ENUM) => void, disabled = false) {
     const label = new HTMLText({
       text: LABELS[script],
       style: {
         fill: 0xffffff,
         fontFamily: getFontFamilyForScript(script),
-        fontSize: 40,
+        fontSize: 34,
         fontWeight: 'bold',
         align: 'center',
         cssOverrides: [`direction: ${script === 'Arabic' ? 'rtl' : 'ltr'}`],
@@ -39,13 +38,13 @@ export class ScriptButton extends FancyButton {
 
     // draw geometry early so FancyButton measures real bounds
     const bg = new Graphics()
-      .roundRect(0, 0, ScriptButton.BTN_WIDTH, ScriptButton.BTN_HEIGHT, RADIUS)
-      .fill(disabled ? DISABLED_FILL_COLOR : FILL_COLOR);
+      .roundRect(0, 0, ScriptButton.BTN_WIDTH, ScriptButton.BTN_HEIGHT, ScriptButton.RADIUS)
+      .fill({ color: SELECTED_FILL_COLOR, alpha: 0 });
 
     super({
       defaultView: bg,
       text: label,
-      textOffset: { x: 0, y: 8 }, // lazy center hack
+      textOffset: { x: 0, y: 6 }, // lazy center hack
       animations: disabled
         ? undefined
         : {
@@ -58,19 +57,14 @@ export class ScriptButton extends FancyButton {
     this.script = script;
     this.bg = bg;
     this.disabled = disabled;
-    this.onSelected = onSelected;
     this.enabled = !disabled;
     this.cursor = disabled ? 'default' : 'pointer';
-    this.alpha = disabled ? 0.85 : 1;
     this.paint(scriptState.getState().currentScript);
 
     this.onPress.connect(() => {
       if (this.disabled) return;
-      const { currentScript, setCurrentScript } = scriptState.getState();
-      if (currentScript !== this.script) {
-        setCurrentScript(this.script);
-      }
-      this.onSelected();
+      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+      onSelect(this.script);
     });
 
     this.unsubscribe = scriptState.subscribe((state) => this.paint(state.currentScript));
@@ -78,10 +72,11 @@ export class ScriptButton extends FancyButton {
 
   private paint(currentScript: ORTHO_ENUM) {
     const isActive = !this.disabled && currentScript === this.script;
+    // keep an invisible fill when inactive so the hit area / bounds stay the same
     this.bg
       .clear()
-      .roundRect(0, 0, ScriptButton.BTN_WIDTH, ScriptButton.BTN_HEIGHT, RADIUS)
-      .fill(this.disabled ? DISABLED_FILL_COLOR : isActive ? ACTIVE_FILL_COLOR : FILL_COLOR);
+      .roundRect(0, 0, ScriptButton.BTN_WIDTH, ScriptButton.BTN_HEIGHT, ScriptButton.RADIUS)
+      .fill({ color: SELECTED_FILL_COLOR, alpha: isActive ? 1 : 0 });
   }
 
   destroy(options?: Parameters<FancyButton['destroy']>[0]) {
