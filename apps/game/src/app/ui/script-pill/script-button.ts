@@ -27,7 +27,7 @@ export class ScriptButton extends FancyButton {
     const label = new HTMLText({
       text: LABELS[script],
       style: {
-        fill: 0xffffff,
+        fill: 0x000000,
         fontFamily: getFontFamilyForScript(script),
         fontSize: 34,
         fontWeight: 'bold',
