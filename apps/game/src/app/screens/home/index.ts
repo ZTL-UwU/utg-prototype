@@ -1,6 +1,6 @@
 import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
-import { Sprite, Text, Texture, type TextDropShadow, type Ticker } from 'pixi.js';
+import { Graphics, Sprite, Text, Texture, type TextDropShadow, type Ticker } from 'pixi.js';
 import { Container } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
@@ -8,12 +8,11 @@ import { ensureValidSession } from '../../../lib/authSession';
 import { continueIntoGame } from '../../../utils/continueIntoGame';
 import { useAuthStore } from '../../../zustandStores/auth';
 import { useOverlayStore } from '../../../zustandStores/overlayStore';
-import { scriptState, type ORTHO_ENUM } from '../../../zustandStores/scriptState';
 import { AuthScreen } from './auth';
 import { Butterfly } from './butterfly';
-import { ScriptButton } from './script-button';
 
 const TITLE_ENTER_OFFSET = 60;
+const BUTTON_ENTER_OFFSET = 100;
 /** The screen that holds the app */
 export class HomeScreen extends Container {
   public readonly screenName = 'HomeScreen';
@@ -23,10 +22,9 @@ export class HomeScreen extends Container {
   private background: Sprite;
   private butterfly: Butterfly;
   private titleContainer: Container;
-  private scriptButtonContainer: Container;
+  private startButton: FancyButton;
   private title: Text;
   private subtitle: Text;
-  private isStarting = false;
   private menuButton: FancyButton;
   private logo: Sprite;
 
@@ -59,60 +57,6 @@ export class HomeScreen extends Container {
         gap: 24,
       },
     });
-    this.scriptButtonContainer = new Container({
-      layout: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 40,
-      },
-    });
-
-    const scripts: ORTHO_ENUM[] = ['Arabic', 'Latin', 'Cyrillic'];
-    for (const s of scripts) {
-      const disabled = s === 'Cyrillic';
-      const btn = new ScriptButton(
-        s,
-        () => {
-          void this.start(s);
-        },
-        disabled,
-      );
-      btn.layout = { width: ScriptButton.BTN_WIDTH, height: ScriptButton.BTN_HEIGHT, isLeaf: true };
-
-      if (!disabled) {
-        this.scriptButtonContainer.addChild(btn);
-        continue;
-      }
-
-      const disabledButtonWrap = new Container({
-        layout: {
-          width: ScriptButton.BTN_WIDTH,
-          height: ScriptButton.BTN_HEIGHT,
-          position: 'relative',
-        },
-      });
-      const comingSoon = new Text({
-        text: 'Coming soon!',
-        style: {
-          fill: 0x284937,
-          fontFamily: 'Concert One',
-          fontSize: 32,
-          fontWeight: 'bold',
-          align: 'center',
-        },
-      });
-      comingSoon.eventMode = 'none';
-      comingSoon.layout = {
-        position: 'absolute',
-        left: 0,
-        width: '100%',
-        top: -36,
-        isLeaf: true,
-      };
-      disabledButtonWrap.addChild(comingSoon, btn);
-      this.scriptButtonContainer.addChild(disabledButtonWrap);
-    }
 
     const textDropShadow: Partial<TextDropShadow> = {
       color: 0x000000,
@@ -149,7 +93,49 @@ export class HomeScreen extends Container {
     const bottomGroup = new Container({
       layout: { flexDirection: 'column', alignItems: 'center', gap: 30 }, // tight gap here
     });
-    bottomGroup.addChild(this.scriptButtonContainer);
+    const buttonHeight = 180;
+    const buttonWidth = 400;
+    this.startButton = new FancyButton({
+      defaultView: new Graphics()
+        .roundRect(0, 15, buttonWidth, buttonHeight, 40)
+        .fill({ color: 0x000000, alpha: 0.7 })
+        .roundRect(0, 0, buttonWidth, buttonHeight, 40)
+        .fill(0x2a523c),
+      padding: 20,
+      text: new Text({
+        text: 'START',
+        style: {
+          fill: 0xfdf7e7,
+          fontSize: 80,
+          fontFamily: 'Concert One',
+          fontWeight: '700',
+        },
+      }),
+      animations: {
+        hover: {
+          props: {
+            scale: { x: 1.1, y: 1.1 },
+          },
+          duration: 100,
+        },
+        pressed: {
+          props: {
+            scale: { x: 0.9, y: 0.9 },
+          },
+          duration: 100,
+        },
+      },
+      anchor: 0.5,
+    });
+    this.startButton.layout = {
+      width: buttonWidth,
+      height: buttonHeight,
+      isLeaf: true, // Fixes the position issue of the button
+    };
+    this.startButton.onPress.connect(() => {
+      void this.start();
+    });
+    bottomGroup.addChild(this.startButton);
 
     this.menuButton = new FancyButton({
       defaultView: 'home/menu-button.png',
@@ -196,15 +182,12 @@ export class HomeScreen extends Container {
     );
   }
 
-  private async start(script: ORTHO_ENUM) {
+  private async start() {
     void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
 
-    if (this.isStarting) return;
+    if (!this.startButton.enabled) return;
+    this.startButton.enabled = false;
 
-    this.isStarting = true;
-    this.scriptButtonContainer.interactiveChildren = false;
-
-    scriptState.getState().setCurrentScript(script);
     try {
       const ok = await ensureValidSession();
       if (ok) {
@@ -216,8 +199,7 @@ export class HomeScreen extends Container {
       }
       await engine().navigation.showScreen(AuthScreen);
     } finally {
-      this.isStarting = false;
-      this.scriptButtonContainer.interactiveChildren = true;
+      this.startButton.enabled = true;
     }
   }
 
@@ -253,14 +235,14 @@ export class HomeScreen extends Container {
     this.butterfly.alpha = 0;
     this.titleContainer.alpha = 0;
     this.titleContainer.y = TITLE_ENTER_OFFSET;
-    this.scriptButtonContainer.alpha = 0;
-    this.scriptButtonContainer.y = 100;
+    this.startButton.alpha = 0;
+    this.startButton.y = BUTTON_ENTER_OFFSET;
 
     await Promise.all([
       animate(this.butterfly, { alpha: 1 }, { duration: 0.5, ease: 'easeOut' }),
       animate(this.titleContainer, { alpha: 1, y: 0 }, { duration: 0.45, ease: 'backOut' }),
-      animate(this.scriptButtonContainer, { alpha: 1 }, { duration: 0.45, ease: 'easeOut' }),
-      animate(this.scriptButtonContainer, { y: 0 }, { duration: 0.45, ease: 'backOut' }),
+      animate(this.startButton, { alpha: 1 }, { duration: 0.45, ease: 'easeOut' }),
+      animate(this.startButton, { y: 0 }, { duration: 0.45, ease: 'backOut' }),
     ]);
   }
 
@@ -272,8 +254,8 @@ export class HomeScreen extends Container {
         { alpha: 0, y: -TITLE_ENTER_OFFSET },
         { duration: 0.2, ease: 'backIn' },
       ),
-      animate(this.scriptButtonContainer, { alpha: 0 }, { duration: 0.2, ease: 'backIn' }),
-      animate(this.scriptButtonContainer, { y: 100 }, { duration: 0.2, ease: 'backIn' }),
+      animate(this.startButton, { alpha: 0 }, { duration: 0.2, ease: 'backIn' }),
+      animate(this.startButton, { y: BUTTON_ENTER_OFFSET }, { duration: 0.2, ease: 'backIn' }),
     ]);
   }
 
