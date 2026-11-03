@@ -1,7 +1,15 @@
-import { animate } from 'motion';
-import { Container, Graphics } from 'pixi.js';
+import { Container } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import {
+  isPathVertical,
+  joinWithLines,
+  pathFlex,
+  pathPosition,
+  playPathEnter,
+  playPathExit,
+  resizePath,
+} from '../../../ui/button-path';
 import { EducationTutorialScreen } from '../../education-level/level-tutorial';
 import { getLayerMaps } from '../../level-map/units';
 import { MapUnitButton } from './map-unit-button';
@@ -10,18 +18,15 @@ import { TutorialEntryButton } from './tutorial-entry-button';
 const ITEMS_PER_PAGE = 3;
 
 export class EducationMapRow extends Container {
+  private readonly vertical = isPathVertical();
   private pages: Container[] = [];
   private currentPage = 0;
+  /** Buttons on the fullest page, so every page draws at the same size. */
+  private readonly pageSize: number;
 
   constructor() {
     super({
-      layout: {
-        position: 'absolute',
-        top: '50%',
-        width: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
-      },
+      layout: { ...pathPosition(), width: '100%', justifyContent: 'center', alignItems: 'center' },
     });
 
     const educationMaps = getLayerMaps('education');
@@ -34,28 +39,11 @@ export class EducationMapRow extends Container {
       tutorialButton,
       ...educationMaps.map((mapUnit, i) => new MapUnitButton(mapUnit, i)),
     ];
+    this.pageSize = Math.min(items.length, ITEMS_PER_PAGE);
 
     for (let start = 0; start < items.length; start += ITEMS_PER_PAGE) {
-      const chunk = items.slice(start, start + ITEMS_PER_PAGE);
-      const page = new Container({
-        layout: {
-          width: '100%',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: 8,
-        },
-      });
-
-      chunk.forEach((item, i) => {
-        if (i > 0) {
-          const fillerLine = new Graphics({ layout: { width: 80, height: 15 } })
-            .roundRect(0, 0, 100, 15, 10)
-            .fill(0xa66129);
-          page.addChild(fillerLine);
-        }
-        page.addChild(item);
-      });
-
+      const page = new Container({ layout: pathFlex(this.vertical) });
+      page.addChild(...joinWithLines(items.slice(start, start + ITEMS_PER_PAGE), this.vertical));
       this.pages.push(page);
     }
 
@@ -70,66 +58,37 @@ export class EducationMapRow extends Container {
     return this.currentPage < this.pages.length - 1;
   }
 
-  public async nextPage(screenHeight: number) {
+  public resize(width: number, height: number) {
+    resizePath(this, this.pageSize, width, height);
+  }
+
+  public async nextPage() {
     if (!this.hasNext) return;
-    await this.goToPage(this.currentPage + 1, screenHeight);
+    await this.goToPage(this.currentPage + 1);
   }
 
-  public async prevPage(screenHeight: number) {
+  public async prevPage() {
     if (!this.hasPrev) return;
-    await this.goToPage(this.currentPage - 1, screenHeight);
+    await this.goToPage(this.currentPage - 1);
   }
 
-  private async goToPage(target: number, screenHeight: number) {
-    await this.playExitAnimation(screenHeight);
+  private async goToPage(target: number) {
+    await this.playExitAnimation();
     this.removeChild(this.pages[this.currentPage]);
     this.currentPage = target;
     this.addChild(this.pages[this.currentPage]);
-    await this.playEnterAnimation(screenHeight);
+    await this.playEnterAnimation();
   }
 
-  private offScreenOffset(child: Container, screenHeight: number) {
-    return screenHeight + 40 - child.getGlobalPosition().y;
+  private get pageChildren() {
+    return (this.pages[this.currentPage]?.children ?? []) as Container[];
   }
 
-  public async playEnterAnimation(screenHeight: number) {
-    const children = this.pages[this.currentPage]?.children ?? [];
-
-    for (const child of children) {
-      child.y = 0;
-      child.y = this.offScreenOffset(child, screenHeight);
-    }
-
-    await Promise.all(
-      children.map((child, index) =>
-        animate(
-          child,
-          { y: 0 },
-          {
-            duration: 0.4,
-            ease: 'backOut',
-            delay: index * 0.07,
-          },
-        ),
-      ),
-    );
+  public async playEnterAnimation() {
+    await playPathEnter(this, this.pageChildren, this.vertical);
   }
 
-  public async playExitAnimation(screenHeight: number) {
-    const children = this.pages[this.currentPage]?.children ?? [];
-
-    await Promise.all(
-      children.map((child, index) =>
-        animate(
-          child,
-          { y: this.offScreenOffset(child, screenHeight) },
-          {
-            duration: 0.2,
-            ease: 'backIn',
-            delay: index * 0.02,
-          },
-        ),
-      ),
-    );
+  public async playExitAnimation() {
+    await playPathExit(this, this.pageChildren, this.vertical);
   }
 }
