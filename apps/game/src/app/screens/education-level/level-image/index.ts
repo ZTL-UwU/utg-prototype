@@ -24,7 +24,9 @@ import { LetterChoice } from './letter-choice';
 const NUM_CHOICES = 3;
 const X_SLOTS = [0.2, 0.5, 0.8];
 const CHOICE_Y_RATIO = 0.38;
-const PHONE_Y_SLOTS = [0.2, 0.42, 0.64];
+const PHONE_Y_SLOTS = [0.17, 0.4, 0.63];
+/** Phones fit every picture in the same square, so big ones can't cover their neighbours. */
+const PHONE_IMAGE_SIZE = 220;
 
 function endGame(level: TLevel) {
   if (++EducationImageScreen.rounds < EducationImageScreen.roundOrder.length) {
@@ -100,18 +102,25 @@ export class EducationImageScreen extends Container {
 
     this.soundButton = new SoundButton({
       onClick: () => this.soundButtonClick(),
-      size: 250,
+      size: responsive({ sm: 200, lg: 250 }),
       variant: 'large',
     });
     this.soundButton.anchor.set(0.5);
-    this.soundButton.layout = { position: 'absolute', left: '50%', bottom: '20%' };
+    this.soundButton.layout = {
+      position: 'absolute',
+      left: '50%',
+      // Phones move it down to leave room for the stacked choices.
+      bottom: responsive<`${number}%`>({ sm: '5%', lg: '20%' }),
+    };
 
+    const imageSize = responsive({ sm: true, lg: false }) ? PHONE_IMAGE_SIZE : undefined;
     this.choices = displayWords.map(
       (word) =>
         new LetterChoice(
           word,
           this.correctLetter,
           word.target_letter === this.correctLetter ? () => endGame(typedLevel) : undefined,
+          imageSize,
         ),
     );
     for (const choice of this.choices) this.choiceContainer.addChild(choice);

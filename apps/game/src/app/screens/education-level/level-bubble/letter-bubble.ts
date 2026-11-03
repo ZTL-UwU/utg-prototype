@@ -3,10 +3,21 @@ import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Sprite, Text, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
 import { convertToCurrentScript, getScriptFontFamily } from '../../../../utils/script';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 
-const SIZE = 140;
+/** Bubble diameter: phones fit three across, wider screens draw them bigger. */
+export function getBubbleSize() {
+  return responsive({ sm: 170, lg: 190 });
+}
+
+/** A bubble image scaled to the bubble size. */
+function createBubbleView(alias: string, size: number) {
+  const view = Sprite.from(alias);
+  view.scale.set(size / Math.max(view.texture.width, view.texture.height));
+  return view;
+}
 
 export class LetterBubble extends FancyButton {
   private isCorrect: boolean;
@@ -21,9 +32,12 @@ export class LetterBubble extends FancyButton {
   private floatOnEscaped?: () => void;
   private clicked = false;
 
+  private readonly size = getBubbleSize();
+
   constructor(letter: string, correctLetter: string, onCorrect?: () => void) {
+    const size = getBubbleSize();
     super({
-      defaultView: 'education-levels/education-level-bubble/bubble.svg',
+      defaultView: createBubbleView('education-levels/education-level-bubble/bubble.svg', size),
       animations: {
         hover: {
           props: { scale: { x: 1.5, y: 1.5 } },
@@ -41,7 +55,7 @@ export class LetterBubble extends FancyButton {
           align: 'center',
           fill: 0x000000,
           fontFamily: getScriptFontFamily(),
-          fontSize: SIZE * 0.4,
+          fontSize: size * 0.4,
           fontWeight: '700',
           padding: 20,
         },
@@ -155,7 +169,10 @@ export class LetterBubble extends FancyButton {
     void this.animation.finished.then(() => {
       void engine().audio.sfx.play('education-levels/education-level-bubble/bubble-pop.mp3');
       this.tint = 0xffffff;
-      this.defaultView = Sprite.from('education-levels/education-level-bubble/bubble_popped.svg');
+      this.defaultView = createBubbleView(
+        'education-levels/education-level-bubble/bubble_popped.svg',
+        this.size,
+      );
       this.eventMode = 'none';
     });
   }

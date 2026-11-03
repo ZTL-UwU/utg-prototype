@@ -4,6 +4,7 @@ import { Container, Graphics, HTMLText, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { randomShuffle } from '../../../../engine/utils/random';
+import { responsive } from '../../../../engine/utils/viewport';
 import { waitFor } from '../../../../engine/utils/waitFor';
 import {
   createExampleWordStyle,
@@ -34,17 +35,49 @@ import {
   type TLevelOf,
 } from '../../level-map/units';
 
-const PANEL_WIDTH = 1500;
-const PANEL_HEIGHT = 760;
 const PANEL_RADIUS = 100;
-const CHOICE_X = [460, 750, 1040];
-const CHOICE_Y = 590;
-const IMAGE_X = 280;
-const WORD_X = 750;
-const SOUND_BUTTON_X = 1220;
-const WORD_MAX_WIDTH = 760;
-// letter choice slots, matches CHOICE_X
+// letter choice slots, matches `choiceX`
 const NUM_CHOICES = 3;
+
+/** Panel contents in panel coordinates, before the panel is scaled to the screen. */
+type PanelLayout = {
+  width: number;
+  height: number;
+  /** Share of the screen width and height the scaled panel may take up. */
+  maxScreenShare: { width: number; height: number };
+  image: { x: number; y: number; size: number };
+  word: { x: number; y: number; maxWidth: number };
+  sound: { x: number; y: number; size: number };
+  choiceX: number[];
+  choiceY: number;
+  choiceSize: number;
+};
+
+/** Wide screens: image, word and sound button in a row above the choices. */
+const WIDE_LAYOUT: PanelLayout = {
+  width: 1500,
+  height: 760,
+  maxScreenShare: { width: 0.78, height: 0.68 },
+  image: { x: 280, y: 220, size: 300 },
+  word: { x: 750, y: 220, maxWidth: 760 },
+  sound: { x: 1220, y: 220, size: 190 },
+  choiceX: [460, 750, 1040],
+  choiceY: 590,
+  choiceSize: 220,
+};
+
+/** Phones: a tall panel stacking image, word, sound button and choices, so little shrinking is needed. */
+const PHONE_LAYOUT: PanelLayout = {
+  width: 720,
+  height: 1180,
+  maxScreenShare: { width: 0.92, height: 0.68 },
+  image: { x: 360, y: 250, size: 360 },
+  word: { x: 360, y: 560, maxWidth: 640 },
+  sound: { x: 360, y: 760, size: 150 },
+  choiceX: [140, 360, 580],
+  choiceY: 990,
+  choiceSize: 190,
+};
 
 function playableWords(wordIds: number[]): WordSimple[] {
   return resolveWordsByIds(wordIds).filter(
@@ -96,6 +129,7 @@ export class EducationWordScreen extends Container {
   private isResolving = false;
   private readonly level: TLevelOf<'education-word'>;
   private isPlaying: boolean = false;
+  private readonly panelLayout = responsive({ sm: PHONE_LAYOUT, lg: WIDE_LAYOUT });
 
   constructor(level: TLevel) {
     const typedLevel = getTypedLevel(level, 'education-word');
@@ -122,13 +156,14 @@ export class EducationWordScreen extends Container {
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
 
+    const layout = this.panelLayout;
     this.panel = new Container();
-    this.panel.pivot.set(PANEL_WIDTH / 2, PANEL_HEIGHT / 2);
+    this.panel.pivot.set(layout.width / 2, layout.height / 2);
     this.panel.addChild(
       new Graphics()
-        .roundRect(0, 16, PANEL_WIDTH, PANEL_HEIGHT, PANEL_RADIUS)
+        .roundRect(0, 16, layout.width, layout.height, PANEL_RADIUS)
         .fill({ color: 0x1b427a, alpha: 0.72 })
-        .roundRect(0, 0, PANEL_WIDTH, PANEL_HEIGHT, PANEL_RADIUS)
+        .roundRect(0, 0, layout.width, layout.height, PANEL_RADIUS)
         .fill(0xd1dcf0),
     );
 
@@ -137,33 +172,37 @@ export class EducationWordScreen extends Container {
       : Texture.EMPTY;
     const image = new Sprite({ texture: imageTexture, anchor: 0.5 });
     if (imageTexture.width > 0 && imageTexture.height > 0) {
-      image.scale.set(300 / Math.max(imageTexture.width, imageTexture.height));
+      image.scale.set(layout.image.size / Math.max(imageTexture.width, imageTexture.height));
     }
-    image.position.set(IMAGE_X, 220);
+    image.position.set(layout.image.x, layout.image.y);
 
     this.wordText = new HTMLText({
       text: getMissingWordMarkup(this.displayLetter, this.word),
       style: createExampleWordStyle(180),
       anchor: 0.5,
     });
-    this.wordText.position.set(WORD_X, 220);
+    this.wordText.position.set(layout.word.x, layout.word.y);
     this.fitWordText();
 
     this.soundButton = new SoundButton({
       onClick: () => this.playAudio(),
-      size: 190,
+      size: layout.sound.size,
     });
-    this.soundButton.position.set(SOUND_BUTTON_X, 220);
+    this.soundButton.position.set(layout.sound.x, layout.sound.y);
 
     this.choices = round.choices.map(
       (letter) =>
         new LetterChoice({
           letter,
+          size: layout.choiceSize,
           onPress: (choice) => void this.handleChoice(choice),
         }),
     );
     this.choices.forEach((choice, index) => {
-      choice.position.set(CHOICE_X[index] ?? CHOICE_X[CHOICE_X.length - 1], CHOICE_Y);
+      choice.position.set(
+        layout.choiceX[index] ?? layout.choiceX[layout.choiceX.length - 1],
+        layout.choiceY,
+      );
       this.panel.addChild(choice);
     });
 
@@ -202,11 +241,16 @@ export class EducationWordScreen extends Container {
   public resize(width: number, height: number) {
     this.layout = { width, height };
 
-    const panelScale = Math.min(1, (width * 0.78) / PANEL_WIDTH, (height * 0.68) / PANEL_HEIGHT);
+    const layout = this.panelLayout;
+    const panelScale = Math.min(
+      1,
+      (width * layout.maxScreenShare.width) / layout.width,
+      (height * layout.maxScreenShare.height) / layout.height,
+    );
     this.panel.scale.set(panelScale);
     this.panel.position.set(Math.round(width / 2), Math.round(height / 2 + 20));
 
-    const panelTop = this.panel.y - (PANEL_HEIGHT * panelScale) / 2;
+    const panelTop = this.panel.y - (layout.height * panelScale) / 2;
     this.feedback.position.set(width / 2, Math.max(72, panelTop - 78));
   }
 
@@ -292,8 +336,9 @@ export class EducationWordScreen extends Container {
 
   private fitWordText() {
     this.wordText.scale.set(1);
-    if (this.wordText.width > WORD_MAX_WIDTH) {
-      this.wordText.scale.set(WORD_MAX_WIDTH / this.wordText.width);
+    const { maxWidth } = this.panelLayout.word;
+    if (this.wordText.width > maxWidth) {
+      this.wordText.scale.set(maxWidth / this.wordText.width);
     }
   }
 }

@@ -23,6 +23,13 @@ const COLORS = {
   BACKGROUND: 0xe8eef8,
 } as const;
 
+/** Room kept above the phone column for the close and letter nav buttons. */
+const PHONE_TOP_BAR = 220;
+/** Space kept on each side of a long word that is shrunk to fit a phone. */
+const PHONE_SIDE_MARGIN = 20;
+/** Box the example picture is fitted into on phones. */
+const PHONE_IMAGE_SIZE = 360;
+
 function getAdjacentLetter(letter: string, delta: number): string {
   const index = EDUCATION_LETTERS.indexOf(letter as EducationLetter);
   if (index < 0) return EDUCATION_LETTERS[0]!;
@@ -45,6 +52,8 @@ export class LetterPopup extends Container {
   private remoteWord?: WordSimple;
   private exampleWord: string | undefined;
   private wordText?: HTMLText;
+  /** Unscaled word width, for shrinking long words to fit phones. */
+  private wordWidth = 0;
   private exampleImage?: Sprite;
   private variantImage: Sprite;
   private background: Graphics;
@@ -54,7 +63,24 @@ export class LetterPopup extends Container {
   private soundButton: SoundButton;
 
   constructor(letter: string) {
-    super({ layout: { position: 'relative', width: '100%', height: '100%' } });
+    super({
+      layout: {
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        // Phones stack the picture, word, letter card and sound button in a centered column.
+        ...responsive({
+          sm: {
+            flexDirection: 'column' as const,
+            justifyContent: 'center' as const,
+            alignItems: 'center' as const,
+            gap: 40,
+            paddingTop: PHONE_TOP_BAR,
+          },
+          lg: {},
+        }),
+      },
+    });
     this.letter = letter;
 
     this.remoteWord = getTutorialWordForLetter(letter);
@@ -63,7 +89,14 @@ export class LetterPopup extends Container {
       : undefined;
 
     this.background = new Graphics();
-    this.background.layout = { position: 'absolute', width: '100%', height: '100%' };
+    // Pinned to the corner: without insets, the phone column's padding would push it down.
+    this.background.layout = {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+    };
 
     this.closeButton = this.createCloseButton();
     const { prevButton, nextButton } = createLetterNavButtons({
@@ -76,64 +109,67 @@ export class LetterPopup extends Container {
       texture: Texture.from(`education-levels/education-letter-variants/${this.letter}.png`),
       anchor: 0.5,
       layout: {
-        position: 'absolute',
-        left: '10%',
-        top: '63%',
-        width: '50%',
-        height: '16%',
         objectFit: 'contain',
+        ...responsive({
+          sm: { width: '80%' as const, height: 220 },
+          lg: {
+            position: 'absolute' as const,
+            left: '10%' as const,
+            top: '63%' as const,
+            width: '50%' as const,
+            height: '16%' as const,
+          },
+        }),
       },
     });
     this.soundButton = new SoundButton({
       onClick: () => {
         void this.playSound(this.getSoundAlias());
       },
-      size: 300,
+      size: responsive({ sm: 220, lg: 300 }),
       variant: 'large',
     });
     this.soundButton.anchor.set(0.5);
-    this.soundButton.layout = {
-      position: 'absolute',
-      left: '75%',
-      top: responsive<`${number}%`>({ sm: '78%', lg: '72%' }),
-    };
+    this.soundButton.layout = responsive({
+      sm: {},
+      lg: { position: 'absolute', left: '75%', top: '72%' },
+    });
 
-    this.addChild(
-      this.background,
-      this.closeButton,
-      this.prevButton,
-      this.nextButton,
-      this.variantImage,
-      this.soundButton,
-    );
+    this.addChild(this.background, this.closeButton, this.prevButton, this.nextButton);
 
     if (this.exampleWord && this.remoteWord) {
-      this.wordText = new HTMLText({
-        text: getCompletedWordMarkup(convertToCurrentScript(this.letter), this.exampleWord),
-        style: createExampleWordStyle(180),
-        anchor: 0.5,
-        layout: { position: 'absolute', left: '20%', top: '25%' },
-      });
-      this.addChild(this.wordText);
-
       if (this.remoteWord.image_url) {
         this.exampleImage = new Sprite({
           texture: Texture.from(getWordImageAlias(this.remoteWord.id)),
           anchor: 0.5,
-          scale: 0.8,
-          layout: { position: 'absolute', left: '65%', top: '20%' },
+          scale: responsive({ sm: 1, lg: 0.8 }),
+          layout: responsive({
+            sm: { width: PHONE_IMAGE_SIZE, height: PHONE_IMAGE_SIZE, objectFit: 'contain' },
+            lg: { position: 'absolute', left: '65%', top: '20%' },
+          }),
         });
         this.addChild(this.exampleImage);
       }
+
+      this.wordText = new HTMLText({
+        text: getCompletedWordMarkup(convertToCurrentScript(this.letter), this.exampleWord),
+        style: createExampleWordStyle(180),
+        anchor: 0.5,
+        layout: responsive({ sm: {}, lg: { position: 'absolute', left: '20%', top: '25%' } }),
+      });
+      this.wordWidth = this.wordText.getLocalBounds().width;
+      this.addChild(this.wordText, this.variantImage, this.soundButton);
     } else {
-      this.removeChild(this.soundButton);
-      this.addChild(new MissingWordNotice());
+      this.addChild(this.variantImage, new MissingWordNotice());
     }
   }
 
   resize(width: number, height: number) {
     this.layout = { width, height };
     this.background.clear().rect(0, 0, width, height).fill(COLORS.BACKGROUND);
+    this.wordText?.scale.set(
+      responsive({ sm: Math.min(1, (width - 2 * PHONE_SIDE_MARGIN) / this.wordWidth), lg: 1 }),
+    );
   }
 
   private getSoundAlias(): string {
