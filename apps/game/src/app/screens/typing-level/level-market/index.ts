@@ -2,6 +2,7 @@ import { animate } from 'motion';
 import { Container, HTMLText, HTMLTextStyle, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
 import {
   createTypingWordStyle,
   getAdvancedWordMarkup,
@@ -19,11 +20,11 @@ import { LevelMapScreen } from '../../level-map';
 import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
 import { generateRoundsDictionary, playRoundAudio, type Round } from '../level-word';
 
-const FONT_SIZE = 100;
-const PAD_Y = 75;
-const PAD_X = 100;
-const CONTENT_GAP = 78;
-const IMAGE_SIZE = 225;
+const FONT_SIZE = responsive({ sm: 76, lg: 100 });
+const PAD_Y = responsive({ sm: 50, lg: 75 });
+const PAD_X = responsive({ sm: 44, lg: 100 });
+const CONTENT_GAP = responsive({ sm: 28, lg: 78 });
+const IMAGE_SIZE = responsive({ sm: 170, lg: 225 });
 const FEEDBACK_DURATION_MS = 350;
 const CARD_COLORS = {
   default: 0xffffff,

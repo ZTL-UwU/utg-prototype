@@ -4,6 +4,7 @@ import { DropShadowFilter } from 'pixi-filters';
 import { Assets, Container, Graphics, SplitText, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { responsive } from '../../../engine/utils/viewport';
 import { isLevelUnlocked } from '../../../lib/progression';
 import { curveSplitText } from '../../../utils/curve-split-text';
 import useSessionStore from '../../../zustandStores/sessionStore';
@@ -106,7 +107,7 @@ export class LevelSplashScreen extends Container {
       text: level.title,
       style: {
         fontFamily: 'Concert One',
-        fontSize: 90,
+        fontSize: responsive({ sm: 64, lg: 90 }),
         fontWeight: '800',
         fill: this.colorScheme.LEVEL_TITLE_FILL,
       },

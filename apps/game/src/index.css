@@ -3,6 +3,13 @@
 
 @import 'tailwindcss';
 
+/* A phone on its side: phone layouts are portrait. */
+@custom-variant phone-landscape {
+  @media (orientation: landscape) and (max-height: 499.98px) {
+    @slot;
+  }
+}
+
 @theme {
   --font-sans: 'Noto Sans', system-ui, sans-serif;
   --font-display: 'Fredoka', system-ui, sans-serif;
@@ -22,6 +29,12 @@
   :root {
     color-scheme: light;
     font-family: 'Noto Sans', system-ui, sans-serif;
+
+    /* Capacitor sets --safe-area-inset-* where the Android WebView under-reports env(). */
+    --safe-top: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+    --safe-right: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+    --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
+    --safe-left: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
   }
 
   html,
@@ -44,6 +57,13 @@
 
   #pixi-container canvas {
     @apply block size-full;
+  }
+
+  .safe-area-probe {
+    position: fixed;
+    visibility: hidden;
+    pointer-events: none;
+    padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   }
 }
 

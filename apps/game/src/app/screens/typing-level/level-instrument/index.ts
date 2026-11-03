@@ -2,6 +2,7 @@ import { animate } from 'motion';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { getCurrentKeyboardLetters, getScriptFontFamily } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
@@ -121,12 +122,12 @@ export class TypingInstrumentScreen extends Container {
   private readonly queue = new Container({
     layout: {
       position: 'absolute',
-      top: 36,
+      top: responsive({ sm: 170, lg: 36 }),
       width: '100%',
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      gap: SLOT_GAP,
+      gap: responsive({ sm: 16, lg: SLOT_GAP }),
     },
   });
   private readonly targetLabel = new Text({
@@ -164,7 +165,7 @@ export class TypingInstrumentScreen extends Container {
     this.notes = shuffledNotes(getCurrentKeyboardLetters(), typedLevel.props.noteCount);
     this.queueCards = Array.from(
       { length: this.queueSize },
-      () => new NoteCard(SLOT_WIDTH, SLOT_HEIGHT, COLORS.queue),
+      () => new NoteCard(responsive({ sm: 150, lg: SLOT_WIDTH }), SLOT_HEIGHT, COLORS.queue),
     );
 
     this.background = new Sprite({
@@ -204,7 +205,10 @@ export class TypingInstrumentScreen extends Container {
 
     this.instrumentRestY = height * 0.35;
     this.targetLabelRestY = height * 0.25;
-    this.instrument.position.set(width / 2 - 300, this.instrumentRestY);
+    this.instrument.position.set(
+      width / 2 - responsive({ sm: 210, lg: 300 }),
+      this.instrumentRestY,
+    );
     this.targetLabel.position.set(width / 2 + 10, this.targetLabelRestY);
     this.targetPosition = { x: width / 2 - 66, y: height * 0.3 };
     this.target?.position.set(this.targetPosition.x, this.targetPosition.y);

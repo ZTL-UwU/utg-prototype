@@ -142,7 +142,7 @@ export function MenuTeamScreen({ onBack }: MenuTeamScreenProps) {
       </CardTitle>
       <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto py-2">
         <div className="flex min-h-full justify-center">
-          <div className="grid w-full auto-rows-fr grid-cols-3 gap-5 px-2">
+          <div className="grid w-full auto-rows-fr grid-cols-3 gap-5 px-2 max-sm:grid-cols-1 max-sm:gap-3">
             {TEAM.map((member) => (
               <Button
                 key={member.name}
@@ -177,11 +177,11 @@ export function MenuTeamScreen({ onBack }: MenuTeamScreenProps) {
         {selected !== null && (
           <DialogPopup variant="panel">
             <CloseButton className="absolute top-2 right-2" />
-            <div className="flex w-full items-start gap-8">
+            <div className="flex w-full items-start gap-8 max-sm:gap-3">
               <img
                 src={selected.photo}
                 alt={selected.name}
-                className="size-80 shrink-0 rounded-lg object-cover object-top xl:size-96"
+                className="size-80 shrink-0 rounded-lg object-cover object-top max-sm:size-28 xl:size-96"
               />
               <div className="min-w-0">
                 <DialogTitle className="text-left font-display text-3xl font-semibold text-forest normal-case xl:text-4xl">

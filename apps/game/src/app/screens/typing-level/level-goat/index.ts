@@ -2,6 +2,7 @@ import { animate } from 'motion';
 import { Container, HTMLText, HTMLTextStyle, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
 import { createTypingSentenceStyle, getSentenceMarkup } from '../../../../utils/example-words';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
@@ -21,6 +22,8 @@ import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map
 import { generateSentenceRounds, type SentenceRound } from '../sentence-rounds';
 
 const FONT_SIZE = 56;
+/** Room for five wrapped lines; a phone's narrow page wraps sentences that fit one on desktop. */
+const PHONE_SENTENCE_HEIGHT = 440;
 const FEEDBACK_DURATION_MS = 350;
 const BOOK_WIDTH_RATIO = 0.9;
 const BOOK_HEIGHT_RATIO = 1.05;
@@ -97,7 +100,10 @@ export class TypingGoatsScreen extends Container {
     this.keyboard = new KeyboardLayout();
     this.rounds = generateSentenceRounds(typedLevel.props.storyId);
 
-    this.sentenceStyle = createTypingSentenceStyle(FONT_SIZE);
+    this.sentenceStyle = createTypingSentenceStyle(
+      FONT_SIZE,
+      responsive({ sm: PHONE_SENTENCE_HEIGHT, lg: 0 }),
+    );
     this.sentenceText = new HTMLText({ style: this.sentenceStyle });
     this.sentenceText.anchor.set(0.5);
 
@@ -147,7 +153,10 @@ export class TypingGoatsScreen extends Container {
     this.sentenceStyle.wordWrapWidth = wrapWidth;
     this.sentenceText.position.set(this._sw / 2, this.book.y - bookH * 0.18);
 
-    this.progressBar.position.set((this._sw - PROGRESS_BAR_WIDTH) / 2, this._sh * 0.05);
+    // Phones fit it between the corner buttons.
+    const barScale = responsive({ sm: 0.55, lg: 1 });
+    this.progressBar.scale.set(barScale);
+    this.progressBar.position.set((this._sw - PROGRESS_BAR_WIDTH * barScale) / 2, this._sh * 0.05);
   }
 
   update(ticker: Ticker) {

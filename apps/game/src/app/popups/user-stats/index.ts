@@ -3,6 +3,7 @@ import { animate } from 'motion';
 import { BlurFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { responsive } from '../../../engine/utils/viewport';
 import { signOut } from '../../../lib/signOut';
 import { getAvatarPath } from '../../../utils/avatars';
 import { formatMonthTitle } from '../../../utils/date';
@@ -15,8 +16,8 @@ import { AvatarSelectScreen } from '../../screens/avatar-select';
 import { BackButton } from '../../ui/back-button';
 import { StreakCalendar } from './streak-calendar';
 
-const POPUP_WIDTH = 1481;
-const POPUP_HEIGHT = 833;
+const POPUP_WIDTH = responsive({ sm: 740, lg: 1481 });
+const POPUP_HEIGHT = responsive({ sm: 1320, lg: 833 });
 const LABEL_COLOR = 0x808080;
 const VALUE_COLOR = 0x000000;
 
@@ -179,9 +180,9 @@ export class UserStatsPopup extends Container {
       layout: {
         flexDirection: 'column',
         gap: 35,
-        flex: 1,
+        flex: responsive({ sm: 0, lg: 1 }),
         justifyContent: 'center',
-        paddingLeft: 60,
+        paddingLeft: responsive({ sm: 0, lg: 60 }),
       },
       children: [
         createStatRow('Total Stars', this.totalStarsValue),
@@ -214,8 +215,9 @@ export class UserStatsPopup extends Container {
       layout: {
         flexDirection: 'column',
         gap: 20,
-        flex: 2,
-        paddingRight: 60,
+        flex: responsive({ sm: 0, lg: 2 }),
+        paddingRight: responsive({ sm: 0, lg: 60 }),
+        width: responsive<`${number}%` | 'auto'>({ sm: '100%', lg: 'auto' }),
       },
       children: [streaksTitle, this.streakCalendar],
     });
@@ -223,10 +225,12 @@ export class UserStatsPopup extends Container {
     const body = new Container({
       layout: {
         display: 'flex',
-        flexDirection: 'row',
+        // Stats beside the calendar need a landscape card; a phone stacks them.
+        flexDirection: responsive<'row' | 'column'>({ sm: 'column', lg: 'row' }),
+        gap: responsive({ sm: 40, lg: 0 }),
         width: '100%',
         flex: 1,
-        alignItems: 'center',
+        alignItems: responsive<'center' | 'flex-start'>({ sm: 'flex-start', lg: 'center' }),
         paddingTop: 30,
         paddingBottom: 60,
       },

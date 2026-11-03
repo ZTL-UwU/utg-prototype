@@ -12,7 +12,7 @@ function FeedbackIcon() {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="size-7"
+      className="size-7 max-sm:size-5"
       aria-hidden="true"
     >
       <path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" />
@@ -31,6 +31,8 @@ export function FeedbackButton() {
       className={[
         'pointer-events-auto fixed right-4 bottom-4 z-30',
         'inline-flex size-16 cursor-pointer items-center justify-center rounded-full',
+        // Phones keep the keyboard along the bottom, so this waits on the right edge above it.
+        'max-lg:top-[44%] max-lg:right-[max(0.25rem,var(--safe-right))] max-lg:bottom-auto max-sm:size-9',
         'border-2 border-forest bg-cream text-forest',
         'shadow-[0_3px_0_0_var(--color-forest-dark)]',
         'transition duration-100 outline-none',

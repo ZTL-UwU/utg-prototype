@@ -2,6 +2,7 @@ import { animate } from 'motion';
 import { Container, Graphics } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { responsive } from '../../../engine/utils/viewport';
 import { TutorialEntryButton } from '../level-select/education-level-select/tutorial-entry-button';
 import { TypingTutorialScreen } from '../typing-level/level-tutorial';
 import { LevelButton } from './level-button';
@@ -14,13 +15,17 @@ export class LevelRow extends Container {
     super({
       layout: {
         position: 'absolute',
-        top: '50%',
+        top: responsive({ sm: '30%', lg: '50%' }),
         width: '100%',
+        // Too narrow for one line of buttons: they wrap, without the connecting lines.
+        flexWrap: responsive({ sm: 'wrap', lg: 'nowrap' }),
         justifyContent: 'center',
         alignItems: 'center',
-        gap: 8,
+        gap: responsive({ sm: 24, lg: 8 }),
       },
     });
+
+    const showLines = responsive({ sm: false, lg: true });
 
     this.levelButtons = mapUnit.levels.flatMap((level, i) => {
       const fillerLine = new Graphics({ layout: { width: 80, height: 15 } })
@@ -28,7 +33,7 @@ export class LevelRow extends Container {
         .fill(0xa66129);
       const button = new LevelButton(level, mapUnit, i + 1);
 
-      return i === 0 ? [button] : [fillerLine, button];
+      return i === 0 || !showLines ? [button] : [fillerLine, button];
     });
 
     if (mapUnit.type === 'typing' && getPrevMap(mapUnit) === undefined) {
@@ -38,10 +43,19 @@ export class LevelRow extends Container {
       const fillerLine = new Graphics({ layout: { width: 80, height: 15 } })
         .roundRect(0, 0, 100, 15, 10)
         .fill(0xa66129);
-      this.levelButtons = [tutorialButton, fillerLine, ...this.levelButtons];
+      this.levelButtons = showLines
+        ? [tutorialButton, fillerLine, ...this.levelButtons]
+        : [tutorialButton, ...this.levelButtons];
     }
 
     this.addChild(...this.levelButtons);
+  }
+
+  /** Phones draw the buttons smaller, so four fit across and long maps stay on screen. */
+  public resize(width: number) {
+    const scale = responsive({ sm: 0.77, lg: 1 });
+    this.scale.set(scale);
+    this.layout = { width: width / scale, left: (width - width / scale) / 2 };
   }
 
   private offScreenOffset(child: Container, screenHeight: number) {

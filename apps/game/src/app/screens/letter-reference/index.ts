@@ -5,6 +5,7 @@ import { animate } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { responsive } from '../../../engine/utils/viewport';
 import { HUD } from '../../ui/hud';
 import { SoundButton } from '../../ui/sound-button';
 import { HomeScreen } from '../home';
@@ -262,23 +263,28 @@ export class LetterReferenceScreen extends Container {
     this.layout = { width, height };
     this.background.layout = { width, height };
 
-    this.soundButton.position.set(width - TOP_BAR_CENTER, TOP_BAR_CENTER);
-
     // the forms along the bottom, and the canvas above them
     const centerX = width / 2;
     const formBarY = height - EDGE_MARGIN - TILE_HEIGHT;
     this.formBar.position.set(centerX, formBarY);
-    this.outlineDisplay.position.set(EDGE_MARGIN, BODY_TOP);
-    this.outlineDisplay.resize(width - 2 * EDGE_MARGIN, formBarY - COLUMN_GAP - BODY_TOP);
+    // Phones have no room for the tools on the top bar, so they take a row of their own.
+    const toolsY = responsive({ sm: TOP_BAR_CENTER + 120, lg: TOP_BAR_CENTER });
+    this.soundButton.position.set(width - TOP_BAR_CENTER, toolsY);
+    const bodyTop = responsive({ sm: BODY_TOP + 120, lg: BODY_TOP });
+    this.outlineDisplay.position.set(EDGE_MARGIN, bodyTop);
+    this.outlineDisplay.resize(width - 2 * EDGE_MARGIN, formBarY - COLUMN_GAP - bodyTop);
 
     // the letter picker sits over the middle of the canvas it drives, with the tools after it
     const stepOffset = CHIP_WIDTH / 2 + BUTTON_GAP + BUTTON_SIZE / 2;
-    const watchX = centerX + stepOffset + BUTTON_SIZE + TOOLS_GAP;
+    const watchX = responsive({
+      sm: centerX - (BUTTON_SIZE + BUTTON_GAP) / 2,
+      lg: centerX + stepOffset + BUTTON_SIZE + TOOLS_GAP,
+    });
     this.chip.position.set(centerX, TOP_BAR_CENTER);
     this.nextButton.position.set(centerX - stepOffset, TOP_BAR_CENTER);
     this.prevButton.position.set(centerX + stepOffset, TOP_BAR_CENTER);
-    this.watchButton.position.set(watchX, TOP_BAR_CENTER);
-    this.retryButton.position.set(watchX + BUTTON_SIZE + BUTTON_GAP, TOP_BAR_CENTER);
+    this.watchButton.position.set(watchX, toolsY);
+    this.retryButton.position.set(watchX + BUTTON_SIZE + BUTTON_GAP, toolsY);
     this.sheet.resize(width, height, centerX, TOP_BAR_CENTER + CHIP_HEIGHT / 2);
   }
 }

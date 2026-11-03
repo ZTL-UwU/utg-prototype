@@ -4,6 +4,7 @@ import { Container, Sprite, Texture, TilingSprite } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { randomShuffle } from '../../../../engine/utils/random';
+import { responsive } from '../../../../engine/utils/viewport';
 import { waitFor } from '../../../../engine/utils/waitFor';
 import {
   getAccuracyPercent,
@@ -31,7 +32,7 @@ function getPositionOffsets() {
   };
   const positionOffsets = [
     {
-      x: engine().navigation.width * 0.25 - bottomCenter.x,
+      x: engine().navigation.width * responsive({ sm: 0.2, lg: 0.25 }) - bottomCenter.x,
       y: engine().navigation.height * 0.3 - bottomCenter.y,
     },
     {
@@ -39,7 +40,7 @@ function getPositionOffsets() {
       y: engine().navigation.height * 0.25 - bottomCenter.y,
     },
     {
-      x: engine().navigation.width * 0.75 - bottomCenter.x,
+      x: engine().navigation.width * responsive({ sm: 0.8, lg: 0.75 }) - bottomCenter.x,
       y: engine().navigation.height * 0.3 - bottomCenter.y,
     },
   ];
@@ -241,6 +242,7 @@ export class EducationSheepJumpScreen extends Container {
           letter,
           onClick: () => this.handleTileClick(i, j),
         });
+        tile.scale.set(responsive({ sm: 0.62, lg: 1 }));
         tile.position.set(
           parentPosition.x + positionOffsets[j].x,
           parentPosition.y + positionOffsets[j].y,

@@ -3,6 +3,7 @@ import { animate } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { responsive } from '../../../engine/utils/viewport';
 import { isLayerUnlocked } from '../../../lib/progression';
 import { getAvatarPath } from '../../../utils/avatars';
 import { useAuthStore } from '../../../zustandStores/auth';
@@ -28,6 +29,7 @@ export class LayerSelectScreen extends Container {
   private userStatsButton: FancyButton;
   private passportButton: FancyButton;
   private skipShowAnimation: boolean;
+  private mapScale = 1;
 
   constructor({ skipShowAnimation = false }: { skipShowAnimation?: boolean } = {}) {
     super({
@@ -236,6 +238,8 @@ export class LayerSelectScreen extends Container {
       width,
       height,
     };
+    this.mapScale = responsive({ sm: 0.6, lg: 1 });
+    this.innerContainer.scale.set(this.mapScale);
   }
 
   public async show() {
@@ -249,7 +253,7 @@ export class LayerSelectScreen extends Container {
     void currentEngine.audio.sfx.play('preload-audio/sfx/popup.mp3');
 
     this.innerContainer.alpha = 0;
-    this.innerContainer.scale.set(0.7);
+    this.innerContainer.scale.set(0.7 * this.mapScale);
     this.userStatsButton.alpha = 0;
     this.userStatsButton.position.x = 200;
     this.passportButton.alpha = 0;
@@ -258,7 +262,11 @@ export class LayerSelectScreen extends Container {
     const duration = 0.4;
     await Promise.all([
       animate(this.innerContainer, { alpha: 1 }, { duration, ease: 'backOut' }),
-      animate(this.innerContainer.scale, { x: 1, y: 1 }, { duration, ease: 'backOut' }),
+      animate(
+        this.innerContainer.scale,
+        { x: this.mapScale, y: this.mapScale },
+        { duration, ease: 'backOut' },
+      ),
       animate(this.userStatsButton, { alpha: 1 }, { duration, ease: 'backOut' }),
       animate(this.userStatsButton.position, { x: 0 }, { duration, ease: 'backOut' }),
       animate(this.passportButton, { alpha: 1 }, { duration, ease: 'backOut' }),
@@ -271,7 +279,11 @@ export class LayerSelectScreen extends Container {
     const duration = 0.2;
     await Promise.all([
       animate(this.innerContainer, { alpha: 0 }, { duration, ease: 'easeOut' }),
-      animate(this.innerContainer.scale, { x: 0.94, y: 0.94 }, { duration, ease: 'easeOut' }),
+      animate(
+        this.innerContainer.scale,
+        { x: 0.94 * this.mapScale, y: 0.94 * this.mapScale },
+        { duration, ease: 'easeOut' },
+      ),
       animate(this.userStatsButton, { alpha: 0 }, { duration, ease: 'easeOut' }),
       animate(this.userStatsButton.position, { x: 200 }, { duration, ease: 'easeOut' }),
       animate(this.passportButton, { alpha: 0 }, { duration, ease: 'easeOut' }),

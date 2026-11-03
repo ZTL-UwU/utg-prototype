@@ -3,6 +3,7 @@ import { EDUCATION_LETTERS } from '@utg/letters';
 import { animate } from 'motion';
 import { Container, Graphics, Text } from 'pixi.js';
 
+import { responsive } from '../../engine/utils/viewport';
 import {
   convertToCurrentScript,
   getScriptFontFamily,
@@ -25,6 +26,8 @@ const KEY_SIZE = 120;
 const KEY_GAP = 30;
 const PANEL_PADDING = 80;
 const PANEL_RADIUS = 100;
+const PHONE_PANEL_TOP = 280;
+const PHONE_PANEL_BOTTOM = 40;
 
 const DEFAULT_COLOR_OPTIONS: AlphabetGridColorOptions = {
   panelColor: 0xd1dcf0,
@@ -37,13 +40,11 @@ const DEFAULT_COLOR_OPTIONS: AlphabetGridColorOptions = {
   textColor: 0xffffff,
 };
 
-function getLetterRows() {
-  const rows = [
-    EDUCATION_LETTERS.slice(0, 8),
-    EDUCATION_LETTERS.slice(8, 16),
-    EDUCATION_LETTERS.slice(16, 24),
-    EDUCATION_LETTERS.slice(24, 32),
-  ];
+function getLetterRows(columns: number) {
+  const rows: (typeof EDUCATION_LETTERS)[number][][] = [];
+  for (let start = 0; start < EDUCATION_LETTERS.length; start += columns) {
+    rows.push(EDUCATION_LETTERS.slice(start, start + columns));
+  }
   return isCurrentScriptRtl() ? rows.map((row) => [...row].reverse()) : rows;
 }
 
@@ -166,7 +167,8 @@ export class AlphabetGrid extends Container {
 
     this.colorOptions = colorOptions;
 
-    const letters = getLetterRows();
+    // Four across keeps the last row full, and the keys large enough to tap on a phone.
+    const letters = getLetterRows(responsive({ sm: 4, lg: 8 }));
     const columns = Math.max(...letters.map((row) => row.length));
     const rows = letters.length;
 
@@ -217,13 +219,21 @@ export class AlphabetGrid extends Container {
   private applyResize(animated: boolean) {
     const wFactor = this.songMode ? 0.97 : 0.9;
     const hFactor = this.songMode ? 0.96 : 0.78;
+    // The tall phone grid starts below the corner buttons rather than centering behind them.
+    const availableHeight = responsive({
+      sm: this.currentHeight - PHONE_PANEL_TOP - PHONE_PANEL_BOTTOM,
+      lg: this.currentHeight * hFactor,
+    });
     const scale = Math.min(
       1,
       (this.currentWidth * wFactor) / this.panelWidth,
-      (this.currentHeight * hFactor) / this.panelHeight,
+      availableHeight / this.panelHeight,
     );
     const x = Math.round((this.currentWidth - this.panelWidth * scale) / 2);
-    const y = Math.round((this.currentHeight - this.panelHeight * scale) / 2);
+    const y = responsive({
+      sm: PHONE_PANEL_TOP,
+      lg: Math.round((this.currentHeight - this.panelHeight * scale) / 2),
+    });
 
     if (animated) {
       void animate(this.panel.scale, { x: scale, y: scale }, { duration: 0.4, ease: 'backOut' });

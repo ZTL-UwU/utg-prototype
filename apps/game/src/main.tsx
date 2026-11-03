@@ -11,7 +11,7 @@ declare global {
 }
 
 // // TEMP: native builds have no reachable console, so print startup steps and errors on screen.
-if (Capacitor.isNativePlatform()) {
+if (Capacitor.isNativePlatform() && import.meta.env.VITE_NATIVE_DEBUG === 'true') {
   const panel = document.createElement('div');
   panel.style.cssText =
     'position:fixed;left:0;right:0;bottom:0;z-index:99999;max-height:50vh;overflow:auto;padding:8px;background:rgba(0,0,0,0.85);font:11px/1.3 monospace;white-space:pre-wrap;pointer-events:none';

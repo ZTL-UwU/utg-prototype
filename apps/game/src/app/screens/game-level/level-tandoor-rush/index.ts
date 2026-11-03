@@ -1,6 +1,7 @@
 import { Container, Sprite, Text, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { convertKeyboardLettersToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
@@ -28,7 +29,19 @@ const LAYOUT = {
   scoreFrame: { x: 1430, y: 0 },
   score: { x: 1640, y: 170 },
   checkMark: { x: 1760, y: 170 },
-} as const;
+};
+
+/** Phones zoom in and stack the HUD along the top of a narrower stage. */
+const PHONE_STAGE = { width: 1024, top: 170 };
+const PHONE_LAYOUT: typeof LAYOUT = {
+  ...LAYOUT,
+  prompt: { x: 40, y: 110 },
+  progressBar: { x: 122, y: 0, width: 780, height: 100 },
+  target: { x: 90, y: 165, size: 190 },
+  scoreFrame: { x: 610, y: 120 },
+  score: { x: 820, y: 290 },
+  checkMark: { x: 940, y: 290 },
+};
 
 const TIMER_COLORS = {
   green: 0x7ed957,
@@ -126,6 +139,7 @@ export class GameLevelOneScreen extends Container {
   private backgroundBaseScale = 1;
   private backgroundGameplayScale = BACKGROUND_ZOOM;
   private backgroundGameplayY: number = LAYOUT.backgroundCenterY;
+  private readonly stageLayout = responsive({ sm: PHONE_LAYOUT, lg: LAYOUT });
 
   constructor(level: TLevel) {
     const typedLevel = getTypedLevel(level, 'game-tandoor-rush');
@@ -148,11 +162,12 @@ export class GameLevelOneScreen extends Container {
         }),
     });
 
-    this.prompt.position.set(LAYOUT.prompt.x, LAYOUT.prompt.y);
-    this.progressBar.position.set(LAYOUT.progressBar.x, LAYOUT.progressBar.y);
-    this.scoreFrame.position.set(LAYOUT.scoreFrame.x, LAYOUT.scoreFrame.y);
-    this.score.position.set(LAYOUT.score.x, LAYOUT.score.y);
-    this.checkMark.position.set(LAYOUT.checkMark.x, LAYOUT.checkMark.y);
+    const stage = this.stageLayout;
+    this.prompt.position.set(stage.prompt.x, stage.prompt.y);
+    this.progressBar.position.set(stage.progressBar.x, stage.progressBar.y);
+    this.scoreFrame.position.set(stage.scoreFrame.x, stage.scoreFrame.y);
+    this.score.position.set(stage.score.x, stage.score.y);
+    this.checkMark.position.set(stage.checkMark.x, stage.checkMark.y);
     this.checkMark.visible = false;
 
     this.gameplay.addChild(
@@ -188,12 +203,15 @@ export class GameLevelOneScreen extends Container {
       this.gameplay.visible ? this.backgroundGameplayScale : this.backgroundBaseScale,
     );
 
-    this.gameplay.scale.set(uiScale);
+    const stageScale = responsive({ sm: width / PHONE_STAGE.width, lg: uiScale });
+    this.gameplay.scale.set(stageScale);
     this.gameplay.position.set(
-      (width - DESIGN_WIDTH * uiScale) / 2,
-      (height - DESIGN_HEIGHT * uiScale) / 2,
+      responsive({ sm: 0, lg: (width - DESIGN_WIDTH * uiScale) / 2 }),
+      responsive({ sm: PHONE_STAGE.top, lg: uiTop }),
     );
-    this.keyboard.resize(DESIGN_WIDTH, DESIGN_HEIGHT);
+    if (responsive({ sm: true, lg: false }))
+      this.keyboard.resizeToScreen(this.gameplay, width, height);
+    else this.keyboard.resize(DESIGN_WIDTH, DESIGN_HEIGHT);
     this.hud.layout = { width, height };
   }
 
@@ -270,10 +288,10 @@ export class GameLevelOneScreen extends Container {
 
     this.target = new TypingLetter({
       letter: this.letters[this.targetIndex] ?? '',
-      cardSize: LAYOUT.target.size,
+      cardSize: this.stageLayout.target.size,
       cornerRadius: 20,
     });
-    this.target.position.set(LAYOUT.target.x, LAYOUT.target.y);
+    this.target.position.set(this.stageLayout.target.x, this.stageLayout.target.y);
     this.gameplay.addChildAt(this.target, this.gameplay.getChildIndex(this.keyboard));
   }
 

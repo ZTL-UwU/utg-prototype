@@ -3,6 +3,7 @@ import { animate } from 'motion';
 import { Container, Graphics, Sprite, Text, Texture, type TextDropShadow } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
 import { convertToCurrentScript, getScriptFontFamily } from '../../../../utils/script';
 import { HUD } from '../../../ui/hud';
 import { LayerSelectScreen } from '../../layer-select';
@@ -94,7 +95,7 @@ export class EducationLevelSelect extends Container {
       text: 'ALPHABETS',
       style: {
         fontFamily: 'Concert One',
-        fontSize: 180,
+        fontSize: responsive({ sm: 140, lg: 180 }),
         fontWeight: '800',
         fill: 0xffffff,
         dropShadow: textDropShadow,

@@ -4,6 +4,7 @@ import { DropShadowFilter } from 'pixi-filters';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { responsive } from '../../../engine/utils/viewport';
 import { isMapUnitUnlocked } from '../../../lib/progression';
 import { convertToCurrentScript, getScriptFontFamily } from '../../../utils/script';
 import { HUD } from '../../ui/hud';
@@ -178,11 +179,13 @@ export class LevelMapScreen extends Container {
   /** Resize the screen, fired whenever window size changes */
   public resize(width: number, height: number) {
     this.layout = { width, height };
+    this.levelRow.resize(width);
+    const navButtonY = responsive({ sm: height - 200, lg: height / 2 });
     if (this.prevMapButton) {
-      this.prevMapButton.position.set(40, height / 2);
+      this.prevMapButton.position.set(responsive({ sm: 90, lg: 40 }), navButtonY);
     }
     if (this.nextMapButton) {
-      this.nextMapButton.position.set(width - 40, height / 2);
+      this.nextMapButton.position.set(width - responsive({ sm: 90, lg: 40 }), navButtonY);
     }
   }
 

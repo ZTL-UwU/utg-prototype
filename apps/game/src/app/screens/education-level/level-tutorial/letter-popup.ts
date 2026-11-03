@@ -5,6 +5,7 @@ import { animate } from 'motion';
 import { Container, Graphics, HTMLText, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
 import { createExampleWordStyle, getCompletedWordMarkup } from '../../../../utils/example-words';
 import { convertToCurrentScript } from '../../../../utils/script';
 import {
@@ -91,7 +92,11 @@ export class LetterPopup extends Container {
       variant: 'large',
     });
     this.soundButton.anchor.set(0.5);
-    this.soundButton.layout = { position: 'absolute', left: '75%', top: '72%' };
+    this.soundButton.layout = {
+      position: 'absolute',
+      left: '75%',
+      top: responsive<`${number}%`>({ sm: '78%', lg: '72%' }),
+    };
 
     this.addChild(
       this.background,

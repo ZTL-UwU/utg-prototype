@@ -9,6 +9,8 @@ import { animate } from 'motion';
 import { BlurFilter, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
+import { layoutPopup } from '../../../ui/layout-popup';
 import { availableModes } from './test-content';
 
 const PANEL_WIDTH = 900;
@@ -312,6 +314,6 @@ export class TypingTestSettingsPopup extends Container {
   }
 
   public resize(width: number, height: number) {
-    this.layout = { width, height };
+    layoutPopup(this, width, height, responsive({ sm: 0.8, lg: 1 }));
   }
 }

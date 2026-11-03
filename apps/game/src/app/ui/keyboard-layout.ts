@@ -1,6 +1,7 @@
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, type FederatedPointerEvent, Graphics, Text } from 'pixi.js';
 
+import { responsive, safeAreaInsets } from '../../engine/utils/viewport';
 import {
   getKeyFromChar,
   getKeyboardLabel,
@@ -110,6 +111,7 @@ const PANEL_RADIUS = 32; // rounded-4xl
 const KEY_RADIUS = 12; // rounded-xl
 const BOTTOM_MARGIN = 40; // bottom-10
 const MAX_WIDTH_FACTOR = 0.92;
+const PHONE_SIDE_MARGIN = 4; // CSS pixels
 const ENTER_Y_OFFSET = 72;
 const EXIT_Y_OFFSET = 48;
 
@@ -127,6 +129,59 @@ const DEFAULT_COLOR_OPTIONS: KeyboardColorOptions = {
   KEY_PRESSED_COLOR,
   TEXT_COLOR,
   SHIFT_HINT_COLOR,
+};
+
+type PanelLayout = {
+  rows: Key[][];
+  /** Stretch every row to the available width instead of using `UNIT`-wide keys. */
+  fillWidth: boolean;
+  unitHeight: number;
+  keyGap: number;
+  rowGap: number;
+  padding: number;
+  bottomMargin: number;
+  labelScale: number;
+};
+
+const REGULAR_LAYOUT: PanelLayout = {
+  rows: keyboardLayout,
+  fillWidth: false,
+  unitHeight: UNIT,
+  keyGap: KEY_GAP,
+  rowGap: ROW_GAP,
+  padding: PANEL_PADDING,
+  bottomMargin: BOTTOM_MARGIN,
+  labelScale: 1,
+};
+
+const letterRow = (codes: string): Key[] => codes.split(' ').map((code) => ({ code }));
+
+/** A phone is too narrow for 15 keys across, so the rarely used keys move to the bottom row. */
+const PHONE_LAYOUT: PanelLayout = {
+  rows: [
+    letterRow('Digit1 Digit2 Digit3 Digit4 Digit5 Digit6 Digit7 Digit8 Digit9 Digit0 Minus Equal'),
+    letterRow('KeyQ KeyW KeyE KeyR KeyT KeyY KeyU KeyI KeyO KeyP'),
+    letterRow('KeyA KeyS KeyD KeyF KeyG KeyH KeyJ KeyK KeyL Semicolon Quote'),
+    [
+      { code: 'ShiftLeft', width: 1.3 },
+      ...letterRow('KeyZ KeyX KeyC KeyV KeyB KeyN KeyM Comma Period Slash'),
+      { code: 'ShiftRight', width: 1.3 },
+    ],
+    [
+      { code: 'CapsLock', width: 1.5 },
+      ...letterRow('Backquote BracketLeft BracketRight Backslash'),
+      { code: 'Space', width: 3.5 },
+      { code: 'Enter', width: 1.5 },
+      { code: 'Backspace', width: 1.5 },
+    ],
+  ],
+  fillWidth: true,
+  unitHeight: 86,
+  keyGap: 6,
+  rowGap: 6,
+  padding: 10,
+  bottomMargin: 24,
+  labelScale: 1.5,
 };
 
 const KEY_SUCCESS_COLOR = 0x8ec24d;
@@ -156,8 +211,11 @@ function getEventKey(code: string, shift: boolean, capsLock: boolean): string {
 
 class KeyCap extends Container {
   public readonly code: string;
-  public readonly keyWidth: number;
+  public keyWidth: number;
 
+  private keyHeight = UNIT;
+  private homeBump?: Graphics;
+  private readonly isAuxiliary: boolean;
   private readonly background = new Graphics();
   private readonly keyContent = new Container();
   private readonly keyLabel: Text;
@@ -169,7 +227,6 @@ class KeyCap extends Container {
 
   constructor(
     code: string,
-    widthMultiplier = 1,
     isAuxiliary = false,
     textColor = TEXT_COLOR,
     keyColor = KEY_COLOR,
@@ -178,7 +235,8 @@ class KeyCap extends Container {
   ) {
     super();
     this.code = code;
-    this.keyWidth = UNIT * widthMultiplier;
+    this.isAuxiliary = isAuxiliary;
+    this.keyWidth = UNIT;
 
     const isShift = SHIFT_CODES.has(code);
 
@@ -223,17 +281,42 @@ class KeyCap extends Container {
     this.drawBackground();
     this.addChild(this.background);
     if (HOME_KEY_CODES.has(code)) {
-      this.addChild(this.createHomeBump(textColor));
+      this.homeBump = this.createHomeBump(textColor);
+      this.addChild(this.homeBump);
+      this.positionHomeBump();
     }
     this.addChild(this.keyContent);
   }
 
   private createHomeBump(color: number) {
-    const x = (this.keyWidth - HOME_BUMP_WIDTH) / 2;
-    const y = UNIT - HOME_BUMP_HEIGHT - HOME_BUMP_BOTTOM;
     return new Graphics()
-      .roundRect(x, y, HOME_BUMP_WIDTH, HOME_BUMP_HEIGHT, HOME_BUMP_HEIGHT / 2)
+      .roundRect(0, 0, HOME_BUMP_WIDTH, HOME_BUMP_HEIGHT, HOME_BUMP_HEIGHT / 2)
       .fill({ color, alpha: 0.55 });
+  }
+
+  private positionHomeBump() {
+    this.homeBump?.position.set(
+      (this.keyWidth - HOME_BUMP_WIDTH) / 2,
+      this.keyHeight - HOME_BUMP_HEIGHT - HOME_BUMP_BOTTOM,
+    );
+  }
+
+  public applySize(keyWidth: number, keyHeight: number, labelScale: number) {
+    this.keyWidth = keyWidth;
+    this.keyHeight = keyHeight;
+
+    // Auxiliary labels are words, already as wide as the keys that carry them.
+    const fontSize = this.isAuxiliary ? 26 : 30 * labelScale;
+    this.keyLabel.style.fontSize = fontSize;
+    this.keyLabel.style.lineHeight = fontSize;
+    this.keyLabel.position.set(keyWidth / 2, keyHeight / 2);
+
+    const hintFontSize = SHIFT_HINT_FONT_SIZE * labelScale;
+    this.hintLabel.style.fontSize = hintFontSize;
+    this.hintLabel.style.lineHeight = hintFontSize;
+
+    this.positionHomeBump();
+    this.drawBackground();
   }
 
   public setPressed(pressed: boolean) {
@@ -277,7 +360,7 @@ class KeyCap extends Container {
 
     this.background
       .clear()
-      .roundRect(0, 0, this.keyWidth, UNIT, KEY_RADIUS)
+      .roundRect(0, 0, this.keyWidth, this.keyHeight, KEY_RADIUS)
       .fill({ color: fillColor });
   }
 }
@@ -301,16 +384,17 @@ export class KeyboardLayout extends Container {
 
   private listening = false;
 
-  private readonly panelWidth: number;
-  private readonly panelHeight: number;
+  private appliedLayout?: PanelLayout;
+  private appliedWidth = 0;
+  private panelWidth = 0;
+  private panelHeight = 0;
   private enterExitAnimation?: AnimationPlaybackControls;
 
   constructor(keyboardColorOptions: KeyboardColorOptions = DEFAULT_COLOR_OPTIONS) {
     super();
     this.keyboardColorOptions = keyboardColorOptions;
-    const { width, height } = this.buildPanel();
-    this.panelWidth = width;
-    this.panelHeight = height;
+    this.buildPanel();
+    this.layoutPanel(REGULAR_LAYOUT, 0);
     this.panel.alpha = 0;
     this.addChild(this.panel);
     this.applyHiddenPose();
@@ -318,13 +402,32 @@ export class KeyboardLayout extends Container {
   }
 
   /** Center horizontally and pin to the bottom of the given view size. */
-  public resize(viewWidth: number, viewHeight: number, bottomMargin = BOTTOM_MARGIN) {
-    const scale = Math.min(1, (viewWidth * MAX_WIDTH_FACTOR) / this.panelWidth);
+  public resize(viewWidth: number, viewHeight: number, bottomMargin?: number) {
+    const layout = responsive({ sm: PHONE_LAYOUT, lg: REGULAR_LAYOUT });
+    const { left, right, bottom } = safeAreaInsets();
+    const widthFactor = responsive({
+      sm: 1 - (2 * Math.max(left, right) + 2 * PHONE_SIDE_MARGIN) / window.innerWidth,
+      lg: MAX_WIDTH_FACTOR,
+    });
+    this.layoutPanel(layout, viewWidth * widthFactor);
+
+    // Insets are CSS pixels, the view isn't.
+    const safeBottom = (bottom / window.innerHeight) * viewHeight;
+    const margin = bottomMargin ?? Math.max(layout.bottomMargin, safeBottom);
+    const scale = Math.min(1, (viewWidth * widthFactor) / this.panelWidth);
     this.scale.set(scale);
     this.position.set(
       Math.round((viewWidth - this.panelWidth * scale) / 2),
-      Math.round(viewHeight - bottomMargin - this.panelHeight * scale),
+      Math.round(viewHeight - margin - this.panelHeight * scale),
     );
+  }
+
+  /** `resize` for a keyboard nested in a scaled stage: sized to the screen, not the stage. */
+  public resizeToScreen(stage: Container, viewWidth: number, viewHeight: number) {
+    this.resize(viewWidth, viewHeight);
+    const stageScale = stage.scale.x;
+    this.scale.set(this.scale.x / stageScale);
+    this.position.set((this.x - stage.x) / stageScale, (this.y - stage.y) / stageScale);
   }
 
   public async pause() {
@@ -391,62 +494,77 @@ export class KeyboardLayout extends Container {
 
   private buildPanel() {
     const shiftPressed = false;
-    let maxRowWidth = 0;
 
-    const rows = keyboardLayout.map((row) => {
-      const caps = row.map(({ code, width }) => {
-        const cap = new KeyCap(
-          code,
-          width,
-          isAuxiliaryKey(code),
-          this.keyboardColorOptions.TEXT_COLOR,
-          this.keyboardColorOptions.KEY_COLOR,
-          this.keyboardColorOptions.KEY_PRESSED_COLOR,
-          this.keyboardColorOptions.SHIFT_HINT_COLOR,
-        );
-        cap.setLabel(getKeyboardLabel(code, shiftPressed));
-        cap.setHint(getShiftHintLabel(code));
-        if (!UNTAPPABLE_CODES.has(code)) {
-          cap.eventMode = 'static';
-          cap.cursor = 'pointer';
-          cap.on('pointerdown', (event) => this.onKeyPointerDown(cap.code, event));
-          cap.on('pointerup', (event) => this.onKeyPointerUp(event));
-          cap.on('pointerupoutside', (event) => this.onKeyPointerUp(event));
-          cap.on('pointercancel', (event) => this.onKeyPointerUp(event));
-        }
-        this.keys.push(cap);
-        if (code) {
-          this.keyByCode.set(code, cap);
-        }
-        return cap;
-      });
-
-      const rowWidth =
-        caps.reduce((sum, cap) => sum + cap.keyWidth, 0) + KEY_GAP * (caps.length - 1);
-      maxRowWidth = Math.max(maxRowWidth, rowWidth);
-
-      return { caps, rowWidth };
-    });
-
-    const panelWidth = maxRowWidth + PANEL_PADDING * 2;
-    const panelHeight =
-      keyboardLayout.length * UNIT + ROW_GAP * (keyboardLayout.length - 1) + PANEL_PADDING * 2;
-
-    this.drawPanelBackground(panelWidth, panelHeight);
     this.panel.addChild(this.panelBackground);
 
-    rows.forEach(({ caps, rowWidth }, rowIndex) => {
-      let x = (panelWidth - rowWidth) / 2;
-      const y = PANEL_PADDING + rowIndex * (UNIT + ROW_GAP);
+    for (const { code } of keyboardLayout.flat()) {
+      const cap = new KeyCap(
+        code,
+        isAuxiliaryKey(code),
+        this.keyboardColorOptions.TEXT_COLOR,
+        this.keyboardColorOptions.KEY_COLOR,
+        this.keyboardColorOptions.KEY_PRESSED_COLOR,
+        this.keyboardColorOptions.SHIFT_HINT_COLOR,
+      );
+      cap.setLabel(getKeyboardLabel(code, shiftPressed));
+      cap.setHint(getShiftHintLabel(code));
+      if (!UNTAPPABLE_CODES.has(code)) {
+        cap.eventMode = 'static';
+        cap.cursor = 'pointer';
+        cap.on('pointerdown', (event) => this.onKeyPointerDown(cap.code, event));
+        cap.on('pointerup', (event) => this.onKeyPointerUp(event));
+        cap.on('pointerupoutside', (event) => this.onKeyPointerUp(event));
+        cap.on('pointercancel', (event) => this.onKeyPointerUp(event));
+      }
+      this.keys.push(cap);
+      if (code) {
+        this.keyByCode.set(code, cap);
+      }
+      this.panel.addChild(cap);
+    }
+  }
 
-      caps.forEach((cap) => {
+  /** Arrange the keys for `layout`; a no-op when nothing changed, since `resize` runs often. */
+  private layoutPanel(layout: PanelLayout, availableWidth: number) {
+    if (this.appliedLayout === layout && this.appliedWidth === availableWidth) return;
+    this.appliedLayout = layout;
+    this.appliedWidth = availableWidth;
+
+    const { rows, fillWidth, unitHeight, keyGap, rowGap, padding, labelScale } = layout;
+    const unitWidthOf = (row: Key[]) => {
+      if (!fillWidth) return UNIT;
+      const units = row.reduce((sum, key) => sum + (key.width ?? 1), 0);
+      return (availableWidth - padding * 2 - keyGap * (row.length - 1)) / units;
+    };
+    const rowWidthOf = (row: Key[]) =>
+      row.reduce((sum, key) => sum + unitWidthOf(row) * (key.width ?? 1), 0) +
+      keyGap * (row.length - 1);
+
+    const panelWidth = Math.max(...rows.map(rowWidthOf)) + padding * 2;
+    const panelHeight = rows.length * unitHeight + rowGap * (rows.length - 1) + padding * 2;
+    this.drawPanelBackground(panelWidth, panelHeight);
+
+    // Keys a layout leaves out (spacers, Tab) stay built but hidden, so spacers match by turn.
+    this.keys.forEach((cap) => (cap.visible = false));
+    const spacers = this.keys.filter((cap) => cap.code === '');
+
+    rows.forEach((row, rowIndex) => {
+      const unitWidth = unitWidthOf(row);
+      let x = (panelWidth - rowWidthOf(row)) / 2;
+      const y = padding + rowIndex * (unitHeight + rowGap);
+
+      for (const { code, width = 1 } of row) {
+        const cap = code ? this.keyByCode.get(code) : spacers.shift();
+        if (!cap) continue;
+        cap.visible = true;
+        cap.applySize(unitWidth * width, unitHeight, labelScale);
         cap.position.set(x, y);
-        this.panel.addChild(cap);
-        x += cap.keyWidth + KEY_GAP;
-      });
+        x += cap.keyWidth + keyGap;
+      }
     });
 
-    return { width: panelWidth, height: panelHeight };
+    this.panelWidth = panelWidth;
+    this.panelHeight = panelHeight;
   }
 
   private drawPanelBackground(panelWidth: number, panelHeight: number) {

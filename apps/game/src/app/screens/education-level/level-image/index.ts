@@ -4,6 +4,7 @@ import { Container, Graphics } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { randomShuffle } from '../../../../engine/utils/random';
+import { responsive } from '../../../../engine/utils/viewport';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import {
@@ -23,6 +24,7 @@ import { LetterChoice } from './letter-choice';
 const NUM_CHOICES = 3;
 const X_SLOTS = [0.2, 0.5, 0.8];
 const CHOICE_Y_RATIO = 0.38;
+const PHONE_Y_SLOTS = [0.2, 0.42, 0.64];
 
 function endGame(level: TLevel) {
   if (++EducationImageScreen.rounds < EducationImageScreen.roundOrder.length) {
@@ -128,8 +130,10 @@ export class EducationImageScreen extends Container {
   resize(width: number, height: number) {
     this.layout = { width, height };
     for (let i = 0; i < this.choices.length; i++) {
-      this.choices[i].x = width * (X_SLOTS[i] ?? X_SLOTS[X_SLOTS.length - 1]);
-      this.choices[i].y = height * CHOICE_Y_RATIO;
+      const slot = X_SLOTS[i] ?? X_SLOTS[X_SLOTS.length - 1];
+      // Long words can't share a row on a phone, so the choices stack.
+      this.choices[i].x = width * responsive({ sm: 0.5, lg: slot });
+      this.choices[i].y = height * responsive({ sm: PHONE_Y_SLOTS[i], lg: CHOICE_Y_RATIO });
     }
     this.background.clear().rect(0, 0, width, height).fill(0xe8eef8);
   }

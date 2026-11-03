@@ -115,7 +115,7 @@ export function MenuAlphabetScreen({ onBack }: MenuAlphabetScreenProps) {
       <BackButton className="absolute top-4 left-4 z-10" onClick={onBack} />
 
       <div className="min-h-0 flex-1 overflow-y-auto py-2">
-        <div className="grid grid-cols-2 gap-4 md:gap-10">
+        <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1 md:gap-10">
           <AlphabetTable rows={LEFT_COLUMN} />
           <AlphabetTable rows={RIGHT_COLUMN} />
         </div>
