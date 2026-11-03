@@ -19,16 +19,13 @@ import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { RoundedProgressBar } from '../../../ui/rounded-progress-bar';
 import { LevelMapScreen } from '../../level-map';
 import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
+import { BLUE_BOOK_ART, Book } from '../book-layout';
 import { generateSentenceRounds, type SentenceRound } from '../sentence-rounds';
 
 const FONT_SIZE = 56;
 /** Room for five wrapped lines; a phone's narrow page wraps sentences that fit one on desktop. */
 const PHONE_SENTENCE_HEIGHT = 440;
 const FEEDBACK_DURATION_MS = 350;
-/** Book fills most of the viewport; bottom may extend past the screen edge. */
-const BOOK_WIDTH_RATIO = 0.9;
-const BOOK_HEIGHT_RATIO = 1.05;
-const BOOK_CENTER_Y_RATIO = 0.6;
 const PROGRESS_BAR_WIDTH = 780;
 const PROGRESS_BAR_HEIGHT = 100;
 
@@ -44,12 +41,12 @@ export { generateSentenceRounds };
 
 export class TypingSpringScreen extends Container {
   public readonly screenName = 'TypingSpringScreen';
-  public static assetBundles = ['typing-level-spring', REMOTE_SENTENCES_BUNDLE];
+  public static assetBundles = ['typing-level-spring', 'ui', REMOTE_SENTENCES_BUNDLE];
   public static splashBackgroundAsset = 'typing-levels/typing-level-spring/background.png';
   public static helpAssets: string[] = [];
 
   private background: Sprite;
-  private book: Sprite;
+  private book: Book;
   private hud: HUD;
   private keyboard: KeyboardLayout;
   private sentenceStyle: HTMLTextStyle;
@@ -80,10 +77,7 @@ export class TypingSpringScreen extends Container {
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
 
-    this.book = new Sprite({
-      texture: Texture.from('typing-levels/typing-level-spring/book.svg'),
-      anchor: 0.5,
-    });
+    this.book = new Book('typing-levels/typing-level-spring/book.svg', BLUE_BOOK_ART);
 
     this.hud = new HUD({
       onBack: () =>
@@ -139,16 +133,14 @@ export class TypingSpringScreen extends Container {
   private layoutContent() {
     if (this._sw === 0 || this._sh === 0) return;
 
-    const bookW = this._sw * BOOK_WIDTH_RATIO;
-    const bookH = this._sh * BOOK_HEIGHT_RATIO;
-    this.book.width = bookW;
-    this.book.height = bookH;
-    this.book.position.set(this._sw / 2, this._sh * BOOK_CENTER_Y_RATIO);
-
-    // Keep the wrapped sentence inside the page margins so nothing clips at the edges.
-    const wrapWidth = Math.min(this._sw * 0.82, bookW * 0.62);
+    const { wrapWidth, sentenceY } = this.book.fit(
+      this._sw,
+      this._sh,
+      this.keyboard.y,
+      responsive({ sm: PHONE_SENTENCE_HEIGHT, lg: 0 }),
+    );
     this.sentenceStyle.wordWrapWidth = wrapWidth;
-    this.sentenceText.position.set(this._sw / 2, this.book.y - bookH * 0.18);
+    this.sentenceText.position.set(this._sw / 2, sentenceY);
 
     // Phones fit it between the corner buttons.
     const barScale = responsive({ sm: 0.55, lg: 1 });

@@ -25,24 +25,29 @@ import {
 } from '../../level-map/units';
 import { LetterTile } from './letter-tile';
 
+/**
+ * Where the sheep starts, and each choice's offset from the tile it jumps from, as screen
+ * shares. Phones are tall, so they pull the choices closer to keep the jump short; the rows
+ * after the current one are hidden, so they can't show above it.
+ */
+const TILE_LAYOUT = {
+  sm: { startY: 0.72, sideX: [0.18, 0.82], sideY: 0.46, middleY: 0.42 },
+  lg: { startY: 0.8, sideX: [0.25, 0.75], sideY: 0.3, middleY: 0.25 },
+};
+
+/** Phones draw the tiles smaller so three fit across. */
+function getTileScale() {
+  return responsive({ sm: 0.7, lg: 1 });
+}
+
 function getPositionOffsets() {
-  const bottomCenter = {
-    x: engine().navigation.width * 0.5,
-    y: engine().navigation.height * 0.8,
-  };
+  const { width, height } = engine().navigation;
+  const layout = responsive(TILE_LAYOUT);
+  const bottomCenter = { x: width * 0.5, y: height * layout.startY };
   const positionOffsets = [
-    {
-      x: engine().navigation.width * responsive({ sm: 0.2, lg: 0.25 }) - bottomCenter.x,
-      y: engine().navigation.height * 0.3 - bottomCenter.y,
-    },
-    {
-      x: engine().navigation.width * 0.5 - bottomCenter.x,
-      y: engine().navigation.height * 0.25 - bottomCenter.y,
-    },
-    {
-      x: engine().navigation.width * responsive({ sm: 0.8, lg: 0.75 }) - bottomCenter.x,
-      y: engine().navigation.height * 0.3 - bottomCenter.y,
-    },
+    { x: width * layout.sideX[0] - bottomCenter.x, y: height * layout.sideY - bottomCenter.y },
+    { x: 0, y: height * layout.middleY - bottomCenter.y },
+    { x: width * layout.sideX[1] - bottomCenter.x, y: height * layout.sideY - bottomCenter.y },
   ];
 
   return { positionOffsets, bottomCenter };
@@ -212,18 +217,23 @@ export class EducationSheepJumpScreen extends Container {
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
+    const soundSize = responsive({ sm: 160, lg: 200 });
     this.soundButton = new SoundButton({
       onClick: () => this.playCurrentAnswerAudio(),
-      size: 200,
+      size: soundSize,
       variant: 'brown',
     });
     this.soundButton.anchor.set(0.5);
-    this.soundButton.layout = { position: 'absolute', bottom: 200, right: 200 };
+    // Layout places the anchored center, so the inset includes half the button. Phones tuck it
+    // into the corner, clear of the starting tile.
+    const soundInset = responsive({ sm: 40, lg: 100 }) + soundSize / 2;
+    this.soundButton.layout = { position: 'absolute', bottom: soundInset, right: soundInset };
 
     const { bottomCenter, positionOffsets } = getPositionOffsets();
 
     this.initialTile = new LetterTile({});
     this.initialTile.eventMode = 'none';
+    this.initialTile.scale.set(getTileScale());
     this.initialTile.position.set(bottomCenter.x, bottomCenter.y);
 
     this.sheepGroundTexture = Texture.from(SHEEP_GROUND_TEXTURE);
@@ -242,7 +252,7 @@ export class EducationSheepJumpScreen extends Container {
           letter,
           onClick: () => this.handleTileClick(i, j),
         });
-        tile.scale.set(responsive({ sm: 0.62, lg: 1 }));
+        tile.scale.set(getTileScale());
         tile.position.set(
           parentPosition.x + positionOffsets[j].x,
           parentPosition.y + positionOffsets[j].y,
@@ -353,7 +363,8 @@ export class EducationSheepJumpScreen extends Container {
           tile: row[j],
           x: parentPosition.x + positionOffsets[j].x + globalOffset.x,
           y: parentPosition.y + positionOffsets[j].y + globalOffset.y,
-          alpha: i < this.step && j !== answerIndex ? 0 : 1,
+          // Missed choices fade out, and later rows wait hidden until their turn.
+          alpha: (i < this.step && j !== answerIndex) || i > this.step ? 0 : 1,
           interactive: i === this.step && !row[j].isWrong,
         };
         targets.push(tileTarget);

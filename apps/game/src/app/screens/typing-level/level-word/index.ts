@@ -80,7 +80,7 @@ export function generateRoundsDictionary(wordIds: number[] = [], roundCount = 5)
 
 export class TypingWordScreen extends Container {
   public readonly screenName = 'TypingWordScreen';
-  public static assetBundles = ['typing-level-word', REMOTE_WORDS_BUNDLE];
+  public static assetBundles = ['typing-level-word', 'ui', REMOTE_WORDS_BUNDLE];
   public static splashBackgroundAsset = 'typing-levels/typing-level-word/background.png';
   public static helpAssets = ['tutorial-popups/typing-tutorial.png'];
   private background: Sprite;

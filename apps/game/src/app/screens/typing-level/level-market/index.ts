@@ -40,7 +40,7 @@ function randomTouristTexture() {
 
 export class TypingMarketScreen extends Container {
   public readonly screenName = 'TypingMarketScreen';
-  public static assetBundles = ['typing-level-market', REMOTE_WORDS_BUNDLE];
+  public static assetBundles = ['typing-level-market', 'ui', REMOTE_WORDS_BUNDLE];
   public static splashBackgroundAsset = 'typing-levels/typing-level-market/splash.png';
   public static helpAssets = [
     'tutorial-popups/typing-level-market-1.png',

@@ -50,14 +50,14 @@ const SLOT_LAYOUT: Array<{ x: number; y: number }> = [
 
 /** The phone river runs top to bottom, above the keyboard. */
 const PHONE_SLOT_LAYOUT: Array<{ x: number; y: number }> = [
-  { x: 0.26, y: 0.17 },
-  { x: 0.72, y: 0.22 },
-  { x: 0.3, y: 0.31 },
-  { x: 0.74, y: 0.37 },
-  { x: 0.26, y: 0.45 },
-  { x: 0.7, y: 0.52 },
-  { x: 0.5, y: 0.27 },
-  { x: 0.48, y: 0.58 },
+  { x: 0.26, y: 0.22 },
+  { x: 0.72, y: 0.27 },
+  { x: 0.3, y: 0.36 },
+  { x: 0.74, y: 0.42 },
+  { x: 0.26, y: 0.5 },
+  { x: 0.7, y: 0.57 },
+  { x: 0.5, y: 0.32 },
+  { x: 0.48, y: 0.63 },
 ];
 
 export class GameLevelTrout extends Container {
@@ -114,7 +114,8 @@ export class GameLevelTrout extends Container {
 
     this.background = new Sprite({
       texture: Texture.from('game-levels/game-level-trout/background.png'),
-      layout: { position: 'absolute', width: '100%', height: '100%' },
+      // Cover rather than stretch, so the canyon keeps its shape on tall phones.
+      layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
     this.keyboard = new KeyboardLayout();
     this.progressBar = new RoundedProgressBar({

@@ -2,6 +2,7 @@ import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Sprite, Texture, Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { convertKeyboardLettersToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
@@ -21,6 +22,8 @@ const GREEN_KB_COLOR_OPTIONS: KeyboardColorOptions = {
   SHIFT_HINT_COLOR: 0xffde59,
 };
 
+/** Space between the basket and the keyboard on phones. */
+const PHONE_BASKET_GAP = 90;
 const SPAWN_X_PADDING = 100;
 const FEEDBACK_DURATION_MS: number = 350;
 
@@ -46,12 +49,16 @@ export class GameLevelFruitScreen extends Container {
   private hud: HUD;
   private basketAnimation?: AnimationPlaybackControls;
   private totalFruits: number;
+  /** The background is cropped to cover the screen, so its own size can exceed it. */
+  private screenWidth = 0;
+  private screenHeight = 0;
 
   constructor(level: TLevel) {
     super();
     this.background = new Sprite({
       texture: Texture.from('game-levels/game-level-fruit-fall/background.png'),
-      layout: { position: 'absolute', width: '100%', height: '100%' },
+      // Cover rather than stretch, so the landscape art keeps its shape on tall phones.
+      layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
     const typedLevel = getTypedLevel(level, 'game-fruit-fall');
     this.level = typedLevel;
@@ -89,11 +96,18 @@ export class GameLevelFruitScreen extends Container {
     this.addChild(this.background, this.keyboardLayout, this.basket, this.hud);
   }
   resize(width: number, height: number) {
+    this.screenWidth = width;
+    this.screenHeight = height;
     this.background.layout = { width, height };
     this.keyboardLayout.resize(width, height);
     this.hud.layout = { width, height };
-    // center the basket horizontally, sitting above the keyboard
-    this.basket.position.set(width / 2, height * 0.45);
+    // center the basket horizontally, sitting above the keyboard. Phones have room to spare
+    // above their keyboard, so they rest it just on top, the way desktop screens show it.
+    const basketY = responsive({
+      sm: this.keyboardLayout.y - PHONE_BASKET_GAP - this.basket.height / 2,
+      lg: height * 0.45,
+    });
+    this.basket.position.set(width / 2, basketY);
   }
   async pause() {
     this.isFalling = false;
@@ -132,10 +146,7 @@ export class GameLevelFruitScreen extends Container {
   private spawnFruit() {
     const nextFruit = this.allFruits.pop();
     if (!nextFruit) return;
-    nextFruit.position.set(
-      randomBetween(SPAWN_X_PADDING, this.background.width - SPAWN_X_PADDING),
-      0,
-    );
+    nextFruit.position.set(randomBetween(SPAWN_X_PADDING, this.screenWidth - SPAWN_X_PADDING), 0);
     // keep fruits below the HUD so the back button stays clickable
     this.addChildAt(nextFruit, this.getChildIndex(this.hud));
     this.fallingFruits.push(nextFruit);
@@ -211,7 +222,7 @@ export class GameLevelFruitScreen extends Container {
   }
 
   updateFalling(deltaMs: number) {
-    const bottom = this.background.height;
+    const bottom = this.screenHeight;
     const basketY = this.basket.position.y;
     for (let i = this.fallingFruits.length - 1; i >= 0; i--) {
       const f = this.fallingFruits[i];
