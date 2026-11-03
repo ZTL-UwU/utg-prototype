@@ -118,13 +118,17 @@ export class EducationWhackAMoleScreen extends Container {
       anchor: { x: 0.5, y: 1 },
     });
 
+    const soundSize = responsive({ sm: 160, lg: 200 });
     this.soundButton = new SoundButton({
       onClick: () => this.playCurrentAnswerAudio(),
-      size: 200,
+      size: soundSize,
       variant: 'brown',
     });
     this.soundButton.anchor.set(0.5);
-    this.soundButton.layout = { position: 'absolute', bottom: 200, right: 200 };
+    // Matches the sheep-jump level: layout places the anchored center, so the inset includes
+    // half the button, and phones tuck it into the corner.
+    const soundInset = responsive({ sm: 40, lg: 100 }) + soundSize / 2;
+    this.soundButton.layout = { position: 'absolute', bottom: soundInset, right: soundInset };
 
     this.hud = new HUD({
       onBack: () =>
