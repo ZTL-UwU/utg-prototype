@@ -142,6 +142,8 @@ class FormTile extends Container {
   }
 }
 
+export const FORM_BAR_WIDTH = FORM_ORDER.length * (TILE_WIDTH + TILE_GAP) - TILE_GAP;
+
 /**
  * The four forms of the current letter in a row, right to left like the word they'd make; forms
  * it doesn't have are left as dashed slots. Positioned by its top middle.

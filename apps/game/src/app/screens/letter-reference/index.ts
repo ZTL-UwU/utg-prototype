@@ -5,7 +5,7 @@ import { animate } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { responsive } from '../../../engine/utils/viewport';
+import { responsive, safeAreaInsets } from '../../../engine/utils/viewport';
 import { HUD } from '../../ui/hud';
 import { SoundButton } from '../../ui/sound-button';
 import { HomeScreen } from '../home';
@@ -19,7 +19,7 @@ import {
   TOOL_SHADOW_COLOR,
 } from './controls';
 import { OutlineDisplay } from './display';
-import { FormBar } from './form-bar';
+import { FORM_BAR_WIDTH, FormBar } from './form-bar';
 import { hasForm, type LETTER_FORMS } from './letter-data';
 import { AlphabetSheet, CHIP_HEIGHT, CHIP_WIDTH, LetterChip } from './letter-picker';
 
@@ -34,10 +34,17 @@ const BUTTON_SIZE = 72;
 const BUTTON_GAP = 24;
 /** Wider, so the tools read as a group apart from the letter steps. */
 const TOOLS_GAP = 56;
-const SOUND_BUTTON_SIZE = 110;
+const SOUND_BUTTON_SIZE = 96;
 const BODY_TOP = 180;
 const EDGE_MARGIN = 36;
 const COLUMN_GAP = 28;
+/** Phones: the letter picker's row, under the back button and the script pill. */
+const PHONE_NAV_CENTER = 240;
+const PHONE_EDGE_MARGIN = 20;
+/** Phones: the controls grow by this, so the round buttons are a comfortable tap (about 46px). */
+const PHONE_CONTROL_SCALE = 1.25;
+/** Phones: the forms grow to fill the width, up to this. */
+const PHONE_FORM_SCALE_MAX = 1.15;
 /** Seconds each part of the screen takes to come in. */
 const APPEAR_DURATION = 0.4;
 /** Seconds between each ring of the top bar popping in, from the chip outward. */
@@ -67,6 +74,10 @@ export class LetterReferenceScreen extends Container {
     variant: 'brown',
   });
   private chip: LetterChip;
+  /** Scales the chip, which keeps its own scale for its hover. */
+  private chipSlot = new Container();
+  /** The scale the sound button gives itself to be `SOUND_BUTTON_SIZE` across. */
+  private soundButtonScale: number;
   private sheet: AlphabetSheet;
   // reading right to left, the next letter is the one to the left
   private nextButton: FancyButton;
@@ -130,8 +141,10 @@ export class LetterReferenceScreen extends Container {
       this.formBar,
       // covers everything while it's open but the chip, which stays lit to close it again
       this.sheet,
-      this.chip,
+      this.chipSlot,
     );
+    this.chipSlot.addChild(this.chip);
+    this.soundButtonScale = this.soundButton.scale.x;
     this.showLetter();
   }
 
@@ -263,28 +276,69 @@ export class LetterReferenceScreen extends Container {
     this.layout = { width, height };
     this.background.layout = { width, height };
 
-    // the forms along the bottom, and the canvas above them
     const centerX = width / 2;
-    const formBarY = height - EDGE_MARGIN - TILE_HEIGHT;
-    this.formBar.position.set(centerX, formBarY);
-    // Phones have no room for the tools on the top bar, so they take a row of their own.
-    const toolsY = responsive({ sm: TOP_BAR_CENTER + 120, lg: TOP_BAR_CENTER });
-    this.soundButton.position.set(width - TOP_BAR_CENTER, toolsY);
-    const bodyTop = responsive({ sm: BODY_TOP + 120, lg: BODY_TOP });
-    this.outlineDisplay.position.set(EDGE_MARGIN, bodyTop);
-    this.outlineDisplay.resize(width - 2 * EDGE_MARGIN, formBarY - COLUMN_GAP - bodyTop);
+    const edge = responsive({ sm: PHONE_EDGE_MARGIN, lg: EDGE_MARGIN });
+    // insets are CSS pixels, the view isn't
+    const safeBottom = (safeAreaInsets().bottom / window.innerHeight) * height;
 
-    // the letter picker sits over the middle of the canvas it drives, with the tools after it
-    const stepOffset = CHIP_WIDTH / 2 + BUTTON_GAP + BUTTON_SIZE / 2;
-    const watchX = responsive({
-      sm: centerX - (BUTTON_SIZE + BUTTON_GAP) / 2,
-      lg: centerX + stepOffset + BUTTON_SIZE + TOOLS_GAP,
+    const controlScale = responsive({ sm: PHONE_CONTROL_SCALE, lg: 1 });
+    const buttonSize = BUTTON_SIZE * controlScale;
+    const buttonGap = BUTTON_GAP * controlScale;
+    const soundSize = SOUND_BUTTON_SIZE * controlScale;
+    const chipHeight = CHIP_HEIGHT * controlScale;
+    for (const button of [this.nextButton, this.prevButton, this.watchButton, this.retryButton]) {
+      button.scale.set(controlScale);
+    }
+    this.chipSlot.scale.set(controlScale);
+    this.soundButton.scale.set(this.soundButtonScale * controlScale);
+
+    // the forms along the bottom, grown on phones to fill the width
+    const formScale = responsive({
+      sm: Math.min(PHONE_FORM_SCALE_MAX, (width - 2 * edge) / FORM_BAR_WIDTH),
+      lg: 1,
     });
-    this.chip.position.set(centerX, TOP_BAR_CENTER);
-    this.nextButton.position.set(centerX - stepOffset, TOP_BAR_CENTER);
-    this.prevButton.position.set(centerX + stepOffset, TOP_BAR_CENTER);
+    const formBarY = height - Math.max(edge, safeBottom) - TILE_HEIGHT * formScale;
+    this.formBar.scale.set(formScale);
+    this.formBar.position.set(centerX, formBarY);
+
+    // The letter picker sits over the middle of the canvas it drives, with its steps either side.
+    // The top bar's corners hold the back button and the script pill, so on phones there's no
+    // room left beside them and it takes the row below.
+    const navY = responsive({ sm: PHONE_NAV_CENTER, lg: TOP_BAR_CENTER });
+    const stepOffset = (CHIP_WIDTH * controlScale) / 2 + buttonGap + buttonSize / 2;
+    this.chipSlot.position.set(centerX, navY);
+    this.nextButton.position.set(centerX - stepOffset, navY);
+    this.prevButton.position.set(centerX + stepOffset, navY);
+    this.sheet.resize(width, height, centerX, navY + chipHeight / 2);
+
+    // On wide screens the sound button and the tools flank the letter steps. Phones are too
+    // narrow for that, so they take the row above the forms, out at its ends: the sound button on
+    // the left, watch on the right, and retry turning up beside watch without moving it.
+    const toolsY = responsive({ sm: formBarY - COLUMN_GAP - soundSize / 2, lg: TOP_BAR_CENTER });
+    const formBarHalf = (FORM_BAR_WIDTH * formScale) / 2;
+    const flankOffset = stepOffset + buttonSize / 2 + TOOLS_GAP / 2;
+    const soundX = responsive({
+      sm: centerX - formBarHalf + soundSize / 2,
+      lg: centerX - flankOffset - soundSize / 2,
+    });
+    const watchX = responsive({
+      sm: centerX + formBarHalf - buttonSize / 2,
+      lg: centerX + flankOffset + buttonSize / 2,
+    });
+    const retryX = watchX + responsive({ sm: -1, lg: 1 }) * (buttonSize + buttonGap);
+    this.soundButton.position.set(soundX, toolsY);
     this.watchButton.position.set(watchX, toolsY);
-    this.retryButton.position.set(watchX + BUTTON_SIZE + BUTTON_GAP, toolsY);
-    this.sheet.resize(width, height, centerX, TOP_BAR_CENTER + CHIP_HEIGHT / 2);
+    this.retryButton.position.set(retryX, toolsY);
+
+    // The canvas fills what's left between the bars. On phones the letter is held by the width,
+    // so the canvas takes all of it: the margin would only shrink the letter.
+    const bodyTop = responsive({ sm: navY + chipHeight / 2 + COLUMN_GAP, lg: BODY_TOP });
+    const bodyBottom = responsive({
+      sm: toolsY - soundSize / 2 - COLUMN_GAP,
+      lg: formBarY - COLUMN_GAP,
+    });
+    const bodyInset = responsive({ sm: 0, lg: edge });
+    this.outlineDisplay.position.set(bodyInset, bodyTop);
+    this.outlineDisplay.resize(width - 2 * bodyInset, bodyBottom - bodyTop);
   }
 }

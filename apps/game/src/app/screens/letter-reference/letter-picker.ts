@@ -1,6 +1,7 @@
 import { animate } from 'motion';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
+import { responsive } from '../../../engine/utils/viewport';
 import { getFontFamilyForScript } from '../../../utils/script';
 import {
   addHover,
@@ -29,6 +30,8 @@ const CHIP_COUNT_X = 14;
 const CARET_SIZE = 12;
 
 const SHEET_COLUMNS = 8;
+/** Fewer, so the letters stay big enough to tap rather than the sheet shrinking to fit. */
+const PHONE_SHEET_COLUMNS = 6;
 const SHEET_TILE_SIZE = 100;
 const SHEET_TILE_GAP = 16;
 const SHEET_PAD = 28;
@@ -161,7 +164,9 @@ export class LetterChip extends Container {
 export class AlphabetSheet extends Container {
   private scrim: Sprite;
   private panel = new Container();
+  private bg = new Graphics();
   private tiles: LetterTile[];
+  private columns = 0;
   private currentIndex = -1;
   /** The panel's scale fitted to the screen, which it grows into as it appears. */
   private fitScale = 1;
@@ -184,36 +189,43 @@ export class AlphabetSheet extends Container {
     });
     this.scrim.on('pointertap', () => this.close());
 
-    const rows = Math.ceil(letters.length / SHEET_COLUMNS);
-    const width =
-      SHEET_COLUMNS * (SHEET_TILE_SIZE + SHEET_TILE_GAP) - SHEET_TILE_GAP + 2 * SHEET_PAD;
+    // the panel itself swallows taps between the tiles, so they don't close it
+    this.bg.eventMode = 'static';
+    this.tiles = letters.map(
+      (letter, i) =>
+        new LetterTile(letter, () => {
+          this.onSelect(i);
+          this.close();
+        }),
+    );
+    this.panel.addChild(this.bg, ...this.tiles);
+    this.addChild(this.scrim, this.panel);
+    this.layoutGrid(SHEET_COLUMNS);
+  }
+
+  private layoutGrid(columns: number) {
+    this.columns = columns;
+    const rows = Math.ceil(this.tiles.length / columns);
+    const width = columns * (SHEET_TILE_SIZE + SHEET_TILE_GAP) - SHEET_TILE_GAP + 2 * SHEET_PAD;
     const height = rows * (SHEET_TILE_SIZE + SHEET_TILE_GAP) - SHEET_TILE_GAP + 2 * SHEET_PAD;
-    const bg = new Graphics()
+    this.bg
+      .clear()
       .roundRect(0, SHADOW_OFFSET, width, height, SHEET_RADIUS)
       .fill(FRAME_SHADOW_COLOR)
       .roundRect(0, 0, width, height, SHEET_RADIUS)
       .fill(PANEL_COLOR)
       .stroke({ width: BORDER_WIDTH, color: FRAME_COLOR });
-    // the panel itself swallows taps between the tiles, so they don't close it
-    bg.eventMode = 'static';
 
-    this.tiles = letters.map((letter, i) => {
-      const tile = new LetterTile(letter, () => {
-        this.onSelect(i);
-        this.close();
-      });
-      const column = SHEET_COLUMNS - 1 - (i % SHEET_COLUMNS);
-      const row = Math.floor(i / SHEET_COLUMNS);
+    this.tiles.forEach((tile, i) => {
+      const column = columns - 1 - (i % columns);
+      const row = Math.floor(i / columns);
       tile.position.set(
         SHEET_PAD + column * (SHEET_TILE_SIZE + SHEET_TILE_GAP) + SHEET_TILE_SIZE / 2,
         SHEET_PAD + row * (SHEET_TILE_SIZE + SHEET_TILE_GAP) + SHEET_TILE_SIZE / 2,
       );
-      return tile;
     });
-    this.panel.addChild(bg, ...this.tiles);
     // grows from its top middle, just under the chip
     this.panel.pivot.set(width / 2, 0);
-    this.addChild(this.scrim, this.panel);
   }
 
   get isOpen() {
@@ -252,6 +264,8 @@ export class AlphabetSheet extends Container {
   /** Lays the sheet under the chip whose bottom middle is at (`x`, `top`), scaled to fit. */
   resize(width: number, height: number, x: number, top: number) {
     this.scrim.setSize(width, height);
+    const columns = responsive({ sm: PHONE_SHEET_COLUMNS, lg: SHEET_COLUMNS });
+    if (columns !== this.columns) this.layoutGrid(columns);
     const { width: w, height: h } = this.panel.getLocalBounds();
     const y = top + SHEET_OFFSET;
     const scale = Math.min(1, (width - 2 * SHEET_MARGIN) / w, (height - y - SHEET_MARGIN) / h);
