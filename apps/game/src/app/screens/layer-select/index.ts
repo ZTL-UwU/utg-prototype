@@ -160,7 +160,7 @@ export class LayerSelectScreen extends Container {
     this.userStatsButton.height = 149;
     this.userStatsButton.layout = {
       position: 'absolute',
-      top: 120,
+      top: 190, // clears the docked script pill
       right: 120,
     };
     this.userStatsButton.onPress.connect(() => {
@@ -181,7 +181,7 @@ export class LayerSelectScreen extends Container {
     });
     this.passportButton.layout = {
       position: 'absolute',
-      top: 320,
+      top: 390,
       right: 120,
     };
     this.passportButton.onPress.connect(() => {
