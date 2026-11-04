@@ -18,6 +18,11 @@ import { StreakCalendar } from './streak-calendar';
 
 const POPUP_WIDTH = responsive({ sm: 740, lg: 1481 });
 const POPUP_HEIGHT = responsive({ sm: 1320, lg: 833 });
+const CARD_RADIUS = 50;
+const CARD_RIM_SIDE = 14;
+const CARD_RIM_BOTTOM = 20;
+const CARD_RIM_COLOR = 0xd89456;
+const CARD_FACE_COLOR = 0xfdf7e7;
 const LABEL_COLOR = 0x808080;
 const VALUE_COLOR = 0x000000;
 
@@ -250,13 +255,19 @@ export class UserStatsPopup extends Container {
       children: [header, body],
     });
 
-    const background = new Sprite({
-      texture: Texture.from('stats-popup/background.svg'),
-      layout: {
-        width: POPUP_WIDTH,
-        height: POPUP_HEIGHT,
-      },
-    });
+    // Drawn rather than a texture so the corners and rim stay crisp at any card aspect ratio.
+    const background = new Graphics()
+      .roundRect(0, 0, POPUP_WIDTH, POPUP_HEIGHT, CARD_RADIUS)
+      .fill(CARD_RIM_COLOR)
+      .roundRect(
+        CARD_RIM_SIDE,
+        0,
+        POPUP_WIDTH - CARD_RIM_SIDE * 2,
+        POPUP_HEIGHT - CARD_RIM_BOTTOM,
+        CARD_RADIUS,
+      )
+      .fill(CARD_FACE_COLOR);
+    background.layout = { width: POPUP_WIDTH, height: POPUP_HEIGHT };
 
     this.panel = new Container({ layout: true });
     // Absorbs taps on the card so they never reach the overlay behind it.
