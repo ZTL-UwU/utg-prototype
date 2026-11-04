@@ -15,7 +15,7 @@ import {
   REMOTE_WORDS_BUNDLE,
   type WordSimple,
 } from '../../../../zustandStores/wordStore';
-import { createLetterNavButtons } from '../../../ui/letter-nav-buttons';
+import { createLetterNavButtons, layoutLetterPopupControls } from '../../../ui/letter-nav-buttons';
 import { SoundButton } from '../../../ui/sound-button';
 import { MissingWordNotice } from './missing-word-notice';
 
@@ -23,8 +23,8 @@ const COLORS = {
   BACKGROUND: 0xe8eef8,
 } as const;
 
-/** Room kept above the phone column for the close and letter nav buttons. */
-const PHONE_TOP_BAR = 220;
+/** Gap between the close and letter nav buttons and the phone column below them. */
+const PHONE_TOP_BAR_GAP = 40;
 /** Space kept on each side of a long word that is shrunk to fit a phone. */
 const PHONE_SIDE_MARGIN = 20;
 /** Box the example picture is fitted into on phones. */
@@ -75,7 +75,6 @@ export class LetterPopup extends Container {
             justifyContent: 'center' as const,
             alignItems: 'center' as const,
             gap: 40,
-            paddingTop: PHONE_TOP_BAR,
           },
           lg: {},
         }),
@@ -165,7 +164,16 @@ export class LetterPopup extends Container {
   }
 
   resize(width: number, height: number) {
-    this.layout = { width, height };
+    const controlsBottom = layoutLetterPopupControls(
+      { closeButton: this.closeButton, prevButton: this.prevButton, nextButton: this.nextButton },
+      width,
+      height,
+    );
+    this.layout = {
+      width,
+      height,
+      ...responsive({ sm: { paddingTop: controlsBottom + PHONE_TOP_BAR_GAP }, lg: {} }),
+    };
     this.background.clear().rect(0, 0, width, height).fill(COLORS.BACKGROUND);
     this.wordText?.scale.set(
       responsive({ sm: Math.min(1, (width - 2 * PHONE_SIDE_MARGIN) / this.wordWidth), lg: 1 }),
@@ -230,7 +238,6 @@ export class LetterPopup extends Container {
       },
     });
     button.anchor.set(0.5);
-    button.layout = { position: 'absolute', top: '10%', left: '5%' };
     button.onPress.connect(() => {
       engine().audio.sfx.stop(this.getSoundAlias());
       void engine().navigation.hidePopup();

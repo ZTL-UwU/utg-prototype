@@ -14,7 +14,7 @@ import {
 } from '../../../../utils/script';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { phoneKeyLabel } from '../../../ui/keyboard-phone';
-import { createLetterNavButtons } from '../../../ui/letter-nav-buttons';
+import { createLetterNavButtons, layoutLetterPopupControls } from '../../../ui/letter-nav-buttons';
 import { HandGuide } from './hand-guide';
 
 const COLORS = {
@@ -218,8 +218,13 @@ export class LetterPopup extends Container {
     this.layout = { width, height };
     this.viewHeight = height;
     this.background.clear().rect(0, 0, width, height).fill(COLORS.background);
+    const controlsBottom = layoutLetterPopupControls(
+      { closeButton: this.closeButton, prevButton: this.prevButton, nextButton: this.nextButton },
+      width,
+      height,
+    );
     this.layoutKeyboardAndHands(width, height);
-    this.layoutGuide(width);
+    this.layoutGuide(width, this.phone ? controlsBottom + GUIDE_TOP_MARGIN : GUIDE_TOP_MARGIN);
   }
 
   async show(animated = true) {
@@ -345,10 +350,11 @@ export class LetterPopup extends Container {
     this.guide.addChild(this.stars);
   }
 
-  private layoutGuide(width: number) {
+  /** Fits the guide between `top` and the keyboard. */
+  private layoutGuide(width: number, top: number) {
     const availableWidth = width * GUIDE_MAX_WIDTH_FACTOR;
     const keyboardTop = this.keyboard.y;
-    const availableHeight = Math.max(1, keyboardTop - GUIDE_TOP_MARGIN - GUIDE_KEYBOARD_GAP);
+    const availableHeight = Math.max(1, keyboardTop - top - GUIDE_KEYBOARD_GAP);
     const guideContentHeight = GUIDE_CONTENT_BOTTOM - GUIDE_CONTENT_TOP;
     const scale = Math.min(
       1,
@@ -356,7 +362,7 @@ export class LetterPopup extends Container {
       availableHeight / guideContentHeight,
     );
     const localCenterY = (GUIDE_CONTENT_TOP + GUIDE_CONTENT_BOTTOM) / 2;
-    const availableCenterY = GUIDE_TOP_MARGIN + availableHeight / 2;
+    const availableCenterY = top + availableHeight / 2;
 
     this.guide.scale.set(scale);
     this.guide.position.set(width / 2, Math.round(availableCenterY - localCenterY * scale));
@@ -536,7 +542,6 @@ export class LetterPopup extends Container {
       },
     });
     button.anchor.set(0.5);
-    button.layout = { position: 'absolute', top: '10%', left: '5%' };
     button.onPress.connect(() => {
       void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
       void engine().navigation.hidePopup();
