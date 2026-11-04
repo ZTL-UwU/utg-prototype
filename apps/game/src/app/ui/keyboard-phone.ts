@@ -307,9 +307,12 @@ export class PhoneKeyCap extends Container {
   private drawBackground() {
     const { keyColor, keyPressedColor } = this.colors;
     const idle = this.keyFeedback === 'none' && !this.pressed;
+    // The bottom corner keys are pills, so they follow the phone screen's rounded corners.
+    const pill = this.def.kind === 'layer' || this.def.kind === 'enter';
+    const radius = pill ? Math.min(this.keyWidth, this.keyHeight) / 2 : PHONE_KEY_RADIUS;
     this.background
       .clear()
-      .roundRect(0, 0, this.keyWidth, this.keyHeight, PHONE_KEY_RADIUS)
+      .roundRect(0, 0, this.keyWidth, this.keyHeight, radius)
       .fill({
         color: keyFillColor(this.keyFeedback, this.pressed, keyColor, keyPressedColor),
         alpha: idle && this.isFunctionKey ? FUNCTION_KEY_ALPHA : 1,
