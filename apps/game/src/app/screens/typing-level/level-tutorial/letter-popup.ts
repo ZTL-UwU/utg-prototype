@@ -276,7 +276,7 @@ export class LetterPopup extends Container {
       }
 
       const code = getKeyFromChar(part);
-      const label = this.phone ? phoneKeyLabel(part, script) : part;
+      const label = this.phone ? phoneKeyLabel(part, script, addsHamza) : part;
       return code ? [{ code, label, isShift: false, addsHamza }] : [];
     });
   }

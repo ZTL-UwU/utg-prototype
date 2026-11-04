@@ -688,6 +688,8 @@ export class KeyboardLayout extends Container {
       this.phoneKeys.push(key);
       this.phoneKeyLayer.addChild(key);
     }
+    // A hint set before these keys existed (or on the old script's keys) lands now.
+    this.setHintedLetter(this.hintedLetter);
     this.refreshKeys();
   }
 
@@ -1099,7 +1101,10 @@ export class KeyboardLayout extends Container {
     this.lastPhoneKeyByCode.set(stroke.code, key);
     this.lastTypedCode = stroke.code;
     this.lastTypedText = key.def.kind === 'space' ? ' ' : (glyph ?? '');
-    const shiftKey = stroke.shift || (this.phoneScript === 'Latin' && this.isShiftHeld());
+    // Only a letter takes its case from Shift; punctuation on the letters page stays as shown.
+    const cased =
+      glyph !== undefined && glyph.toLocaleUpperCase('ug') !== glyph.toLocaleLowerCase('ug');
+    const shiftKey = stroke.shift || (this.phoneScript === 'Latin' && cased && this.isShiftHeld());
     const wrappedShift = stroke.shift && !this.isShiftHeld();
     if (wrappedShift) this.dispatchKey('keydown', 'ShiftLeft');
     this.dispatchKey('keydown', stroke.code, shiftKey);
@@ -1133,7 +1138,10 @@ export class KeyboardLayout extends Container {
     return this.phoneScript === 'Latin' && this.isShiftHeld() !== this.capsLockOn;
   }
 
-  /** Arabic and Cyrillic have no case, so a locked Shift just keeps the Shift layer up. */
+  /**
+   * Only Latin phone letters take case. In Arabic and Cyrillic a locked Shift just keeps the
+   * Shift layer up.
+   */
   private isPhoneShifted() {
     return this.isShiftHeld() || this.capsLockOn;
   }
@@ -1141,12 +1149,15 @@ export class KeyboardLayout extends Container {
   private dispatchKey(type: 'keydown' | 'keyup', code: string, shiftOverride?: boolean) {
     const shiftKey =
       shiftOverride ?? (SHIFT_CODES.has(code) ? type === 'keydown' : this.isShiftHeld());
+    // The phone's Caps Lock only sets case in Latin; elsewhere it locks the Shift layer, and
+    // passing it on would uppercase the Cyrillic letters the keys show in lowercase.
+    const capsLock = this.capsLockOn && (this.mode !== 'phone' || this.phoneScript === 'Latin');
     window.dispatchEvent(
       new KeyboardEvent(type, {
         code,
-        key: getEventKey(code, shiftKey, this.capsLockOn),
+        key: getEventKey(code, shiftKey, capsLock),
         shiftKey,
-        modifierCapsLock: this.capsLockOn,
+        modifierCapsLock: capsLock,
         bubbles: true,
         cancelable: true,
       }),
