@@ -209,6 +209,11 @@ export class TypingTestScreen extends Container {
     return this.armed ? this.text[this.activeIdx] : undefined;
   }
 
+  /** The letter after the target, which tells a phone a word-initial ئ comes from a vowel key. */
+  private get nextTargetLetter(): string | undefined {
+    return this.armed ? this.text[this.activeIdx + 1] : undefined;
+  }
+
   private updateTimerText() {
     const seconds = Math.ceil(this.remainingMs / 1000);
     if (seconds === this.displayedSeconds) return;
@@ -250,7 +255,7 @@ export class TypingTestScreen extends Container {
 
   private refreshHint() {
     if (!this.settings?.showKeyboard) return;
-    this.keyboard.setHintedLetter(this.currentTargetLetter);
+    this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
   }
 
   /** Colours a key, then restores the hint — a stale clear must never leave the board blank. */

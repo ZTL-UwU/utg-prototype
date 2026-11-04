@@ -302,7 +302,7 @@ export class GameLevelFlying extends Container {
       void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
       this.pushTimeout(() => {
         this.keyboard.clearKeyFeedback(event.code);
-        this.keyboard.setHintedLetter(this.currentTargetLetter);
+        this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
       }, KEY_FEEDBACK_MS);
     }
   };
@@ -317,10 +317,15 @@ export class GameLevelFlying extends Container {
     return this.activeRound.word[this.activeLetterIdx];
   }
 
+  /** The letter after the target, which tells a phone a word-initial ئ comes from a vowel key. */
+  private get nextTargetLetter() {
+    return this.activeRound.word[this.activeLetterIdx + 1];
+  }
+
   private renderWord() {
     const len = this.activeRound.word[this.activeLetterIdx]?.length ?? 1;
     this.wordText.text = getHighlightedWordMarkup(this.activeRound.word, this.activeLetterIdx, len);
-    this.keyboard.setHintedLetter(this.currentTargetLetter);
+    this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
     this.keyboard.setWordStart(this.activeLetterIdx === 0);
   }
 

@@ -406,7 +406,7 @@ export class GameLevelSki extends Container {
     window.addEventListener('keydown', this.handleKeyDown);
     if (this.keyboard.visible) {
       await this.keyboard.resume();
-      this.keyboard.setHintedLetter(this.currentTargetLetter);
+      this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
     }
   }
 
@@ -458,6 +458,12 @@ export class GameLevelSki extends Container {
   private get currentTargetLetter(): string | undefined {
     if (!this.currentRound) return undefined;
     return this.currentRound.sentence[this.currentRound.correctIdx];
+  }
+
+  /** The letter after the target, which tells a phone a word-initial ئ comes from a vowel key. */
+  private get nextTargetLetter(): string | undefined {
+    if (!this.currentRound) return undefined;
+    return this.currentRound.sentence[this.currentRound.correctIdx + 1];
   }
 
   private updateCountdown(deltaMs: number) {
@@ -551,7 +557,7 @@ export class GameLevelSki extends Container {
     const { sentence, correctIdx } = this.currentRound;
     this.sentenceText.text = getSentenceMarkup(sentence, correctIdx);
     this.layoutSentencePanel();
-    this.keyboard.setHintedLetter(this.currentTargetLetter);
+    this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
   }
 
   private layoutSentencePanel() {
@@ -639,7 +645,7 @@ export class GameLevelSki extends Container {
     void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
     this.pushTimeout(() => {
       this.keyboard.clearKeyFeedback(code);
-      this.keyboard.setHintedLetter(this.currentTargetLetter);
+      this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
     }, FEEDBACK_MS);
     useSessionStore.getState().recordMistake();
 

@@ -352,7 +352,7 @@ export class GameLevelTrout extends Container {
         void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
         void this.onWordCaught(trout);
       } else {
-        this.keyboard.setHintedLetter(trout.currentLetter);
+        this.keyboard.setHintedLetter(trout.currentLetter, trout.nextLetter);
       }
     } else {
       this.handleIncorrect(code);
@@ -365,7 +365,7 @@ export class GameLevelTrout extends Container {
     void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3', { volume: 0.3 });
     this.pushTimeout(() => {
       this.keyboard.clearKeyFeedback(code);
-      this.keyboard.setHintedLetter(this.activeTrout?.currentLetter);
+      this.keyboard.setHintedLetter(this.activeTrout?.currentLetter, this.activeTrout?.nextLetter);
     }, KEY_FEEDBACK_MS);
   }
 
@@ -381,7 +381,7 @@ export class GameLevelTrout extends Container {
     this.wordTimerMs = this.wordDurationMs;
     this.timerRunning = true;
     this.resetProgressBar();
-    this.keyboard.setHintedLetter(trout.currentLetter);
+    this.keyboard.setHintedLetter(trout.currentLetter, trout.nextLetter);
     this.keyboard.setWordStart(true);
     // Hear the word as it becomes the target; silent when unrecorded.
     void playWordAudio(getWordStandardAudioAlias(trout.wordId));

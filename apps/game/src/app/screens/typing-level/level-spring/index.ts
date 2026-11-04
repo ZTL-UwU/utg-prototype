@@ -190,12 +190,18 @@ export class TypingSpringScreen extends Container {
     this.timerRunning = !!this.currentRound;
     window.addEventListener('keydown', this.handleKeyDown);
     await this.keyboard.resume();
-    this.keyboard.setHintedLetter(this.currentTargetLetter);
+    this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
   }
 
   private get currentTargetLetter(): string | undefined {
     if (!this.currentRound) return undefined;
     return this.currentRound.sentence[this.currentRound.activeLetterIdx];
+  }
+
+  /** The letter after the target, which tells a phone a word-initial ئ comes from a vowel key. */
+  private get nextTargetLetter(): string | undefined {
+    if (!this.currentRound) return undefined;
+    return this.currentRound.sentence[this.currentRound.activeLetterIdx + 1];
   }
 
   private resetSentenceTimer() {
@@ -209,7 +215,7 @@ export class TypingSpringScreen extends Container {
     if (!this.currentRound) return;
     const { sentence, activeLetterIdx } = this.currentRound;
     this.sentenceText.text = getSentenceMarkup(sentence, activeLetterIdx);
-    this.keyboard.setHintedLetter(this.currentTargetLetter);
+    this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
   }
 
   private popAndStartRound() {
@@ -268,7 +274,7 @@ export class TypingSpringScreen extends Container {
       void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
       setTimeout(() => {
         this.keyboard.clearKeyFeedback(event.code);
-        this.keyboard.setHintedLetter(this.currentTargetLetter);
+        this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
       }, FEEDBACK_DURATION_MS);
       useSessionStore.getState().recordMistake();
     }

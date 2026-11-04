@@ -384,6 +384,8 @@ export class KeyboardLayout extends Container {
   private readonly phoneKeyByKind = new Map<PhoneKeyDef['kind'], PhoneKeyCap[]>();
   /** Kept so the hint can follow the player between the letters and 123 pages. */
   private hintedLetter?: string;
+  /** The letter after the hinted one, which picks the vowel key for a word-initial ئ. */
+  private hintedNextLetter?: string;
   /** Several phone keys can share a physical code (د and ژ); this is the one last typed. */
   private readonly lastPhoneKeyByCode = new Map<string, PhoneKeyCap>();
   /** The phone keys each code's feedback landed on, so clearing it finds the same keys. */
@@ -514,10 +516,15 @@ export class KeyboardLayout extends Container {
     this.setKeyFeedback(code, 'none');
   }
 
-  /** Highlights the key for `letter` as a hint; pass undefined to clear it. */
-  public setHintedLetter(letter?: string) {
+  /**
+   * Highlights the key for `letter` as a hint; pass undefined to clear it. `nextLetter`, the
+   * letter after it, lets a phone hint the vowel key for a word-initial ئ, since that key types
+   * the ئ.
+   */
+  public setHintedLetter(letter?: string, nextLetter?: string) {
     if (this.hintedCode) this.keyByCode.get(this.hintedCode)?.setFeedback('none');
     this.hintedLetter = letter;
+    this.hintedNextLetter = nextLetter;
     this.hintedCode = letter ? getKeyFromChar(letter) : '';
     if (this.hintedCode) this.keyByCode.get(this.hintedCode)?.setFeedback('hint');
 
@@ -528,11 +535,16 @@ export class KeyboardLayout extends Container {
     this.hintedPhoneKeys = [];
     if (!letter) return;
 
-    const key = letter === ' ' ? this.phoneKeyOfKind('space') : this.phoneKeyForGlyph(letter);
+    // At the start of a word the vowel key types the ئ, so it's the key to tap, not Shift+ي.
+    const glyph =
+      letter === 'ئ' && this.isWordStart() && nextLetter && isArabicVowel(nextLetter)
+        ? nextLetter
+        : letter;
+    const key = glyph === ' ' ? this.phoneKeyOfKind('space') : this.phoneKeyForGlyph(glyph);
     if (!key) return;
     this.hintedPhoneKeys.push(key);
     const shiftKey = this.phoneKeyOfKind('shift');
-    if (shiftKey && this.needsPhoneShift(key, letter)) this.hintedPhoneKeys.push(shiftKey);
+    if (shiftKey && this.needsPhoneShift(key, glyph)) this.hintedPhoneKeys.push(shiftKey);
     // A character on the other page also lights the key that switches to it.
     const layerKey = this.phoneKeyOfKind('layer');
     if (layerKey && key.layer !== this.phoneLayerShown) this.hintedPhoneKeys.push(layerKey);
@@ -689,7 +701,7 @@ export class KeyboardLayout extends Container {
       this.phoneKeyLayer.addChild(key);
     }
     // A hint set before these keys existed (or on the old script's keys) lands now.
-    this.setHintedLetter(this.hintedLetter);
+    this.setHintedLetter(this.hintedLetter, this.hintedNextLetter);
     this.refreshKeys();
   }
 
@@ -773,7 +785,7 @@ export class KeyboardLayout extends Container {
     this.releaseLatchedShift();
     this.phoneLayerShown = layer;
     for (const key of this.phoneKeys) key.visible = key.layer === layer;
-    this.setHintedLetter(this.hintedLetter);
+    this.setHintedLetter(this.hintedLetter, this.hintedNextLetter);
     this.refreshKeys();
   }
 
@@ -975,6 +987,7 @@ export class KeyboardLayout extends Container {
   public setWordStart(wordStart: boolean) {
     if (this.wordStart === wordStart) return;
     this.wordStart = wordStart;
+    this.refreshHint();
     this.refreshKeys();
   }
 
@@ -1127,7 +1140,9 @@ export class KeyboardLayout extends Container {
 
   /** Shift lights up in the hint only while it's still needed, so re-hint when it changes. */
   private refreshHint() {
-    if (this.hintedLetter !== undefined) this.setHintedLetter(this.hintedLetter);
+    if (this.hintedLetter !== undefined) {
+      this.setHintedLetter(this.hintedLetter, this.hintedNextLetter);
+    }
   }
 
   private isShiftHeld() {
