@@ -47,6 +47,7 @@ example.
 | `DJANGO_DEBUG`          | `true`                                              | Enables Django debug mode                      |
 | `DJANGO_ALLOWED_HOSTS`  | `localhost,127.0.0.1`                               | Comma-separated hostnames                      |
 | `DJANGO_CORS_ALLOWED_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174` | Comma-separated frontend origins for CORS (admin :5173, game :5174) |
+| `DJANGO_CORS_ALLOWED_ORIGIN_REGEXES` | unset | Comma-separated regexes for extra CORS origins, e.g. `^https://utg-prototype-[a-z0-9]+-ztluwu\.vercel\.app$` for Vercel previews |
 | `DATABASE_CONN_MAX_AGE` | `60`                                                | Persistent connection lifetime in seconds      |
 | `DATABASE_SSL_MODE`     | `prefer`                                            | PostgreSQL SSL mode                            |
 | `AWS_STORAGE_BUCKET_NAME` | unset                                             | When set, game media (word/sentence audio, word/mascot/reward images) is stored on S3 |

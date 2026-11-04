@@ -80,6 +80,8 @@ CORS_ALLOWED_ORIGINS = env_list(
     "DJANGO_CORS_ALLOWED_ORIGINS",
     "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174",
 )
+# Regexes for origins that can't be listed ahead of time, e.g. Vercel preview deployments.
+CORS_ALLOWED_ORIGIN_REGEXES = env_list("DJANGO_CORS_ALLOWED_ORIGIN_REGEXES")
 
 ROOT_URLCONF = "config.urls"
 TEMPLATES = [
