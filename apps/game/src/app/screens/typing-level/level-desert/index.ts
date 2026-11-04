@@ -2,6 +2,7 @@ import { animate } from 'motion';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
@@ -57,13 +58,14 @@ export class TypingLevelScreen extends Container {
       text: 'TAKLAMAKAN DESERT',
       style: {
         fontFamily: 'Concert One',
-        fontSize: 100,
+        fontSize: responsive({ sm: 72, lg: 100 }),
         fontWeight: '800',
         fill: 0x6b3f1f,
       },
       layout: {
         position: 'absolute',
-        top: TITLE_LAYOUT_TOP,
+        // Phones drop it below the corner buttons it would otherwise run into.
+        top: responsive({ sm: 170, lg: TITLE_LAYOUT_TOP }),
       },
     });
 
@@ -110,6 +112,7 @@ export class TypingLevelScreen extends Container {
     this.clouds.resize(width, height);
     this.camel.resize(width, height);
     this.keyboard.resize(width, height);
+    this.letterRow.scale.set(responsive({ sm: 0.7, lg: 1 }));
   }
 
   private get titleOffscreenY() {

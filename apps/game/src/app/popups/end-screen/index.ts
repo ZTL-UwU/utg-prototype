@@ -3,6 +3,7 @@ import { animate } from 'motion';
 import { BlurFilter, Container, Graphics, Sprite, Text, TextStyle, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { responsive } from '../../../engine/utils/viewport';
 import { waitFor } from '../../../engine/utils/waitFor';
 import { submitLevelResult, type LevelResultOutcome } from '../../../lib/levelResults';
 import { getNextLevelAfter, isMapUnitComplete } from '../../../lib/progression';
@@ -16,6 +17,7 @@ import { findMapUnitForLevel, REMOTE_MASCOTS_BUNDLE } from '../../screens/level-
 import type { TLayer, TLevel } from '../../screens/level-map/units';
 import { LevelSplashScreen } from '../../screens/level-splash';
 import { BackButton } from '../../ui/back-button';
+import { layoutPopup } from '../../ui/layout-popup';
 import { NextButton } from '../../ui/next-button';
 import { RetryButton } from '../../ui/retry-button';
 import { PassportPopup } from '../passport';
@@ -430,9 +432,6 @@ export class EndScreenPopup extends Container {
   }
 
   public resize(width: number, height: number) {
-    this.layout = {
-      width,
-      height,
-    };
+    layoutPopup(this, width, height, responsive({ sm: 0.78, lg: 1 }));
   }
 }

@@ -2,6 +2,7 @@ import { animate } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
 import { waitFor } from '../../../../engine/utils/waitFor';
 import { convertToCurrentScript, isCurrentScriptRtl } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
@@ -14,7 +15,7 @@ import { LevelMapScreen } from '../../level-map';
 import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
 import { Matrix, type PlacedWord } from './grid';
 import { WordGridPanel } from './word-grid-panel';
-import { WordListPanel } from './word-list-panel';
+import { LIST_HEIGHT, LIST_WIDTH, WordListPanel } from './word-list-panel';
 
 const DESIGN_WIDTH = 1920;
 const DESIGN_HEIGHT = 1080;
@@ -22,6 +23,9 @@ const PANEL_SHADOW = 16;
 /** Word bar bottom → grid top; includes the bar's shadow. */
 const PANEL_GAP = PANEL_SHADOW + 12;
 const BACKGROUND_COLOR = 0xf3e3c6;
+const PHONE_MARGIN = 16;
+const PHONE_TOP = 170;
+const PHONE_LIST_HEIGHT = 300;
 /** Lets the last word's green pulse play out before the end popup. */
 const END_DELAY_SECONDS = 0.6;
 /** Idle time on the grid before one unfound word flashes as a hint. */
@@ -75,16 +79,8 @@ export class GameWordSearchScreen extends Container {
     });
     this.wordList = new WordListPanel({ words: this.placed.map((placed) => placed.word) });
 
-    // word list then grid stacked and centered; panel pivots sit at their centers so
-    // show/hide scale from the middle
-    const gridTop = this.wordList.panelHeight + PANEL_GAP;
-    const totalHeight = gridTop + this.grid.panelHeight + PANEL_SHADOW;
-    const top = (DESIGN_HEIGHT - totalHeight) / 2;
-    const centerX = DESIGN_WIDTH / 2;
-    this.wordList.pivot.set(this.wordList.panelWidth / 2, this.wordList.panelHeight / 2);
-    this.wordList.position.set(centerX, top + this.wordList.panelHeight / 2);
+    // panel pivots sit at their centers so show/hide scale from the middle
     this.grid.pivot.set(this.grid.panelWidth / 2, this.grid.panelHeight / 2);
-    this.grid.position.set(centerX, top + gridTop + this.grid.panelHeight / 2);
     this.content.addChild(this.wordList, this.grid);
 
     this.hud = new HUD({
@@ -102,12 +98,36 @@ export class GameWordSearchScreen extends Container {
     this.background.width = width;
     this.background.height = height;
 
-    const scale = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
+    // Word list then grid, stacked and centered. Phones fit the grid to the screen rather than
+    // shrinking the whole wide stage to it, keeping below the back button.
+    const fitScale = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
+    const phoneHeight = PHONE_LIST_HEIGHT + PANEL_GAP + this.grid.panelHeight + PANEL_SHADOW;
+    const scale = responsive({
+      sm: Math.min(
+        (width - PHONE_MARGIN * 2) / this.grid.panelWidth,
+        (height - PHONE_TOP - PHONE_MARGIN) / phoneHeight,
+      ),
+      lg: fitScale,
+    });
+    const stageWidth = responsive({ sm: width / scale, lg: DESIGN_WIDTH });
+    const stageHeight = responsive({ sm: height / scale, lg: DESIGN_HEIGHT });
     this.content.scale.set(scale);
-    this.content.position.set(
-      (width - DESIGN_WIDTH * scale) / 2,
-      (height - DESIGN_HEIGHT * scale) / 2,
-    );
+    this.content.position.set((width - stageWidth * scale) / 2, (height - stageHeight * scale) / 2);
+
+    const listWidth = responsive({ sm: this.grid.panelWidth, lg: LIST_WIDTH });
+    const listHeight = responsive({ sm: PHONE_LIST_HEIGHT, lg: LIST_HEIGHT });
+    this.wordList.setSize(listWidth, listHeight);
+    this.wordList.pivot.set(listWidth / 2, listHeight / 2);
+
+    const gridTop = listHeight + PANEL_GAP;
+    const totalHeight = gridTop + this.grid.panelHeight + PANEL_SHADOW;
+    const top = responsive({
+      sm: Math.max(PHONE_TOP / scale, (stageHeight - totalHeight) / 2),
+      lg: (stageHeight - totalHeight) / 2,
+    });
+    const centerX = stageWidth / 2;
+    this.wordList.position.set(centerX, top + listHeight / 2);
+    this.grid.position.set(centerX, top + gridTop + this.grid.panelHeight / 2);
     this.hud.layout = { width, height };
   }
 

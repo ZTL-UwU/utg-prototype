@@ -2,6 +2,7 @@ import { animate } from 'motion';
 import { Container, Graphics, HTMLText, Sprite, Texture } from 'pixi.js';
 
 import type { Round } from '.';
+import { responsive } from '../../../../engine/utils/viewport';
 import { createTypingWordStyle, getHighlightedWordMarkup } from '../../../../utils/example-words';
 import { getWordImageAlias } from '../../../../zustandStores/wordStore';
 
@@ -12,6 +13,8 @@ const PAD_X = 48;
 const SHADOW_OFFSET = 8;
 const CONTENT_GAP = 72;
 const IMAGE_SIZE = 300;
+/** Long words shrink to stay on a phone's screen. */
+const PHONE_MAX_WORD_WIDTH = 640;
 const CARD_COLORS = {
   default: 0x7e5433,
   error: 0xef5a42,
@@ -33,10 +36,11 @@ export class TypingWordCard extends Container {
   constructor() {
     super({
       layout: {
-        flexDirection: 'row',
+        // A word and its image only fit side by side on wider screens.
+        flexDirection: responsive<'row' | 'column'>({ sm: 'column', lg: 'row' }),
         justifyContent: 'center',
         alignItems: 'center',
-        gap: CONTENT_GAP,
+        gap: responsive({ sm: 28, lg: CONTENT_GAP }),
       },
     });
     this.wordContainer.addChild(this.cardShadow, this.card, this.wordText);
@@ -85,7 +89,9 @@ export class TypingWordCard extends Container {
   private drawCard() {
     // measure the rendered word
     const b = this.wordText.getLocalBounds();
-    const cardW = Math.max(CARD_WIDTH, b.width + PAD_X * 2); // fit, with a floor
+    const textScale = Math.min(1, responsive({ sm: PHONE_MAX_WORD_WIDTH, lg: b.width }) / b.width);
+    this.wordText.scale.set(textScale);
+    const cardW = Math.max(CARD_WIDTH, b.width * textScale + PAD_X * 2); // fit, with a floor
     const cardH = FONT_SIZE + PAD_Y * 2;
 
     this.cardShadow

@@ -7,6 +7,10 @@ const config: CapacitorConfig = {
   //   server : {
   //     url : 'https://sozlerseylisi.codhers.ca'
   //   }
+  plugins: {
+    // Fullscreen: the status bar would otherwise draw over the game's top corners.
+    SystemBars: { hidden: true },
+  },
 };
 
 export default config;

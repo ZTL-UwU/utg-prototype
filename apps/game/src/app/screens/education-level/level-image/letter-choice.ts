@@ -25,7 +25,8 @@ export class LetterChoice extends Container {
   private readonly word: WordSimple;
   private clicked = false;
 
-  constructor(word: WordSimple, correctLetter: string, onCorrect?: () => void) {
+  /** `imageSize` fits the picture inside a square that big; without it, pictures draw at 75%. */
+  constructor(word: WordSimple, correctLetter: string, onCorrect?: () => void, imageSize?: number) {
     super();
 
     const letter = word.target_letter ?? '';
@@ -66,7 +67,7 @@ export class LetterChoice extends Container {
     const naturalHeight = texture.height;
     if (naturalHeight <= 0) return;
 
-    const scale = 0.75;
+    const scale = imageSize ? imageSize / Math.max(texture.width, naturalHeight) : 0.75;
     this.imageButton.scale.set(scale);
     wordLabel.y = (naturalHeight * scale) / 2 + WORD_GAP;
 

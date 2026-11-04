@@ -4,6 +4,7 @@ import { DropShadowFilter } from 'pixi-filters';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { responsive } from '../../../engine/utils/viewport';
 import { isMapUnitUnlocked } from '../../../lib/progression';
 import { convertToCurrentScript, getScriptFontFamily } from '../../../utils/script';
 import { HUD } from '../../ui/hud';
@@ -13,8 +14,11 @@ import { CurvedText } from './curved-text';
 import { LevelRow } from './level-row';
 import { getNextMap, getPrevMap, type TMapUnit } from './units';
 
-const TITLE_TOP = 100;
-const SUBTITLE_TOP = 300;
+/** Phones drop the titles below the back button and script pill, which would cover them. */
+const TITLE_TOP = { sm: 170, lg: 100 };
+const SUBTITLE_TOP = { sm: 310, lg: 300 };
+/** Space kept on each side of a title that is shrunk to fit a narrow screen. */
+const TITLE_SIDE_MARGIN = 40;
 /** Extra margin so drop shadows don't peek in from the screen edge. */
 const OFF_SCREEN_MARGIN = 40;
 
@@ -24,6 +28,10 @@ export class LevelMapScreen extends Container {
 
   private background: Sprite;
   private title: CurvedText | Text;
+  private titleTop = responsive(TITLE_TOP);
+  private subtitleTop = responsive(SUBTITLE_TOP);
+  /** Unscaled title width, for shrinking long titles to fit phones. */
+  private titleWidth: number;
   private subtitle?: Text;
   private levelRow: LevelRow;
   private hud: HUD;
@@ -86,11 +94,14 @@ export class LevelMapScreen extends Container {
       }),
     ];
     const titleBounds = this.title.getLocalBounds();
+    this.titleWidth = titleBounds.width;
     this.title.layout = {
       position: 'absolute',
-      top: TITLE_TOP,
+      top: this.titleTop,
       width: titleBounds.width,
       height: titleBounds.height,
+      // Shrink from the top edge, so a scaled-down title stays clear of the subtitle.
+      transformOrigin: 'center top',
     };
 
     if (mapUnit.subtitle) {
@@ -114,7 +125,7 @@ export class LevelMapScreen extends Container {
       });
       this.subtitle.layout = {
         position: 'absolute',
-        top: SUBTITLE_TOP,
+        top: this.subtitleTop,
       };
     }
 
@@ -178,24 +189,27 @@ export class LevelMapScreen extends Container {
   /** Resize the screen, fired whenever window size changes */
   public resize(width: number, height: number) {
     this.layout = { width, height };
+    this.title.scale.set(Math.min(1, (width - 2 * TITLE_SIDE_MARGIN) / this.titleWidth));
+    this.levelRow.resize(width, height);
+    const navButtonY = responsive({ sm: height - 200, lg: height / 2 });
     if (this.prevMapButton) {
-      this.prevMapButton.position.set(40, height / 2);
+      this.prevMapButton.position.set(responsive({ sm: 90, lg: 40 }), navButtonY);
     }
     if (this.nextMapButton) {
-      this.nextMapButton.position.set(width - 40, height / 2);
+      this.nextMapButton.position.set(width - responsive({ sm: 90, lg: 40 }), navButtonY);
     }
   }
 
   public async show() {
-    this.title.y = this.offScreenY(this.title, TITLE_TOP);
-    if (this.subtitle) this.subtitle.y = this.offScreenY(this.subtitle, SUBTITLE_TOP);
+    this.title.y = this.offScreenY(this.title, this.titleTop);
+    if (this.subtitle) this.subtitle.y = this.offScreenY(this.subtitle, this.subtitleTop);
 
     const animations = [
       animate(this.title, { y: 0 }, { duration: 0.4, ease: 'backOut' }),
       ...(this.subtitle
         ? [animate(this.subtitle, { y: 0 }, { duration: 0.4, ease: 'backOut' })]
         : []),
-      this.levelRow.playEnterAnimation(engine().navigation.height),
+      this.levelRow.playEnterAnimation(),
     ];
 
     if (this.prevMapButton) {
@@ -218,24 +232,22 @@ export class LevelMapScreen extends Container {
   }
 
   public async hide() {
-    const screenHeight = engine().navigation.height;
-
     const animations = [
       animate(
         this.title,
-        { y: this.offScreenY(this.title, TITLE_TOP) },
+        { y: this.offScreenY(this.title, this.titleTop) },
         { duration: 0.2, ease: 'backIn' },
       ),
       ...(this.subtitle
         ? [
             animate(
               this.subtitle,
-              { y: this.offScreenY(this.subtitle, SUBTITLE_TOP) },
+              { y: this.offScreenY(this.subtitle, this.subtitleTop) },
               { duration: 0.2, ease: 'backIn' },
             ),
           ]
         : []),
-      this.levelRow.playExitAnimation(screenHeight),
+      this.levelRow.playExitAnimation(),
     ];
 
     if (this.prevMapButton) {

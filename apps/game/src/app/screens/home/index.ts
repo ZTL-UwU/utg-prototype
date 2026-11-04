@@ -4,6 +4,7 @@ import { Graphics, Sprite, Text, Texture, type TextDropShadow, type Ticker } fro
 import { Container } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { responsive } from '../../../engine/utils/viewport';
 import { ensureValidSession } from '../../../lib/authSession';
 import { continueIntoGame } from '../../../utils/continueIntoGame';
 import { useAuthStore } from '../../../zustandStores/auth';
@@ -70,7 +71,7 @@ export class HomeScreen extends Container {
       style: {
         fill: 0x284937,
         fontFamily: 'Concert One',
-        fontSize: 200,
+        fontSize: responsive({ sm: 116, lg: 200 }),
         fontWeight: '700',
         // dropShadow: textDropShadow,
       },
@@ -82,7 +83,7 @@ export class HomeScreen extends Container {
       style: {
         fill: 0xffffff,
         fontFamily: 'Concert One',
-        fontSize: 95,
+        fontSize: responsive({ sm: 76, lg: 95 }),
         dropShadow: textDropShadow,
       },
       layout: true,

@@ -59,12 +59,20 @@ export function LoginForm({ onSubmit, onGuest, onTester, onForgot, onSignUpNav }
         {submitting ? 'Logging in…' : 'Log in'}
       </Button>
 
-      <div className="mx-auto flex w-4/5 gap-3">
-        <Button variant="secondary" className="mx-0 w-auto flex-1 px-4 py-4" onClick={onGuest}>
+      <div className="mx-auto flex w-4/5 gap-3 max-sm:w-full">
+        <Button
+          variant="secondary"
+          className="mx-0 w-auto flex-1 px-4 py-4 max-sm:text-xl"
+          onClick={onGuest}
+        >
           Guest mode
         </Button>
 
-        <Button variant="secondary" className="mx-0 w-auto flex-1 px-4 py-4" onClick={onTester}>
+        <Button
+          variant="secondary"
+          className="mx-0 w-auto flex-1 px-4 py-4 max-sm:text-xl"
+          onClick={onTester}
+        >
           Tester mode
         </Button>
       </div>

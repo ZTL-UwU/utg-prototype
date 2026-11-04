@@ -2,6 +2,7 @@ import { animate } from 'motion';
 import { Container, HTMLText, HTMLTextStyle, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
 import { createTypingSentenceStyle, getSentenceMarkup } from '../../../../utils/example-words';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
@@ -18,14 +19,13 @@ import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { RoundedProgressBar } from '../../../ui/rounded-progress-bar';
 import { LevelMapScreen } from '../../level-map';
 import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
+import { BLUE_BOOK_ART, Book } from '../book-layout';
 import { generateSentenceRounds, type SentenceRound } from '../sentence-rounds';
 
 const FONT_SIZE = 56;
+/** Room for five wrapped lines; a phone's narrow page wraps sentences that fit one on desktop. */
+const PHONE_SENTENCE_HEIGHT = 440;
 const FEEDBACK_DURATION_MS = 350;
-/** Book fills most of the viewport; bottom may extend past the screen edge. */
-const BOOK_WIDTH_RATIO = 0.9;
-const BOOK_HEIGHT_RATIO = 1.05;
-const BOOK_CENTER_Y_RATIO = 0.6;
 const PROGRESS_BAR_WIDTH = 780;
 const PROGRESS_BAR_HEIGHT = 100;
 
@@ -41,12 +41,12 @@ export { generateSentenceRounds };
 
 export class TypingSpringScreen extends Container {
   public readonly screenName = 'TypingSpringScreen';
-  public static assetBundles = ['typing-level-spring', REMOTE_SENTENCES_BUNDLE];
+  public static assetBundles = ['typing-level-spring', 'ui', REMOTE_SENTENCES_BUNDLE];
   public static splashBackgroundAsset = 'typing-levels/typing-level-spring/background.png';
   public static helpAssets: string[] = [];
 
   private background: Sprite;
-  private book: Sprite;
+  private book: Book;
   private hud: HUD;
   private keyboard: KeyboardLayout;
   private sentenceStyle: HTMLTextStyle;
@@ -77,10 +77,7 @@ export class TypingSpringScreen extends Container {
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
 
-    this.book = new Sprite({
-      texture: Texture.from('typing-levels/typing-level-spring/book.svg'),
-      anchor: 0.5,
-    });
+    this.book = new Book('typing-levels/typing-level-spring/book.svg', BLUE_BOOK_ART);
 
     this.hud = new HUD({
       onBack: () =>
@@ -91,10 +88,13 @@ export class TypingSpringScreen extends Container {
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
-    this.keyboard = new KeyboardLayout();
+    this.keyboard = new KeyboardLayout({ text: 'sentences' });
     this.rounds = generateSentenceRounds(typedLevel.props.storyId);
 
-    this.sentenceStyle = createTypingSentenceStyle(FONT_SIZE);
+    this.sentenceStyle = createTypingSentenceStyle(
+      FONT_SIZE,
+      responsive({ sm: PHONE_SENTENCE_HEIGHT, lg: 0 }),
+    );
     this.sentenceText = new HTMLText({ style: this.sentenceStyle });
     this.sentenceText.anchor.set(0.5);
 
@@ -133,18 +133,19 @@ export class TypingSpringScreen extends Container {
   private layoutContent() {
     if (this._sw === 0 || this._sh === 0) return;
 
-    const bookW = this._sw * BOOK_WIDTH_RATIO;
-    const bookH = this._sh * BOOK_HEIGHT_RATIO;
-    this.book.width = bookW;
-    this.book.height = bookH;
-    this.book.position.set(this._sw / 2, this._sh * BOOK_CENTER_Y_RATIO);
-
-    // Keep the wrapped sentence inside the page margins so nothing clips at the edges.
-    const wrapWidth = Math.min(this._sw * 0.82, bookW * 0.62);
+    const { wrapWidth, sentenceY } = this.book.fit(
+      this._sw,
+      this._sh,
+      this.keyboard.y,
+      responsive({ sm: PHONE_SENTENCE_HEIGHT, lg: 0 }),
+    );
     this.sentenceStyle.wordWrapWidth = wrapWidth;
-    this.sentenceText.position.set(this._sw / 2, this.book.y - bookH * 0.18);
+    this.sentenceText.position.set(this._sw / 2, sentenceY);
 
-    this.progressBar.position.set((this._sw - PROGRESS_BAR_WIDTH) / 2, this._sh * 0.05);
+    // Phones fit it between the corner buttons.
+    const barScale = responsive({ sm: 0.55, lg: 1 });
+    this.progressBar.scale.set(barScale);
+    this.progressBar.position.set((this._sw - PROGRESS_BAR_WIDTH * barScale) / 2, this._sh * 0.05);
   }
 
   update(ticker: Ticker) {
@@ -189,12 +190,18 @@ export class TypingSpringScreen extends Container {
     this.timerRunning = !!this.currentRound;
     window.addEventListener('keydown', this.handleKeyDown);
     await this.keyboard.resume();
-    this.keyboard.setHintedLetter(this.currentTargetLetter);
+    this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
   }
 
   private get currentTargetLetter(): string | undefined {
     if (!this.currentRound) return undefined;
     return this.currentRound.sentence[this.currentRound.activeLetterIdx];
+  }
+
+  /** The letter after the target, which tells a phone a word-initial ئ comes from a vowel key. */
+  private get nextTargetLetter(): string | undefined {
+    if (!this.currentRound) return undefined;
+    return this.currentRound.sentence[this.currentRound.activeLetterIdx + 1];
   }
 
   private resetSentenceTimer() {
@@ -208,7 +215,7 @@ export class TypingSpringScreen extends Container {
     if (!this.currentRound) return;
     const { sentence, activeLetterIdx } = this.currentRound;
     this.sentenceText.text = getSentenceMarkup(sentence, activeLetterIdx);
-    this.keyboard.setHintedLetter(this.currentTargetLetter);
+    this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
   }
 
   private popAndStartRound() {
@@ -220,6 +227,7 @@ export class TypingSpringScreen extends Container {
     if (!this.currentRound) return;
 
     this.resetSentenceTimer();
+    this.keyboard.setWordStart(true);
     this.updateSentenceDisplay();
     this.timerRunning = !this.paused;
     this.layoutContent();
@@ -266,7 +274,7 @@ export class TypingSpringScreen extends Container {
       void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
       setTimeout(() => {
         this.keyboard.clearKeyFeedback(event.code);
-        this.keyboard.setHintedLetter(this.currentTargetLetter);
+        this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
       }, FEEDBACK_DURATION_MS);
       useSessionStore.getState().recordMistake();
     }

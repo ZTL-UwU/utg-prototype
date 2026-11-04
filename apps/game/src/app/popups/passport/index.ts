@@ -3,6 +3,7 @@ import { animate } from 'motion';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { responsive } from '../../../engine/utils/viewport';
 import useCourseStore from '../../../zustandStores/courseStore';
 import {
   getRewardImageAlias,
@@ -338,12 +339,16 @@ export class PassportPopup extends Container {
     this.dismissOverlay.width = width;
     this.dismissOverlay.height = height;
 
-    const bookWidth = width * 0.6;
-    const bookHeight = height * 0.8;
+    // The open book is landscape, so a phone sizes it from the width and centers it.
+    const bookWidth = width * responsive({ sm: 0.96, lg: 0.6 });
+    const bookHeight = responsive({
+      sm: (bookWidth * DESIGN_HEIGHT) / DESIGN_WIDTH,
+      lg: height * 0.8,
+    });
     // Page contents are fixed-pixel, so shrink the book interior instead of overflowing it.
     const uiScale = Math.min(bookWidth / DESIGN_WIDTH, bookHeight / DESIGN_HEIGHT, 1);
 
-    this.restingY = height * 0.1;
+    this.restingY = (height - bookHeight) / 2;
     // Layout runs in unscaled units; origin 0 scales from the top-left so the book stays centred.
     this.passportContainer.scale.set(uiScale);
     this.passportContainer.layout = {
@@ -351,6 +356,6 @@ export class PassportPopup extends Container {
       height: bookHeight / uiScale,
       transformOrigin: 0,
     };
-    this.passportContainer.position.set(width * 0.2, this.restingY);
+    this.passportContainer.position.set((width - bookWidth) / 2, this.restingY);
   }
 }

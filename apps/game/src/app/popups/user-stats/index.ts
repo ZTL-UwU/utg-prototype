@@ -3,6 +3,7 @@ import { animate } from 'motion';
 import { BlurFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { responsive } from '../../../engine/utils/viewport';
 import { signOut } from '../../../lib/signOut';
 import { getAvatarPath } from '../../../utils/avatars';
 import { formatMonthTitle } from '../../../utils/date';
@@ -15,8 +16,13 @@ import { AvatarSelectScreen } from '../../screens/avatar-select';
 import { BackButton } from '../../ui/back-button';
 import { StreakCalendar } from './streak-calendar';
 
-const POPUP_WIDTH = 1481;
-const POPUP_HEIGHT = 833;
+const POPUP_WIDTH = responsive({ sm: 740, lg: 1481 });
+const POPUP_HEIGHT = responsive({ sm: 1320, lg: 833 });
+const CARD_RADIUS = 50;
+const CARD_RIM_SIDE = 14;
+const CARD_RIM_BOTTOM = 20;
+const CARD_RIM_COLOR = 0xd89456;
+const CARD_FACE_COLOR = 0xfdf7e7;
 const LABEL_COLOR = 0x808080;
 const VALUE_COLOR = 0x000000;
 
@@ -179,9 +185,9 @@ export class UserStatsPopup extends Container {
       layout: {
         flexDirection: 'column',
         gap: 35,
-        flex: 1,
+        flex: responsive({ sm: 0, lg: 1 }),
         justifyContent: 'center',
-        paddingLeft: 60,
+        paddingLeft: responsive({ sm: 0, lg: 60 }),
       },
       children: [
         createStatRow('Total Stars', this.totalStarsValue),
@@ -214,8 +220,9 @@ export class UserStatsPopup extends Container {
       layout: {
         flexDirection: 'column',
         gap: 20,
-        flex: 2,
-        paddingRight: 60,
+        flex: responsive({ sm: 0, lg: 2 }),
+        paddingRight: responsive({ sm: 0, lg: 60 }),
+        width: responsive<`${number}%` | 'auto'>({ sm: '100%', lg: 'auto' }),
       },
       children: [streaksTitle, this.streakCalendar],
     });
@@ -223,10 +230,12 @@ export class UserStatsPopup extends Container {
     const body = new Container({
       layout: {
         display: 'flex',
-        flexDirection: 'row',
+        // Stats beside the calendar need a landscape card; a phone stacks them.
+        flexDirection: responsive<'row' | 'column'>({ sm: 'column', lg: 'row' }),
+        gap: responsive({ sm: 40, lg: 0 }),
         width: '100%',
         flex: 1,
-        alignItems: 'center',
+        alignItems: responsive<'center' | 'flex-start'>({ sm: 'flex-start', lg: 'center' }),
         paddingTop: 30,
         paddingBottom: 60,
       },
@@ -246,13 +255,19 @@ export class UserStatsPopup extends Container {
       children: [header, body],
     });
 
-    const background = new Sprite({
-      texture: Texture.from('stats-popup/background.svg'),
-      layout: {
-        width: POPUP_WIDTH,
-        height: POPUP_HEIGHT,
-      },
-    });
+    // Drawn rather than a texture so the corners and rim stay crisp at any card aspect ratio.
+    const background = new Graphics()
+      .roundRect(0, 0, POPUP_WIDTH, POPUP_HEIGHT, CARD_RADIUS)
+      .fill(CARD_RIM_COLOR)
+      .roundRect(
+        CARD_RIM_SIDE,
+        0,
+        POPUP_WIDTH - CARD_RIM_SIDE * 2,
+        POPUP_HEIGHT - CARD_RIM_BOTTOM,
+        CARD_RADIUS,
+      )
+      .fill(CARD_FACE_COLOR);
+    background.layout = { width: POPUP_WIDTH, height: POPUP_HEIGHT };
 
     this.panel = new Container({ layout: true });
     // Absorbs taps on the card so they never reach the overlay behind it.

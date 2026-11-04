@@ -5,8 +5,8 @@ import '@pixi/layout';
 
 import './index.css';
 import { FpsCounter } from './components/FpsCounter';
-import { MobileBlockerBanner } from './components/MobileBlockerBanner';
 import { queryClient } from './components/queryClient';
+import { RotateDevicePrompt } from './components/RotateDevicePrompt';
 import { ScreenOverlay } from './components/ScreenOverlay';
 import { CreationEngine } from './engine/engine';
 import { setEngine } from './engine/getEngine';
@@ -53,7 +53,7 @@ export default function App() {
 
   return (
     <>
-      <MobileBlockerBanner />
+      <RotateDevicePrompt />
       <div id="pixi-container" />
       {import.meta.env.DEV && <FpsCounter />}
       <QueryClientProvider client={queryClient}>

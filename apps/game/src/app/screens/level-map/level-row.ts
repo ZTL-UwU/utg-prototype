@@ -1,91 +1,53 @@
-import { animate } from 'motion';
-import { Container, Graphics } from 'pixi.js';
+import { Container } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import {
+  isPathVertical,
+  joinWithLines,
+  pathFlex,
+  pathPosition,
+  playPathEnter,
+  playPathExit,
+  resizePath,
+} from '../../ui/button-path';
 import { TutorialEntryButton } from '../level-select/education-level-select/tutorial-entry-button';
 import { TypingTutorialScreen } from '../typing-level/level-tutorial';
 import { LevelButton } from './level-button';
 import { getPrevMap, type TMapUnit } from './units';
 
 export class LevelRow extends Container {
-  private levelButtons?: (LevelButton | TutorialEntryButton | Graphics)[];
+  private readonly vertical = isPathVertical();
+  private readonly buttonCount: number;
+  private levelButtons: Container[];
 
   constructor(mapUnit: TMapUnit) {
-    super({
-      layout: {
-        position: 'absolute',
-        top: '50%',
-        width: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 8,
-      },
-    });
+    super({ layout: { ...pathPosition(), ...pathFlex(isPathVertical()) } });
 
-    this.levelButtons = mapUnit.levels.flatMap((level, i) => {
-      const fillerLine = new Graphics({ layout: { width: 80, height: 15 } })
-        .roundRect(0, 0, 100, 15, 10)
-        .fill(0xa66129);
-      const button = new LevelButton(level, mapUnit, i + 1);
-
-      return i === 0 ? [button] : [fillerLine, button];
-    });
-
+    const buttons: (LevelButton | TutorialEntryButton)[] = mapUnit.levels.map(
+      (level, i) => new LevelButton(level, mapUnit, i + 1),
+    );
     if (mapUnit.type === 'typing' && getPrevMap(mapUnit) === undefined) {
-      const tutorialButton = new TutorialEntryButton(() => {
-        void engine().navigation.showScreen(TypingTutorialScreen, mapUnit);
-      });
-      const fillerLine = new Graphics({ layout: { width: 80, height: 15 } })
-        .roundRect(0, 0, 100, 15, 10)
-        .fill(0xa66129);
-      this.levelButtons = [tutorialButton, fillerLine, ...this.levelButtons];
+      buttons.unshift(
+        new TutorialEntryButton(() => {
+          void engine().navigation.showScreen(TypingTutorialScreen, mapUnit);
+        }),
+      );
     }
 
+    this.buttonCount = buttons.length;
+    this.levelButtons = joinWithLines(buttons, this.vertical);
     this.addChild(...this.levelButtons);
   }
 
-  private offScreenOffset(child: Container, screenHeight: number) {
-    return screenHeight + 40 - child.getGlobalPosition().y;
+  public resize(width: number, height: number) {
+    resizePath(this, this.buttonCount, width, height);
   }
 
-  public async playEnterAnimation(screenHeight: number) {
-    const children = this.levelButtons ?? [];
-
-    for (const child of children) {
-      child.y = 0;
-      child.y = this.offScreenOffset(child, screenHeight);
-    }
-
-    await Promise.all(
-      children.map((child, index) =>
-        animate(
-          child,
-          { y: 0 },
-          {
-            duration: 0.4,
-            ease: 'backOut',
-            delay: index * 0.07,
-          },
-        ),
-      ),
-    );
+  public async playEnterAnimation() {
+    await playPathEnter(this, this.levelButtons, this.vertical);
   }
 
-  public async playExitAnimation(screenHeight: number) {
-    const children = this.levelButtons ?? [];
-
-    await Promise.all(
-      children.map((child, index) =>
-        animate(
-          child,
-          { y: this.offScreenOffset(child, screenHeight) },
-          {
-            duration: 0.2,
-            ease: 'backIn',
-            delay: index * 0.02,
-          },
-        ),
-      ),
-    );
+  public async playExitAnimation() {
+    await playPathExit(this, this.levelButtons, this.vertical);
   }
 }

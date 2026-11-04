@@ -51,7 +51,12 @@ const SENTENCE_COLORS = {
   REMAINING: 0xb0b0b0,
 } as const;
 
-export function createTypingSentenceStyle(fontSize: number): HTMLTextStyle {
+/**
+ * @param minHeight Height to reserve. Pixi can measure wrapped text before its font has loaded
+ * and size the texture from that, cutting off the last line when the real font wraps further.
+ */
+export function createTypingSentenceStyle(fontSize: number, minHeight = 0): HTMLTextStyle {
+  const { cssOverrides, ...options } = scriptTextOptions();
   return new HTMLTextStyle({
     fontSize,
     fill: SENTENCE_COLORS.REMAINING,
@@ -59,7 +64,15 @@ export function createTypingSentenceStyle(fontSize: number): HTMLTextStyle {
     wordWrap: true,
     wordWrapWidth: 900,
     align: 'center',
-    ...scriptTextOptions(),
+    ...options,
+    // Pixi measures without padding but renders with it, so side padding pushes the widest
+    // line past the texture's edge and cuts its last letter.
+    cssOverrides: [
+      ...cssOverrides,
+      'padding-left: 0',
+      'padding-right: 0',
+      `min-height: ${minHeight}px`,
+    ],
     tagStyles: {
       completed: { fill: SENTENCE_COLORS.COMPLETED },
       remaining: { fill: SENTENCE_COLORS.REMAINING },

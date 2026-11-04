@@ -3,10 +3,17 @@ import { animate } from 'motion';
 import { Container, Graphics, Sprite, Text, Texture, type TextDropShadow } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
 import { convertToCurrentScript, getScriptFontFamily } from '../../../../utils/script';
 import { HUD } from '../../../ui/hud';
 import { LayerSelectScreen } from '../../layer-select';
 import { EducationMapRow } from './education-map-row';
+
+/** Phones drop the titles below the back button and script pill, which would cover them. */
+const TITLE_TOP = { sm: 170, lg: 100 };
+const SUBTITLE_TOP = { sm: 310, lg: 300 };
+/** Extra margin so drop shadows don't peek in from the screen edge. */
+const OFF_SCREEN_MARGIN = 40;
 
 function createMapNavButton(label: string) {
   const size = 120;
@@ -36,6 +43,8 @@ export class EducationLevelSelect extends Container {
   private mapRow: EducationMapRow;
   private hud: HUD;
   private title: Text;
+  private titleTop = responsive(TITLE_TOP);
+  private subtitleTop = responsive(SUBTITLE_TOP);
   private subtitle: Text;
   private prevMapButton: FancyButton;
   private nextMapButton: FancyButton;
@@ -65,7 +74,7 @@ export class EducationLevelSelect extends Container {
     this.prevMapButton.onPress.connect(() => {
       void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
       void (async () => {
-        await this.mapRow.prevPage(engine().navigation.height);
+        await this.mapRow.prevPage();
         this.updateNavButtons();
       })();
     });
@@ -74,7 +83,7 @@ export class EducationLevelSelect extends Container {
     this.nextMapButton.onPress.connect(() => {
       void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
       void (async () => {
-        await this.mapRow.nextPage(engine().navigation.height);
+        await this.mapRow.nextPage();
         this.updateNavButtons();
       })();
     });
@@ -94,7 +103,7 @@ export class EducationLevelSelect extends Container {
       text: 'ALPHABETS',
       style: {
         fontFamily: 'Concert One',
-        fontSize: 180,
+        fontSize: responsive({ sm: 140, lg: 180 }),
         fontWeight: '800',
         fill: 0xffffff,
         dropShadow: textDropShadow,
@@ -103,7 +112,7 @@ export class EducationLevelSelect extends Container {
     });
     this.title.layout = {
       position: 'absolute',
-      top: 100,
+      top: this.titleTop,
     };
 
     this.subtitle = new Text({
@@ -119,7 +128,7 @@ export class EducationLevelSelect extends Container {
     });
     this.subtitle.layout = {
       position: 'absolute',
-      top: 300,
+      top: this.subtitleTop,
     };
 
     this.addChild(
@@ -149,19 +158,26 @@ export class EducationLevelSelect extends Container {
 
   public resize(width: number, height: number) {
     this.layout = { width, height };
-    this.prevMapButton.position.set(40, height / 2);
-    this.nextMapButton.position.set(width - 40, height / 2);
+    this.mapRow.resize(width, height);
+    const navButtonY = responsive({ sm: height - 200, lg: height / 2 });
+    this.prevMapButton.position.set(responsive({ sm: 90, lg: 40 }), navButtonY);
+    this.nextMapButton.position.set(width - responsive({ sm: 90, lg: 40 }), navButtonY);
+  }
+
+  /** The y offset that moves an element fully above the top screen edge. */
+  private offScreenY(element: Container, layoutTop: number) {
+    return -(layoutTop + element.getLocalBounds().maxY + OFF_SCREEN_MARGIN);
   }
 
   public async show() {
-    this.title.y = -(300 + 120);
-    this.subtitle.y = -(300 + 120);
+    this.title.y = this.offScreenY(this.title, this.titleTop);
+    this.subtitle.y = this.offScreenY(this.subtitle, this.subtitleTop);
     this.updateNavButtons();
 
     const animations = [
       animate(this.title, { y: 0 }, { duration: 0.4, ease: 'backOut' }),
       animate(this.subtitle, { y: 0 }, { duration: 0.4, ease: 'backOut' }),
-      this.mapRow.playEnterAnimation(engine().navigation.height),
+      this.mapRow.playEnterAnimation(),
     ];
 
     const prevNaturalX = this.prevMapButton.x;
@@ -181,8 +197,16 @@ export class EducationLevelSelect extends Container {
 
   public async hide() {
     await Promise.all([
-      animate(this.title, { y: -(300 + 120) }, { duration: 0.2, ease: 'backIn' }),
-      animate(this.subtitle, { y: -(300 + 120) }, { duration: 0.2, ease: 'backIn' }),
+      animate(
+        this.title,
+        { y: this.offScreenY(this.title, this.titleTop) },
+        { duration: 0.2, ease: 'backIn' },
+      ),
+      animate(
+        this.subtitle,
+        { y: this.offScreenY(this.subtitle, this.subtitleTop) },
+        { duration: 0.2, ease: 'backIn' },
+      ),
       animate(
         this.prevMapButton,
         { x: this.prevMapButton.x - engine().navigation.width },
@@ -193,7 +217,7 @@ export class EducationLevelSelect extends Container {
         { x: this.nextMapButton.x + engine().navigation.width },
         { duration: 0.2, ease: 'easeIn' },
       ),
-      this.mapRow.playExitAnimation(engine().navigation.height),
+      this.mapRow.playExitAnimation(),
     ]);
   }
 }

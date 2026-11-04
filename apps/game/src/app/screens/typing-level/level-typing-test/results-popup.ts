@@ -2,6 +2,7 @@ import { animate } from 'motion';
 import { Container, Graphics, Text } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
 import { getMappedFromKeyCode } from '../../../../utils/keymap';
 import { getScriptFontFamily } from '../../../../utils/script';
 import { BackButton } from '../../../ui/back-button';
@@ -137,6 +138,7 @@ export class TypingTestResultsPopup extends Container {
 
     const statsRow = new Container({
       layout: { flexDirection: 'row', alignItems: 'center', gap: 24 },
+      scale: responsive({ sm: 0.72, lg: 1 }),
       children: [
         createStatPill('Accuracy', `${accuracy}%`),
         createStatPill('Speed', `${wpm}wpm`),

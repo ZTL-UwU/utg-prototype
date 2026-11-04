@@ -4,6 +4,7 @@ import { animate } from 'motion';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
 import { getKeyFromChar } from '../../../../utils/keymap';
 import {
   convertToCurrentScript,
@@ -12,7 +13,8 @@ import {
   isCurrentScriptRtl,
 } from '../../../../utils/script';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
-import { createLetterNavButtons } from '../../../ui/letter-nav-buttons';
+import { phoneKeyLabel } from '../../../ui/keyboard-phone';
+import { createLetterNavButtons, layoutLetterPopupControls } from '../../../ui/letter-nav-buttons';
 import { HandGuide } from './hand-guide';
 
 const COLORS = {
@@ -45,6 +47,8 @@ type TutorialStep = {
   code: string;
   label: string;
   isShift: boolean;
+  /** A phone vowel key that types the word-initial ئ along with its vowel. */
+  addsHamza?: boolean;
 };
 
 type GuideItem = {
@@ -92,7 +96,8 @@ function createGuideKey(label: string, isHomeKey = false) {
   return key;
 }
 
-function createShiftGuideKey() {
+/** Phones latch a tapped Shift instead of holding it. */
+function createShiftGuideKey(phone: boolean) {
   const key = new Container();
   const background = new Graphics()
     .roundRect(0, 5, SHIFT_WIDTH, SHIFT_HEIGHT, SHIFT_RADIUS)
@@ -113,7 +118,7 @@ function createShiftGuideKey() {
   });
   label.position.set(SHIFT_WIDTH / 2, SHIFT_HEIGHT / 2);
   const hold = new Text({
-    text: 'HOLD',
+    text: phone ? 'TAP' : 'HOLD',
     anchor: 0.5,
     resolution: 2,
     style: {
@@ -156,6 +161,8 @@ export class LetterPopup extends Container {
   public static assetBundles = ['typing-tutorial', 'end-screen', 'ui'];
 
   private readonly letter: string;
+  /** Teaches the phone keyboard: its key labels, a tapped Shift, and no touch-typing hands. */
+  private readonly phone = responsive({ sm: true, lg: false });
   private readonly keyboard: KeyboardLayout;
   private readonly handGuide: HandGuide;
   private readonly background: Graphics;
@@ -211,8 +218,13 @@ export class LetterPopup extends Container {
     this.layout = { width, height };
     this.viewHeight = height;
     this.background.clear().rect(0, 0, width, height).fill(COLORS.background);
+    const controlsBottom = layoutLetterPopupControls(
+      { closeButton: this.closeButton, prevButton: this.prevButton, nextButton: this.nextButton },
+      width,
+      height,
+    );
     this.layoutKeyboardAndHands(width, height);
-    this.layoutGuide(width);
+    this.layoutGuide(width, this.phone ? controlsBottom + GUIDE_TOP_MARGIN : GUIDE_TOP_MARGIN);
   }
 
   async show(animated = true) {
@@ -257,14 +269,20 @@ export class LetterPopup extends Container {
     const sequence: readonly string[] = getTypingSequenceForScript(getCurrentTargetScript()).get(
       letter as EducationLetter,
     ) ?? [letter];
+    const script = getCurrentTargetScript();
+    // The phone's vowel keys add the word-initial ئ themselves, so ئا is one tap on ئا.
+    const addsHamza =
+      this.phone && script === 'Arabic' && sequence[0] === 'ئ' && sequence.length > 1;
+    const phoneSequence = addsHamza ? sequence.slice(1) : sequence;
 
-    return sequence.flatMap<TutorialStep>((part) => {
+    return phoneSequence.flatMap<TutorialStep>((part) => {
       if (part === 'shift') {
         return [{ code: 'ShiftLeft', label: 'SHIFT', isShift: true }];
       }
 
       const code = getKeyFromChar(part);
-      return code ? [{ code, label: part, isShift: false }] : [];
+      const label = this.phone ? phoneKeyLabel(part, script, addsHamza) : part;
+      return code ? [{ code, label, isShift: false, addsHamza }] : [];
     });
   }
 
@@ -289,8 +307,11 @@ export class LetterPopup extends Container {
       const stepIndex = this.steps.indexOf(step);
       items.push({
         container: step.isShift
-          ? createShiftGuideKey()
-          : createGuideKey(step.label, step.code === 'KeyF' || step.code === 'KeyJ'),
+          ? createShiftGuideKey(this.phone)
+          : createGuideKey(
+              step.label,
+              !this.phone && (step.code === 'KeyF' || step.code === 'KeyJ'),
+            ),
         width: step.isShift ? SHIFT_WIDTH : GUIDE_KEY_WIDTH,
         y: step.isShift ? 34 : 0,
         stepIndex,
@@ -329,10 +350,11 @@ export class LetterPopup extends Container {
     this.guide.addChild(this.stars);
   }
 
-  private layoutGuide(width: number) {
+  /** Fits the guide between `top` and the keyboard. */
+  private layoutGuide(width: number, top: number) {
     const availableWidth = width * GUIDE_MAX_WIDTH_FACTOR;
     const keyboardTop = this.keyboard.y;
-    const availableHeight = Math.max(1, keyboardTop - GUIDE_TOP_MARGIN - GUIDE_KEYBOARD_GAP);
+    const availableHeight = Math.max(1, keyboardTop - top - GUIDE_KEYBOARD_GAP);
     const guideContentHeight = GUIDE_CONTENT_BOTTOM - GUIDE_CONTENT_TOP;
     const scale = Math.min(
       1,
@@ -340,13 +362,18 @@ export class LetterPopup extends Container {
       availableHeight / guideContentHeight,
     );
     const localCenterY = (GUIDE_CONTENT_TOP + GUIDE_CONTENT_BOTTOM) / 2;
-    const availableCenterY = GUIDE_TOP_MARGIN + availableHeight / 2;
+    const availableCenterY = top + availableHeight / 2;
 
     this.guide.scale.set(scale);
     this.guide.position.set(width / 2, Math.round(availableCenterY - localCenterY * scale));
   }
 
   private layoutKeyboardAndHands(width: number, height: number) {
+    this.handGuide.visible = !this.phone;
+    if (this.phone) {
+      this.keyboard.resize(width, height);
+      return;
+    }
     this.handGuide.resize(width, height);
     const handsHeight = this.handGuide.height;
     const keyboardBottomMargin = handsHeight + HANDS_BOTTOM_GAP + KEYBOARD_ABOVE_HANDS_GAP;
@@ -389,6 +416,8 @@ export class LetterPopup extends Container {
   }
 
   private refreshGuideState() {
+    // The lesson's letter starts a word, so its vowel key shows and types the ئ until it's done.
+    this.keyboard.setWordStart(!this.completed && this.steps.some((step) => step.addsHamza));
     this.keyboard.clearAllKeyFeedback();
     for (const step of this.steps) {
       this.keyboard.clearKeyFeedback(step.code);
@@ -445,8 +474,16 @@ export class LetterPopup extends Container {
     const expectedStep = this.steps[this.nextStepIndex];
     if (!expectedStep) return;
 
-    const isExpectedShift =
-      expectedStep.isShift && (event.code === 'ShiftLeft' || event.code === 'ShiftRight');
+    const isShift = event.code === 'ShiftLeft' || event.code === 'ShiftRight';
+    // A Shift the lesson doesn't ask for isn't a mistake on its own: the phone keyboard needs
+    // one for ئ, which a physical keyboard types unshifted.
+    if (isShift && !expectedStep.isShift) return;
+    // The ئ a phone vowel key types first is part of tapping that key, as is a ئ typed by hand.
+    if (expectedStep.addsHamza && event.code === getKeyFromChar('ئ')) {
+      this.keyboard.setWordStart(false);
+      return;
+    }
+    const isExpectedShift = expectedStep.isShift && isShift;
     const isExpectedKey = !expectedStep.isShift && event.code === expectedStep.code;
     const shiftIsRequired = this.steps.slice(0, this.nextStepIndex).some((step) => step.isShift);
 
@@ -505,7 +542,6 @@ export class LetterPopup extends Container {
       },
     });
     button.anchor.set(0.5);
-    button.layout = { position: 'absolute', top: '10%', left: '5%' };
     button.onPress.connect(() => {
       void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
       void engine().navigation.hidePopup();

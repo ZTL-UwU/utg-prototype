@@ -2,6 +2,7 @@ import type { TypingTestProps } from '@utg/level-types';
 import { Container, Graphics, Text, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
 import { getKeyFromChar, getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useLevelProgress } from '../../../../zustandStores/levelProgressStore';
 import { REMOTE_SENTENCES_BUNDLE } from '../../../../zustandStores/sentenceStore';
@@ -94,7 +95,7 @@ export class TypingTestScreen extends Container {
         }),
     });
 
-    this.keyboard = new KeyboardLayout();
+    this.keyboard = new KeyboardLayout({ text: 'sentences' });
 
     this.timerText = new Text({
       text: '',
@@ -183,7 +184,9 @@ export class TypingTestScreen extends Container {
 
   private startTest(settings: TypingTestSettings) {
     lastSettings = settings;
-    this.settings = settings;
+    // Phones have no physical keyboard, so the on-screen one is the only way to type.
+    const phone = responsive({ sm: true, lg: false });
+    this.settings = { ...settings, showKeyboard: settings.showKeyboard || phone };
     this.promptView = createPromptView(settings.mode, this.props);
     this.addChildAt(this.promptView, this.getChildIndex(this.panel) + 1);
 
@@ -191,7 +194,7 @@ export class TypingTestScreen extends Container {
     this.remainingMs = this.durationMs;
     this.armed = true;
 
-    if (settings.showKeyboard) {
+    if (this.settings.showKeyboard) {
       this.addChild(this.keyboard);
       this.keyboard.resize(this._sw, this._sh);
       void this.keyboard.playEnterAnimation();
@@ -204,6 +207,11 @@ export class TypingTestScreen extends Container {
 
   private get currentTargetLetter(): string | undefined {
     return this.armed ? this.text[this.activeIdx] : undefined;
+  }
+
+  /** The letter after the target, which tells a phone a word-initial ئ comes from a vowel key. */
+  private get nextTargetLetter(): string | undefined {
+    return this.armed ? this.text[this.activeIdx + 1] : undefined;
   }
 
   private updateTimerText() {
@@ -220,6 +228,7 @@ export class TypingTestScreen extends Container {
   private loadNextPage() {
     this.text = this.promptView?.next() ?? '';
     this.activeIdx = 0;
+    this.keyboard.setWordStart(true);
     this.updatePromptDisplay();
   }
 
@@ -246,7 +255,7 @@ export class TypingTestScreen extends Container {
 
   private refreshHint() {
     if (!this.settings?.showKeyboard) return;
-    this.keyboard.setHintedLetter(this.currentTargetLetter);
+    this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
   }
 
   /** Colours a key, then restores the hint — a stale clear must never leave the board blank. */

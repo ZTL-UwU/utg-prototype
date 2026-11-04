@@ -65,6 +65,13 @@ The game ships as native iOS/Android apps via Capacitor (`apps/game/capacitor.co
 
 Android needs `ANDROID_HOME` set and JDK 21 for Gradle.
 
+Phones are portrait-only and fullscreen: the native apps lock orientation, and phone browsers get a rotate prompt. Every phone lays out at a logical width of 768, so fixed values behave the same across them.
+
+- Pixi: use `responsive({ sm: 100, lg: 300 })` (`src/engine/utils/viewport.ts`). It has Tailwind's breakpoints and mobile-first rules, `sm` also covers narrower screens, and `lg` is the switch to the landscape layouts. Call it inside `resize` to follow size changes.
+- A keyboard inside a scaled stage uses `resizeToScreen`; popups scale with `layoutPopup` (`src/app/ui/layout-popup.ts`); `safeAreaInsets()` keeps controls clear of the notch and home indicator.
+- React: use Tailwind's own `max-sm:` classes.
+- `VITE_NATIVE_DEBUG="true"` shows the on-screen startup log in native builds, which have no reachable console.
+
 ## Backend (`apps/backend`)
 
 Django app managed with `uv`, not `vp`; it's excluded from Vite+ fmt/lint. Run commands from `apps/backend` — see its `README.md` for setup and env vars.

@@ -11,6 +11,7 @@ import {
 } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
 import { getSentenceMarkup } from '../../../../utils/example-words';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import {
@@ -46,6 +47,16 @@ const KEYBOARD_COLORS: KeyboardColorOptions = {
   SHIFT_HINT_COLOR: 0xffde59,
 };
 const KEYBOARD_SCALE = 0.7;
+/** Design units a phone shows across its width, and how far down the stage starts. */
+const PHONE_STAGE = {
+  width: 1067,
+  top: 240,
+  minTop: 190,
+  /** Design rows of the sentence banner and the skier's feet. */
+  sentenceTop: 100,
+  skierBottom: 960,
+  keyboardHeight: 500,
+};
 const KEYBOARD_BOTTOM_MARGIN = 28;
 
 const ASSET = {
@@ -80,6 +91,7 @@ const TIMER_COLORS: Record<TimerColor, number> = {
 
 const LAYOUT = {
   lives: { x: 1920, y: 60 },
+  phoneLives: { x: 1480, y: -30 },
   progress: { y: 36, width: 520, height: 48 },
   sentenceY: 160,
   leopardY: 800,
@@ -242,7 +254,10 @@ export class GameLevelSki extends Container {
     this.hitFx.scale.set(0.85);
 
     this.livesBar = new LivesBar(typedLevel.props.maxLives);
-    this.livesBar.position.set(LAYOUT.lives.x, LAYOUT.lives.y);
+    this.livesBar.position.set(
+      responsive({ sm: LAYOUT.phoneLives.x, lg: LAYOUT.lives.x }),
+      responsive({ sm: LAYOUT.phoneLives.y, lg: LAYOUT.lives.y }),
+    );
     this.livesBar.visible = false;
 
     this.progressBar = new RoundedProgressBar({
@@ -284,7 +299,7 @@ export class GameLevelSki extends Container {
       LAYOUT.startGate.y + LAYOUT.startGate.bannerOffsetY,
     );
 
-    this.keyboard = new KeyboardLayout(KEYBOARD_COLORS);
+    this.keyboard = new KeyboardLayout({ colors: KEYBOARD_COLORS, text: 'sentences' });
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
@@ -313,7 +328,16 @@ export class GameLevelSki extends Container {
   }
 
   public resize(width: number, height: number) {
-    const uiScale = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
+    const fitScale = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
+    // Phones zoom in on the middle of the slope, keeping the skier clear of the keyboard.
+    const keyboardTop = height - PHONE_STAGE.keyboardHeight;
+    const uiScale = responsive({
+      sm: Math.min(
+        width / PHONE_STAGE.width,
+        (keyboardTop - PHONE_STAGE.minTop) / (PHONE_STAGE.skierBottom - PHONE_STAGE.sentenceTop),
+      ),
+      lg: fitScale,
+    });
     const backgroundScale = Math.max(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
     this.background.position.set(width / 2, height / 2);
     this.background.scale.set(backgroundScale);
@@ -321,19 +345,26 @@ export class GameLevelSki extends Container {
     this.gameplay.scale.set(uiScale);
     this.gameplay.position.set(
       (width - DESIGN_WIDTH * uiScale) / 2,
-      (height - DESIGN_HEIGHT * uiScale) / 2,
+      responsive({
+        sm: Math.min(PHONE_STAGE.top, keyboardTop - PHONE_STAGE.skierBottom * uiScale),
+        lg: (height - DESIGN_HEIGHT * uiScale) / 2,
+      }),
     );
     // Bleed past the letterboxed design area so the banner spans the real screen.
     this.sentencePanelWidth = width / uiScale;
     this.sentencePanelX = (DESIGN_WIDTH - this.sentencePanelWidth) / 2;
     this.layoutSentencePanel();
-    this.keyboard.resize(DESIGN_WIDTH, DESIGN_HEIGHT);
-    const scale = this.keyboard.scale.x * KEYBOARD_SCALE;
-    this.keyboard.scale.set(scale);
-    this.keyboard.position.set(
-      Math.round((DESIGN_WIDTH - this.keyboard.width) / 2),
-      Math.round(DESIGN_HEIGHT - KEYBOARD_BOTTOM_MARGIN - this.keyboard.height),
-    );
+    if (responsive({ sm: true, lg: false })) {
+      this.keyboard.resizeToScreen(this.gameplay, width, height);
+    } else {
+      this.keyboard.resize(DESIGN_WIDTH, DESIGN_HEIGHT);
+      const scale = this.keyboard.scale.x * KEYBOARD_SCALE;
+      this.keyboard.scale.set(scale);
+      this.keyboard.position.set(
+        Math.round((DESIGN_WIDTH - this.keyboard.width) / 2),
+        Math.round(DESIGN_HEIGHT - KEYBOARD_BOTTOM_MARGIN - this.keyboard.height),
+      );
+    }
     this.hud.layout = { width, height };
   }
 
@@ -375,7 +406,7 @@ export class GameLevelSki extends Container {
     window.addEventListener('keydown', this.handleKeyDown);
     if (this.keyboard.visible) {
       await this.keyboard.resume();
-      this.keyboard.setHintedLetter(this.currentTargetLetter);
+      this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
     }
   }
 
@@ -429,6 +460,12 @@ export class GameLevelSki extends Container {
     return this.currentRound.sentence[this.currentRound.correctIdx];
   }
 
+  /** The letter after the target, which tells a phone a word-initial ئ comes from a vowel key. */
+  private get nextTargetLetter(): string | undefined {
+    if (!this.currentRound) return undefined;
+    return this.currentRound.sentence[this.currentRound.correctIdx + 1];
+  }
+
   private updateCountdown(deltaMs: number) {
     this.countdownElapsedMs += deltaMs;
     if (this.countdownElapsedMs < this.countdownStepMs) return;
@@ -467,6 +504,7 @@ export class GameLevelSki extends Container {
       sentence: this.sentences[index]!,
       correctIdx: 0,
     };
+    this.keyboard.setWordStart(true);
     this.approachElapsedMs = 0;
     this.timerColor = 'green';
     this.progressBar.setColors(TIMER_COLORS.green);
@@ -519,7 +557,7 @@ export class GameLevelSki extends Container {
     const { sentence, correctIdx } = this.currentRound;
     this.sentenceText.text = getSentenceMarkup(sentence, correctIdx);
     this.layoutSentencePanel();
-    this.keyboard.setHintedLetter(this.currentTargetLetter);
+    this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
   }
 
   private layoutSentencePanel() {
@@ -607,7 +645,7 @@ export class GameLevelSki extends Container {
     void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
     this.pushTimeout(() => {
       this.keyboard.clearKeyFeedback(code);
-      this.keyboard.setHintedLetter(this.currentTargetLetter);
+      this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
     }, FEEDBACK_MS);
     useSessionStore.getState().recordMistake();
 

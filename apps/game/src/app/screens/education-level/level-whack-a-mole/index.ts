@@ -4,6 +4,7 @@ import { Container, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { randomShuffle } from '../../../../engine/utils/random';
+import { responsive } from '../../../../engine/utils/viewport';
 import { waitFor } from '../../../../engine/utils/waitFor';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
@@ -117,13 +118,17 @@ export class EducationWhackAMoleScreen extends Container {
       anchor: { x: 0.5, y: 1 },
     });
 
+    const soundSize = responsive({ sm: 160, lg: 200 });
     this.soundButton = new SoundButton({
       onClick: () => this.playCurrentAnswerAudio(),
-      size: 200,
+      size: soundSize,
       variant: 'brown',
     });
     this.soundButton.anchor.set(0.5);
-    this.soundButton.layout = { position: 'absolute', bottom: 200, right: 200 };
+    // Matches the sheep-jump level: layout places the anchored center, so the inset includes
+    // half the button, and phones tuck it into the corner.
+    const soundInset = responsive({ sm: 40, lg: 100 }) + soundSize / 2;
+    this.soundButton.layout = { position: 'absolute', bottom: soundInset, right: soundInset };
 
     this.hud = new HUD({
       onBack: () =>
@@ -187,11 +192,19 @@ export class EducationWhackAMoleScreen extends Container {
   }
 
   private positionScene(width: number, height: number) {
-    const positions = [
-      { x: width * 0.2, y: height * 0.5 },
-      { x: width * 0.5, y: height * 0.4 },
-      { x: width * 0.8, y: height * 0.5 },
-    ];
+    // Phones are too narrow for three holes side by side, so they form a triangle.
+    const positions = responsive({
+      sm: [
+        { x: width * 0.27, y: height * 0.3 },
+        { x: width * 0.73, y: height * 0.3 },
+        { x: width * 0.5, y: height * 0.52 },
+      ],
+      lg: [
+        { x: width * 0.2, y: height * 0.5 },
+        { x: width * 0.5, y: height * 0.4 },
+        { x: width * 0.8, y: height * 0.5 },
+      ],
+    });
 
     this.targets.forEach((target, index) => {
       target.position.set(positions[index].x, positions[index].y);

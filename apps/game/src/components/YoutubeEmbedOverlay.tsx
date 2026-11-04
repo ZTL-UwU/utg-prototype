@@ -7,8 +7,8 @@ const EDUCATION_YOUTUBE_VIDEOS = [
 
 export function YoutubeEmbedOverlay() {
   return (
-    <div className="flex size-full items-center justify-center py-[5%]">
-      <div className="pointer-events-auto grid h-full w-full max-w-[75%] grid-cols-2 grid-rows-2 gap-8">
+    <div className="flex size-full items-center justify-center py-[5%] max-sm:pt-24 max-sm:pb-4">
+      <div className="pointer-events-auto grid h-full w-full max-w-[75%] grid-cols-2 grid-rows-2 gap-8 max-sm:max-w-[92%] max-sm:grid-cols-1 max-sm:grid-rows-4 max-sm:gap-3">
         {EDUCATION_YOUTUBE_VIDEOS.map((video, index) => (
           <iframe
             key={`${video.id}-${index}`}

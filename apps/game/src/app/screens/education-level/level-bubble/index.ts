@@ -2,7 +2,8 @@ import { sound } from '@pixi/sound';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { randomShuffle } from '../../../../engine/utils/random';
+import { randomFloat, randomShuffle } from '../../../../engine/utils/random';
+import { responsive } from '../../../../engine/utils/viewport';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -16,10 +17,14 @@ import {
   type TLevel,
   type TLevelOf,
 } from '../../level-map/units';
-import { LetterBubble } from './letter-bubble';
+import { getBubbleSize, LetterBubble } from './letter-bubble';
 
 // bubble slots, matches xSlots in resize()
 const NUM_CHOICES = 3;
+/** How far each bubble's float time may stray from the base, as a share of it. */
+const FLOAT_SPEED_SPREAD = 0.15;
+/** Latest a bubble may start rising, in seconds. */
+const MAX_START_DELAY = 1;
 
 export class EducationBubbleScreen extends Container {
   public readonly screenName = 'EducationBubbleScreen';
@@ -136,9 +141,10 @@ export class EducationBubbleScreen extends Container {
   public resize(width: number, height: number) {
     this.layout = { width, height };
     this.screenHeight = height;
-    const xSlots = [0.2, 0.5, 0.8];
+    // Phones spread the slots wider so three bubbles fit side by side.
+    const xSlots = responsive({ sm: [0.18, 0.5, 0.82], lg: [0.2, 0.5, 0.8] });
     for (let i = 0; i < this.bubbles.length; i++) {
-      this.bubbles[i].x = width * xSlots[i] - 40;
+      this.bubbles[i].x = width * xSlots[i];
     }
   }
 
@@ -147,13 +153,15 @@ export class EducationBubbleScreen extends Container {
   }
 
   public async show() {
-    const FLOAT_DURATION = 10;
+    const FLOAT_DURATION = 15;
     for (let i = 0; i < this.bubbles.length; i++) {
-      this.bubbles[i].y = this.screenHeight + 80;
+      // Start and end fully off screen; bubbles are anchored at their center.
+      this.bubbles[i].y = this.screenHeight + getBubbleSize() / 2 + 20;
+      // Each bubble gets its own speed and start, so they don't rise in a line.
       this.bubbles[i].startFloat(
-        -160,
-        FLOAT_DURATION,
-        i * 0.5,
+        -(getBubbleSize() / 2 + 40),
+        FLOAT_DURATION * randomFloat(1 - FLOAT_SPEED_SPREAD, 1 + FLOAT_SPEED_SPREAD),
+        randomFloat(0, MAX_START_DELAY),
         i === this.correctBubbleIndex ? this.endGame : undefined,
       );
     }

@@ -95,6 +95,11 @@ export class Trout extends Container {
     return this.word[this.activeLetterIdx];
   }
 
+  /** The letter after the current one, which tells a phone a word-initial ئ comes from a vowel key. */
+  get nextLetter(): string | undefined {
+    return this.word[this.activeLetterIdx + 1];
+  }
+
   get isComplete(): boolean {
     return this.activeLetterIdx >= this.word.length;
   }

@@ -80,7 +80,7 @@ export function generateRoundsDictionary(wordIds: number[] = [], roundCount = 5)
 
 export class TypingWordScreen extends Container {
   public readonly screenName = 'TypingWordScreen';
-  public static assetBundles = ['typing-level-word', REMOTE_WORDS_BUNDLE];
+  public static assetBundles = ['typing-level-word', 'ui', REMOTE_WORDS_BUNDLE];
   public static splashBackgroundAsset = 'typing-levels/typing-level-word/background.png';
   public static helpAssets = ['tutorial-popups/typing-tutorial.png'];
   private background: Sprite;
@@ -109,7 +109,7 @@ export class TypingWordScreen extends Container {
         }),
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
-    this.keyboard = new KeyboardLayout();
+    this.keyboard = new KeyboardLayout({ text: 'words' });
     this.rounds = generateRoundsDictionary(typedLevel.props.wordIds, typedLevel.props.roundCount);
     // this.rounds = DEV_TEST_ROUNDS; // uncomment to assign rounds to selected test set
     this.wordCard = new TypingWordCard();
@@ -146,12 +146,18 @@ export class TypingWordScreen extends Container {
     this.paused = false;
     window.addEventListener('keydown', this.handleKeyDown);
     await this.keyboard.resume();
-    this.keyboard.setHintedLetter(this.currentTargetLetter);
+    this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
   }
 
   private get currentTargetLetter(): string | undefined {
     if (!this.currentRound) return undefined;
     return this.currentRound.word[this.currentRound.activeLetterIdx];
+  }
+
+  /** The letter after the target, which tells a phone a word-initial ئ comes from a vowel key. */
+  private get nextTargetLetter(): string | undefined {
+    if (!this.currentRound) return undefined;
+    return this.currentRound.word[this.currentRound.activeLetterIdx + 1];
   }
 
   // pops the next round from this.rounds and assigns it to currentRound, calls endRound if rounds is empty
@@ -160,7 +166,8 @@ export class TypingWordScreen extends Container {
     this.currentRound = this.rounds.pop() ?? undefined;
     if (!this.currentRound) return;
     this.wordCard.setRound(this.currentRound); // always highlights first letter, letterIdx for new round always at 0
-    this.keyboard.setHintedLetter(this.currentTargetLetter);
+    this.keyboard.setWordStart(true);
+    this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
     playRoundAudio(this.currentRound);
   }
   /**
@@ -198,7 +205,7 @@ export class TypingWordScreen extends Container {
       setTimeout(() => {
         this.keyboard.clearKeyFeedback(event.code);
         this.wordCard.setFeedback('default');
-        this.keyboard.setHintedLetter(this.currentTargetLetter);
+        this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
       }, FEEDBACK_DURATION_MS);
       useSessionStore.getState().recordMistake();
     }
@@ -213,7 +220,7 @@ export class TypingWordScreen extends Container {
       this.popAndStartRound(); // drawCard resets tint to default here
     } else {
       this.wordCard.setProgress(r.activeLetterIdx);
-      this.keyboard.setHintedLetter(this.currentTargetLetter);
+      this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
     }
   };
 

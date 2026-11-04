@@ -2,6 +2,7 @@ import { animate } from 'motion';
 import { Container, HTMLText, HTMLTextStyle, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
 import {
   createTypingWordStyle,
   getAdvancedWordMarkup,
@@ -19,11 +20,11 @@ import { LevelMapScreen } from '../../level-map';
 import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
 import { generateRoundsDictionary, playRoundAudio, type Round } from '../level-word';
 
-const FONT_SIZE = 100;
-const PAD_Y = 75;
-const PAD_X = 100;
-const CONTENT_GAP = 78;
-const IMAGE_SIZE = 225;
+const FONT_SIZE = responsive({ sm: 76, lg: 100 });
+const PAD_Y = responsive({ sm: 50, lg: 75 });
+const PAD_X = responsive({ sm: 44, lg: 100 });
+const CONTENT_GAP = responsive({ sm: 28, lg: 78 });
+const IMAGE_SIZE = responsive({ sm: 170, lg: 225 });
 const FEEDBACK_DURATION_MS = 350;
 const CARD_COLORS = {
   default: 0xffffff,
@@ -39,7 +40,7 @@ function randomTouristTexture() {
 
 export class TypingMarketScreen extends Container {
   public readonly screenName = 'TypingMarketScreen';
-  public static assetBundles = ['typing-level-market', REMOTE_WORDS_BUNDLE];
+  public static assetBundles = ['typing-level-market', 'ui', REMOTE_WORDS_BUNDLE];
   public static splashBackgroundAsset = 'typing-levels/typing-level-market/splash.png';
   public static helpAssets = [
     'tutorial-popups/typing-level-market-1.png',
@@ -89,7 +90,7 @@ export class TypingMarketScreen extends Container {
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
-    this.keyboard = new KeyboardLayout();
+    this.keyboard = new KeyboardLayout({ text: 'words' });
     this.rounds = generateRoundsDictionary(typedLevel.props.wordIds, typedLevel.props.roundCount);
 
     this.card = new Sprite({
@@ -216,6 +217,7 @@ export class TypingMarketScreen extends Container {
     if (!this.currentRound) return Promise.resolve();
     const { wordId, word, activeLetterIdx } = this.currentRound;
     const image = new Sprite(Texture.from(getWordImageAlias(wordId)));
+    this.keyboard.setWordStart(true);
     playRoundAudio(this.currentRound);
     return this.updateContentContainer(image, word, activeLetterIdx);
   }

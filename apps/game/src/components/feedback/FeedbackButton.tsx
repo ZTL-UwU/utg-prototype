@@ -12,7 +12,7 @@ function FeedbackIcon() {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="size-7"
+      className="size-7 max-sm:size-5"
       aria-hidden="true"
     >
       <path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" />
@@ -29,8 +29,10 @@ export function FeedbackButton() {
       aria-label="Send feedback"
       title={`Send feedback (${feedbackHotkeyLabel()})`}
       className={[
-        'pointer-events-auto fixed right-4 bottom-4 z-30',
-        'inline-flex size-16 cursor-pointer items-center justify-center rounded-full',
+        // Bottom-right, clear of the safe-area insets
+        'pointer-events-auto fixed z-30',
+        'right-[max(1rem,var(--safe-right))] bottom-[max(1rem,var(--safe-bottom))]',
+        'inline-flex size-16 cursor-pointer items-center justify-center rounded-full max-sm:size-9',
         'border-2 border-forest bg-cream text-forest',
         'shadow-[0_3px_0_0_var(--color-forest-dark)]',
         'transition duration-100 outline-none',

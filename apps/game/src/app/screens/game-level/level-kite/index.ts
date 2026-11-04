@@ -87,7 +87,7 @@ export class GameLevelKite extends Container {
       texture: Texture.from('game-levels/game-level-kite/background.png'),
       layout: { position: 'absolute', width: '100%', height: '100%' },
     });
-    this.keyboard = new KeyboardLayout();
+    this.keyboard = new KeyboardLayout({ text: 'words' });
 
     this.wordPool = resolveWordsByIds(props.wordIds).map((word) => {
       const round: Round = {
@@ -177,7 +177,8 @@ export class GameLevelKite extends Container {
     this.gust = new Gust({ word: word.word, fontSize: this.wordFontSize });
     this.gust.resize(this.screenWidth, this.screenHeight);
     this.addChildAt(this.gust, this.getChildIndex(this.hud)); // gusts pass under the hud
-    this.keyboard.setHintedLetter(this.gust.currentLetter);
+    this.keyboard.setHintedLetter(this.gust.currentLetter, this.gust.nextLetter);
+    this.keyboard.setWordStart(true);
     this.resolving = false;
     this.timerRunning = false;
     void Promise.all([
@@ -249,7 +250,7 @@ export class GameLevelKite extends Container {
       void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
       this.pushTimeout(() => this.keyboard.clearKeyFeedback(event.code), KEY_FEEDBACK_MS);
       if (gust.isComplete) this.advanceWord();
-      else this.keyboard.setHintedLetter(gust.currentLetter);
+      else this.keyboard.setHintedLetter(gust.currentLetter, gust.nextLetter);
     } else {
       useSessionStore.getState().recordMistake();
       this.keyboard.setKeyFeedback(event.code, 'error');
@@ -262,7 +263,7 @@ export class GameLevelKite extends Container {
       }
       this.pushTimeout(() => {
         this.keyboard.clearKeyFeedback(event.code);
-        this.keyboard.setHintedLetter(this.gust?.currentLetter);
+        this.keyboard.setHintedLetter(this.gust?.currentLetter, this.gust?.nextLetter);
       }, KEY_FEEDBACK_MS);
     }
   };

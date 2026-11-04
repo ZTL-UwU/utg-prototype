@@ -11,6 +11,7 @@ import {
 } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
 import { createTypingWordStyle, getHighlightedWordMarkup } from '../../../../utils/example-words';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { convertToCurrentScript } from '../../../../utils/script';
@@ -28,6 +29,12 @@ import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { getTypedLevel, type TLevel } from '../../level-map/units';
 import { blinkAlpha, HEART_WIDTH, LivesBar } from './lives-bar';
+
+/**
+ * Phones stand the rocks this far below the keyboard's top instead of on the screen's bottom.
+ * Their keyboard covers so much of the screen that rocks on the bottom barely show above it.
+ */
+const PHONE_ROCK_TUCK = 250;
 
 const MAX_FRAME_MS = 50;
 
@@ -93,6 +100,8 @@ export class GameLevelFlying extends Container {
   private state: FlyingState = 'playing';
   private screenWidth: number = 0;
   private screenHeight: number = 0;
+  /** Where rocks stand: the screen's bottom, or just behind the keyboard on phones. */
+  private rockBaseY: number = 0;
   private keyboard: KeyboardLayout;
   private hud: HUD;
   private wordStyle: HTMLTextStyle;
@@ -121,7 +130,8 @@ export class GameLevelFlying extends Container {
 
     this.background = new Sprite({
       texture: Texture.from('game-levels/game-level-flying/background.png'),
-      layout: { position: 'absolute', width: '100%', height: '100%' },
+      // Cover rather than stretch, so the landscape keeps its shape on tall phones.
+      layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
     this.bird = new Sprite({
       texture: this.flapUp,
@@ -146,7 +156,7 @@ export class GameLevelFlying extends Container {
     this.wordText = new HTMLText({ style: this.wordStyle });
     this.wordText.anchor.set(0.5);
 
-    this.keyboard = new KeyboardLayout();
+    this.keyboard = new KeyboardLayout({ text: 'words' });
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
@@ -292,7 +302,7 @@ export class GameLevelFlying extends Container {
       void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
       this.pushTimeout(() => {
         this.keyboard.clearKeyFeedback(event.code);
-        this.keyboard.setHintedLetter(this.currentTargetLetter);
+        this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
       }, KEY_FEEDBACK_MS);
     }
   };
@@ -307,10 +317,16 @@ export class GameLevelFlying extends Container {
     return this.activeRound.word[this.activeLetterIdx];
   }
 
+  /** The letter after the target, which tells a phone a word-initial ئ comes from a vowel key. */
+  private get nextTargetLetter() {
+    return this.activeRound.word[this.activeLetterIdx + 1];
+  }
+
   private renderWord() {
     const len = this.activeRound.word[this.activeLetterIdx]?.length ?? 1;
     this.wordText.text = getHighlightedWordMarkup(this.activeRound.word, this.activeLetterIdx, len);
-    this.keyboard.setHintedLetter(this.currentTargetLetter);
+    this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
+    this.keyboard.setWordStart(this.activeLetterIdx === 0);
   }
 
   private advanceLetter() {
@@ -382,7 +398,7 @@ export class GameLevelFlying extends Container {
     const col: Sprite = this.getRandomColumn();
     col.anchor.set(0.5, 1); // grab bottom-center
     col.x = this.screenWidth; // enter from right edge
-    col.y = this.screenHeight; // bottom sits on the floor
+    col.y = this.rockBaseY; // bottom sits on the floor
     this.activeColumns.push(col);
     // insert under the keyboard so the rocks tuck behind the keyboard panel and the bird
     this.addChildAt(col, this.getChildIndex(this.keyboard));
@@ -452,5 +468,7 @@ export class GameLevelFlying extends Container {
     this.wordText.position.set(width / 2, height * WORD_TOP_RATIO);
     this.screenHeight = height;
     this.screenWidth = width;
+    this.rockBaseY = responsive({ sm: this.keyboard.y + PHONE_ROCK_TUCK, lg: height });
+    for (const col of this.activeColumns) col.y = this.rockBaseY;
   }
 }

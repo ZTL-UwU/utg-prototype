@@ -459,6 +459,17 @@ export function getMappedFromKeyboardEvent(event: KeyboardEvent): string {
   return getMappedFromKeyCode(event.code, event.shiftKey, event.getModifierState('CapsLock'));
 }
 
+/** Physical key, and whether Shift is held, that types `char` on the active layout. */
+export function getKeyStrokeFromChar(char: string): { code: string; shift: boolean } | undefined {
+  const layers = getLayers();
+  for (const shift of [false, true]) {
+    for (const [code, text] of Object.entries(layers[shift ? 'shift' : 'default'])) {
+      if (text === char) return { code, shift };
+    }
+  }
+  return undefined;
+}
+
 export function getKeyFromChar(char: string): string {
   for (const layer of Object.values(getLayers())) {
     for (const [code, text] of Object.entries(layer)) {

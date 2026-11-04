@@ -1,5 +1,6 @@
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
+import { responsive } from '../../../engine/utils/viewport';
 import {
   DAYS_IN_WEEK,
   getDaysInMonth,
@@ -11,7 +12,7 @@ import {
 /** Always six, so the panel never changes height between a 28-day and a 31-day month. */
 const WEEK_ROWS = 6;
 
-const CELL_WIDTH = 108;
+const CELL_WIDTH = responsive({ sm: 76, lg: 108 });
 const CELL_HEIGHT = 50;
 const CELL_GAP = 8;
 const CELL_RADIUS = 12;

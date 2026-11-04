@@ -2,6 +2,7 @@ import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { convertKeyboardLettersToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
@@ -28,7 +29,12 @@ const LAYOUT = {
   naanFlightY: 400,
   lives: { x: 1680, y: 90 },
   speedSlider: { x: 720, y: 68 },
+  phoneLives: { x: 1120, y: 90 },
+  phoneSpeedSlider: { x: 90, y: 60 },
 } as const;
+/** Design units a phone shows across its width, and how far down the stage starts. */
+const PHONE_STAGE_WIDTH = 1200;
+const PHONE_STAGE_TOP = 380;
 
 type MovingNaan = {
   letter: string;
@@ -66,6 +72,7 @@ export class GameNaanStackScreen extends Container {
   private effectAnimations: AnimationPlaybackControls[] = [];
   private feedbackTimeouts: number[] = [];
   private spawnDelayMs = 0;
+  private stageRight = DESIGN_WIDTH;
   private paused = true;
   private completed = false;
 
@@ -125,17 +132,30 @@ export class GameNaanStackScreen extends Container {
   }
 
   public resize(width: number, height: number) {
-    const uiScale = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
+    const fitScale = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
+    // Phones zoom in on the left of the stage, where the plates are.
+    const uiScale = responsive({ sm: width / PHONE_STAGE_WIDTH, lg: fitScale });
     const backgroundScale = Math.max(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
     this.background.position.set(width / 2, height / 2);
     this.background.scale.set(backgroundScale);
 
     this.gameplay.scale.set(uiScale);
     this.gameplay.position.set(
-      (width - DESIGN_WIDTH * uiScale) / 2,
-      (height - DESIGN_HEIGHT * uiScale) / 2,
+      responsive({ sm: 0, lg: (width - DESIGN_WIDTH * uiScale) / 2 }),
+      responsive({ sm: PHONE_STAGE_TOP, lg: (height - DESIGN_HEIGHT * uiScale) / 2 }),
     );
-    this.keyboard.resize(DESIGN_WIDTH, DESIGN_HEIGHT);
+    this.stageRight = responsive({ sm: PHONE_STAGE_WIDTH, lg: DESIGN_WIDTH });
+    this.livesBar.position.set(
+      responsive({ sm: LAYOUT.phoneLives.x, lg: LAYOUT.lives.x }),
+      responsive({ sm: LAYOUT.phoneLives.y, lg: LAYOUT.lives.y }),
+    );
+    this.speedSlider.position.set(
+      responsive({ sm: LAYOUT.phoneSpeedSlider.x, lg: LAYOUT.speedSlider.x }),
+      responsive({ sm: LAYOUT.phoneSpeedSlider.y, lg: LAYOUT.speedSlider.y }),
+    );
+    if (responsive({ sm: true, lg: false }))
+      this.keyboard.resizeToScreen(this.gameplay, width, height);
+    else this.keyboard.resize(DESIGN_WIDTH, DESIGN_HEIGHT);
     this.hud.layout = { width, height };
   }
 
@@ -206,7 +226,7 @@ export class GameNaanStackScreen extends Container {
   private spawnNaan() {
     const letter = this.letterPool[Math.floor(Math.random() * this.letterPool.length)] ?? '';
     const piece = new NaanPiece({ letter, width: NAAN_WIDTH });
-    piece.position.set(DESIGN_WIDTH + piece.halfWidth, LAYOUT.naanFlightY);
+    piece.position.set(this.stageRight + piece.halfWidth, LAYOUT.naanFlightY);
     piece.alpha = 0;
 
     this.naanLayer.addChild(piece);
