@@ -4,7 +4,7 @@ import { Graphics, Sprite, Text, Texture, type TextDropShadow, type Ticker } fro
 import { Container } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { responsive } from '../../../engine/utils/viewport';
+import { responsive, topClearance } from '../../../engine/utils/viewport';
 import { ensureValidSession } from '../../../lib/authSession';
 import { continueIntoGame } from '../../../utils/continueIntoGame';
 import { useAuthStore } from '../../../zustandStores/auth';
@@ -156,7 +156,11 @@ export class HomeScreen extends Container {
       },
       anchor: 0.5,
     });
-    this.menuButton.layout = { position: 'absolute', top: 90, right: 90 };
+    this.menuButton.layout = {
+      position: 'absolute',
+      top: 90 + topClearance(engine().navigation.height),
+      right: 90,
+    };
     this.menuButton.onPress.connect(() => {
       useOverlayStore.getState().show('menu');
     });

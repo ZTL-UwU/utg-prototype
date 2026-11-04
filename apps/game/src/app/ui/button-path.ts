@@ -2,7 +2,7 @@ import { animate } from 'motion';
 import { Graphics, type Container } from 'pixi.js';
 
 import { engine } from '../../engine/getEngine';
-import { responsive } from '../../engine/utils/viewport';
+import { responsive, topClearance } from '../../engine/utils/viewport';
 
 /**
  * Map screens show their buttons as a path joined by short lines: a row across the middle of
@@ -16,8 +16,10 @@ const LINE_THICKNESS = 15;
 /** Phones use shorter lines so more buttons fit in the column. */
 const PHONE_LINE_LENGTH = 50;
 const PHONE_MAX_SCALE = 0.77;
-/** Room kept clear above the centered column for the title and subtitle, and the same below. */
+// Room kept above the column for the title and subtitle
 const PHONE_TITLE_SPACE = 460;
+// Room kept below the column for the << >> buttons
+const PHONE_NAV_SPACE = 300;
 /** Extra margin so drop shadows don't peek in from the screen edge. */
 const OFF_SCREEN_MARGIN = 40;
 
@@ -56,19 +58,30 @@ export function joinWithLines(buttons: Container[], vertical: boolean): Containe
   return buttons.flatMap((button, i) => (i === 0 ? [button] : [createLine(), button]));
 }
 
-/**
- * Sizes a full-width path. Phones draw the buttons smaller, shrinking further when a column of
- * `buttonCount` would overflow. Scaling happens around the layout box's center, so it stays centered.
- */
+// Sizes a full-width path. Phones centre the column between the titles and the nav buttons,
+// shrinking it to fit; the box scales about its centre
 export function resizePath(path: Container, buttonCount: number, width: number, height: number) {
+  if (!isPathVertical()) {
+    path.scale.set(1);
+    path.layout = { width };
+    return;
+  }
+
   const columnHeight =
     buttonCount * PATH_BUTTON_SIZE + Math.max(buttonCount - 1, 0) * (PHONE_LINE_LENGTH + 2 * GAP);
-  const scale = responsive({
-    sm: Math.min(PHONE_MAX_SCALE, (height - 2 * PHONE_TITLE_SPACE) / columnHeight),
-    lg: 1,
-  });
+  const bandTop = PHONE_TITLE_SPACE + topClearance(height);
+  const band = height - bandTop - PHONE_NAV_SPACE;
+  const scale = Math.min(PHONE_MAX_SCALE, band / columnHeight);
   path.scale.set(scale);
-  path.layout = { width: width / scale };
+  // Placed by hand: flex centring would use the whole screen and could shrink the box
+  path.layout = {
+    position: 'absolute',
+    flexShrink: 0,
+    width: width / scale,
+    height: columnHeight,
+    left: width / 2 - width / scale / 2,
+    top: bandTop + band / 2 - columnHeight / 2,
+  };
 }
 
 /** The local offset that moves a child fully past the far screen edge along the path's axis. */

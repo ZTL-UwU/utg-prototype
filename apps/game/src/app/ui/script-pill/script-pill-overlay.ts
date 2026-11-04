@@ -2,7 +2,7 @@ import { animate, type AnimationPlaybackControls } from 'motion';
 
 import type { CreationEngine } from '../../../engine/engine';
 import type { AppScreenConstructor } from '../../../engine/navigation/navigation';
-import { responsive } from '../../../engine/utils/viewport';
+import { responsive, topClearance } from '../../../engine/utils/viewport';
 import { scriptState, type ORTHO_ENUM } from '../../../zustandStores/scriptState';
 import { ScriptPill } from './script-pill';
 
@@ -80,8 +80,9 @@ export function initScriptPillOverlay(app: CreationEngine) {
     pill.x = homeX + (dockX - homeX) * pill.dock;
     const screenName = navigation.currentScreen?.screenName ?? '';
     const phone = responsive({ sm: true, lg: false });
-    const homeTop = phone ? PHONE_HOME_TOP : HOME_TOP;
-    const dockTop = (phone && PHONE_DOCK_TOP[screenName]) || DOCK_TOP;
+    const clearance = topClearance(app.renderer.height); // 0 on wide screens
+    const homeTop = (phone ? PHONE_HOME_TOP : HOME_TOP) + clearance;
+    const dockTop = ((phone && PHONE_DOCK_TOP[screenName]) || DOCK_TOP) + clearance;
     pill.y = homeTop + (dockTop - homeTop) * pill.dock + enterOffset;
   };
   pill.onLayoutChange = place;

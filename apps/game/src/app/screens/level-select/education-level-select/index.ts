@@ -3,7 +3,7 @@ import { animate } from 'motion';
 import { Container, Graphics, Sprite, Text, Texture, type TextDropShadow } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { responsive } from '../../../../engine/utils/viewport';
+import { responsive, topClearance } from '../../../../engine/utils/viewport';
 import { convertToCurrentScript, getScriptFontFamily } from '../../../../utils/script';
 import { HUD } from '../../../ui/hud';
 import { LayerSelectScreen } from '../../layer-select';
@@ -43,8 +43,8 @@ export class EducationLevelSelect extends Container {
   private mapRow: EducationMapRow;
   private hud: HUD;
   private title: Text;
-  private titleTop = responsive(TITLE_TOP);
-  private subtitleTop = responsive(SUBTITLE_TOP);
+  private titleTop = responsive(TITLE_TOP) + topClearance(engine().navigation.height);
+  private subtitleTop = responsive(SUBTITLE_TOP) + topClearance(engine().navigation.height);
   private subtitle: Text;
   private prevMapButton: FancyButton;
   private nextMapButton: FancyButton;

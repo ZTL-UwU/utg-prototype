@@ -4,7 +4,7 @@ import { DropShadowFilter } from 'pixi-filters';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { responsive } from '../../../engine/utils/viewport';
+import { responsive, topClearance } from '../../../engine/utils/viewport';
 import { isMapUnitUnlocked } from '../../../lib/progression';
 import { convertToCurrentScript, getScriptFontFamily } from '../../../utils/script';
 import { HUD } from '../../ui/hud';
@@ -28,8 +28,8 @@ export class LevelMapScreen extends Container {
 
   private background: Sprite;
   private title: CurvedText | Text;
-  private titleTop = responsive(TITLE_TOP);
-  private subtitleTop = responsive(SUBTITLE_TOP);
+  private titleTop = responsive(TITLE_TOP) + topClearance(engine().navigation.height);
+  private subtitleTop = responsive(SUBTITLE_TOP) + topClearance(engine().navigation.height);
   /** Unscaled title width, for shrinking long titles to fit phones. */
   private titleWidth: number;
   private subtitle?: Text;
