@@ -29,10 +29,10 @@ export function FeedbackButton() {
       aria-label="Send feedback"
       title={`Send feedback (${feedbackHotkeyLabel()})`}
       className={[
-        'pointer-events-auto fixed right-4 bottom-4 z-30',
-        'inline-flex size-16 cursor-pointer items-center justify-center rounded-full',
-        // Phones keep the keyboard along the bottom, so this waits on the right edge above it.
-        'max-lg:top-[44%] max-lg:right-[max(0.25rem,var(--safe-right))] max-lg:bottom-auto max-sm:size-9',
+        // Bottom-right, clear of the safe-area insets
+        'pointer-events-auto fixed z-30',
+        'right-[max(1rem,var(--safe-right))] bottom-[max(1rem,var(--safe-bottom))]',
+        'inline-flex size-16 cursor-pointer items-center justify-center rounded-full max-sm:size-9',
         'border-2 border-forest bg-cream text-forest',
         'shadow-[0_3px_0_0_var(--color-forest-dark)]',
         'transition duration-100 outline-none',
