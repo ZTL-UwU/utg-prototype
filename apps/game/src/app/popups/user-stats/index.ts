@@ -14,6 +14,7 @@ import useResultStore, {
 } from '../../../zustandStores/resultStore';
 import { AvatarSelectScreen } from '../../screens/avatar-select';
 import { BackButton } from '../../ui/back-button';
+import { removeFilter } from '../../ui/remove-filter';
 import { StreakCalendar } from './streak-calendar';
 
 const POPUP_WIDTH = responsive({ sm: 740, lg: 1481 });
@@ -93,6 +94,8 @@ export class UserStatsPopup extends Container {
   private profileIcon: Sprite;
   private streakCalendar: StreakCalendar;
   private unsubscribeScore: () => void;
+  /** Blur this popup put on the screen beneath it, removed again in hide(). */
+  private screenBlur?: { screen: Container; filter: BlurFilter };
 
   constructor() {
     super({
@@ -307,8 +310,11 @@ export class UserStatsPopup extends Container {
     const currentEngine = engine();
     if (!currentEngine.navigation.currentScreen) return;
     void currentEngine.audio.sfx.play('preload-audio/sfx/popup.mp3');
-    currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 0 })];
-    currentEngine.navigation.currentScreen.tint = 0x666666;
+    const screen = currentEngine.navigation.currentScreen;
+    const blur = new BlurFilter({ strength: 0 });
+    this.screenBlur = { screen, filter: blur };
+    screen.filters = [blur];
+    screen.tint = 0x666666;
 
     this.panel.alpha = 0;
     this.panel.scale.set(1);
@@ -319,11 +325,7 @@ export class UserStatsPopup extends Container {
     await Promise.all([
       animate(this.panel, { alpha: 1, y: 0 }, { duration, ease: 'backOut' }),
       animate(this.backButton, { alpha: 1 }, { duration, ease: 'backOut' }),
-      animate(
-        currentEngine.navigation.currentScreen.filters[0] as BlurFilter,
-        { strength: 9 },
-        { duration, ease: 'easeOut' },
-      ),
+      animate(blur, { strength: 9 }, { duration, ease: 'easeOut' }),
     ]);
   }
 
@@ -334,22 +336,22 @@ export class UserStatsPopup extends Container {
   public async hide() {
     this.unsubscribeScore();
 
-    const currentEngine = engine();
-    if (!currentEngine.navigation.currentScreen) return;
+    const screenBlur = this.screenBlur;
+    this.screenBlur = undefined;
+    if (!screenBlur) return;
+    const { screen, filter } = screenBlur;
 
-    currentEngine.navigation.currentScreen.tint = 0xffffff;
+    screen.tint = 0xffffff;
 
     const duration = 0.2;
     const exitOffset = 300;
     await Promise.all([
       animate(this.panel, { alpha: 0, y: exitOffset }, { duration, ease: 'easeOut' }),
       animate(this.backButton, { alpha: 0 }, { duration, ease: 'easeOut' }),
-      animate(
-        currentEngine.navigation.currentScreen.filters[0] as BlurFilter,
-        { strength: 0 },
-        { duration, ease: 'easeOut' },
-      ),
+      animate(filter, { strength: 0 }, { duration, ease: 'easeOut' }),
     ]);
+
+    removeFilter(screen, filter);
   }
 
   public resize(width: number, height: number) {
