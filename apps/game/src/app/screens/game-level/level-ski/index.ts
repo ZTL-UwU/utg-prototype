@@ -299,7 +299,7 @@ export class GameLevelSki extends Container {
       LAYOUT.startGate.y + LAYOUT.startGate.bannerOffsetY,
     );
 
-    this.keyboard = new KeyboardLayout(KEYBOARD_COLORS);
+    this.keyboard = new KeyboardLayout({ colors: KEYBOARD_COLORS, text: 'sentences' });
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
@@ -498,6 +498,7 @@ export class GameLevelSki extends Container {
       sentence: this.sentences[index]!,
       correctIdx: 0,
     };
+    this.keyboard.setWordStart(true);
     this.approachElapsedMs = 0;
     this.timerColor = 'green';
     this.progressBar.setColors(TIMER_COLORS.green);

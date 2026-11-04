@@ -118,7 +118,7 @@ export class TypingInstrumentScreen extends Container {
   private readonly background: Sprite;
   private readonly instrument: Sprite;
   private readonly hud: HUD;
-  private readonly keyboard = new KeyboardLayout(KEYBOARD_COLOR_SCHEME);
+  private readonly keyboard = new KeyboardLayout({ colors: KEYBOARD_COLOR_SCHEME });
   private readonly queue = new Container({
     layout: {
       position: 'absolute',

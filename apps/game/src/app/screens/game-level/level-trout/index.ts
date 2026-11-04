@@ -117,7 +117,7 @@ export class GameLevelTrout extends Container {
       // Cover rather than stretch, so the canyon keeps its shape on tall phones.
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
-    this.keyboard = new KeyboardLayout();
+    this.keyboard = new KeyboardLayout({ text: 'words' });
     this.progressBar = new RoundedProgressBar({
       width: PROGRESS_BAR.width,
       height: PROGRESS_BAR.height,
@@ -382,6 +382,7 @@ export class GameLevelTrout extends Container {
     this.timerRunning = true;
     this.resetProgressBar();
     this.keyboard.setHintedLetter(trout.currentLetter);
+    this.keyboard.setWordStart(true);
     // Hear the word as it becomes the target; silent when unrecorded.
     void playWordAudio(getWordStandardAudioAlias(trout.wordId));
   }

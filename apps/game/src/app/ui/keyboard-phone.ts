@@ -5,12 +5,22 @@ import { getFontFamilyForScript } from '../../utils/script';
 
 export type KeyFeedback = 'none' | 'hint' | 'error' | 'error-soft' | 'success';
 
-export type PhoneKeyKind = 'char' | 'shift' | 'backspace' | 'enter' | 'space';
+export type PhoneKeyKind = 'char' | 'shift' | 'backspace' | 'enter' | 'space' | 'layer';
+
+/** The letters page and the 123 page of punctuation and digits, as on iOS and Gboard. */
+export type PhoneLayer = 'letters' | 'symbols';
 
 export type PhoneKeyDef = {
   kind: PhoneKeyKind;
+  /** The page a `layer` key switches to, and its label. */
+  toLayer?: PhoneLayer;
+  label?: string;
+  /** Tinted like the function keys, as phone keyboards do for the punctuation by Space. */
+  muted?: boolean;
   /** Character a `char` key types. */
   glyph?: string;
+  /** Character it types while Shift is on, for the iOS Uyghur layout's Shift layer. */
+  shiftGlyph?: string;
   /** Characters offered by a long press, like Gboard's accent popup. */
   alternates?: string[];
   /** Width in key pitches. */
@@ -18,61 +28,107 @@ export type PhoneKeyDef = {
 };
 
 /**
- * `'a b e:é'` → char keys; text after `:` lists the long-press alternates, comma-separated.
- * A colon is never a key here, so it is free to use as the separator.
+ * `'a د|ژ e:é'` → char keys. Text after `|` is the Shift glyph; text after `:` lists the
+ * long-press alternates, comma-separated. Neither separator is ever a key here.
  */
 function chars(spec: string, width?: number): PhoneKeyDef[] {
   return spec.split(' ').map((token) => {
-    const [glyph, alternates] = token.split(':');
-    return { kind: 'char', glyph, alternates: alternates?.split(','), width };
+    const [main, alternates] = token.split(':');
+    const [glyph, shiftGlyph] = main.split('|');
+    return { kind: 'char', glyph, shiftGlyph, alternates: alternates?.split(','), width };
   });
 }
 
-const backspace = (width?: number): PhoneKeyDef => ({ kind: 'backspace', width });
+/** Plain keys, one per space-separated character; the symbols page needs `:` and `|` as keys. */
+function symbols(spec: string): PhoneKeyDef[] {
+  return spec.split(' ').map((glyph) => ({ kind: 'char', glyph }));
+}
 
-/** Gboard's bottom row, minus the symbol, emoji and cursor keys the game has no use for. */
-function bottomRow(comma: string, period: string, spaceWidth: number): PhoneKeyDef[] {
+const shift: PhoneKeyDef = { kind: 'shift', width: 1.5 };
+const backspace: PhoneKeyDef = { kind: 'backspace', width: 1.5 };
+
+/** The phone keyboards' bottom row, minus the emoji key the game has no use for. */
+function bottomRow(toLayer: PhoneLayer, label: string, comma: string, period: string) {
   return [
-    ...chars(comma, 1.5),
-    { kind: 'space', width: spaceWidth },
-    ...chars(period, 1.5),
+    { kind: 'layer', toLayer, label, width: 1.5 },
+    ...chars(comma, 1).map((def) => ({ ...def, muted: true })),
+    { kind: 'space', width: 4.5 },
+    ...chars(period, 1).map((def) => ({ ...def, muted: true })),
     { kind: 'enter', width: 2 },
+  ] satisfies PhoneKeyDef[];
+}
+
+/**
+ * The 123 page: digits, and the punctuation the physical layouts type, which covers every mark
+ * in the game's sentences.
+ */
+function symbolRows(lettersLabel: string, punctuation: string, comma: string): PhoneKeyDef[][] {
+  return [
+    symbols('1 2 3 4 5 6 7 8 9 0'),
+    symbols(punctuation),
+    [...symbols("@ # % & * _ ' ="), { kind: 'backspace', width: 2 }],
+    bottomRow('letters', lettersLabel, comma, '.'),
   ];
 }
 
-/** Gboard Uyghur: every letter on its own key, so there is no Shift. */
+/**
+ * iOS Uyghur: the physical Uyghur layout, with its Shift letters on the Shift layer.
+ * iOS moves ئ from the physical `/` key to Shift+ي, since the phone has no `/` key.
+ */
 const ARABIC_ROWS: PhoneKeyDef[][] = [
-  chars('چ ۋ ې ژ ر ت ي ۇ ڭ و پ:ف'),
-  chars('ھ س د ا ە ى ق ك ل:لا گ ۆ'),
-  [...chars('ز ش غ ۈ ب ن م خ ج ئ'), backspace()],
-  bottomRow('،', '.', 6),
+  chars('چ ۋ ې ر ت ي|ئ ۇ ڭ و پ'),
+  chars('ھ س د|ژ ا|ف ە|گ ى|خ ق|ج ك|ۆ ل|لا'),
+  [shift, ...chars('ز ش غ ۈ ب ن م'), backspace],
+  bottomRow('symbols', '123', '،', '.'),
 ];
 
-/** The Arabic grid in Cyrillic letters, matching the phonetic physical layout; ф takes ئ's key. */
+/** The iOS Uyghur grid in Cyrillic letters, matching the phonetic physical layout. */
 const CYRILLIC_ROWS: PhoneKeyDef[][] = [
-  chars('ч в е ж р т й у ң о п'),
-  chars('һ с д а ә и қ к л г ө'),
-  [...chars('з ш ғ ү б н м х җ ф'), backspace()],
-  bottomRow(',', '.', 6),
+  chars('ч в е р т й у ң о п'),
+  chars('һ с д|ж а|ф ә|г и|х қ|җ к|ө л'),
+  [shift, ...chars('з ш ғ ү б н м'), backspace],
+  bottomRow('symbols', '123', ',', '.'),
 ];
 
 /** Gboard QWERTY; ULY's é, ö, ü hide behind e, o, u, and the hamza apostrophe behind the period. */
 const LATIN_ROWS: PhoneKeyDef[][] = [
   chars('q w e:é r t y u:ü i o:ö p'),
   chars('a s d f g h j k l'),
-  [{ kind: 'shift', width: 1.5 }, ...chars('z x c v b n m'), backspace(1.5)],
-  bottomRow(',', ".:'", 5),
+  [shift, ...chars('z x c v b n m'), backspace],
+  bottomRow('symbols', '123', ',', ".:'"),
 ];
 
-export function getPhoneRows(script: TargetScript): PhoneKeyDef[][] {
+const ARABIC_VOWELS = new Set(['ا', 'ە', 'ې', 'ى', 'و', 'ۇ', 'ۆ', 'ۈ']);
+
+/** A vowel takes ئ at the start of a word, so the phone keyboard types it there unasked. */
+export function isArabicVowel(glyph: string) {
+  return ARABIC_VOWELS.has(glyph);
+}
+
+/**
+ * Like iOS, an Arabic vowel key at the start of a word shows the vowel with the ئ it takes
+ * there, since the key types that ئ too.
+ */
+export function phoneKeyLabel(glyph: string, script: TargetScript, wordStart = true) {
+  return script === 'Arabic' && wordStart && isArabicVowel(glyph) ? `ئ${glyph}` : glyph;
+}
+
+export function getPhoneLayers(script: TargetScript): Record<PhoneLayer, PhoneKeyDef[][]> {
   switch (script) {
     case 'Latin':
-      return LATIN_ROWS;
+      return { letters: LATIN_ROWS, symbols: symbolRows('ABC', '- : ; ( ) « » " ! ?', ',') };
     case 'Cyrillic':
-      return CYRILLIC_ROWS;
+      return { letters: CYRILLIC_ROWS, symbols: symbolRows('АБВ', '- : ; ( ) « » " ! ?', ',') };
     default:
-      return ARABIC_ROWS;
+      return { letters: ARABIC_ROWS, symbols: symbolRows('ئاب', '- : ؛ ( ) « » " ! ؟', '،') };
   }
+}
+
+/** Arabic text needs the Arabic font; digits and Latin punctuation read better in Nunito. */
+function fontFor(text: string, script: TargetScript) {
+  if (/[\u0600-\u06ff]/u.test(text)) return getFontFamilyForScript('Arabic');
+  if (!/\p{L}/u.test(text)) return getFontFamilyForScript('Latin');
+  return getFontFamilyForScript(script);
 }
 
 export type PhoneKeyColors = {
@@ -114,21 +170,24 @@ const PHONE_KEY_RADIUS = 10;
 // panel a translucent key reads as the same kind of step.
 const FUNCTION_KEY_ALPHA = 0.7;
 const ALTERNATE_FONT_SIZE = 18;
+const LAYER_FONT_SIZE = 28;
 const ALTERNATE_INSET = 7;
 const ICON_STROKE = 3;
 
 export class PhoneKeyCap extends Container {
   public readonly def: PhoneKeyDef;
+  public layer: PhoneLayer = 'letters';
   public keyWidth = 0;
   public keyHeight = 0;
 
   private readonly background = new Graphics();
   private readonly icon = new Graphics();
   private readonly glyphLabel?: Text;
-  private readonly alternateLabel?: Text;
+  private readonly cornerLabel?: Text;
   private readonly colors: PhoneKeyColors;
   private readonly isFunctionKey: boolean;
   private readonly rtl: boolean;
+  private readonly script: TargetScript;
   private pressed = false;
   private keyFeedback: KeyFeedback = 'none';
   private shiftState: ShiftState = 'off';
@@ -138,16 +197,31 @@ export class PhoneKeyCap extends Container {
     this.def = def;
     this.colors = colors;
     this.rtl = script === 'Arabic';
-    this.isFunctionKey = def.kind !== 'char' || !/\p{L}/u.test(def.glyph ?? '');
+    this.script = script;
+    this.isFunctionKey = def.kind !== 'char' || def.muted === true;
 
     this.addChild(this.background);
-    if (def.kind === 'char') {
+    if (def.kind === 'layer') {
       this.glyphLabel = new Text({
-        text: def.glyph ?? '',
+        text: def.label ?? '',
         resolution: 2,
         style: {
           fill: colors.textColor,
-          fontFamily: getFontFamilyForScript(script),
+          fontFamily: fontFor(def.label ?? '', script),
+          fontSize: LAYER_FONT_SIZE,
+          fontWeight: '700',
+          padding: 20,
+        },
+        anchor: 0.5,
+      });
+      this.addChild(this.glyphLabel);
+    } else if (def.kind === 'char') {
+      this.glyphLabel = new Text({
+        text: phoneKeyLabel(def.glyph ?? '', script, false),
+        resolution: 2,
+        style: {
+          fill: colors.textColor,
+          fontFamily: fontFor(def.glyph ?? '', script),
           fontSize,
           fontWeight: '700',
           padding: 20,
@@ -156,20 +230,22 @@ export class PhoneKeyCap extends Container {
       });
       this.addChild(this.glyphLabel);
 
-      if (def.alternates?.length) {
-        this.alternateLabel = new Text({
-          text: def.alternates[0],
+      // Like the game's desktop keyboard, a corner shows what else the key can type.
+      const corner = def.shiftGlyph ?? def.alternates?.[0];
+      if (corner) {
+        this.cornerLabel = new Text({
+          text: phoneKeyLabel(corner, script, false),
           resolution: 2,
           style: {
             fill: colors.hintColor,
-            fontFamily: getFontFamilyForScript(script),
+            fontFamily: fontFor(corner, script),
             fontSize: ALTERNATE_FONT_SIZE,
             fontWeight: '700',
             padding: 10,
           },
           anchor: { x: 1, y: 0 },
         });
-        this.addChild(this.alternateLabel);
+        this.addChild(this.cornerLabel);
       }
     } else {
       this.addChild(this.icon);
@@ -180,20 +256,29 @@ export class PhoneKeyCap extends Container {
     this.keyWidth = keyWidth;
     this.keyHeight = keyHeight;
     this.glyphLabel?.position.set(keyWidth / 2, keyHeight / 2);
-    this.alternateLabel?.position.set(keyWidth - ALTERNATE_INSET, ALTERNATE_INSET / 2);
+    this.cornerLabel?.position.set(keyWidth - ALTERNATE_INSET, ALTERNATE_INSET / 2);
     this.icon.position.set(keyWidth / 2, keyHeight / 2);
     this.drawBackground();
     this.drawIcon();
   }
 
-  /** Letters follow Shift and Caps Lock; caseless scripts are unaffected. */
-  public setUpperCase(upper: boolean) {
-    if (!this.glyphLabel || !this.def.glyph) return;
-    const caseOf = (text: string) =>
-      upper ? text.toLocaleUpperCase('ug') : text.toLocaleLowerCase('ug');
-    this.glyphLabel.text = caseOf(this.def.glyph);
-    if (this.alternateLabel && this.def.alternates) {
-      this.alternateLabel.text = caseOf(this.def.alternates[0]);
+  /**
+   * Shift swaps in the Shift glyph; on Latin keys, Shift and Caps Lock pick the case; at the
+   * start of a word, vowels show their ئ.
+   */
+  public setShifted(shifted: boolean, upperCase: boolean, wordStart: boolean) {
+    const { glyph, shiftGlyph, alternates } = this.def;
+    if (!this.glyphLabel || !glyph) return;
+    const label = (text: string) =>
+      phoneKeyLabel(upperCase ? text.toLocaleUpperCase('ug') : text, this.script, wordStart);
+    this.glyphLabel.text = label(shifted && shiftGlyph ? shiftGlyph : glyph);
+    if (this.cornerLabel) {
+      // The Shift glyph is on the key face while shifted, so the corner has nothing to add.
+      this.cornerLabel.text = shiftGlyph
+        ? shifted
+          ? ''
+          : label(shiftGlyph)
+        : label(alternates?.[0] ?? '');
     }
   }
 
@@ -253,7 +338,7 @@ export class PhoneKeyCap extends Container {
         break;
       }
       case 'enter': {
-        // ↵, mirrored for right-to-left like Gboard's Uyghur layout.
+        // ↵, mirrored for right-to-left text.
         g.moveTo(16, -12).lineTo(16, 4).lineTo(-15, 4).stroke(stroke);
         g.moveTo(-7, -4).lineTo(-16, 4).lineTo(-7, 12).stroke(stroke);
         this.icon.scale.x = this.rtl ? -1 : 1;
@@ -310,7 +395,7 @@ export class AlternatesPopup extends Container {
         resolution: 2,
         style: {
           fill: colors.textColor,
-          fontFamily: getFontFamilyForScript(script),
+          fontFamily: fontFor(alternate, script),
           fontSize,
           fontWeight: '700',
           padding: 20,

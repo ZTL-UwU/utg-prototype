@@ -94,7 +94,7 @@ export class TypingTestScreen extends Container {
         }),
     });
 
-    this.keyboard = new KeyboardLayout();
+    this.keyboard = new KeyboardLayout({ text: 'sentences' });
 
     this.timerText = new Text({
       text: '',
@@ -220,6 +220,7 @@ export class TypingTestScreen extends Container {
   private loadNextPage() {
     this.text = this.promptView?.next() ?? '';
     this.activeIdx = 0;
+    this.keyboard.setWordStart(true);
     this.updatePromptDisplay();
   }
 

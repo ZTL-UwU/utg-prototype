@@ -78,7 +78,7 @@ export class GameLevelFruitScreen extends Container {
     this.allFruits =
       this.totalFruits === 0 ? bufferFruits : bufferFruits.splice(0, this.totalFruits);
     this.fallingFruits = [];
-    this.keyboardLayout = new KeyboardLayout(GREEN_KB_COLOR_OPTIONS);
+    this.keyboardLayout = new KeyboardLayout({ colors: GREEN_KB_COLOR_OPTIONS });
     this.spawnTimer = 0; // spawnTimer at 0 indicates new fruit should be spawned.
     this.basket = new Sprite({
       texture: Texture.from('game-levels/game-level-fruit-fall/basket.png'),

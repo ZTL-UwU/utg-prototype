@@ -92,7 +92,7 @@ export class TypingGoatsScreen extends Container {
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
-    this.keyboard = new KeyboardLayout();
+    this.keyboard = new KeyboardLayout({ text: 'sentences' });
     this.rounds = generateSentenceRounds(typedLevel.props.storyId);
 
     this.sentenceStyle = createTypingSentenceStyle(
@@ -225,6 +225,7 @@ export class TypingGoatsScreen extends Container {
     if (!this.currentRound) return;
 
     this.resetSentenceTimer();
+    this.keyboard.setWordStart(true);
     this.updateSentenceDisplay();
     this.timerRunning = !this.paused;
     this.layoutContent();

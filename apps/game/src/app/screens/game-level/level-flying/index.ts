@@ -156,7 +156,7 @@ export class GameLevelFlying extends Container {
     this.wordText = new HTMLText({ style: this.wordStyle });
     this.wordText.anchor.set(0.5);
 
-    this.keyboard = new KeyboardLayout();
+    this.keyboard = new KeyboardLayout({ text: 'words' });
     this.hud = new HUD({
       onBack: () =>
         void engine().navigation.showPopup(QuitPopup, {
@@ -321,6 +321,7 @@ export class GameLevelFlying extends Container {
     const len = this.activeRound.word[this.activeLetterIdx]?.length ?? 1;
     this.wordText.text = getHighlightedWordMarkup(this.activeRound.word, this.activeLetterIdx, len);
     this.keyboard.setHintedLetter(this.currentTargetLetter);
+    this.keyboard.setWordStart(this.activeLetterIdx === 0);
   }
 
   private advanceLetter() {

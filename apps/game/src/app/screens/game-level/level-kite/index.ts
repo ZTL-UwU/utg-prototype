@@ -87,7 +87,7 @@ export class GameLevelKite extends Container {
       texture: Texture.from('game-levels/game-level-kite/background.png'),
       layout: { position: 'absolute', width: '100%', height: '100%' },
     });
-    this.keyboard = new KeyboardLayout();
+    this.keyboard = new KeyboardLayout({ text: 'words' });
 
     this.wordPool = resolveWordsByIds(props.wordIds).map((word) => {
       const round: Round = {
@@ -178,6 +178,7 @@ export class GameLevelKite extends Container {
     this.gust.resize(this.screenWidth, this.screenHeight);
     this.addChildAt(this.gust, this.getChildIndex(this.hud)); // gusts pass under the hud
     this.keyboard.setHintedLetter(this.gust.currentLetter);
+    this.keyboard.setWordStart(true);
     this.resolving = false;
     this.timerRunning = false;
     void Promise.all([

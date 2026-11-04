@@ -90,7 +90,7 @@ export class TypingMarketScreen extends Container {
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
 
-    this.keyboard = new KeyboardLayout();
+    this.keyboard = new KeyboardLayout({ text: 'words' });
     this.rounds = generateRoundsDictionary(typedLevel.props.wordIds, typedLevel.props.roundCount);
 
     this.card = new Sprite({
@@ -217,6 +217,7 @@ export class TypingMarketScreen extends Container {
     if (!this.currentRound) return Promise.resolve();
     const { wordId, word, activeLetterIdx } = this.currentRound;
     const image = new Sprite(Texture.from(getWordImageAlias(wordId)));
+    this.keyboard.setWordStart(true);
     playRoundAudio(this.currentRound);
     return this.updateContentContainer(image, word, activeLetterIdx);
   }

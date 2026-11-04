@@ -85,7 +85,7 @@ export class GameLevelOneScreen extends Container {
     anchor: 0.5,
   });
   private readonly gameplay = new Container();
-  private readonly keyboard = new KeyboardLayout(KEYBOARD_COLORS);
+  private readonly keyboard = new KeyboardLayout({ colors: KEYBOARD_COLORS });
   private readonly progressBar = new RoundedProgressBar({
     width: LAYOUT.progressBar.width,
     height: LAYOUT.progressBar.height,

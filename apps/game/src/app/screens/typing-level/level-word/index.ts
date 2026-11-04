@@ -109,7 +109,7 @@ export class TypingWordScreen extends Container {
         }),
       help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
     });
-    this.keyboard = new KeyboardLayout();
+    this.keyboard = new KeyboardLayout({ text: 'words' });
     this.rounds = generateRoundsDictionary(typedLevel.props.wordIds, typedLevel.props.roundCount);
     // this.rounds = DEV_TEST_ROUNDS; // uncomment to assign rounds to selected test set
     this.wordCard = new TypingWordCard();
@@ -160,6 +160,7 @@ export class TypingWordScreen extends Container {
     this.currentRound = this.rounds.pop() ?? undefined;
     if (!this.currentRound) return;
     this.wordCard.setRound(this.currentRound); // always highlights first letter, letterIdx for new round always at 0
+    this.keyboard.setWordStart(true);
     this.keyboard.setHintedLetter(this.currentTargetLetter);
     playRoundAudio(this.currentRound);
   }

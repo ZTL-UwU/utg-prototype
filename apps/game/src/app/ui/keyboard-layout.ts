@@ -14,12 +14,14 @@ import {
 import { getCurrentTargetScript, getScriptFontFamily } from '../../utils/script';
 import {
   AlternatesPopup,
-  getPhoneRows,
+  getPhoneLayers,
+  isArabicVowel,
   type KeyFeedback,
   keyFillColor,
   PhoneKeyCap,
   type PhoneKeyColors,
   type PhoneKeyDef,
+  type PhoneLayer,
 } from './keyboard-phone';
 
 export type { KeyFeedback };
@@ -27,6 +29,18 @@ export type { KeyFeedback };
 type Key = {
   code: string;
   width?: number;
+};
+
+/**
+ * What a level types, which decides where a word starts for the phone's word-initial ئ:
+ * letter levels never start a word, word levels start one on each word's first letter, and
+ * sentence levels also start one after each space, quote, bracket or hyphen.
+ */
+export type KeyboardText = 'letters' | 'words' | 'sentences';
+
+export type KeyboardOptions = {
+  colors?: KeyboardColorOptions;
+  text?: KeyboardText;
 };
 
 export type KeyboardColorOptions = {
@@ -185,7 +199,7 @@ const phoneRowUnits = (row: PhoneKeyDef[]) => row.reduce((sum, def) => sum + (de
 
 /** Physical keystroke a phone key sends; `shift` marks glyphs that live on the Shift layer. */
 type Stroke = { code: string; shift: boolean };
-type PressedStroke = { code: string; wrappedShift: boolean };
+type PressedStroke = { code: string; shiftKey: boolean; wrappedShift: boolean };
 
 /** A finger on a phone key. Keys with alternates type on release, or pick from the popup. */
 type PhoneTouch = {
@@ -335,7 +349,14 @@ export class KeyboardLayout extends Container {
   private readonly keyByCode = new Map<string, KeyCap>();
   private readonly pressedCodes = new Set<string>();
   private readonly keyboardColorOptions;
+  private readonly text: KeyboardText;
   private hintedCode = '';
+  /** The next letter starts a word, so a vowel key shows and types its ئ. */
+  private wordStart = false;
+  /** The last key the player typed, until the level accepts it by lighting it green. */
+  private lastTypedCode = '';
+  /** What that key typed: a sentence's words start after a space or other non-letter. */
+  private lastTypedText = '';
   /** Code held by each pointer tapping the on-screen keys. */
   private readonly tappedCodes = new Map<number, string>();
   /** Tapped Shift stays held until the next key tap, like a phone keyboard. */
@@ -355,15 +376,18 @@ export class KeyboardLayout extends Container {
   // Phone layout, built the first time a phone-sized view asks for it.
   private readonly phoneKeyLayer = new Container();
   private phoneScript?: TargetScript;
-  private phoneRows: PhoneKeyDef[][] = [];
+  private phoneLayers?: Record<PhoneLayer, PhoneKeyDef[][]>;
+  private phoneLayerShown: PhoneLayer = 'letters';
   private phoneKeys: PhoneKeyCap[] = [];
-  /** Lowercased glyph, primary or long-press alternate, → the key that types it. */
-  private readonly phoneKeyByGlyph = new Map<string, PhoneKeyCap>();
-  private readonly phoneKeyByKind = new Map<PhoneKeyDef['kind'], PhoneKeyCap>();
+  /** Lowercased glyph, primary or long-press alternate, → the keys that type it, on either page. */
+  private readonly phoneKeyByGlyph = new Map<string, PhoneKeyCap[]>();
+  private readonly phoneKeyByKind = new Map<PhoneKeyDef['kind'], PhoneKeyCap[]>();
+  /** Kept so the hint can follow the player between the letters and 123 pages. */
+  private hintedLetter?: string;
   /** Several phone keys can share a physical code (د and ژ); this is the one last typed. */
   private readonly lastPhoneKeyByCode = new Map<string, PhoneKeyCap>();
-  /** The phone key each code's feedback landed on, so clearing it finds the same key. */
-  private readonly phoneFeedbackKeyByCode = new Map<string, PhoneKeyCap>();
+  /** The phone keys each code's feedback landed on, so clearing it finds the same keys. */
+  private readonly phoneFeedbackKeysByCode = new Map<string, PhoneKeyCap[]>();
   private readonly shiftCodesWithFeedback = new Set<string>();
   private hintedPhoneKeys: PhoneKeyCap[] = [];
   private readonly heldPhoneKeys = new Set<PhoneKeyCap>();
@@ -371,9 +395,10 @@ export class KeyboardLayout extends Container {
   private lastShiftTapAt = -Infinity;
   private appliedPhoneLayout = '';
 
-  constructor(keyboardColorOptions: KeyboardColorOptions = DEFAULT_COLOR_OPTIONS) {
+  constructor({ colors = DEFAULT_COLOR_OPTIONS, text = 'letters' }: KeyboardOptions = {}) {
     super();
-    this.keyboardColorOptions = keyboardColorOptions;
+    this.keyboardColorOptions = colors;
+    this.text = text;
     this.buildPanel();
     this.layoutRegularKeys();
     this.drawRegularBackground();
@@ -454,6 +479,7 @@ export class KeyboardLayout extends Container {
 
   public setKeyFeedback(code: string, feedback: KeyFeedback) {
     this.keyByCode.get(code)?.setFeedback(feedback);
+    if (feedback === 'success' && code === this.lastTypedCode) this.onKeyAccepted();
 
     if (SHIFT_CODES.has(code)) {
       if (feedback === 'none') this.shiftCodesWithFeedback.delete(code);
@@ -461,11 +487,11 @@ export class KeyboardLayout extends Container {
     }
 
     if (feedback === 'none') {
-      const key = this.phoneFeedbackKeyByCode.get(code);
-      this.phoneFeedbackKeyByCode.delete(code);
-      const keys = key
-        ? [key]
-        : [this.phoneKeyForCode(code, false), this.phoneKeyForCode(code, true)];
+      const keys = this.phoneFeedbackKeysByCode.get(code) ?? [
+        this.phoneKeyForCode(code, false),
+        this.phoneKeyForCode(code, true),
+      ];
+      this.phoneFeedbackKeysByCode.delete(code);
       for (const phoneKey of keys) {
         phoneKey?.setFeedback(this.hintedPhoneKeys.includes(phoneKey) ? 'hint' : 'none');
       }
@@ -474,8 +500,14 @@ export class KeyboardLayout extends Container {
 
     const key = this.resolvePhoneKey(code);
     if (!key) return;
-    key.setFeedback(feedback);
-    this.phoneFeedbackKeyByCode.set(code, key);
+    const keys = [key];
+    // A hinted Shift-layer letter also hints Shift, which a phone needs even where a physical
+    // keyboard doesn't: iOS puts ئ on Shift+ي, not on its own key.
+    const glyph = getMappedFromKeyCode(code, this.shiftCodesWithFeedback.size > 0);
+    const shiftKey = this.phoneKeyOfKind('shift');
+    if (feedback === 'hint' && shiftKey && this.needsPhoneShift(key, glyph)) keys.push(shiftKey);
+    for (const phoneKey of keys) phoneKey.setFeedback(feedback);
+    this.phoneFeedbackKeysByCode.set(code, keys);
   }
 
   public clearKeyFeedback(code: string) {
@@ -485,6 +517,7 @@ export class KeyboardLayout extends Container {
   /** Highlights the key for `letter` as a hint; pass undefined to clear it. */
   public setHintedLetter(letter?: string) {
     if (this.hintedCode) this.keyByCode.get(this.hintedCode)?.setFeedback('none');
+    this.hintedLetter = letter;
     this.hintedCode = letter ? getKeyFromChar(letter) : '';
     if (this.hintedCode) this.keyByCode.get(this.hintedCode)?.setFeedback('hint');
 
@@ -495,14 +528,22 @@ export class KeyboardLayout extends Container {
     this.hintedPhoneKeys = [];
     if (!letter) return;
 
-    const key = this.phoneKeyForGlyph(letter);
-    if (key) this.hintedPhoneKeys.push(key);
-    // A capital needs Shift first, unless Caps Lock is already on.
-    const shiftKey = this.phoneKeyByKind.get('shift');
-    if (shiftKey && letter !== letter.toLocaleLowerCase('ug') && !this.capsLockOn) {
-      this.hintedPhoneKeys.push(shiftKey);
-    }
+    const key = letter === ' ' ? this.phoneKeyOfKind('space') : this.phoneKeyForGlyph(letter);
+    if (!key) return;
+    this.hintedPhoneKeys.push(key);
+    const shiftKey = this.phoneKeyOfKind('shift');
+    if (shiftKey && this.needsPhoneShift(key, letter)) this.hintedPhoneKeys.push(shiftKey);
+    // A character on the other page also lights the key that switches to it.
+    const layerKey = this.phoneKeyOfKind('layer');
+    if (layerKey && key.layer !== this.phoneLayerShown) this.hintedPhoneKeys.push(layerKey);
     for (const hinted of this.hintedPhoneKeys) hinted.setFeedback('hint');
+  }
+
+  /** A capital or a Shift-layer letter needs Shift first, unless Shift is already on. */
+  private needsPhoneShift(key: PhoneKeyCap, glyph: string) {
+    if (this.isPhoneShifted()) return false;
+    if (key.def.shiftGlyph) return key.def.shiftGlyph === glyph;
+    return this.phoneScript === 'Latin' && glyph !== glyph.toLocaleLowerCase('ug');
   }
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {
@@ -610,15 +651,21 @@ export class KeyboardLayout extends Container {
     this.phoneKeyByGlyph.clear();
     this.phoneKeyByKind.clear();
     this.lastPhoneKeyByCode.clear();
-    this.phoneFeedbackKeyByCode.clear();
+    this.phoneFeedbackKeysByCode.clear();
     this.hintedPhoneKeys = [];
     this.appliedPhoneLayout = '';
 
     this.phoneScript = script;
-    this.phoneRows = getPhoneRows(script);
+    this.phoneLayers = getPhoneLayers(script);
+    this.phoneLayerShown = 'letters';
     const fontSize = this.phoneFontSize();
-    for (const def of this.phoneRows.flat()) {
+    const defs = Object.entries(this.phoneLayers).flatMap(([layer, rows]) =>
+      rows.flat().map((def) => ({ def, layer: layer as PhoneLayer })),
+    );
+    for (const { def, layer } of defs) {
       const key = new PhoneKeyCap(def, script, this.phoneColors(), fontSize);
+      key.layer = layer;
+      key.visible = layer === this.phoneLayerShown;
       key.eventMode = 'static';
       key.cursor = 'pointer';
       key.on('pointerdown', (event) => this.onPhoneKeyDown(key, event));
@@ -630,11 +677,13 @@ export class KeyboardLayout extends Container {
       }
 
       if (def.kind === 'char' && def.glyph) {
-        for (const glyph of [def.glyph, ...(def.alternates ?? [])]) {
-          this.phoneKeyByGlyph.set(glyph.toLocaleLowerCase('ug'), key);
+        const glyphs = [def.glyph, def.shiftGlyph, ...(def.alternates ?? [])];
+        for (const glyph of glyphs.filter((glyph) => glyph !== undefined)) {
+          const lower = glyph.toLocaleLowerCase('ug');
+          this.phoneKeyByGlyph.set(lower, [...(this.phoneKeyByGlyph.get(lower) ?? []), key]);
         }
       } else {
-        this.phoneKeyByKind.set(def.kind, key);
+        this.phoneKeyByKind.set(def.kind, [...(this.phoneKeyByKind.get(def.kind) ?? []), key]);
       }
       this.phoneKeys.push(key);
       this.phoneKeyLayer.addChild(key);
@@ -669,54 +718,74 @@ export class KeyboardLayout extends Container {
     if (this.appliedPhoneLayout === signature) return;
     this.appliedPhoneLayout = signature;
 
-    const rows = this.phoneRows;
-    const units = Math.max(...rows.map(phoneRowUnits));
+    if (!this.phoneLayers) return;
+    // Both pages share one grid, so switching never moves the keys the player is aiming at.
+    const pages = Object.values(this.phoneLayers);
+    const rows = Math.max(...pages.map((page) => page.length));
+    const units = Math.max(...pages.flat().map(phoneRowUnits));
     const pitch = (viewWidth - insetLeft - insetRight - PHONE_PADDING_X * 2) / units;
     const rowPitch = PHONE_KEY_HEIGHT + PHONE_ROW_GAP;
 
     let index = 0;
-    rows.forEach((row, rowIndex) => {
-      let x = insetLeft + PHONE_PADDING_X + ((units - phoneRowUnits(row)) * pitch) / 2;
-      const y = PHONE_PADDING_TOP + rowIndex * rowPitch;
-      for (const def of row) {
-        const key = this.phoneKeys[index++];
-        const width = (def.width ?? 1) * pitch;
-        key.position.set(x + PHONE_KEY_GAP / 2, y);
-        key.applySize(width - PHONE_KEY_GAP, PHONE_KEY_HEIGHT);
-        // Taps in the gaps still land on the nearest key.
-        key.hitArea = new Rectangle(-PHONE_KEY_GAP / 2, -PHONE_ROW_GAP / 2, width, rowPitch);
-        x += width;
-      }
-    });
+    for (const page of pages) {
+      page.forEach((row, rowIndex) => {
+        let x = insetLeft + PHONE_PADDING_X + ((units - phoneRowUnits(row)) * pitch) / 2;
+        const y = PHONE_PADDING_TOP + rowIndex * rowPitch;
+        for (const def of row) {
+          const key = this.phoneKeys[index++];
+          const width = (def.width ?? 1) * pitch;
+          key.position.set(x + PHONE_KEY_GAP / 2, y);
+          key.applySize(width - PHONE_KEY_GAP, PHONE_KEY_HEIGHT);
+          // Taps in the gaps still land on the nearest key.
+          key.hitArea = new Rectangle(-PHONE_KEY_GAP / 2, -PHONE_ROW_GAP / 2, width, rowPitch);
+          x += width;
+        }
+      });
+    }
 
     this.panelWidth = viewWidth;
     this.panelHeight =
-      PHONE_PADDING_TOP +
-      rows.length * rowPitch -
-      PHONE_ROW_GAP +
-      PHONE_PADDING_BOTTOM +
-      safeBottom;
+      PHONE_PADDING_TOP + rows * rowPitch - PHONE_ROW_GAP + PHONE_PADDING_BOTTOM + safeBottom;
     this.panelBackground
       .clear()
       .rect(0, 0, this.panelWidth, this.panelHeight + (floating ? 0 : PHONE_BLEED))
       .fill({ color: this.keyboardColorOptions.PANEL_COLOR });
   }
 
+  /** Of keys typing the same thing on both pages (Space, the period), the one showing. */
+  private pickShownKey(keys?: PhoneKeyCap[]) {
+    return keys?.find((key) => key.layer === this.phoneLayerShown) ?? keys?.[0];
+  }
+
   private phoneKeyForGlyph(glyph: string) {
-    return this.phoneKeyByGlyph.get(glyph.toLocaleLowerCase('ug'));
+    return this.pickShownKey(this.phoneKeyByGlyph.get(glyph.toLocaleLowerCase('ug')));
+  }
+
+  private phoneKeyOfKind(kind: PhoneKeyDef['kind']) {
+    return this.pickShownKey(this.phoneKeyByKind.get(kind));
+  }
+
+  /** Like iOS: the 123 key swaps pages, and Shift doesn't carry over to the other one. */
+  private showPhoneLayer(layer: PhoneLayer) {
+    if (this.phoneLayerShown === layer) return;
+    this.releaseLatchedShift();
+    this.phoneLayerShown = layer;
+    for (const key of this.phoneKeys) key.visible = key.layer === layer;
+    this.setHintedLetter(this.hintedLetter);
+    this.refreshKeys();
   }
 
   private phoneKeyForCode(code: string, shift: boolean): PhoneKeyCap | undefined {
     switch (code) {
       case 'Space':
-        return this.phoneKeyByKind.get('space');
+        return this.phoneKeyOfKind('space');
       case 'Enter':
-        return this.phoneKeyByKind.get('enter');
+        return this.phoneKeyOfKind('enter');
       case 'Backspace':
-        return this.phoneKeyByKind.get('backspace');
+        return this.phoneKeyOfKind('backspace');
       case 'ShiftLeft':
       case 'ShiftRight':
-        return this.phoneKeyByKind.get('shift');
+        return this.phoneKeyOfKind('shift');
     }
     const glyph = getMappedFromKeyCode(code, shift);
     return glyph ? this.phoneKeyForGlyph(glyph) : undefined;
@@ -772,7 +841,7 @@ export class KeyboardLayout extends Container {
     for (const key of this.phoneKeys) {
       key.setFeedback('none');
     }
-    this.phoneFeedbackKeyByCode.clear();
+    this.phoneFeedbackKeysByCode.clear();
     this.shiftCodesWithFeedback.clear();
     this.hintedPhoneKeys = [];
   }
@@ -789,6 +858,8 @@ export class KeyboardLayout extends Container {
     if (event.isTrusted) {
       const key = this.phoneKeyForCode(event.code, event.shiftKey);
       if (key) this.lastPhoneKeyByCode.set(event.code, key);
+      this.lastTypedCode = event.code;
+      this.lastTypedText = event.key;
     }
     this.pressedCodes.add(event.code);
     this.refreshKeys();
@@ -872,16 +943,59 @@ export class KeyboardLayout extends Container {
       this.tapPhoneShift();
       return;
     }
+    if (key.def.kind === 'layer' && key.def.toLayer) {
+      this.showPhoneLayer(key.def.toLayer);
+      return;
+    }
 
     const touch: PhoneTouch = { key };
     this.phoneTouches.set(event.pointerId, touch);
+    this.heldPhoneKeys.add(key);
     if (key.def.alternates?.length) {
-      this.heldPhoneKeys.add(key);
       touch.timer = window.setTimeout(() => this.openAlternates(touch), LONG_PRESS_MS);
       this.refreshKeys();
       return;
     }
-    touch.pressed = this.pressPhoneKey(key, key.def.glyph);
+    const glyph = this.phoneGlyph(key);
+    if (glyph !== undefined && this.isWordStart() && isArabicVowel(glyph)) {
+      const hamza = this.pressPhoneKey(key, 'ئ');
+      if (hamza) this.releasePhoneKey(hamza, false);
+    }
+    touch.pressed = this.pressPhoneKey(key, glyph);
+    // iOS goes back to the letters after a space typed on the 123 page.
+    if (key.def.kind === 'space' && key.layer === 'symbols') this.showPhoneLayer('letters');
+  }
+
+  /**
+   * Marks the next letter as the start of a word: word and sentence levels call it as each word
+   * or sentence begins. Until the level accepts a letter, vowel keys show and type their ئ.
+   */
+  public setWordStart(wordStart: boolean) {
+    if (this.wordStart === wordStart) return;
+    this.wordStart = wordStart;
+    this.refreshKeys();
+  }
+
+  /**
+   * Levels accept a key by lighting it green; a wrong key leaves the word where it was. In a
+   * sentence, an accepted space or other non-letter starts the next word.
+   */
+  private onKeyAccepted() {
+    this.lastTypedCode = '';
+    // Spaces start words, and so do quotes, brackets and hyphens: «ئانا» starts at ئ.
+    const startsWord = this.lastTypedText !== '' && !/\p{L}/u.test(this.lastTypedText);
+    this.setWordStart(this.text === 'sentences' && startsWord);
+  }
+
+  /** Like iOS, a vowel key types the ئ a vowel takes at the start of a word. */
+  private isWordStart() {
+    return this.phoneScript === 'Arabic' && this.wordStart;
+  }
+
+  /** What a tap on `key` types now: its Shift glyph while Shift is on. */
+  private phoneGlyph(key: PhoneKeyCap) {
+    const { glyph, shiftGlyph } = key.def;
+    return this.isPhoneShifted() && shiftGlyph ? shiftGlyph : glyph;
   }
 
   private onPhonePointerMove(event: FederatedPointerEvent) {
@@ -895,15 +1009,17 @@ export class KeyboardLayout extends Container {
     this.phoneTouches.delete(event.pointerId);
     window.clearTimeout(touch.timer);
 
+    this.heldPhoneKeys.delete(touch.key);
     if (touch.pressed) {
       this.releasePhoneKey(touch.pressed);
+      this.refreshKeys();
       return;
     }
 
-    const { alternates, glyph } = touch.key.def;
-    const chosen = touch.popup && alternates ? alternates[touch.popup.selected] : glyph;
+    const { alternates } = touch.key.def;
+    const chosen =
+      touch.popup && alternates ? alternates[touch.popup.selected] : this.phoneGlyph(touch.key);
     touch.popup?.destroy({ children: true });
-    this.heldPhoneKeys.delete(touch.key);
     if (!cancelled) {
       const pressed = this.pressPhoneKey(touch.key, chosen);
       if (pressed) this.releasePhoneKey(pressed);
@@ -937,7 +1053,7 @@ export class KeyboardLayout extends Container {
     this.heldPhoneKeys.clear();
   }
 
-  /** Gboard Shift: a tap shifts one letter, a double tap locks caps, a tap while locked unlocks. */
+  /** Phone Shift: a tap shifts one key, a double tap locks it, a tap while locked unlocks. */
   private tapPhoneShift() {
     const now = performance.now();
     if (this.capsLockOn) {
@@ -952,6 +1068,7 @@ export class KeyboardLayout extends Container {
       this.dispatchKey('keydown', 'ShiftLeft');
     }
     this.lastShiftTapAt = now;
+    this.refreshHint();
     this.refreshKeys();
   }
 
@@ -971,23 +1088,28 @@ export class KeyboardLayout extends Container {
   }
 
   /**
-   * Types `glyph` as the physical keystroke that makes it. A Shift-layer glyph (ژ is Shift+D)
-   * gets its own Shift press around it, so levels and the typing tutorial see the real sequence.
+   * Types `glyph` as the physical keystroke that makes it, so levels and the typing tutorial
+   * see the real sequence. A Shift-layer glyph (ژ is Shift+D) under a locked Shift gets its own
+   * Shift press; a glyph the phone shifts but the physical layout doesn't (ئ is a plain `/`)
+   * goes out unshifted even with Shift on. Latin letters take their case from Shift.
    */
   private pressPhoneKey(key: PhoneKeyCap, glyph?: string): PressedStroke | undefined {
     const stroke = this.phoneStroke(key, glyph);
     if (!stroke) return undefined;
     this.lastPhoneKeyByCode.set(stroke.code, key);
+    this.lastTypedCode = stroke.code;
+    this.lastTypedText = key.def.kind === 'space' ? ' ' : (glyph ?? '');
+    const shiftKey = stroke.shift || (this.phoneScript === 'Latin' && this.isShiftHeld());
     const wrappedShift = stroke.shift && !this.isShiftHeld();
     if (wrappedShift) this.dispatchKey('keydown', 'ShiftLeft');
-    this.dispatchKey('keydown', stroke.code);
-    return { code: stroke.code, wrappedShift };
+    this.dispatchKey('keydown', stroke.code, shiftKey);
+    return { code: stroke.code, shiftKey, wrappedShift };
   }
 
-  private releasePhoneKey({ code, wrappedShift }: PressedStroke) {
-    this.dispatchKey('keyup', code);
+  private releasePhoneKey({ code, shiftKey, wrappedShift }: PressedStroke, releaseLatch = true) {
+    this.dispatchKey('keyup', code, shiftKey);
     if (wrappedShift) this.dispatchKey('keyup', 'ShiftLeft');
-    this.releaseLatchedShift();
+    if (releaseLatch) this.releaseLatchedShift();
   }
 
   private releaseLatchedShift() {
@@ -995,6 +1117,12 @@ export class KeyboardLayout extends Container {
     const code = this.latchedShiftCode;
     this.latchedShiftCode = '';
     this.dispatchKey('keyup', code);
+    this.refreshHint();
+  }
+
+  /** Shift lights up in the hint only while it's still needed, so re-hint when it changes. */
+  private refreshHint() {
+    if (this.hintedLetter !== undefined) this.setHintedLetter(this.hintedLetter);
   }
 
   private isShiftHeld() {
@@ -1005,8 +1133,14 @@ export class KeyboardLayout extends Container {
     return this.phoneScript === 'Latin' && this.isShiftHeld() !== this.capsLockOn;
   }
 
-  private dispatchKey(type: 'keydown' | 'keyup', code: string) {
-    const shiftKey = SHIFT_CODES.has(code) ? type === 'keydown' : this.isShiftHeld();
+  /** Arabic and Cyrillic have no case, so a locked Shift just keeps the Shift layer up. */
+  private isPhoneShifted() {
+    return this.isShiftHeld() || this.capsLockOn;
+  }
+
+  private dispatchKey(type: 'keydown' | 'keyup', code: string, shiftOverride?: boolean) {
+    const shiftKey =
+      shiftOverride ?? (SHIFT_CODES.has(code) ? type === 'keydown' : this.isShiftHeld());
     window.dispatchEvent(
       new KeyboardEvent(type, {
         code,
@@ -1038,13 +1172,15 @@ export class KeyboardLayout extends Container {
       const key = this.phoneKeyForCode(code, shiftPressed);
       if (key) pressedPhoneKeys.add(key);
     }
+    const shifted = this.isPhoneShifted();
     const upperCase = this.isPhoneUpperCase();
+    const wordStart = this.isWordStart();
     for (const key of this.phoneKeys) {
       key.setPressed(pressedPhoneKeys.has(key));
-      if (this.phoneScript === 'Latin') key.setUpperCase(upperCase);
+      key.setShifted(shifted, upperCase, wordStart);
     }
-    this.phoneKeyByKind
-      .get('shift')
-      ?.setShiftState(this.capsLockOn ? 'locked' : this.latchedShiftCode ? 'once' : 'off');
+    this.phoneKeyOfKind('shift')?.setShiftState(
+      this.capsLockOn ? 'locked' : this.latchedShiftCode ? 'once' : 'off',
+    );
   }
 }
