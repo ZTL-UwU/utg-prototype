@@ -273,7 +273,15 @@ export class TypingTestSettingsPopup extends Container {
         justifyContent: 'center',
         gap: 28,
       },
-      children: [title, subtitle, modeControl, durationControl, keyboardRow, startButton],
+      // Phones always show the keyboard (they have no other way to type), so there's no choice.
+      children: [
+        title,
+        subtitle,
+        modeControl,
+        durationControl,
+        ...(responsive({ sm: true, lg: false }) ? [] : [keyboardRow]),
+        startButton,
+      ],
     });
 
     this.panel = new Container({ layout: true });

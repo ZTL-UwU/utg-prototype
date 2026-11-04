@@ -2,6 +2,7 @@ import type { TypingTestProps } from '@utg/level-types';
 import { Container, Graphics, Text, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { responsive } from '../../../../engine/utils/viewport';
 import { getKeyFromChar, getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useLevelProgress } from '../../../../zustandStores/levelProgressStore';
 import { REMOTE_SENTENCES_BUNDLE } from '../../../../zustandStores/sentenceStore';
@@ -183,7 +184,9 @@ export class TypingTestScreen extends Container {
 
   private startTest(settings: TypingTestSettings) {
     lastSettings = settings;
-    this.settings = settings;
+    // Phones have no physical keyboard, so the on-screen one is the only way to type.
+    const phone = responsive({ sm: true, lg: false });
+    this.settings = { ...settings, showKeyboard: settings.showKeyboard || phone };
     this.promptView = createPromptView(settings.mode, this.props);
     this.addChildAt(this.promptView, this.getChildIndex(this.panel) + 1);
 
@@ -191,7 +194,7 @@ export class TypingTestScreen extends Container {
     this.remainingMs = this.durationMs;
     this.armed = true;
 
-    if (settings.showKeyboard) {
+    if (this.settings.showKeyboard) {
       this.addChild(this.keyboard);
       this.keyboard.resize(this._sw, this._sh);
       void this.keyboard.playEnterAnimation();
