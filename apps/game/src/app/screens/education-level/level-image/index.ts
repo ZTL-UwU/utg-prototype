@@ -8,7 +8,7 @@ import { responsive } from '../../../../engine/utils/viewport';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import {
-  REMOTE_WORDS_BUNDLE,
+  levelWordAssets,
   resolveWordsByIds,
   type WordSimple,
 } from '../../../../zustandStores/wordStore';
@@ -48,12 +48,8 @@ function playableWords(wordIds: number[]): WordSimple[] {
 
 export class EducationImageScreen extends Container {
   public readonly screenName = 'EducationImageScreen';
-  public static assetBundles = [
-    'education-level',
-    'ui',
-    'education-letters-audio',
-    REMOTE_WORDS_BUNDLE,
-  ];
+  public static assetBundles = ['education-level', 'ui', 'education-letters-audio'];
+  public static assets = levelWordAssets('image', 'educationAudio');
   public static splashBackgroundAsset = 'education-levels/education-level/background.png';
   public static helpAssets = ['tutorial-popups/education-level-image.png'];
   public static rounds = 0;

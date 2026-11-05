@@ -9,7 +9,7 @@ import useSessionStore from '../../../../zustandStores/sessionStore';
 import {
   getWordStandardAudioAlias,
   playWordAudio,
-  REMOTE_WORDS_BUNDLE,
+  levelWordAssets,
   resolveWordsByIds,
 } from '../../../../zustandStores/wordStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -62,7 +62,8 @@ const PHONE_SLOT_LAYOUT: Array<{ x: number; y: number }> = [
 
 export class GameLevelTrout extends Container {
   public readonly screenName = 'GameLevelTrout';
-  public static assetBundles = ['game-level-trout', 'ui', REMOTE_WORDS_BUNDLE];
+  public static assetBundles = ['game-level-trout', 'ui'];
+  public static assets = levelWordAssets('standardAudio');
   public static splashBackgroundAsset = 'game-levels/game-level-trout/splash.png';
   public static helpAssets: string[] = [];
 

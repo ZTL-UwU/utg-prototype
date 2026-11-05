@@ -11,7 +11,7 @@ import {
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
-import { getWordImageAlias, REMOTE_WORDS_BUNDLE } from '../../../../zustandStores/wordStore';
+import { getWordImageAlias, levelWordAssets } from '../../../../zustandStores/wordStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
@@ -40,7 +40,8 @@ function randomTouristTexture() {
 
 export class TypingMarketScreen extends Container {
   public readonly screenName = 'TypingMarketScreen';
-  public static assetBundles = ['typing-level-market', 'ui', REMOTE_WORDS_BUNDLE];
+  public static assetBundles = ['typing-level-market', 'ui'];
+  public static assets = levelWordAssets('image');
   public static splashBackgroundAsset = 'typing-levels/typing-level-market/splash.png';
   public static helpAssets = [
     'tutorial-popups/typing-level-market-1.png',

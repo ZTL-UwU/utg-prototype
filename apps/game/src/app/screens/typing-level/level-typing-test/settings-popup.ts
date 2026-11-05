@@ -257,7 +257,7 @@ export class TypingTestSettingsPopup extends Container {
     });
     startButton.layout = { width: 300, height: 142, isLeaf: true };
     startButton.onPress.connect(() => {
-      void engine().audio.sfx.play('level-splash/game-start.mp3');
+      void engine().audio.sfx.play('preload-audio/sfx/game-start.mp3');
       void engine()
         .navigation.hidePopup()
         .then(() => onStart({ ...this.settings }));

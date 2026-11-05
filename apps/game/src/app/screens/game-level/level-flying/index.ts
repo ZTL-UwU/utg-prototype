@@ -20,7 +20,7 @@ import useSessionStore from '../../../../zustandStores/sessionStore';
 import {
   getWordStandardAudioAlias,
   playWordAudio,
-  REMOTE_WORDS_BUNDLE,
+  levelWordAssets,
   resolveWordsByIds,
 } from '../../../../zustandStores/wordStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -82,7 +82,8 @@ type FlyingState = 'playing' | 'dying' | 'over';
 type Round = { word: string; wordId: number };
 export class GameLevelFlying extends Container {
   public readonly screenName = 'GameLevelFlying';
-  public static assetBundles = ['game-level-flying', 'ui', REMOTE_WORDS_BUNDLE];
+  public static assetBundles = ['game-level-flying', 'ui'];
+  public static assets = levelWordAssets('standardAudio');
   public static splashBackgroundAsset = 'game-levels/game-level-flying/background.png';
   public static helpAssets: string[] = [];
   private background: Sprite;

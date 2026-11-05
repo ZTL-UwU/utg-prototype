@@ -7,7 +7,7 @@ import { waitFor } from '../../../../engine/utils/waitFor';
 import { convertToCurrentScript, isCurrentScriptRtl } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
-import { REMOTE_WORDS_BUNDLE, resolveWordsByIds } from '../../../../zustandStores/wordStore';
+import { levelWordAssets, resolveWordsByIds } from '../../../../zustandStores/wordStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
@@ -42,7 +42,8 @@ function playableWords(wordIds: number[]): string[] {
 
 export class GameWordSearchScreen extends Container {
   public readonly screenName = 'GameWordSearchScreen';
-  public static assetBundles = ['ui', REMOTE_WORDS_BUNDLE];
+  public static assetBundles = ['ui'];
+  public static assets = levelWordAssets();
   public static splashBackgroundAsset = 'game-levels/game-level-map/background.png';
   public static helpAssets: string[] = [];
 

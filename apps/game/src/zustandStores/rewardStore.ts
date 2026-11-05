@@ -130,10 +130,6 @@ function registerRewardsBundle(rewards: RewardSimple[]): void {
 
   // Always register so navigation can safely `loadBundle('remote-rewards')`.
   Assets.addBundle(REMOTE_REWARDS_BUNDLE, entries);
-
-  if (entries.length > 0) {
-    void Assets.backgroundLoadBundle(REMOTE_REWARDS_BUNDLE);
-  }
 }
 
 const useRewardStore = create<RewardStore>((set, get) => ({

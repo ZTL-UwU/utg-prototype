@@ -6,7 +6,7 @@ import { responsive } from '../../../../engine/utils/viewport';
 import { getKeyFromChar, getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useLevelProgress } from '../../../../zustandStores/levelProgressStore';
 import { REMOTE_SENTENCES_BUNDLE } from '../../../../zustandStores/sentenceStore';
-import { REMOTE_WORDS_BUNDLE } from '../../../../zustandStores/wordStore';
+import { levelWordAssets } from '../../../../zustandStores/wordStore';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout, type KeyFeedback } from '../../../ui/keyboard-layout';
@@ -40,15 +40,11 @@ let lastSettings: TypingTestSettings | undefined;
 
 export class TypingTestScreen extends Container {
   public readonly screenName = 'TypingTestScreen';
-  public static assetBundles = [
-    'typing-level-test',
-    REMOTE_WORDS_BUNDLE,
-    REMOTE_SENTENCES_BUNDLE,
-    'ui',
-  ];
+  public static assetBundles = ['typing-level-test', REMOTE_SENTENCES_BUNDLE, 'ui'];
+  public static assets = levelWordAssets();
   // A flat fill matching COLORS.BACKGROUND, so the splash and the test read as one screen.
   public static splashBackgroundAsset = 'typing-levels/typing-level-test/background.svg';
-  // Empty so START opens the settings popup instead of a tutorial slideshow first.
+  // Empty so the test opens on its settings popup instead of a tutorial slideshow first.
   public static helpAssets: string[] = [];
 
   private readonly background = new Graphics();

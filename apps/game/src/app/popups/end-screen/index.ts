@@ -12,10 +12,10 @@ import { REMOTE_REWARDS_BUNDLE, resolveRewardsByIds } from '../../../zustandStor
 import { getStarCount } from '../../../zustandStores/scoreManager';
 import useSessionStore from '../../../zustandStores/sessionStore';
 import { useUserRewardStore } from '../../../zustandStores/userRewardStore';
+import { LevelLoadingScreen } from '../../screens/level-loading';
 import { LevelMapScreen } from '../../screens/level-map';
 import { findMapUnitForLevel, REMOTE_MASCOTS_BUNDLE } from '../../screens/level-map/units';
 import type { TLayer, TLevel } from '../../screens/level-map/units';
-import { LevelSplashScreen } from '../../screens/level-splash';
 import { BackButton } from '../../ui/back-button';
 import { layoutPopup } from '../../ui/layout-popup';
 import { NextButton } from '../../ui/next-button';
@@ -96,19 +96,19 @@ function goToLevelMap(level: TLevel) {
     .then(() => engine().navigation.showScreen(LevelMapScreen, mapUnit));
 }
 
-/** Replays the level just finished. The splash's START handler re-starts the session. */
+/** Replays the level just finished. The loading screen starts a fresh session. */
 function goToRetryLevel(level: TLevel) {
   const mapUnit = findMapUnitForLevel(level);
   void engine()
     .navigation.hidePopup()
-    .then(() => engine().navigation.showScreen(LevelSplashScreen, { level, mapUnit }));
+    .then(() => engine().navigation.showScreen(LevelLoadingScreen, { level, mapUnit }));
 }
 
 function goToNextLevel(nextLevel: NonNullable<ReturnType<typeof getNextLevelAfter>>) {
   void engine()
     .navigation.hidePopup()
     .then(() =>
-      engine().navigation.showScreen(LevelSplashScreen, {
+      engine().navigation.showScreen(LevelLoadingScreen, {
         level: nextLevel.level,
         mapUnit: nextLevel.mapUnit,
       }),

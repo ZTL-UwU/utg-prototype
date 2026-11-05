@@ -29,6 +29,8 @@ export function getMascotStarAlias(mascotId: number, stars: 0 | 1 | 2 | 3): stri
 /**
  * A level screen owns its splash background and tutorial images, so they stay
  * consistent everywhere the screen is reused instead of being restated per level.
+ * The level splash is hidden for now, so `splashBackgroundAsset` (like the level's
+ * `splashColorScheme` and `mascotOnSplash`) is kept but unused.
  */
 export type LevelScreenConstructor = AppScreenConstructor<any[]> & {
   helpAssets: string[];
