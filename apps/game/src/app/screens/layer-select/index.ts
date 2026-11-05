@@ -3,7 +3,7 @@ import { animate } from 'motion';
 import { Container, Graphics, NineSliceSprite, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { responsive, safeAreaInsets } from '../../../engine/utils/viewport';
+import { responsive, safeAreaInsetsInView, topClearance } from '../../../engine/utils/viewport';
 import { isLayerUnlocked } from '../../../lib/progression';
 import { getAvatarPath } from '../../../utils/avatars';
 import { useAuthStore } from '../../../zustandStores/auth';
@@ -73,7 +73,9 @@ const PHONE_SIDE_MARGIN = 32;
 const PHONE_BOTTOM_ROW_HEIGHT = 220; // the avatar, the tallest
 const PHONE_BOTTOM_ROW_SPACING = 230;
 const PHONE_BOTTOM_MARGIN = 130;
-const PHONE_BOTTOM_RESERVE = PHONE_BOTTOM_MARGIN + PHONE_BOTTOM_ROW_HEIGHT + SCREEN_MARGIN;
+const PHONE_BOTTOM_ROW_SCALE = 0.8; // gives the top room to clear the notch
+const PHONE_BOTTOM_RESERVE =
+  (PHONE_BOTTOM_MARGIN + PHONE_BOTTOM_ROW_HEIGHT) * PHONE_BOTTOM_ROW_SCALE + SCREEN_MARGIN;
 
 const AVATAR_SIZE = 149;
 const PHONE_AVATAR_SIZE = 220; // larger than its neighbours
@@ -398,11 +400,11 @@ export class LayerSelectScreen extends Container {
     const phone = responsive({ sm: true, lg: false });
     if (phone !== this.phoneLayout) this.applyPaperLayout(phone);
     const paper = paperLayout(phone);
-    const insets = safeAreaInsets();
+    const insets = safeAreaInsetsInView(height);
 
     if (phone) {
       // Paper and bottom row scale down together on short screens (foldables, split screen)
-      const topReserve = PHONE_TOP_RESERVE + insets.top;
+      const topReserve = PHONE_TOP_RESERVE + topClearance(height);
       const availableWidth = width - insets.left - insets.right - PHONE_SIDE_MARGIN * 2;
       const availableHeight = height - topReserve - insets.bottom;
       this.mapScale = Math.min(
@@ -422,7 +424,7 @@ export class LayerSelectScreen extends Container {
         left: width / 2 - paper.width / 2,
         top: centerY - paper.height / 2,
       };
-      this.placeBottomRow(width, height, insets.bottom, this.mapScale);
+      this.placeBottomRow(width, height, insets.bottom, this.mapScale * PHONE_BOTTOM_ROW_SCALE);
     } else {
       // Reserve the button column on both sides so the centred paper stays clear of it
       const availableWidth =

@@ -20,6 +20,22 @@ export function responsive<T>(values: ResponsiveValues<T>): T {
   return value;
 }
 
+// Phones keep top controls clear of notches even when the browser reports no inset
+const PHONE_MIN_TOP_CLEARANCE = 60;
+
+// Extra top offset for controls on phones, in view units; 0 on wider screens
+export function topClearance(viewHeight: number) {
+  if (!responsive({ sm: true, lg: false })) return 0;
+  return Math.max(safeAreaInsetsInView(viewHeight).top, PHONE_MIN_TOP_CLEARANCE);
+}
+
+// `safeAreaInsets` converted from CSS pixels to view units
+export function safeAreaInsetsInView(viewHeight: number) {
+  const ratio = viewHeight / window.innerHeight;
+  const { top, right, bottom, left } = safeAreaInsets();
+  return { top: top * ratio, right: right * ratio, bottom: bottom * ratio, left: left * ratio };
+}
+
 let safeAreaProbe: HTMLElement | undefined;
 
 /** Notch and home indicator insets in CSS pixels, resolved from `.safe-area-probe`. */

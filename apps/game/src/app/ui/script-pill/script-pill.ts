@@ -23,13 +23,13 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
  * Pill-shaped script selector.
  *
  * Two values drive its look, both 0..1:
- * - `progress`: collapsed (icon + selected option) → expanded (icon + every option)
+ * - `progress`: collapsed (icon only) → expanded (icon + every option)
  * - `dock`: free-standing pill → docked to the right screen edge (right curve pushed off-screen)
  */
 export class ScriptPill extends Container {
   public static HEIGHT = PADDING * 2 + Math.max(ICON_SIZE, ScriptButton.BTN_HEIGHT);
   public static EXPANDED_WIDTH = slotX(SCRIPTS.length) - GAP + PADDING;
-  public static COLLAPSED_WIDTH = slotX(1) - GAP + PADDING;
+  public static COLLAPSED_WIDTH = PADDING + ICON_SIZE + PADDING; // icon only
   private static RADIUS = ScriptPill.HEIGHT / 2;
 
   /** Slot on the left of the pill holding the icon */
@@ -110,7 +110,7 @@ export class ScriptPill extends Container {
     this.animateProgress(1);
   }
 
-  /** Settle back to icon + selected option */
+  /** Settle back to the icon */
   public collapse() {
     this.animateProgress(0);
   }
@@ -135,10 +135,6 @@ export class ScriptPill extends Container {
       this.onSelect(script);
       return;
     }
-    if (!this.isExpanded) {
-      this.expand();
-      return;
-    }
     if (script !== scriptState.getState().currentScript) {
       this.onSelect(script);
     }
@@ -159,13 +155,12 @@ export class ScriptPill extends Container {
     const current = scriptState.getState().currentScript;
     const y = ScriptPill.HEIGHT / 2;
     this.buttons.forEach((btn, i) => {
-      const selected = btn.script === current;
-      // Collapsed: the selected option sits in the first slot, the rest stack under it invisibly
+      // Options fan out from the first slot and fade in; collapsed shows only the icon
       const left = lerp(slotX(0), slotX(i), p);
       btn.position.set(left + ScriptButton.BTN_WIDTH / 2, y);
       const baseAlpha = btn.disabled ? DISABLED_ALPHA : 1;
-      btn.alpha = selected ? baseAlpha : baseAlpha * p;
-      btn.eventMode = selected || p > 0.5 ? 'static' : 'none';
+      btn.alpha = baseAlpha * p;
+      btn.eventMode = p > 0.5 ? 'static' : 'none';
     });
     const selectedButton = this.buttons.find((btn) => btn.script === current);
     if (selectedButton) this.setChildIndex(selectedButton, this.children.length - 1);

@@ -4,7 +4,7 @@ import { Graphics, Sprite, Text, Texture, type TextDropShadow, type Ticker } fro
 import { Container } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { responsive } from '../../../engine/utils/viewport';
+import { responsive, topClearance } from '../../../engine/utils/viewport';
 import { ensureValidSession } from '../../../lib/authSession';
 import { continueIntoGame } from '../../../utils/continueIntoGame';
 import { useAuthStore } from '../../../zustandStores/auth';
@@ -14,6 +14,8 @@ import { Butterfly } from './butterfly';
 
 const TITLE_ENTER_OFFSET = 60;
 const BUTTON_ENTER_OFFSET = 100;
+// Safari fakes Concert One's bold wider than Chrome, so the title shrinks to fit narrow screens
+const TITLE_SIDE_MARGIN = 32;
 /** The screen that holds the app */
 export class HomeScreen extends Container {
   public readonly screenName = 'HomeScreen';
@@ -25,6 +27,7 @@ export class HomeScreen extends Container {
   private titleContainer: Container;
   private startButton: FancyButton;
   private title: Text;
+  private titleWidth: number; // unscaled
   private subtitle: Text;
   private menuButton: FancyButton;
   private logo: Sprite;
@@ -77,6 +80,7 @@ export class HomeScreen extends Container {
       },
       layout: true,
     });
+    this.titleWidth = this.title.getLocalBounds().width;
 
     this.subtitle = new Text({
       text: 'A TYPING ADVENTURE!',
@@ -156,7 +160,11 @@ export class HomeScreen extends Container {
       },
       anchor: 0.5,
     });
-    this.menuButton.layout = { position: 'absolute', top: 90, right: 90 };
+    this.menuButton.layout = {
+      position: 'absolute',
+      top: 90 + topClearance(engine().navigation.height),
+      right: 90,
+    };
     this.menuButton.onPress.connect(() => {
       useOverlayStore.getState().show('menu');
     });
@@ -226,6 +234,7 @@ export class HomeScreen extends Container {
       height,
     };
     this.butterfly.resize(width, height);
+    this.title.scale.set(Math.min(1, (width - 2 * TITLE_SIDE_MARGIN) / this.titleWidth));
   }
 
   /** Show screen with animations */

@@ -1,6 +1,7 @@
 import { Container } from 'pixi.js';
 
 import { engine } from '../../engine/getEngine';
+import { topClearance } from '../../engine/utils/viewport';
 import { TutorialPopup } from '../popups/tutorial';
 import {
   EducationTutorialPopup,
@@ -30,11 +31,18 @@ export class HUD extends Container {
       },
     });
 
-    this.addChild(new BackButton(onBack));
+    // Screen-level controls drop below the notch on phones
+    const top = 90 + topClearance(engine().navigation.height);
+
+    const backButton = new BackButton(onBack);
+    backButton.layout = { top };
+    this.addChild(backButton);
 
     const onHelp = help && createHelpAction(help);
     if (onHelp) {
-      this.addChild(new HelpButton({ onPress: onHelp, icon: help.kind }));
+      const helpButton = new HelpButton({ onPress: onHelp, icon: help.kind });
+      helpButton.layout = { top };
+      this.addChild(helpButton);
     }
   }
 }
