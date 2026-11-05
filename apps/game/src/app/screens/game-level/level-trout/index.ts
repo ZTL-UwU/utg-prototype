@@ -64,7 +64,7 @@ export class GameLevelTrout extends Container {
   public readonly screenName = 'GameLevelTrout';
   public static assetBundles = ['game-level-trout', 'ui'];
   public static assets = levelWordAssets('standardAudio');
-  public static splashBackgroundAsset = 'game-levels/game-level-trout/splash.png';
+  public static loadingBackgroundAsset = 'game-levels/game-level-trout/splash.png';
   public static helpAssets: string[] = [];
 
   private readonly level: TLevel;

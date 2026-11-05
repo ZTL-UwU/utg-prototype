@@ -54,7 +54,7 @@ export class EducationSheepScreen extends Container {
     'mascots',
     'education-letters-audio',
   ];
-  public static splashBackgroundAsset = 'education-levels/education-level-sheep/background.png';
+  public static loadingBackgroundAsset = 'education-levels/education-level-sheep/background.png';
   public static helpAssets = ['tutorial-popups/education-level-sheep.png'];
   public static rounds = 0;
   private static roundOrder: string[] = [];

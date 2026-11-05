@@ -35,7 +35,7 @@ export class GameLevelKite extends Container {
   public readonly screenName = 'GameLevelKite';
   public static assetBundles = ['game-level-kite', 'ui'];
   public static assets = levelWordAssets('standardAudio');
-  public static splashBackgroundAsset = 'game-levels/game-level-kite/splash.png';
+  public static loadingBackgroundAsset = 'game-levels/game-level-kite/splash.png';
   public static helpAssets: string[] = [];
 
   private readonly level: TLevel;

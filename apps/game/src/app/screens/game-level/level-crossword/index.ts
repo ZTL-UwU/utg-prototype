@@ -44,7 +44,7 @@ export class GameWordSearchScreen extends Container {
   public readonly screenName = 'GameWordSearchScreen';
   public static assetBundles = ['ui'];
   public static assets = levelWordAssets();
-  public static splashBackgroundAsset = 'game-levels/game-level-map/background.png';
+  public static loadingBackgroundAsset = 'game-levels/game-level-map/background.png';
   public static helpAssets: string[] = [];
 
   private readonly level: TLevel;

@@ -21,29 +21,41 @@ const LAYER_COLORS: Record<TLayer, number> = {
 };
 
 const SKIP_BUTTON = 'tutorial-popups/exit-button.svg';
+/** Darkens the loading background behind tutorial slides, so they stand out. */
+const SLIDE_BACKDROP_TINT = 0x666666;
 /** How long each tutorial image stays up before the next one, or the level. */
 const SLIDE_MS = 3000;
 
 /**
- * Plays a level's tutorial images while the level loads, then starts it. Levels without
- * tutorial images get the progress bar alone. Every way into a level comes through here,
+ * Plays a level's tutorial images over its loading background while the level loads, then
+ * starts it. Levels without tutorial images get the background and progress bar alone. Every way into a level comes through here,
  * so each attempt starts a fresh session.
  */
 export class LevelLoadingScreen extends Container {
   public readonly screenName = 'LevelLoadingScreen';
   /** `ui` for the back button. The level's own assets load in the background, see below. */
   public static assetBundles = ['ui'];
-  /** Only this level's tutorial images, not the whole `tutorial-popups` bundle. */
+  /**
+   * The level's loading background, and only its tutorial images rather than the whole
+   * `tutorial-popups` bundle. The background usually comes from the level's own bundle, so
+   * loading it here first costs no extra download.
+   */
   public static assets(props: unknown) {
-    const help = (props as LevelLoadingProps).level.screen?.helpAssets ?? [];
-    return help.length ? [...help, SKIP_BUTTON] : [];
+    const screen = (props as LevelLoadingProps).level.screen;
+    const help = screen?.helpAssets ?? [];
+    return [
+      ...(screen?.loadingBackgroundAsset ? [screen.loadingBackgroundAsset] : []),
+      ...(help.length ? [...help, SKIP_BUTTON] : []),
+    ];
   }
 
   private readonly level: TLevel;
   private readonly mapUnit: TMapUnit;
   private readonly slides: string[];
 
+  /** Layer colour, behind the background in case it is missing. */
   private readonly backdrop = new Graphics();
+  private readonly background?: Sprite;
   private readonly slide?: Sprite;
   private readonly skipButton?: FancyButton;
   private readonly progressBar = new RoundedProgressBar();
@@ -71,6 +83,16 @@ export class LevelLoadingScreen extends Container {
 
     this.backdrop.layout = { position: 'absolute', width: '100%', height: '100%' };
     this.addChild(this.backdrop);
+
+    const backgroundAsset = level.screen?.loadingBackgroundAsset;
+    if (backgroundAsset) {
+      this.background = new Sprite({
+        texture: Texture.from(backgroundAsset),
+        tint: this.slides.length ? SLIDE_BACKDROP_TINT : 0xffffff,
+        layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
+      });
+      this.addChild(this.background);
+    }
 
     if (this.slides.length) {
       this.slide = new Sprite({

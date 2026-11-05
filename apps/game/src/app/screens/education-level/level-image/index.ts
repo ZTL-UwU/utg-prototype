@@ -50,7 +50,7 @@ export class EducationImageScreen extends Container {
   public readonly screenName = 'EducationImageScreen';
   public static assetBundles = ['education-level', 'ui', 'education-letters-audio'];
   public static assets = levelWordAssets('image', 'educationAudio');
-  public static splashBackgroundAsset = 'education-levels/education-level/background.png';
+  public static loadingBackgroundAsset = 'education-levels/education-level/background.png';
   public static helpAssets = ['tutorial-popups/education-level-image.png'];
   public static rounds = 0;
   public static roundOrder: WordSimple[] = [];

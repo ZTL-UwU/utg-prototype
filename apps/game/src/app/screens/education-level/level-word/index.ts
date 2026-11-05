@@ -106,7 +106,7 @@ export class EducationWordScreen extends Container {
   public readonly screenName = 'EducationWordScreen';
   public static assetBundles = ['education-level', 'ui', 'education-letters-audio'];
   public static assets = levelWordAssets('image', 'educationAudio');
-  public static splashBackgroundAsset = 'education-levels/education-level/background.png';
+  public static loadingBackgroundAsset = 'education-levels/education-level/background.png';
   public static helpAssets = ['tutorial-popups/education-level-word.png'];
   public static rounds = 0;
   private static roundOrder: WordSimple[] = [];

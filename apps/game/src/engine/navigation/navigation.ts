@@ -62,16 +62,12 @@ async function needsOf(ctor: AppScreenConstructor<any[]>, props?: unknown): Prom
   return { bundles: ctor.assetBundles ?? [], assets: (await ctor.assets?.(props)) ?? [] };
 }
 
-/**
- * One alias per file in these bundles and assets. `Assets.unloadBundle` would resolve a file
- * once per alias (AssetPack gives most two), unloading it twice: a cache warning for textures,
- * and a throw for sounds, which @pixi/sound cannot remove twice.
- */
-function filesToUnload(bundles: readonly string[], assets: readonly string[]): string[] {
+/** The files in these bundles and assets, each with one of its aliases. */
+function filesOf(bundles: readonly string[], assets: readonly string[]): Map<string, string> {
   const resolved = (
     bundles.length ? Object.values(Assets.resolver.resolveBundle([...bundles])) : []
   ) as Record<string, ResolvedAsset>[];
-  resolved.push(Assets.resolver.resolve([...assets]));
+  if (assets.length) resolved.push(Assets.resolver.resolve([...assets]));
 
   const aliasBySrc = new Map<string, string>();
   for (const entries of resolved) {
@@ -79,7 +75,24 @@ function filesToUnload(bundles: readonly string[], assets: readonly string[]): s
       if (asset.src && !aliasBySrc.has(asset.src)) aliasBySrc.set(asset.src, alias);
     }
   }
-  return [...aliasBySrc.values()];
+  return aliasBySrc;
+}
+
+/**
+ * One alias per file in the released bundles and assets, leaving out files that something
+ * still loaded shares, such as a level's background loaded alone for its loading screen
+ * and again by the level's bundle. `Assets.unloadBundle` would resolve a file once
+ * per alias (AssetPack gives most two), unloading it twice: a cache warning for textures, and
+ * a throw for sounds, which @pixi/sound cannot remove twice.
+ */
+function filesToUnload(
+  released: AssetNeeds,
+  kept: { bundles: Iterable<string>; assets: Iterable<string> },
+): string[] {
+  const keep = filesOf([...kept.bundles], [...kept.assets]);
+  return [...filesOf(released.bundles, released.assets)]
+    .filter(([src]) => !keep.has(src))
+    .map(([, alias]) => alias);
 }
 
 export class Navigation {
@@ -232,10 +245,14 @@ export class Navigation {
     bundles.forEach((bundle) => this.loadedBundles.delete(bundle));
     assets.forEach((asset) => this.loadedAssets.delete(asset));
     window.__trace?.(`unloading ${[...bundles, ...assets].join(', ')}`);
+    const files = filesToUnload(
+      { bundles, assets },
+      { bundles: this.loadedBundles, assets: this.loadedAssets },
+    );
 
     this.releasing = this.releasing.then(async () => {
       try {
-        await Assets.unload(filesToUnload(bundles, assets));
+        await Assets.unload(files);
       } catch (error) {
         console.warn('[navigation] Failed to unload assets', error);
       }

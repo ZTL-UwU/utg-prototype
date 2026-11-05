@@ -29,7 +29,7 @@ const MAX_START_DELAY = 1;
 export class EducationBubbleScreen extends Container {
   public readonly screenName = 'EducationBubbleScreen';
   public static assetBundles = ['education-level-bubble', 'ui', 'education-letters-audio'];
-  public static splashBackgroundAsset = 'education-levels/education-level-bubble/background.png';
+  public static loadingBackgroundAsset = 'education-levels/education-level-bubble/background.png';
   public static helpAssets = ['tutorial-popups/education-level-bubble.png'];
   public static rounds = 0;
   private static roundOrder: string[] = [];

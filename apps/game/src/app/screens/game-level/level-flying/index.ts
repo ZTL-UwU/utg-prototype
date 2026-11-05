@@ -84,7 +84,7 @@ export class GameLevelFlying extends Container {
   public readonly screenName = 'GameLevelFlying';
   public static assetBundles = ['game-level-flying', 'ui'];
   public static assets = levelWordAssets('standardAudio');
-  public static splashBackgroundAsset = 'game-levels/game-level-flying/background.png';
+  public static loadingBackgroundAsset = 'game-levels/game-level-flying/background.png';
   public static helpAssets: string[] = [];
   private background: Sprite;
   private bird: Sprite;

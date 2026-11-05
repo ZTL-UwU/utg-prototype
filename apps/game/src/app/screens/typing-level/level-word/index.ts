@@ -82,7 +82,7 @@ export class TypingWordScreen extends Container {
   public readonly screenName = 'TypingWordScreen';
   public static assetBundles = ['typing-level-word', 'ui'];
   public static assets = levelWordAssets('image', 'standardAudio');
-  public static splashBackgroundAsset = 'typing-levels/typing-level-word/background.png';
+  public static loadingBackgroundAsset = 'typing-levels/typing-level-word/background.png';
   public static helpAssets = ['tutorial-popups/typing-tutorial.png'];
   private background: Sprite;
   private hud: HUD;
