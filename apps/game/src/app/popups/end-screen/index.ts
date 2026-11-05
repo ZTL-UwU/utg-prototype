@@ -19,6 +19,7 @@ import { LevelSplashScreen } from '../../screens/level-splash';
 import { BackButton } from '../../ui/back-button';
 import { layoutPopup } from '../../ui/layout-popup';
 import { NextButton } from '../../ui/next-button';
+import { removeFilter } from '../../ui/remove-filter';
 import { RetryButton } from '../../ui/retry-button';
 import { PassportPopup } from '../passport';
 import { hasPostcard, PostcardPopup, toPostcardSlug } from '../postcard';
@@ -126,6 +127,8 @@ export class EndScreenPopup extends Container {
   ];
 
   private innerContainer: Container;
+  /** Blur this popup put on the screen beneath it, removed again in hide(). */
+  private screenBlur?: { screen: Container; filter: BlurFilter };
   private background: Graphics;
   private contentContainer: Container;
   private stars: Stars;
@@ -327,7 +330,10 @@ export class EndScreenPopup extends Container {
   public async show() {
     const currentEngine = engine();
     if (!currentEngine.navigation.currentScreen) return;
-    currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 0 })];
+    const screen = currentEngine.navigation.currentScreen;
+    const blur = new BlurFilter({ strength: 0 });
+    this.screenBlur = { screen, filter: blur };
+    screen.filters = [blur];
     if (this.starCount <= 1) {
       void engine().audio.sfx.play('end-screen/level-failed.mp3');
     } else {
@@ -342,11 +348,7 @@ export class EndScreenPopup extends Container {
       animate(this.innerContainer, { alpha: 1 }, { duration, ease: 'backOut' }),
       animate(this.innerContainer.scale, { x: 1, y: 1 }, { duration, ease: 'backOut' }),
       animate(this.passportButton, { alpha: 1 }, { duration, ease: 'backOut' }),
-      animate(
-        currentEngine.navigation.currentScreen.filters[0] as BlurFilter,
-        { strength: 9 },
-        { duration, ease: 'easeOut' },
-      ),
+      animate(blur, { strength: 9 }, { duration, ease: 'easeOut' }),
       this.stars.playShowAnimation(),
     ]);
 
@@ -415,20 +417,20 @@ export class EndScreenPopup extends Container {
     // Not destroy(): Navigation never destroys popups, so that override would not fire.
     this.rewardCelebration?.stop();
 
-    const currentEngine = engine();
-    if (!currentEngine.navigation.currentScreen) return;
+    const screenBlur = this.screenBlur;
+    this.screenBlur = undefined;
+    if (!screenBlur) return;
+    const { screen, filter } = screenBlur;
 
     const duration = 0.2;
     await Promise.all([
       animate(this.innerContainer, { alpha: 0 }, { duration, ease: 'easeOut' }),
       animate(this.innerContainer.scale, { x: 0.94, y: 0.94 }, { duration, ease: 'easeOut' }),
       animate(this.passportButton, { alpha: 0 }, { duration, ease: 'easeOut' }),
-      animate(
-        currentEngine.navigation.currentScreen.filters[0] as BlurFilter,
-        { strength: 0 },
-        { duration, ease: 'easeOut' },
-      ),
+      animate(filter, { strength: 0 }, { duration, ease: 'easeOut' }),
     ]);
+
+    removeFilter(screen, filter);
   }
 
   public resize(width: number, height: number) {
