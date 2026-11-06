@@ -18,7 +18,7 @@ import {
   getWordEducationAudioAlias,
   getWordImageAlias,
   playWordAudio,
-  REMOTE_WORDS_BUNDLE,
+  levelWordAssets,
   resolveWordsByIds,
   type WordSimple,
 } from '../../../../zustandStores/wordStore';
@@ -104,13 +104,9 @@ function getRound(
 
 export class EducationWordScreen extends Container {
   public readonly screenName = 'EducationWordScreen';
-  public static assetBundles = [
-    'education-level',
-    'ui',
-    'education-letters-audio',
-    REMOTE_WORDS_BUNDLE,
-  ];
-  public static splashBackgroundAsset = 'education-levels/education-level/background.png';
+  public static assetBundles = ['education-level', 'ui', 'education-letters-audio'];
+  public static assets = levelWordAssets('image', 'educationAudio');
+  public static loadingBackgroundAsset = 'education-levels/education-level/background.png';
   public static helpAssets = ['tutorial-popups/education-level-word.png'];
   public static rounds = 0;
   private static roundOrder: WordSimple[] = [];

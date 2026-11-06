@@ -33,6 +33,7 @@ import { HomeScreen } from '../app/screens/home';
 import { AuthScreen } from '../app/screens/home/auth';
 import { LayerSelectScreen } from '../app/screens/layer-select';
 import { LetterReferenceScreen } from '../app/screens/letter-reference';
+import { LevelLoadingScreen } from '../app/screens/level-loading';
 import { LevelMapScreen } from '../app/screens/level-map';
 import { LEVEL_TYPE_SCREENS } from '../app/screens/level-map/screenRegistry';
 import {
@@ -45,10 +46,7 @@ import {
   type TMapUnit,
 } from '../app/screens/level-map/units';
 import { EducationLevelSelect } from '../app/screens/level-select/education-level-select';
-import { LevelSplashScreen } from '../app/screens/level-splash';
 import { TypingTutorialScreen } from '../app/screens/typing-level/level-tutorial';
-import { isLevelUnlocked } from '../lib/progression';
-import useSessionStore from '../zustandStores/sessionStore';
 import {
   defineRoute,
   oneOf,
@@ -168,18 +166,23 @@ export const levelMap = defineRoute({
   params: (mapUnit) => ({ layer: mapUnit.type, mapId: mapUnit.id }),
 });
 
-export const levelSplash = defineRoute({
+/**
+ * A level's tutorial, shown while the level loads. Transient, so Back from the level returns
+ * to the map rather than to a loading screen that would start the level again.
+ */
+export const levelLoading = defineRoute({
   path: '/:layer/levels/:levelId',
-  screen: LevelSplashScreen,
+  screen: LevelLoadingScreen,
   guards: [levelPlayer, course],
+  transient: true,
   load: ({ levelId }) => playableLevel(levelId),
   params: ({ level, mapUnit }) => ({ layer: mapUnit.type, levelId: level.id }),
 });
 
 /**
  * Gameplay for every level type: new types only need an entry in `LEVEL_TYPE_SCREENS`.
- * Opening it directly (refresh, Back/Forward) starts a fresh attempt, the way the splash's
- * START does, and a locked level sends the player to its splash.
+ * Opening it directly (refresh, Back/Forward) goes through the loading screen, which loads
+ * the level and starts a fresh attempt.
  */
 export const levelPlay = defineRoute({
   path: '/:layer/levels/:levelId/play',
@@ -189,13 +192,7 @@ export const levelPlay = defineRoute({
   load: ({ levelId }) => {
     const found = playableLevel(levelId);
     if (!found) return;
-
-    const { level, mapUnit } = found;
-    if (!isLevelUnlocked(level)) {
-      return redirect(levelSplash.href({ layer: mapUnit.type, levelId: level.id }));
-    }
-    useSessionStore.getState().startSession(mapUnit.type);
-    return level;
+    return redirect(levelLoading.href({ layer: found.mapUnit.type, levelId: found.level.id }));
   },
   params: (level) => {
     const layer = findLayerForLevelId(level.id);
@@ -220,7 +217,7 @@ export const routes: readonly Route[] = [
   educationVideos,
   typingTutorial,
   levelMap,
-  levelSplash,
+  levelLoading,
   levelPlay,
 ];
 

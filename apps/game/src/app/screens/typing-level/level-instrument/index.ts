@@ -112,7 +112,7 @@ function shuffledNotes(letters: readonly string[], noteCount: number) {
 export class TypingInstrumentScreen extends Container {
   public readonly screenName = 'TypingInstrumentScreen';
   public static assetBundles = ['typing-level-instrument', 'ui'];
-  public static splashBackgroundAsset = 'typing-levels/typing-level-instrument/background.png';
+  public static loadingBackgroundAsset = 'typing-levels/typing-level-instrument/background.png';
   public static helpAssets = ['tutorial-popups/typing-tutorial.png'];
 
   private readonly background: Sprite;

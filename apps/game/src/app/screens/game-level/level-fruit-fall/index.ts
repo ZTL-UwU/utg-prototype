@@ -30,7 +30,7 @@ const FEEDBACK_DURATION_MS: number = 350;
 export class GameLevelFruitScreen extends Container {
   public readonly screenName = 'GameLevelFruitScreen';
   public static assetBundles = ['game-level-fruit-fall', 'ui'];
-  public static splashBackgroundAsset = 'game-levels/game-level-fruit-fall/background.png';
+  public static loadingBackgroundAsset = 'game-levels/game-level-fruit-fall/background.png';
   public static helpAssets: string[] = [];
 
   private isFalling = true;

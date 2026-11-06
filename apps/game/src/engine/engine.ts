@@ -27,7 +27,7 @@ extensions.add(CreationNavigationPlugin);
  * - Resize handling
  * - Visibility change handling (pause/resume sounds)
  *
- * It also initializes the PixiJS application and loads any assets in the `preload` bundle.
+ * It also initializes the PixiJS application and loads the `preload` bundles.
  */
 export class CreationEngine extends Application {
   /** Initialize the application */
@@ -59,12 +59,8 @@ export class CreationEngine extends Application {
     window.__trace?.('Assets.init done; loading preload bundles');
     await Assets.loadBundle(['preload', 'preload-audio']);
     window.__trace?.('preload bundles done');
-
-    // List all existing bundles names
-    // @ts-ignore - This is a dynamically generated file by AssetPack
-    const allBundles = manifest.bundles.map((item) => item.name);
-    // Start up background loading of all bundles
-    void Assets.backgroundLoadBundle(allBundles);
+    // Everything else loads on demand: navigation loads each screen's assets before showing
+    // it and unloads them once no screen or popup on stage needs them.
   }
 
   public override destroy(

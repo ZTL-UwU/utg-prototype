@@ -1,10 +1,9 @@
 import type { Ticker } from 'pixi.js';
-import { Assets, BigPool, Container } from 'pixi.js';
+import { Assets, BigPool, Container, type ResolvedAsset } from 'pixi.js';
 
 import { ensureMascotsReady, REMOTE_MASCOTS_BUNDLE } from '../../zustandStores/courseStore';
 import { ensureRewardsReady, REMOTE_REWARDS_BUNDLE } from '../../zustandStores/rewardStore';
 import { ensureSentencesReady, REMOTE_SENTENCES_BUNDLE } from '../../zustandStores/sentenceStore';
-import { ensureWordsReady, REMOTE_WORDS_BUNDLE } from '../../zustandStores/wordStore';
 import type { CreationEngine } from '../engine';
 
 export type TransitionOptions = {
@@ -43,10 +42,57 @@ export interface AppScreen extends Container {
 /** Interface for app screens constructors */
 export interface AppScreenConstructor<Args extends unknown[] = []> {
   new (...args: Args): AppScreen;
-  /** List of assets bundles required by the screen */
+  /** Asset bundles the screen needs, loaded before it is created and unloaded after it leaves. */
   assetBundles?: string[];
-  /** Load extra assets that depend on constructor props (before the screen is created). */
-  prepareAssets?: (props?: unknown) => Promise<void>;
+  /**
+   * Single assets picked from the constructor props, such as one level's tutorial images or
+   * words, handled like `assetBundles`. May wait for a catalog to know them. List assets whose
+   * bundle no screen loads, or unloading one would also pull it out of that bundle.
+   */
+  assets?: (props?: unknown) => readonly string[] | Promise<readonly string[]>;
+}
+
+/** What a screen or popup needs loaded while it is up. */
+type AssetNeeds = { bundles: readonly string[]; assets: readonly string[] };
+
+/** Loaded once and kept: startup assets, and the shared UI nearly every screen uses. */
+const PERSISTENT_BUNDLES: ReadonlySet<string> = new Set(['preload', 'preload-audio', 'ui']);
+
+async function needsOf(ctor: AppScreenConstructor<any[]>, props?: unknown): Promise<AssetNeeds> {
+  return { bundles: ctor.assetBundles ?? [], assets: (await ctor.assets?.(props)) ?? [] };
+}
+
+/** The files in these bundles and assets, each with one of its aliases. */
+function filesOf(bundles: readonly string[], assets: readonly string[]): Map<string, string> {
+  const resolved = (
+    bundles.length ? Object.values(Assets.resolver.resolveBundle([...bundles])) : []
+  ) as Record<string, ResolvedAsset>[];
+  if (assets.length) resolved.push(Assets.resolver.resolve([...assets]));
+
+  const aliasBySrc = new Map<string, string>();
+  for (const entries of resolved) {
+    for (const [alias, asset] of Object.entries(entries)) {
+      if (asset.src && !aliasBySrc.has(asset.src)) aliasBySrc.set(asset.src, alias);
+    }
+  }
+  return aliasBySrc;
+}
+
+/**
+ * One alias per file in the released bundles and assets, leaving out files that something
+ * still loaded shares, such as a level's background loaded alone for its loading screen
+ * and again by the level's bundle. `Assets.unloadBundle` would resolve a file once
+ * per alias (AssetPack gives most two), unloading it twice: a cache warning for textures, and
+ * a throw for sounds, which @pixi/sound cannot remove twice.
+ */
+function filesToUnload(
+  released: AssetNeeds,
+  kept: { bundles: Iterable<string>; assets: Iterable<string> },
+): string[] {
+  const keep = filesOf([...kept.bundles], [...kept.assets]);
+  return [...filesOf(released.bundles, released.assets)]
+    .filter(([src]) => !keep.has(src))
+    .map(([, alias]) => alias);
 }
 
 export class Navigation {
@@ -79,6 +125,27 @@ export class Navigation {
   /** Popups suspended underneath the current popup */
   private readonly popupStack: AppScreen[] = [];
 
+  /** Assets each screen and popup on stage needs, for deciding what is safe to unload. */
+  private readonly screenNeeds = new WeakMap<AppScreen, AssetNeeds>();
+  /** Bundles and single assets this class loaded and has not unloaded yet. */
+  private readonly loadedBundles = new Set<string>();
+  private readonly loadedAssets = new Set<string>();
+  /** Loads in progress. Unloading waits for none, so it never races a load of the same file. */
+  private loadsInFlight = 0;
+  /** The unload pass in progress, which new loads wait out for the same reason. */
+  private releasing: Promise<void> = Promise.resolve();
+  /** A screen being loaded ahead of time (see `preload`), kept loaded until it is shown. */
+  private reserved?: { ctor: AppScreenConstructor<any[]>; needs: AssetNeeds };
+  /** Screens and popups loaded but not yet on stage, which unloading must leave alone. */
+  private readonly pendingNeeds = new Set<AssetNeeds>();
+  /** `showScreen` calls between starting and putting their screen on stage. */
+  private screenChanges = 0;
+
+  /** Whether another screen is on its way in, so the current one is about to leave. */
+  public get changingScreen() {
+    return this.screenChanges > 0;
+  }
+
   public init(app: CreationEngine) {
     this.app = app;
   }
@@ -87,10 +154,7 @@ export class Navigation {
    * Screens that list remote catalog bundles need those catalogs registered
    * before Pixi can load the (possibly empty) bundle.
    */
-  private async ensureBundlesReady(assetBundles?: string[]) {
-    if (assetBundles?.includes(REMOTE_WORDS_BUNDLE)) {
-      await ensureWordsReady();
-    }
+  private async ensureBundlesReady(assetBundles?: readonly string[]) {
     if (assetBundles?.includes(REMOTE_SENTENCES_BUNDLE)) {
       await ensureSentencesReady();
     }
@@ -103,7 +167,7 @@ export class Navigation {
   }
 
   /**
-   * Load screen bundles without letting one bad asset take the screen down.
+   * Load what a screen needs without letting one bad asset take the screen down.
    *
    * Pixi's loader defaults to `strategy: 'throw'` and resolves bundles with `Promise.all`,
    * so a single 404 rejects the whole bundle. Every `showScreen` call site is `void`-ed, so
@@ -111,11 +175,115 @@ export class Navigation {
    * `interactiveChildren = false` — the game appears frozen. Remote word media is the
    * realistic failure source (a missing recording), and a quiet screen beats a dead one.
    */
-  private async loadBundlesSafely(assetBundles: string[], onProgress?: (progress: number) => void) {
+  private async load(needs: AssetNeeds, onProgress?: (progress: number) => void) {
+    const { bundles, assets } = needs;
+    const total = bundles.length + assets.length;
+    if (total === 0) {
+      onProgress?.(1);
+      return;
+    }
+
+    this.loadsInFlight++;
     try {
-      await Assets.loadBundle(assetBundles, onProgress);
-    } catch (error) {
-      console.warn(`[navigation] Failed to load bundles: ${assetBundles.join(', ')}`, error);
+      await this.releasing;
+      await this.ensureBundlesReady(bundles);
+      bundles.forEach((bundle) => this.loadedBundles.add(bundle));
+      assets.forEach((asset) => this.loadedAssets.add(asset));
+
+      // Each part reports its own 0..1; the total weighs them by how many entries they name.
+      let bundleProgress = 0;
+      let assetProgress = 0;
+      const report = () =>
+        onProgress?.((bundleProgress * bundles.length + assetProgress * assets.length) / total);
+
+      await Promise.all([
+        bundles.length &&
+          Assets.loadBundle([...bundles], (progress) => {
+            bundleProgress = progress;
+            report();
+          }).catch((error: unknown) => {
+            console.warn(`[navigation] Failed to load bundles: ${bundles.join(', ')}`, error);
+          }),
+        assets.length &&
+          Assets.load([...assets], (progress) => {
+            assetProgress = progress;
+            report();
+          }).catch((error: unknown) => {
+            console.warn(`[navigation] Failed to load assets: ${assets.join(', ')}`, error);
+          }),
+      ]);
+      onProgress?.(1);
+    } finally {
+      this.loadsInFlight--;
+      // A pass skipped while this load ran catches up now.
+      if (this.loadsInFlight === 0) void this.release();
+    }
+  }
+
+  /**
+   * Unload everything loaded here that no screen or popup on stage needs, nor the screen
+   * reserved by `preload`. Runs after each screen change and closed popup.
+   */
+  private release(): Promise<void> {
+    if (this.loadsInFlight > 0) return this.releasing;
+
+    const live = [this.currentScreen, this.currentPopup, ...this.popupStack, this.background];
+    const needed = [
+      ...live.flatMap((screen) => (screen ? [this.screenNeeds.get(screen)] : [])),
+      ...this.pendingNeeds,
+      this.reserved?.needs,
+    ];
+    const keepBundles = new Set(needed.flatMap((needs) => needs?.bundles ?? []));
+    const keepAssets = new Set(needed.flatMap((needs) => needs?.assets ?? []));
+
+    const bundles = [...this.loadedBundles].filter(
+      (bundle) => !keepBundles.has(bundle) && !PERSISTENT_BUNDLES.has(bundle),
+    );
+    const assets = [...this.loadedAssets].filter((asset) => !keepAssets.has(asset));
+    if (bundles.length === 0 && assets.length === 0) return this.releasing;
+
+    bundles.forEach((bundle) => this.loadedBundles.delete(bundle));
+    assets.forEach((asset) => this.loadedAssets.delete(asset));
+    window.__trace?.(`unloading ${[...bundles, ...assets].join(', ')}`);
+    const files = filesToUnload(
+      { bundles, assets },
+      { bundles: this.loadedBundles, assets: this.loadedAssets },
+    );
+
+    this.releasing = this.releasing.then(async () => {
+      try {
+        await Assets.unload(files);
+      } catch (error) {
+        console.warn('[navigation] Failed to unload assets', error);
+      }
+    });
+    return this.releasing;
+  }
+
+  /**
+   * Start loading a screen before showing it, such as a level while its tutorial plays. Its
+   * assets stay loaded until it is shown or another screen is, so they are not released in
+   * between. `showScreen` then finds them loaded.
+   */
+  public async preload<P>(
+    ctor: AppScreenConstructor<[P]>,
+    props: P,
+    onProgress?: (progress: number) => void,
+  ): Promise<void> {
+    const reserved: NonNullable<typeof this.reserved> = {
+      ctor,
+      needs: { bundles: ctor.assetBundles ?? [], assets: [] },
+    };
+    this.reserved = reserved;
+    // Counted as a load from the start, so nothing is released while the assets list is
+    // still being worked out, such as a retried level's words.
+    this.loadsInFlight++;
+    try {
+      reserved.needs = await needsOf(ctor, props);
+      await this.load(reserved.needs, onProgress);
+    } finally {
+      this.loadsInFlight--;
+      if (this.loadsInFlight === 0) void this.release();
     }
   }
 
@@ -207,41 +375,42 @@ export class Navigation {
       this.currentScreen.interactiveChildren = false;
     }
 
-    // Load assets for the new screen, if available
-    if (ctor.assetBundles) {
-      window.__trace?.(`showScreen ${ctor.name}: loading ${ctor.assetBundles.join(', ')}`);
-      await this.ensureBundlesReady(ctor.assetBundles);
-      // Load all assets required by this new screen
-      await this.loadBundlesSafely(ctor.assetBundles, (progress) => {
-        if (this.currentScreen?.onLoad) {
-          this.currentScreen.onLoad(progress * 100);
-        }
-      });
+    // Another screen is shown instead of the one loaded ahead, which is no longer needed.
+    if (this.reserved?.ctor !== ctor) this.reserved = undefined;
+
+    // Load assets for the new screen
+    this.screenChanges++;
+    let needs: AssetNeeds | undefined;
+    try {
+      needs = await needsOf(ctor, props);
+      this.pendingNeeds.add(needs);
+      window.__trace?.(`showScreen ${ctor.name}: loading ${needs.bundles.join(', ')}`);
+      await this.load(needs, (progress) => this.currentScreen?.onLoad?.(progress * 100));
       window.__trace?.(`showScreen ${ctor.name}: bundles done`);
-    }
 
-    if (ctor.prepareAssets) {
-      await ctor.prepareAssets(props);
-    }
+      // If there is a screen already created, hide and remove it
+      if (this.currentScreen) {
+        await this.hideAndRemoveScreen(this.currentScreen);
+      }
 
-    if (this.currentScreen?.onLoad) {
-      this.currentScreen.onLoad(100);
+      // Create the new screen and add that to the stage
+      this.currentScreen =
+        props !== undefined
+          ? new (ctor as AppScreenConstructor<[unknown]>)(props)
+          : BigPool.get(ctor);
+      this.screenNeeds.set(this.currentScreen, needs);
+    } finally {
+      if (needs) this.pendingNeeds.delete(needs);
+      this.screenChanges--;
     }
+    if (this.reserved?.ctor === ctor) this.reserved = undefined;
 
-    // If there is a screen already created, hide and destroy it
-    if (this.currentScreen) {
-      await this.hideAndRemoveScreen(this.currentScreen);
-    }
-
-    // Create the new screen and add that to the stage
-    this.currentScreen =
-      props !== undefined
-        ? new (ctor as AppScreenConstructor<[unknown]>)(props)
-        : BigPool.get(ctor);
     // Announce before the enter animation so the URL never lags behind what is on screen.
     for (const listener of this.screenChangeListeners) {
       listener(ctor, props);
     }
+    // The previous screen is off stage, so what only it used can go.
+    void this.release();
     window.__trace?.(`showScreen ${ctor.name}: showing`);
     await this.addAndShowScreen(this.currentScreen);
     window.__trace?.(`showScreen ${ctor.name}: shown`);
@@ -284,23 +453,24 @@ export class Navigation {
       await this.currentScreen.pause?.();
     }
 
-    // Load assets for the new screen, if available
-    // This is safe against multiple calls, since Repeated Loads Are Safe (https://pixijs.com/8.x/guides/components/assets#repeated-loads-are-safe)
-    if (ctor.assetBundles) {
-      await this.ensureBundlesReady(ctor.assetBundles);
-      await this.loadBundlesSafely(ctor.assetBundles);
-    }
+    // Load assets for the popup. Repeated loads are safe, so assets the screen
+    // already has are not fetched again.
+    const needs = await needsOf(ctor, props);
+    this.pendingNeeds.add(needs);
+    try {
+      await this.load(needs);
 
-    if (ctor.prepareAssets) {
-      await ctor.prepareAssets(props);
-    }
+      if (this.currentPopup) {
+        await this.hideAndRemoveScreen(this.currentPopup, animate);
+      }
 
-    if (this.currentPopup) {
-      await this.hideAndRemoveScreen(this.currentPopup, animate);
+      this.currentPopup =
+        props !== undefined ? new (ctor as AppScreenConstructor<[unknown]>)(props) : new ctor();
+      this.screenNeeds.set(this.currentPopup, needs);
+    } finally {
+      this.pendingNeeds.delete(needs);
     }
-
-    this.currentPopup =
-      props !== undefined ? new (ctor as AppScreenConstructor<[unknown]>)(props) : new ctor();
+    void this.release();
     await this.addAndShowScreen(this.currentPopup, animate);
   }
 
@@ -320,14 +490,17 @@ export class Navigation {
     parentPopup.interactiveChildren = false;
     await parentPopup.pause?.();
 
-    if (ctor.assetBundles) {
-      await this.ensureBundlesReady(ctor.assetBundles);
-      await this.loadBundlesSafely(ctor.assetBundles);
+    const needs = await needsOf(ctor, props);
+    this.pendingNeeds.add(needs);
+    try {
+      await this.load(needs);
+      this.popupStack.push(parentPopup);
+      this.currentPopup =
+        props !== undefined ? new (ctor as AppScreenConstructor<[unknown]>)(props) : new ctor();
+      this.screenNeeds.set(this.currentPopup, needs);
+    } finally {
+      this.pendingNeeds.delete(needs);
     }
-
-    this.popupStack.push(parentPopup);
-    this.currentPopup =
-      props !== undefined ? new (ctor as AppScreenConstructor<[unknown]>)(props) : new ctor();
     await this.addAndShowScreen(this.currentPopup);
   }
 
@@ -338,7 +511,15 @@ export class Navigation {
     if (!this.currentPopup) return;
     const popup = this.currentPopup;
     this.currentPopup = undefined;
-    await this.hideAndRemoveScreen(popup);
+    // Still on stage while it animates out, so keep what it shows loaded until it is gone.
+    const needs = this.screenNeeds.get(popup);
+    if (needs) this.pendingNeeds.add(needs);
+    try {
+      await this.hideAndRemoveScreen(popup);
+    } finally {
+      if (needs) this.pendingNeeds.delete(needs);
+    }
+    void this.release();
 
     const parentPopup = this.popupStack.pop();
     if (parentPopup) {

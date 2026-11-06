@@ -7,7 +7,7 @@ import { engine } from '../../../engine/getEngine';
 import { hasCompletedLevel, isLevelUnlocked } from '../../../lib/progression';
 import { useLevelProgress } from '../../../zustandStores/levelProgressStore';
 import { drawDashedRing, FILL_ANIM_DELAY, FILL_ANIM_DURATION } from '../../ui/dashed-ring';
-import { LevelSplashScreen } from '../level-splash';
+import { LevelLoadingScreen } from '../level-loading';
 import type { TLevel, TMapUnit } from './units';
 
 const SIZE = 221;
@@ -121,11 +121,11 @@ export class LevelButton extends FancyButton {
       });
     }
 
-    // Levels without a screen can't render a splash, so they stay disabled.
+    // Levels without a screen have nothing to play, so they stay disabled.
     if (level.screen) {
       this.onPress.connect(() => {
         void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-        void engine().navigation.showScreen(LevelSplashScreen, { level, mapUnit });
+        void engine().navigation.showScreen(LevelLoadingScreen, { level, mapUnit });
       });
     } else {
       this.enabled = false;

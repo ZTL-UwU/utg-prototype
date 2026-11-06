@@ -2,7 +2,6 @@ import { Container } from 'pixi.js';
 
 import { engine } from '../../engine/getEngine';
 import { topClearance } from '../../engine/utils/viewport';
-import { TutorialPopup } from '../popups/tutorial';
 import {
   EducationTutorialPopup,
   EducationTutorialScreen,
@@ -12,9 +11,7 @@ import { TypingTutorialPopup, TypingTutorialScreen } from '../screens/typing-lev
 import { BackButton } from './back-button';
 import { HelpButton } from './help-button';
 
-export type THudHelp =
-  | { kind: 'tutorial'; mapUnit: TMapUnit; presentation: 'popup' | 'screen' }
-  | { kind: 'image'; asset: string[]; backdropColor: number };
+export type THudHelp = { kind: 'tutorial'; mapUnit: TMapUnit; presentation: 'popup' | 'screen' };
 
 interface HUDProps {
   onBack: () => void;
@@ -48,15 +45,6 @@ export class HUD extends Container {
 }
 
 function createHelpAction(help: THudHelp): (() => void) | undefined {
-  if (help.kind === 'image') {
-    return () =>
-      void engine().navigation.showPopup(TutorialPopup, {
-        assets: help.asset,
-        backdropColor: help.backdropColor,
-        isFullscreen: false,
-      });
-  }
-
   const { mapUnit, presentation } = help;
   switch (mapUnit.type) {
     case 'education':
