@@ -1,6 +1,6 @@
 import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
-import { Container, Graphics, Sprite, Texture, type Ticker } from 'pixi.js';
+import { Container, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { topClearance } from '../../../engine/utils/viewport';
@@ -10,52 +10,49 @@ import { LockedLevelPopup } from '../../popups/locked-level';
 import { HUD } from '../../ui/hud';
 import { RoundedProgressBar } from '../../ui/rounded-progress-bar';
 import { LevelMapScreen } from '../level-map';
-import type { TLayer, TLevel, TMapUnit } from '../level-map/units';
+import type { TLevel, TMapUnit } from '../level-map/units';
 
 type LevelLoadingProps = { level: TLevel; mapUnit: TMapUnit };
 
-const LAYER_COLORS: Record<TLayer, number> = {
-  education: 0x0d8583,
-  typing: 0xc45a14,
-  game: 0x7e5433,
-};
-
 const SKIP_BUTTON = 'tutorial-popups/exit-button.svg';
+/** Background for levels without tutorial images, or without a background of their own. */
+const PLACEHOLDER_BACKGROUND = 'tutorial-popups/loading-placeholder-bg.png';
 /** Darkens the loading background behind tutorial slides, so they stand out. */
 const SLIDE_BACKDROP_TINT = 0x666666;
 /** How long each tutorial image stays up before the next one, or the level. */
 const SLIDE_MS = 3000;
 
+/** The level's own background behind its tutorial, the placeholder otherwise. */
+function backgroundOf(level: TLevel): string {
+  const screen = level.screen;
+  return (screen?.helpAssets.length && screen.loadingBackgroundAsset) || PLACEHOLDER_BACKGROUND;
+}
+
 /**
  * Plays a level's tutorial images over its loading background while the level loads, then
- * starts it. Levels without tutorial images get the background and progress bar alone. Every way into a level comes through here,
- * so each attempt starts a fresh session.
+ * starts it. Levels without tutorial images get the placeholder background and progress bar.
+ * Every way into a level comes through here, so each attempt starts a fresh session.
  */
 export class LevelLoadingScreen extends Container {
   public readonly screenName = 'LevelLoadingScreen';
   /** `ui` for the back button. The level's own assets load in the background, see below. */
   public static assetBundles = ['ui'];
   /**
-   * The level's loading background, and only its tutorial images rather than the whole
-   * `tutorial-popups` bundle. The background usually comes from the level's own bundle, so
+   * The loading background, and only the level's tutorial images rather than the whole
+   * `tutorial-popups` bundle. A level's own background usually comes from its bundle, so
    * loading it here first costs no extra download.
    */
   public static assets(props: unknown) {
-    const screen = (props as LevelLoadingProps).level.screen;
-    const help = screen?.helpAssets ?? [];
-    return [
-      ...(screen?.loadingBackgroundAsset ? [screen.loadingBackgroundAsset] : []),
-      ...(help.length ? [...help, SKIP_BUTTON] : []),
-    ];
+    const { level } = props as LevelLoadingProps;
+    const help = level.screen?.helpAssets ?? [];
+    return [backgroundOf(level), ...(help.length ? [...help, SKIP_BUTTON] : [])];
   }
 
   private readonly level: TLevel;
   private readonly mapUnit: TMapUnit;
   private readonly slides: string[];
 
-  /** Layer colour, behind the background in case it is missing. */
-  private readonly backdrop = new Graphics();
-  private readonly background?: Sprite;
+  private readonly background: Sprite;
   private readonly slide?: Sprite;
   private readonly skipButton?: FancyButton;
   private readonly progressBar = new RoundedProgressBar();
@@ -81,18 +78,12 @@ export class LevelLoadingScreen extends Container {
     this.slides = level.screen?.helpAssets ?? [];
     this.slidesDone = this.slides.length === 0;
 
-    this.backdrop.layout = { position: 'absolute', width: '100%', height: '100%' };
-    this.addChild(this.backdrop);
-
-    const backgroundAsset = level.screen?.loadingBackgroundAsset;
-    if (backgroundAsset) {
-      this.background = new Sprite({
-        texture: Texture.from(backgroundAsset),
-        tint: this.slides.length ? SLIDE_BACKDROP_TINT : 0xffffff,
-        layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
-      });
-      this.addChild(this.background);
-    }
+    this.background = new Sprite({
+      texture: Texture.from(backgroundOf(level)),
+      tint: this.slides.length ? SLIDE_BACKDROP_TINT : 0xffffff,
+      layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
+    });
+    this.addChild(this.background);
 
     if (this.slides.length) {
       this.slide = new Sprite({
@@ -138,7 +129,6 @@ export class LevelLoadingScreen extends Container {
 
   public resize(width: number, height: number) {
     this.layout = { width, height };
-    this.backdrop.clear().rect(0, 0, width, height).fill(LAYER_COLORS[this.mapUnit.type]);
 
     if (this.skipButton) {
       const size = 80;
