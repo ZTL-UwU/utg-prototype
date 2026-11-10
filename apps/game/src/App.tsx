@@ -35,6 +35,10 @@ export default function App() {
       bootstrapRemoteData();
       window.__trace?.('bootstrapRemoteData done');
 
+      // Started here rather than by a screen, so it plays whichever URL the game opens on.
+      // Screens with their own audio mute it with `bgm.setVolume(0)`, including the first.
+      void engine.audio.bgm.play('music/bgm-main.mp3', { volume: 0.2, start: 20 });
+
       const { initScriptPillOverlay } = await import('./app/ui/script-pill/script-pill-overlay');
       initScriptPillOverlay(engine);
 

@@ -73,6 +73,9 @@ export class CreationEngine extends Application {
 
   /** Fire when document visibility changes - lose or regain focus */
   protected visibilityChange = () => {
+    // Music streams from an element, which keeps playing through a suspended Web Audio
+    // context unless paused itself.
+    this.audio.bgm.setHidden(document.hidden);
     if (document.hidden) {
       sound.pauseAll();
       this.navigation.blur();
