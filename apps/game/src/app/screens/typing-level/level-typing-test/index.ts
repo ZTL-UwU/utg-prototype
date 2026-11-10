@@ -41,7 +41,7 @@ let lastSettings: TypingTestSettings | undefined;
 export class TypingTestScreen extends Container {
   public readonly screenName = 'TypingTestScreen';
   public static assetBundles = ['typing-level-test', REMOTE_SENTENCES_BUNDLE, 'ui'];
-  public static assets = levelWordAssets();
+  public static assets = levelWordAssets('image', 'standardAudio');
   // A flat fill matching COLORS.BACKGROUND, so the splash and the test read as one screen.
   public static loadingBackgroundAsset = 'typing-levels/typing-level-test/background.svg';
   // Empty so the test opens on its settings popup instead of a tutorial slideshow first.

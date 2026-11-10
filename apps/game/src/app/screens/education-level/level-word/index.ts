@@ -163,9 +163,9 @@ export class EducationWordScreen extends Container {
         .fill(0xd1dcf0),
     );
 
-    const imageTexture = correctWord
-      ? Texture.from(getWordImageAlias(correctWord.id))
-      : Texture.EMPTY;
+    // `Texture.from` gives nothing for a word whose image failed to load.
+    const imageTexture =
+      (correctWord ? Texture.from(getWordImageAlias(correctWord.id)) : undefined) ?? Texture.EMPTY;
     const image = new Sprite({ texture: imageTexture, anchor: 0.5 });
     if (imageTexture.width > 0 && imageTexture.height > 0) {
       image.scale.set(layout.image.size / Math.max(imageTexture.width, imageTexture.height));

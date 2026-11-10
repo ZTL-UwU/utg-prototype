@@ -62,15 +62,22 @@ async function needsOf(ctor: AppScreenConstructor<any[]>, props?: unknown): Prom
   return { bundles: ctor.assetBundles ?? [], assets: (await ctor.assets?.(props)) ?? [] };
 }
 
-/** The files in these bundles and assets, each with one of its aliases. */
-function filesOf(bundles: readonly string[], assets: readonly string[]): Map<string, string> {
+/** The files in these bundles and assets by alias, one record per bundle and one for the assets. */
+function resolvedOf(
+  bundles: readonly string[],
+  assets: readonly string[],
+): Record<string, ResolvedAsset>[] {
   const resolved = (
     bundles.length ? Object.values(Assets.resolver.resolveBundle([...bundles])) : []
   ) as Record<string, ResolvedAsset>[];
   if (assets.length) resolved.push(Assets.resolver.resolve([...assets]));
+  return resolved;
+}
 
+/** The files in these bundles and assets, each with one of its aliases. */
+function filesOf(bundles: readonly string[], assets: readonly string[]): Map<string, string> {
   const aliasBySrc = new Map<string, string>();
-  for (const entries of resolved) {
+  for (const entries of resolvedOf(bundles, assets)) {
     for (const [alias, asset] of Object.entries(entries)) {
       if (asset.src && !aliasBySrc.has(asset.src)) aliasBySrc.set(asset.src, alias);
     }
@@ -169,16 +176,18 @@ export class Navigation {
   /**
    * Load what a screen needs without letting one bad asset take the screen down.
    *
-   * Pixi's loader defaults to `strategy: 'throw'` and resolves bundles with `Promise.all`,
-   * so a single 404 rejects the whole bundle. Every `showScreen` call site is `void`-ed, so
-   * that rejection would leave the screen unconstructed and the outgoing screen stuck with
-   * `interactiveChildren = false` — the game appears frozen. Remote word media is the
+   * Pixi's loader defaults to `strategy: 'throw'`: one 404 rejects the whole call at once,
+   * while the other files are still downloading, and none of them reach the cache. Every
+   * `showScreen` call site is `void`-ed, so that rejection would leave the screen unconstructed
+   * and the outgoing screen stuck with `interactiveChildren = false` — the game appears frozen.
+   * `strategy: 'skip'` leaves out only the failed file. `loadBundle` takes no options, so the
+   * bundles are loaded by their aliases; all of them, since files registered twice (two words
+   * sharing an image) are cached only under the aliases asked for. Remote word media is the
    * realistic failure source (a missing recording), and a quiet screen beats a dead one.
    */
   private async load(needs: AssetNeeds, onProgress?: (progress: number) => void) {
     const { bundles, assets } = needs;
-    const total = bundles.length + assets.length;
-    if (total === 0) {
+    if (bundles.length + assets.length === 0) {
       onProgress?.(1);
       return;
     }
@@ -190,28 +199,16 @@ export class Navigation {
       bundles.forEach((bundle) => this.loadedBundles.add(bundle));
       assets.forEach((asset) => this.loadedAssets.add(asset));
 
-      // Each part reports its own 0..1; the total weighs them by how many entries they name.
-      let bundleProgress = 0;
-      let assetProgress = 0;
-      const report = () =>
-        onProgress?.((bundleProgress * bundles.length + assetProgress * assets.length) / total);
-
-      await Promise.all([
-        bundles.length &&
-          Assets.loadBundle([...bundles], (progress) => {
-            bundleProgress = progress;
-            report();
-          }).catch((error: unknown) => {
-            console.warn(`[navigation] Failed to load bundles: ${bundles.join(', ')}`, error);
-          }),
-        assets.length &&
-          Assets.load([...assets], (progress) => {
-            assetProgress = progress;
-            report();
-          }).catch((error: unknown) => {
-            console.warn(`[navigation] Failed to load assets: ${assets.join(', ')}`, error);
-          }),
-      ]);
+      await Assets.load(resolvedOf(bundles, assets).flatMap(Object.keys), {
+        strategy: 'skip',
+        onProgress,
+        onError: (error, asset) => {
+          const src = typeof asset === 'string' ? asset : asset.src;
+          console.warn(`[navigation] Failed to load ${src}`, error);
+        },
+      }).catch((error: unknown) => {
+        console.warn(`[navigation] Failed to load ${[...bundles, ...assets].join(', ')}`, error);
+      });
       onProgress?.(1);
     } finally {
       this.loadsInFlight--;
