@@ -73,7 +73,7 @@ function shuffledLetters(letters: string[], targetCount: number) {
 export class GameLevelOneScreen extends Container {
   public readonly screenName = 'GameLevelOneScreen';
   public static assetBundles = ['game-level-tandoor-rush', 'ui'];
-  public static splashBackgroundAsset = 'game-levels/game-level-tandoor-rush/background-1.png';
+  public static loadingBackgroundAsset = 'game-levels/game-level-tandoor-rush/background-1.png';
   public static helpAssets = [
     'tutorial-popups/game-level-tandoor-rush-1.png',
     'tutorial-popups/game-level-tandoor-rush-2.png',

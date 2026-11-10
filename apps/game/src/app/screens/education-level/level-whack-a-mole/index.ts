@@ -61,7 +61,7 @@ export class EducationWhackAMoleScreen extends Container {
     'education-letters-audio',
   ];
   // TODO: no tutorial asset authored for whack-a-mole yet.
-  public static splashBackgroundAsset =
+  public static loadingBackgroundAsset =
     'education-levels/education-level-whack-a-mole/background-grass.png';
   public static helpAssets: string[] = [];
 

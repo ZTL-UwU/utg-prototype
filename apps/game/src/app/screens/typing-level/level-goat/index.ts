@@ -47,7 +47,7 @@ export class TypingGoatsScreen extends Container {
     'tutorial-popups/typing-level-goat-2.png',
     'tutorial-popups/typing-level-goat-3.png',
   ];
-  public static splashBackgroundAsset = 'typing-levels/typing-level-goat/splash.png';
+  public static loadingBackgroundAsset = 'typing-levels/typing-level-goat/splash.png';
 
   private background: Sprite;
   private book: Book;

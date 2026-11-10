@@ -6,9 +6,6 @@ import { engine } from '../engine/getEngine';
 import { api } from '../lib/api';
 import { ensureRemoteReady, type RemoteStatus } from '../lib/remoteResource';
 
-/** Pixi Assets bundle name for remote word images + audio. */
-export const REMOTE_WORDS_BUNDLE = 'remote-words';
-
 /** Alias used with `Texture.from` / `Assets.load` for a word image. */
 export function getWordImageAlias(wordId: number): string {
   return `remote-words/${wordId}`;
@@ -27,10 +24,10 @@ export function getWordStandardAudioAlias(wordId: number): string {
 /**
  * Play a word clip, resolving when it finishes.
  *
- * Resolves immediately when the word has no such recording: words without audio never get
- * a bundle entry, so `sound.exists` is the reliable guard. `Assets.resolver.hasKey` is not —
- * it is true the moment the bundle is registered, whether or not the file ever loaded, and
- * `sfx.play` throws synchronously on an unloaded alias.
+ * Resolves immediately when the word has no such recording, or it is not loaded: words
+ * without audio are never registered, so `sound.exists` is the reliable guard.
+ * `Assets.resolver.hasKey` is not — it is true the moment the word is registered, whether or
+ * not the file ever loaded, and `sfx.play` throws synchronously on an unloaded alias.
  */
 export async function playWordAudio(alias: string): Promise<void> {
   if (!sound.exists(alias)) return;
@@ -77,7 +74,36 @@ export function resolveWordsByIds(wordIds: number[]): WordSimple[] {
   });
 }
 
-function registerWordsBundle(words: WordSimple[]): void {
+export type WordMedia = 'image' | 'educationAudio' | 'standardAudio';
+
+const WORD_MEDIA_ALIAS: Record<WordMedia, (wordId: number) => string> = {
+  image: getWordImageAlias,
+  educationAudio: getWordEducationAudioAlias,
+  standardAudio: getWordStandardAudioAlias,
+};
+
+/** The registered files of these words, of the kinds asked for. Words lacking one skip it. */
+export function wordAssetAliases(wordIds: Iterable<number>, media: readonly WordMedia[]): string[] {
+  return [...new Set(wordIds)]
+    .flatMap((wordId) => media.map((kind) => WORD_MEDIA_ALIAS[kind](wordId)))
+    .filter((alias) => Assets.resolver.hasKey(alias));
+}
+
+/**
+ * `assets` for a level screen whose props name its words in `wordIds`: waits for the word
+ * catalog, then lists those words' files of the kinds the screen uses. With no kinds, it only
+ * makes sure the catalog is in before the screen is built.
+ */
+export function levelWordAssets(...media: WordMedia[]) {
+  return async (level: unknown): Promise<string[]> => {
+    await ensureWordsReady();
+    const wordIds = (level as { props?: { wordIds?: number[] } }).props?.wordIds ?? [];
+    return wordAssetAliases(wordIds, media);
+  };
+}
+
+/** Register every word's files, so screens can load just the words they show. */
+function registerWords(words: WordSimple[]): void {
   const entries: { alias: string; src: string }[] = [];
 
   for (const word of words) {
@@ -101,12 +127,7 @@ function registerWordsBundle(words: WordSimple[]): void {
     }
   }
 
-  // Always register so navigation can safely `loadBundle('remote-words')`.
-  Assets.addBundle(REMOTE_WORDS_BUNDLE, entries);
-
-  if (entries.length > 0) {
-    void Assets.backgroundLoadBundle(REMOTE_WORDS_BUNDLE);
-  }
+  Assets.add(entries);
 }
 
 const useWordStore = create<WordStore>((set, get) => ({
@@ -120,11 +141,11 @@ const useWordStore = create<WordStore>((set, get) => ({
     set({ status: 'loading', error: undefined });
     try {
       const words = await api<WordSimple[]>('/words/list-simple');
-      registerWordsBundle(words);
+      registerWords(words);
       set({ status: 'ready', error: undefined, words });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load words';
-      registerWordsBundle([]);
+      registerWords([]);
       set({
         status: 'error',
         error: message,

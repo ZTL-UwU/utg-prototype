@@ -122,7 +122,7 @@ export class EducationSheepJumpScreen extends Container {
     'ui',
     'education-letters-audio',
   ];
-  public static splashBackgroundAsset =
+  public static loadingBackgroundAsset =
     'education-levels/education-level-sheep-jump/background.png';
   public static helpAssets = ['tutorial-popups/education-level-sheep-jump.png'];
   private isPlaying: boolean = false;

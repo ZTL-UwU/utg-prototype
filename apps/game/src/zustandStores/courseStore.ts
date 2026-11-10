@@ -135,9 +135,6 @@ function registerMascotsBundle(units: ApiUnit[]): void {
   }
 
   Assets.addBundle(REMOTE_MASCOTS_BUNDLE, entries);
-  if (entries.length > 0) {
-    void Assets.backgroundLoadBundle(REMOTE_MASCOTS_BUNDLE);
-  }
 }
 
 function mapSplashColorScheme(level: ApiLevel): SplashColorScheme {

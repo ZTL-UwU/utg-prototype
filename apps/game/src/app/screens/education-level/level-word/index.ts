@@ -18,7 +18,7 @@ import {
   getWordEducationAudioAlias,
   getWordImageAlias,
   playWordAudio,
-  REMOTE_WORDS_BUNDLE,
+  levelWordAssets,
   resolveWordsByIds,
   type WordSimple,
 } from '../../../../zustandStores/wordStore';
@@ -104,13 +104,9 @@ function getRound(
 
 export class EducationWordScreen extends Container {
   public readonly screenName = 'EducationWordScreen';
-  public static assetBundles = [
-    'education-level',
-    'ui',
-    'education-letters-audio',
-    REMOTE_WORDS_BUNDLE,
-  ];
-  public static splashBackgroundAsset = 'education-levels/education-level/background.png';
+  public static assetBundles = ['education-level', 'ui', 'education-letters-audio'];
+  public static assets = levelWordAssets('image', 'educationAudio');
+  public static loadingBackgroundAsset = 'education-levels/education-level/background.png';
   public static helpAssets = ['tutorial-popups/education-level-word.png'];
   public static rounds = 0;
   private static roundOrder: WordSimple[] = [];
@@ -167,9 +163,9 @@ export class EducationWordScreen extends Container {
         .fill(0xd1dcf0),
     );
 
-    const imageTexture = correctWord
-      ? Texture.from(getWordImageAlias(correctWord.id))
-      : Texture.EMPTY;
+    // `Texture.from` gives nothing for a word whose image failed to load.
+    const imageTexture =
+      (correctWord ? Texture.from(getWordImageAlias(correctWord.id)) : undefined) ?? Texture.EMPTY;
     const image = new Sprite({ texture: imageTexture, anchor: 0.5 });
     if (imageTexture.width > 0 && imageTexture.height > 0) {
       image.scale.set(layout.image.size / Math.max(imageTexture.width, imageTexture.height));

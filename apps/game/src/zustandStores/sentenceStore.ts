@@ -66,10 +66,6 @@ function registerSentencesBundle(sentences: SentenceSimple[]): void {
 
   // Always register so navigation can safely `loadBundle('remote-sentences')`.
   Assets.addBundle(REMOTE_SENTENCES_BUNDLE, entries);
-
-  if (entries.length > 0) {
-    void Assets.backgroundLoadBundle(REMOTE_SENTENCES_BUNDLE);
-  }
 }
 export async function playSentenceAudio(alias: string): Promise<void> {
   if (!sound.exists(alias)) return;

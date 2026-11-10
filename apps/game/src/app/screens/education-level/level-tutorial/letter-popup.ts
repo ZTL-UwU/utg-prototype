@@ -9,10 +9,11 @@ import { responsive } from '../../../../engine/utils/viewport';
 import { createExampleWordStyle, getCompletedWordMarkup } from '../../../../utils/example-words';
 import { convertToCurrentScript } from '../../../../utils/script';
 import {
+  ensureWordsReady,
   getTutorialWordForLetter,
   getWordEducationAudioAlias,
   getWordImageAlias,
-  REMOTE_WORDS_BUNDLE,
+  wordAssetAliases,
   type WordSimple,
 } from '../../../../zustandStores/wordStore';
 import { createLetterNavButtons, layoutLetterPopupControls } from '../../../ui/letter-nav-buttons';
@@ -44,8 +45,13 @@ export class LetterPopup extends Container {
     'education-letter-variants',
     'education-letters-audio',
     'ui',
-    REMOTE_WORDS_BUNDLE,
   ];
+  /** Only the letter's tutorial word, once the word catalog is in. */
+  public static async assets(letter: unknown) {
+    await ensureWordsReady();
+    const word = getTutorialWordForLetter(letter as string);
+    return word ? wordAssetAliases([word.id], ['image', 'educationAudio']) : [];
+  }
   private isPlaying: boolean = false;
   private isNavigating = false;
   private letter: string;

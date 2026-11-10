@@ -42,7 +42,7 @@ export { generateSentenceRounds };
 export class TypingSentenceScreen extends Container {
   public readonly screenName = 'TypingSentenceScreen';
   public static assetBundles = ['typing-level-story', 'ui', REMOTE_SENTENCES_BUNDLE];
-  public static splashBackgroundAsset = 'typing-levels/typing-level-story/background.png';
+  public static loadingBackgroundAsset = 'typing-levels/typing-level-story/background.png';
   public static helpAssets = [
     'tutorial-popups/typing-level-story-1.png',
     'tutorial-popups/typing-level-story-2.png',

@@ -8,7 +8,7 @@ import useSessionStore from '../../../../zustandStores/sessionStore';
 import {
   getWordStandardAudioAlias,
   playWordAudio,
-  REMOTE_WORDS_BUNDLE,
+  levelWordAssets,
   resolveWordsByIds,
 } from '../../../../zustandStores/wordStore';
 import { EndScreenPopup } from '../../../popups/end-screen';
@@ -33,8 +33,9 @@ type Round = {
 };
 export class GameLevelKite extends Container {
   public readonly screenName = 'GameLevelKite';
-  public static assetBundles = ['game-level-kite', 'ui', REMOTE_WORDS_BUNDLE];
-  public static splashBackgroundAsset = 'game-levels/game-level-kite/splash.png';
+  public static assetBundles = ['game-level-kite', 'ui'];
+  public static assets = levelWordAssets('standardAudio');
+  public static loadingBackgroundAsset = 'game-levels/game-level-kite/splash.png';
   public static helpAssets: string[] = [];
 
   private readonly level: TLevel;
