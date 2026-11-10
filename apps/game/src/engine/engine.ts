@@ -3,7 +3,8 @@ import '@pixi/layout/devtools';
 import { sound } from '@pixi/sound';
 import type { ApplicationOptions, DestroyOptions, RendererDestroyOptions } from 'pixi.js';
 import 'pixi.js/app';
-import { Application, Assets, extensions, ResizePlugin } from 'pixi.js';
+import { Application, Assets, Container, extensions, ResizePlugin } from 'pixi.js';
+import { DEFAULTS as TWEEN_DEFAULTS } from 'tweedle.js';
 
 // @ts-ignore - This is a dynamically generated file by AssetPack
 import manifest from '../manifest.json';
@@ -16,6 +17,13 @@ extensions.remove(ResizePlugin);
 extensions.add(CreationResizePlugin);
 extensions.add(CreationAudioPlugin);
 extensions.add(CreationNavigationPlugin);
+
+// @pixi/ui's FancyButton tweens its innerView on the shared tweedle.js group, which
+// every live animated button ticks. destroy() never stops those tweens, so a button
+// destroyed mid-animation (e.g. pressed, then its screen or popup is torn down) leaves
+// a tween that throws on every frame and starves the tweens queued after it. A failed
+// safety check makes tweedle drop the tween instead.
+TWEEN_DEFAULTS.safetyCheckFunction = (target) => !(target instanceof Container && target.destroyed);
 
 /**
  * The main creation engine class.
