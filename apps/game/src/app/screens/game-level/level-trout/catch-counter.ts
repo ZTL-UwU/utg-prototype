@@ -1,5 +1,7 @@
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
+import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
+
 const ICON_ASSET = 'game-levels/game-level-trout/trout-icon.png';
 const ICON_HEIGHT = 64;
 const GAP = 14;
@@ -20,7 +22,7 @@ export class CatchCounter extends Container {
       text: '0',
       resolution: 2,
       anchor: { x: 0, y: 0.5 },
-      style: { fill: 0xffffff, fontFamily: 'Concert One', fontSize: 64, fontWeight: '700' },
+      style: { fill: 0xffffff, fontFamily: DISPLAY_FONT_FAMILY, fontSize: 64, fontWeight: '700' },
     });
     this.countText.position.set(this.icon.width + GAP, 0);
 

@@ -3,6 +3,8 @@ import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { responsive } from '../../../../engine/utils/viewport';
+import { m } from '../../../../paraglide/messages.js';
+import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { getCurrentKeyboardLetters, getScriptFontFamily } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
@@ -131,11 +133,11 @@ export class TypingInstrumentScreen extends Container {
     },
   });
   private readonly targetLabel = new Text({
-    text: 'NEXT NOTE',
+    text: m.instrument_next_note(),
     resolution: 2,
     style: {
       fill: 0x7e5433,
-      fontFamily: 'Concert One',
+      fontFamily: DISPLAY_FONT_FAMILY,
       fontSize: 34,
       fontWeight: '800',
       letterSpacing: 1,

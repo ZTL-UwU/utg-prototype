@@ -1,8 +1,10 @@
+import { m } from '../paraglide/messages.js';
+
 const EDUCATION_YOUTUBE_VIDEOS = [
-  { id: 'yfA6Ax_rQzs', title: 'Education video 1' },
-  { id: 'R829Wy8RdQc', title: 'Education video 2' },
-  { id: '-TGIBTeqKUY', title: 'Education video 3' },
-  { id: 'GT1DnXsbrno', title: 'Education video 4' },
+  { id: 'yfA6Ax_rQzs', title: m.education_video_title({ index: 1 }) },
+  { id: 'R829Wy8RdQc', title: m.education_video_title({ index: 2 }) },
+  { id: '-TGIBTeqKUY', title: m.education_video_title({ index: 3 }) },
+  { id: 'GT1DnXsbrno', title: m.education_video_title({ index: 4 }) },
 ];
 
 export function YoutubeEmbedOverlay() {

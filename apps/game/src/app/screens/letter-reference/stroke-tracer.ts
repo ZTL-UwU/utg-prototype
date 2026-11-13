@@ -9,6 +9,8 @@ import {
   Text,
 } from 'pixi.js';
 
+import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
+
 const INK_COLOR = 0x844f01;
 /** Teal, like the nav buttons, so the pen and stroke numbers stand apart from the ink. */
 const ACCENT_COLOR = 0x2f6f73;
@@ -132,7 +134,7 @@ function createBadge(number: number, [x, y]: [number, number]) {
     resolution: 2,
     anchor: 0.5,
     style: {
-      fontFamily: 'Concert One',
+      fontFamily: DISPLAY_FONT_FAMILY,
       fontSize: BADGE_FONT_SIZE,
       fill: BADGE_TEXT_COLOR,
     },

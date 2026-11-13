@@ -3,11 +3,13 @@ import { animate } from 'motion';
 import { BlurFilter, Container, Graphics, Text } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { m } from '../../../paraglide/messages.js';
+import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import useResultStore, { selectResultTotals } from '../../../zustandStores/resultStore';
 import { AccuracyDisplay } from './accuracy-display';
 
 function formatScoreContent(correctCount: number, mistakeCount: number) {
-  return `Correct: ${correctCount}\nMistakes: ${mistakeCount}`;
+  return m.help_score({ correct: correctCount, mistakes: mistakeCount });
 }
 
 const POPUP_MASK_OPACITY = 0.7;
@@ -42,7 +44,7 @@ export class HelpPopup extends Container {
       text: formatScoreContent(0, 0),
       resolution: 2,
       style: {
-        fontFamily: 'Concert One',
+        fontFamily: DISPLAY_FONT_FAMILY,
         fontSize: 28,
         fill: 0x000000,
       },
@@ -64,9 +66,9 @@ export class HelpPopup extends Container {
       height: dialogHeight,
       background: new Graphics().roundRect(0, 0, dialogWidth, dialogHeight, 20).fill(0xf2c583),
       title: new Text({
-        text: 'Help',
+        text: m.help_title(),
         style: {
-          fontFamily: 'Concert One',
+          fontFamily: DISPLAY_FONT_FAMILY,
           fontSize: 48,
           fontWeight: 'bold',
           fill: 0x000000,
@@ -80,7 +82,7 @@ export class HelpPopup extends Container {
       buttons: [
         new FancyButton({
           defaultView: new Graphics().roundRect(0, 0, 100, 40, 10).fill(0xffffff),
-          text: 'OK',
+          text: m.ok(),
         }),
       ],
       animations: {

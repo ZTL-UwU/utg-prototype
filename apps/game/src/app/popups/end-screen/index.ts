@@ -7,6 +7,8 @@ import { responsive } from '../../../engine/utils/viewport';
 import { waitFor } from '../../../engine/utils/waitFor';
 import { submitLevelResult, type LevelResultOutcome } from '../../../lib/levelResults';
 import { getNextLevelAfter, isMapUnitComplete } from '../../../lib/progression';
+import { m } from '../../../paraglide/messages.js';
+import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import { useLevelProgress } from '../../../zustandStores/levelProgressStore';
 import { REMOTE_REWARDS_BUNDLE, resolveRewardsByIds } from '../../../zustandStores/rewardStore';
 import { getStarCount } from '../../../zustandStores/scoreManager';
@@ -53,7 +55,7 @@ function createPopupBackground(width: number, height: number, layer: TLayer) {
 
 function createScoreTitleStyle(layer: TLayer) {
   return new TextStyle({
-    fontFamily: 'Concert One',
+    fontFamily: DISPLAY_FONT_FAMILY,
     fontSize: 48,
     fontWeight: '700',
     fill: LAYER_TEXT_COLORS[layer],
@@ -63,7 +65,7 @@ function createScoreTitleStyle(layer: TLayer) {
 
 function createStatStyle(layer: TLayer) {
   return new TextStyle({
-    fontFamily: 'Concert One',
+    fontFamily: DISPLAY_FONT_FAMILY,
     fontSize: 32,
     fontWeight: '700',
     fill: LAYER_TEXT_COLORS[layer],
@@ -186,24 +188,24 @@ export class EndScreenPopup extends Container {
 
     this.stars = new Stars(starCount, POPUP_WIDTH);
     const scoreTitle = new Text({
-      text: 'SCORE',
+      text: m.end_popup_score(),
       style: createScoreTitleStyle(layer),
       layout: true,
     });
 
     const statStyle = createStatStyle(layer);
     const correctText = new Text({
-      text: `Correct : ${correct}`,
+      text: m.end_popup_correct({ correct }),
       style: statStyle,
       layout: true,
     });
     const mistakesText = new Text({
-      text: `Mistakes : ${mistakes}`,
+      text: m.end_popup_mistakes({ mistakes }),
       style: statStyle,
       layout: true,
     });
     const accuracyText = new Text({
-      text: `Accuracy : ${accuracy}%`,
+      text: m.end_popup_accuracy({ accuracy }),
       style: statStyle,
       layout: true,
     });

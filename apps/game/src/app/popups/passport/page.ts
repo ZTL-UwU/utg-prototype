@@ -1,6 +1,8 @@
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Assets, Container, Sprite, Text, Texture } from 'pixi.js';
 
+import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
+
 export const PASSPORT_TEXT_COLOR = 0x373a82;
 
 const EMPTY_ASSET = 'passport/empty-ring.png';
@@ -20,14 +22,14 @@ const SHAKE_DURATION = 0.5;
 const SHAKE_KEYFRAMES = [0, -0.12, 0.12, -0.08, 0.08, 0];
 
 const TITLE_STYLE = {
-  fontFamily: 'Concert One',
+  fontFamily: DISPLAY_FONT_FAMILY,
   fontSize: 32 * SCALE,
   fontWeight: 'bold' as const,
   fill: PASSPORT_TEXT_COLOR,
 } as const;
 
 const LABEL_STYLE = {
-  fontFamily: 'Concert One',
+  fontFamily: DISPLAY_FONT_FAMILY,
   fontSize: 16 * SCALE,
   fill: PASSPORT_TEXT_COLOR,
 } as const;

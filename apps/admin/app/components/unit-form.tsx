@@ -16,10 +16,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog';
+import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { ColorInput } from '~/components/ui/color-input';
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '~/components/ui/field';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '~/components/ui/input-group';
 import {
   Select,
   SelectContent,
@@ -31,10 +41,20 @@ import {
 import { Switch } from '~/components/ui/switch';
 import { UnitLevelsSection } from '~/components/unit-levels-section';
 import { api } from '~/lib/api';
-import { LAYERS, LAYER_TITLES, type Layer, type Unit } from '~/lib/game';
+import {
+  LAYERS,
+  LAYER_TITLES,
+  TRANSLATION_LOCALE_CODES,
+  TRANSLATION_LOCALES,
+  type Layer,
+  type TranslationLocale,
+  type Unit,
+} from '~/lib/game';
 
 const unitFormSchema = z.object({
   title: z.string().min(1, 'Title is required.').max(255),
+  // Blank means untranslated: the backend drops that locale and the game shows `title`.
+  title_translations: z.record(z.enum(TRANSLATION_LOCALE_CODES), z.string().max(255)),
   layer: z.enum(LAYERS, { error: 'Select a layer.' }),
   title_font_size: z.number().int().positive('Font size must be positive.'),
   title_font_color: z.number().int(),
@@ -71,9 +91,18 @@ function unitPayload(values: UnitFormValues): UnitWritePayload {
   };
 }
 
+function titleTranslationValues(
+  translations: Partial<Record<TranslationLocale, string>> = {},
+): Record<TranslationLocale, string> {
+  return Object.fromEntries(
+    TRANSLATION_LOCALE_CODES.map((code) => [code, translations[code] ?? '']),
+  ) as Record<TranslationLocale, string>;
+}
+
 function defaultValuesForCreate(layer: Layer): UnitFormValues {
   return {
     title: '',
+    title_translations: titleTranslationValues(),
     layer,
     title_font_size: 48,
     title_font_color: 0xffffff,
@@ -89,6 +118,7 @@ function defaultValuesForCreate(layer: Layer): UnitFormValues {
 function defaultValuesForEdit(unit: Unit): UnitFormValues {
   return {
     title: unit.title,
+    title_translations: titleTranslationValues(unit.title_translations),
     layer: unit.layer,
     title_font_size: unit.title_font_size,
     title_font_color: unit.title_font_color,
@@ -269,6 +299,71 @@ export function UnitForm(props: UnitFormProps) {
               }}
             />
           </div>
+
+          <FieldSet className="gap-2">
+            <FieldLegend
+              variant="label"
+              className="mb-0 flex w-full items-baseline justify-between"
+            >
+              Title translations
+              <form.Subscribe
+                selector={(state) =>
+                  TRANSLATION_LOCALE_CODES.filter((code) =>
+                    Boolean(state.values.title_translations[code]?.trim()),
+                  ).length
+                }
+                children={(translatedCount) => (
+                  <span className="text-xs font-normal text-muted-foreground tabular-nums">
+                    {translatedCount}/{TRANSLATION_LOCALES.length} translated
+                  </span>
+                )}
+              />
+            </FieldLegend>
+            <FieldDescription>Languages left blank show the title above.</FieldDescription>
+            <form.Subscribe
+              selector={(state) => state.values.title.trim()}
+              children={(fallbackTitle) => (
+                <div className="flex flex-col gap-2">
+                  {TRANSLATION_LOCALES.map(({ code, label }) => (
+                    <form.Field
+                      key={code}
+                      name={`title_translations.${code}`}
+                      children={(field) => {
+                        const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <InputGroup>
+                              <InputGroupAddon className="w-28 justify-start border-r pr-2">
+                                <Badge variant="secondary" className="font-mono uppercase">
+                                  {code}
+                                </Badge>
+                                <label htmlFor={field.name} className="truncate">
+                                  {label}
+                                </label>
+                              </InputGroupAddon>
+                              <InputGroupInput
+                                id={field.name}
+                                name={field.name}
+                                value={field.state.value}
+                                onBlur={field.handleBlur}
+                                onChange={(event) => field.handleChange(event.target.value)}
+                                placeholder={fallbackTitle || 'Same as title'}
+                                lang={code}
+                                dir="auto"
+                                aria-invalid={isInvalid}
+                              />
+                            </InputGroup>
+                            {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                          </Field>
+                        );
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            />
+          </FieldSet>
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <form.Field

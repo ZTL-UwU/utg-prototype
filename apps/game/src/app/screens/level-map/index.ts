@@ -6,6 +6,7 @@ import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 import { engine } from '../../../engine/getEngine';
 import { responsive, topClearance } from '../../../engine/utils/viewport';
 import { isMapUnitUnlocked } from '../../../lib/progression';
+import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import { convertToCurrentScript, getScriptFontFamily } from '../../../utils/script';
 import { HUD } from '../../ui/hud';
 import { LayerSelectScreen } from '../layer-select';
@@ -70,7 +71,7 @@ export class LevelMapScreen extends Container {
     });
 
     const titleStyle = {
-      fontFamily: 'Concert One',
+      fontFamily: DISPLAY_FONT_FAMILY,
       fontSize: mapUnit.title.fontSize,
       fontWeight: '800' as const,
       fill: mapUnit.title.fontColor,
@@ -141,7 +142,7 @@ export class LevelMapScreen extends Container {
           .fill(0xa66129),
         text: new Text({
           text: label,
-          style: { fontFamily: 'Concert One', fontSize: 80, fill: 0xfff4e0 },
+          style: { fontFamily: DISPLAY_FONT_FAMILY, fontSize: 80, fill: 0xfff4e0 },
         }),
         animations: {
           hover: { props: { scale: { x: 1.1, y: 1.1 } }, duration: 100 },

@@ -1,6 +1,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 
+import { m } from '../../paraglide/messages.js';
 import { Button, cn } from '../ui';
 
 const DRAW_COLORS = ['#e23b2f', '#f5c518', '#111111', '#fbf4dd'] as const;
@@ -150,14 +151,14 @@ export const ScreenshotAnnotator = forwardRef<
         />
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <p className="font-body text-sm text-muted">Draw on the screenshot</p>
+        <p className="font-body text-sm text-muted">{m.feedback_draw_hint()}</p>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           {DRAW_COLORS.map((value) => (
             <Button
               key={value}
               type="button"
               variant="icon"
-              aria-label={`Draw in ${value}`}
+              aria-label={m.feedback_draw_in_color({ color: value })}
               aria-pressed={color === value}
               className={cn(
                 'size-8 border-[3px] border-ink',
@@ -177,7 +178,7 @@ export const ScreenshotAnnotator = forwardRef<
             disabled={!canUndo}
             onClick={undo}
           >
-            Undo
+            {m.undo()}
           </Button>
           <Button
             type="button"
@@ -186,7 +187,7 @@ export const ScreenshotAnnotator = forwardRef<
             disabled={!canUndo}
             onClick={clear}
           >
-            Clear
+            {m.clear()}
           </Button>
         </div>
       </div>

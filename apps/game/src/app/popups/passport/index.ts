@@ -4,6 +4,8 @@ import { Container, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { responsive } from '../../../engine/utils/viewport';
+import { m } from '../../../paraglide/messages.js';
+import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import useCourseStore from '../../../zustandStores/courseStore';
 import {
   getRewardImageAlias,
@@ -32,9 +34,9 @@ const DESIGN_WIDTH = 1150;
 const DESIGN_HEIGHT = 830;
 
 const LAYER_TITLES: Record<TLayer, string> = {
-  education: 'EDUCATIONAL',
-  typing: 'TYPING',
-  game: 'GAME',
+  education: m.passport_educational(),
+  typing: m.passport_typing(),
+  game: m.passport_game(),
 };
 
 const TROPHY_LAYERS: TLayer[] = ['education', 'typing', 'game'];
@@ -55,32 +57,52 @@ const SPREADS: SpreadSpec[] = [
     pages: [
       {
         kind: 'levels',
-        title: 'COMPLETION',
+        title: m.passport_completion(),
         layer: 'education',
         type: 'level_completion_badge',
       },
-      { kind: 'levels', title: '3 STAR', layer: 'education', type: 'level_three_stars_badge' },
+      {
+        kind: 'levels',
+        title: m.passport_three_star(),
+        layer: 'education',
+        type: 'level_three_stars_badge',
+      },
     ],
   },
   {
     title: LAYER_TITLES.typing,
     pages: [
-      { kind: 'levels', title: '3 STAR', layer: 'typing', type: 'level_three_stars_badge' },
-      { kind: 'levels', title: 'PERFECT', layer: 'typing', type: 'level_perfect_badge' },
+      {
+        kind: 'levels',
+        title: m.passport_three_star(),
+        layer: 'typing',
+        type: 'level_three_stars_badge',
+      },
+      { kind: 'levels', title: m.passport_perfect(), layer: 'typing', type: 'level_perfect_badge' },
     ],
   },
   {
     title: LAYER_TITLES.game,
     pages: [
-      { kind: 'levels', title: 'COMPLETION', layer: 'game', type: 'level_completion_badge' },
-      { kind: 'levels', title: '3 STAR', layer: 'game', type: 'level_three_stars_badge' },
+      {
+        kind: 'levels',
+        title: m.passport_completion(),
+        layer: 'game',
+        type: 'level_completion_badge',
+      },
+      {
+        kind: 'levels',
+        title: m.passport_three_star(),
+        layer: 'game',
+        type: 'level_three_stars_badge',
+      },
     ],
   },
   {
     title: LAYER_TITLES.game,
     pages: [
-      { kind: 'levels', title: 'PERFECT', layer: 'game', type: 'level_perfect_badge' },
-      { kind: 'trophies', title: 'TROPHIES' },
+      { kind: 'levels', title: m.passport_perfect(), layer: 'game', type: 'level_perfect_badge' },
+      { kind: 'trophies', title: m.passport_trophies() },
     ],
   },
 ];
@@ -233,7 +255,7 @@ export class PassportPopup extends Container {
       text: SPREADS[0].title,
       style: {
         fill: PASSPORT_TEXT_COLOR,
-        fontFamily: 'Concert One',
+        fontFamily: DISPLAY_FONT_FAMILY,
         fontSize: 60,
         fontWeight: '700',
       },

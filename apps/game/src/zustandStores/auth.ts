@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 
 import { clearLocalSession, type LocalSessionKind } from '../lib/localSessionStorage';
 import { isTesterPassword } from '../lib/testerMode';
+import { m } from '../paraglide/messages.js';
 
 export type AuthUser = {
   id: number;
@@ -29,7 +30,7 @@ export type AuthUser = {
 /** Local-only player used when someone continues without an account. */
 export const GUEST_USER: AuthUser = {
   id: 0,
-  name: 'Guest',
+  name: m.profile_guest(),
   email: '',
   avatar: null,
 };
@@ -37,7 +38,7 @@ export const GUEST_USER: AuthUser = {
 /** Local-only player for presentations: a guest with cheat-mode access. */
 export const TESTER_USER: AuthUser = {
   id: 0,
-  name: 'Tester',
+  name: m.profile_tester(),
   email: '',
   avatar: null,
   is_cheat: true,

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
+import { m } from '../../../paraglide/messages.js';
 import { Button, DialogDescription, DialogTitle, FormError, Input, cn } from '../../ui';
 
 export interface TesterPasswordFormProps {
@@ -25,11 +26,9 @@ export function TesterPasswordForm({ onSubmit, onBack }: TesterPasswordFormProps
 
   return (
     <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-      <DialogTitle>Tester mode</DialogTitle>
+      <DialogTitle>{m.auth_tester_mode()}</DialogTitle>
 
-      <DialogDescription>
-        Enter the tester password to unlock every level. Progress stays on this device.
-      </DialogDescription>
+      <DialogDescription>{m.auth_tester_description()}</DialogDescription>
 
       <div key={shakeKey} className={cn('flex justify-center', error && 'auth-shake')}>
         <Input
@@ -38,19 +37,19 @@ export function TesterPasswordForm({ onSubmit, onBack }: TesterPasswordFormProps
           autoComplete="off"
           autoFocus
           required
-          placeholder="Tester password"
+          placeholder={m.auth_tester_password()}
           aria-invalid={error}
           value={password}
           onValueChange={setPassword}
         />
       </div>
 
-      {error && <FormError>Wrong password. Try again.</FormError>}
+      {error && <FormError>{m.auth_wrong_password()}</FormError>}
 
-      <Button type="submit">Enter</Button>
+      <Button type="submit">{m.auth_enter()}</Button>
 
       <Button variant="link" onClick={onBack}>
-        Back to login
+        {m.auth_back_to_login()}
       </Button>
     </form>
   );

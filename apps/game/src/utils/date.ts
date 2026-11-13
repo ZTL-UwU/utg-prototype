@@ -7,6 +7,8 @@
  * previous UTC day. Bucketing on UTC would silently shift half the world's streaks by a day.
  */
 
+import { getLocale } from '../paraglide/runtime.js';
+
 /** Days per week, and the length of a calendar grid row. */
 export const DAYS_IN_WEEK = 7;
 
@@ -15,23 +17,6 @@ export const DAYS_IN_WEEK = 7;
  * Flip to 1 for a Monday-first calendar; the weekday labels follow automatically.
  */
 export const WEEK_STARTS_ON = 0;
-
-const WEEKDAY_INITIALS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'] as const;
-
-const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-] as const;
 
 /**
  * `YYYY-MM-DD` for the local calendar day a `Date` falls on.
@@ -46,17 +31,21 @@ export function toLocalDayKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-/** Weekday initials in grid order, honouring {@link WEEK_STARTS_ON}. */
+/** Weekday initials in grid order, honouring {@link WEEK_STARTS_ON}, in the game's language. */
 export function getWeekdayInitials(): string[] {
-  return Array.from(
-    { length: DAYS_IN_WEEK },
-    (_, index) => WEEKDAY_INITIALS[(WEEK_STARTS_ON + index) % DAYS_IN_WEEK],
+  const format = new Intl.DateTimeFormat(getLocale(), { weekday: 'narrow' });
+  // 2023-01-01 was a Sunday, so day N of that month has `getDay()` N - 1.
+  return Array.from({ length: DAYS_IN_WEEK }, (_, index) =>
+    format.format(new Date(2023, 0, 1 + ((WEEK_STARTS_ON + index) % DAYS_IN_WEEK))),
   );
 }
 
-/** e.g. `AUGUST 2026`, to title a month grid. */
+/** e.g. `AUGUST 2026`, to title a month grid, in the game's language. */
 export function formatMonthTitle(month: Date): string {
-  return `${MONTH_NAMES[month.getMonth()].toUpperCase()} ${month.getFullYear()}`;
+  const locale = getLocale();
+  const name = new Intl.DateTimeFormat(locale, { month: 'long' }).format(month);
+  // Locale-aware so Turkish gets its dotted capital İ.
+  return `${name.toLocaleUpperCase(locale)} ${month.getFullYear()}`;
 }
 
 /** Number of days in the month `date` falls in. Day 0 of the next month is the last of this one. */

@@ -1,5 +1,7 @@
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
+import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
+
 const SCORE_FRAME_ASSET = 'game-levels/game-level-kite/score-frame.png';
 const FRAME_WIDTH = 240;
 const FRAME_HEIGHT = 110;
@@ -17,7 +19,7 @@ export class ScoreCounter extends Container {
       text: '0',
       resolution: 2,
       anchor: 0.5,
-      style: { fill: 0x000000, fontFamily: 'Concert One', fontSize: 48, fontWeight: '700' },
+      style: { fill: 0x000000, fontFamily: DISPLAY_FONT_FAMILY, fontSize: 48, fontWeight: '700' },
     });
     this.scoreText.position.set(FRAME_WIDTH / 2, FRAME_HEIGHT / 2);
 

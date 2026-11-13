@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { m } from '../../../paraglide/messages.js';
 import {
   BackButton,
   Button,
@@ -36,17 +37,17 @@ type TeamMember = {
 };
 
 const DESC_FIELDS = [
-  { key: 'from', label: 'Where I’m from' },
-  { key: 'program', label: 'Program + Major' },
-  { key: 'favouriteStop', label: 'Favourite stop of the game' },
-  { key: 'funFact', label: 'Fun fact' },
-  { key: 'bio', label: 'Journey with Sozler Seylisi' },
+  { key: 'from', label: m.team_from() },
+  { key: 'program', label: m.team_program() },
+  { key: 'favouriteStop', label: m.team_favourite_stop() },
+  { key: 'funFact', label: m.team_fun_fact() },
+  { key: 'bio', label: m.team_journey() },
 ] as const;
 
 const TEAM: TeamMember[] = [
   {
     name: 'Sai Manas Pandrangi',
-    role: 'Software Lead',
+    role: m.team_role_software_lead(),
     photo: manasPhoto,
     from: '🇮🇳',
     program: 'B.Sc. Computer Science',
@@ -57,7 +58,7 @@ const TEAM: TeamMember[] = [
 
   {
     name: 'Tianli Zhang',
-    role: 'Software Developer',
+    role: m.team_role_software_developer(),
     photo: tianliPhoto,
     from: '🇨🇳',
     program: 'B.ASc. Computer Engineering',
@@ -65,7 +66,7 @@ const TEAM: TeamMember[] = [
   },
   {
     name: 'Aadit Shah',
-    role: 'Software Developer',
+    role: m.team_role_software_developer(),
     photo: aaditPhoto,
     from: '🇨🇦 🇮🇳',
     program: 'B.Sc. Computer Science + Statistics, Combined Major',
@@ -75,7 +76,7 @@ const TEAM: TeamMember[] = [
   },
   {
     name: 'Jade Dao',
-    role: 'Media & Design Lead',
+    role: m.team_role_media_design_lead(),
     photo: jadePhoto,
     from: '🇻🇳 🇨🇿 🇫🇷',
     program: 'Sciences Po Paris x UBC - Economics & Art History',
@@ -85,7 +86,7 @@ const TEAM: TeamMember[] = [
   },
   {
     name: 'Nikita Prabhu',
-    role: 'UI/UX Designer',
+    role: m.team_role_ui_ux_designer(),
     photo: nikitaPhoto,
     from: '🇮🇳 🇧🇭',
     program: 'B.Sc. Statistics',
@@ -95,7 +96,7 @@ const TEAM: TeamMember[] = [
 
   {
     name: 'Patricia Febi Widia Nugrahani',
-    role: 'UI/UX Designer',
+    role: m.team_role_ui_ux_designer(),
     photo: patriciaPhoto,
     from: '🇮🇩',
     program: 'B.A. International Relations and Minor in Economics',
@@ -104,7 +105,7 @@ const TEAM: TeamMember[] = [
   },
   {
     name: 'Dana Turdy',
-    role: 'Uyghur Language Advisor',
+    role: m.team_role_language_advisor(),
     photo: danaPhoto,
     from: 'Uyghur, 🇨🇦',
     program: 'B.A. Political Science and Sociology',
@@ -114,7 +115,7 @@ const TEAM: TeamMember[] = [
   },
   {
     name: 'Nesibe Sherif',
-    role: 'Voiceover Artist',
+    role: m.team_role_voiceover_artist(),
     photo: nesibePhoto,
     from: 'Uyghur, 🇹🇷',
     program: "University of health sciences, Türkiye - Master's In Pharmacy",
@@ -122,7 +123,7 @@ const TEAM: TeamMember[] = [
   },
   {
     name: 'Sarvenaz Nurly',
-    role: 'Project Coordinator',
+    role: m.team_role_project_coordinator(),
     photo: sarvenazPhoto,
     from: 'Uyghur, 🇨🇦',
     favouriteStop: 'Making the Tunoor nan!!',
@@ -138,7 +139,7 @@ export function MenuTeamScreen({ onBack }: MenuTeamScreenProps) {
     <>
       <BackButton className="absolute top-4 left-4 z-10" onClick={onBack} />
       <CardTitle className="absolute top-4 right-14 left-14 flex h-10 items-center justify-center">
-        Team
+        {m.menu_team_title()}
       </CardTitle>
       <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto py-2">
         <div className="flex min-h-full justify-center">
@@ -157,7 +158,7 @@ export function MenuTeamScreen({ onBack }: MenuTeamScreenProps) {
                   className="size-32 shrink-0 rounded-lg object-cover object-top xl:size-40"
                 />
                 <div className="min-w-0">
-                  <p className="font-display text-xl font-semibold text-forest xl:text-2xl">
+                  <p className="font-body text-xl font-extrabold text-forest xl:text-2xl">
                     {member.name}
                   </p>
                   <p className="font-body text-base text-forest xl:text-lg">{member.role}</p>
@@ -184,7 +185,7 @@ export function MenuTeamScreen({ onBack }: MenuTeamScreenProps) {
                 className="size-80 shrink-0 rounded-lg object-cover object-top max-sm:size-28 xl:size-96"
               />
               <div className="min-w-0">
-                <DialogTitle className="text-left font-display text-3xl font-semibold text-forest normal-case xl:text-4xl">
+                <DialogTitle className="text-left font-body text-3xl font-extrabold text-forest normal-case xl:text-4xl">
                   {selected.name}
                 </DialogTitle>
                 <DialogDescription className="text-left font-body text-xl text-forest">

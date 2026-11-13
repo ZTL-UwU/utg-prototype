@@ -1,5 +1,5 @@
 /*@import url('https://fonts.googleapis.com/css2?family=Concert+One&family=Noto+Sans+Arabic:wght@400..700&display=swap');*/
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400..700&family=Nunito:wght@400..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400..900&display=swap');
 
 @import 'tailwindcss';
 
@@ -12,7 +12,6 @@
 
 @theme {
   --font-sans: 'Noto Sans', system-ui, sans-serif;
-  --font-display: 'Fredoka', system-ui, sans-serif;
   --font-body: 'Nunito', system-ui, sans-serif;
 
   --color-cream: #fbf4dd;

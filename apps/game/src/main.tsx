@@ -2,6 +2,7 @@ import { Capacitor } from '@capacitor/core';
 import { createRoot } from 'react-dom/client';
 
 import App from './App';
+import { getLocale } from './paraglide/runtime.js';
 
 declare global {
   interface Window {
@@ -44,6 +45,9 @@ if (Capacitor.isNativePlatform() && import.meta.env.VITE_NATIVE_DEBUG === 'true'
   }
   window.__trace('main.tsx loaded');
 }
+
+// CSS `uppercase` needs this for Turkish's dotted İ; screen readers use it too.
+document.documentElement.lang = getLocale();
 
 // No Strict Mode because Pixi is not designed for double rendering
 createRoot(document.getElementById('root')!).render(<App />);

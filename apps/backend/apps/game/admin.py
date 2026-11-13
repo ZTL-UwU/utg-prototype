@@ -1,10 +1,19 @@
 from django.contrib import admin
+from django.contrib.contenttypes.admin import GenericTabularInline
 
+from apps.common.models import Translation
 from apps.game.models import Feedback, FeedbackImage, Level, Mascot, Sentence, Story, Unit, Word
+
+
+class TranslationInline(GenericTabularInline):
+    model = Translation
+    fields = ("field", "locale", "text")
+    extra = 0
 
 
 @admin.register(Unit)
 class UnitAdmin(admin.ModelAdmin):
+    inlines = (TranslationInline,)
     list_display = ("title", "layer", "sort_order")
     list_filter = ("layer",)
     search_fields = ("title",)

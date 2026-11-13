@@ -5,7 +5,9 @@ import { Container, Graphics, NineSliceSprite, Sprite, Text, Texture } from 'pix
 import { engine } from '../../../engine/getEngine';
 import { responsive, safeAreaInsetsInView, topClearance } from '../../../engine/utils/viewport';
 import { isLayerUnlocked } from '../../../lib/progression';
+import { m } from '../../../paraglide/messages.js';
 import { getAvatarPath } from '../../../utils/avatars';
+import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import { useAuthStore } from '../../../zustandStores/auth';
 import { ensureCourseReady } from '../../../zustandStores/courseStore';
 import { ensureResultsReady } from '../../../zustandStores/resultStore';
@@ -42,9 +44,9 @@ type PaperLayout = {
 
 function rowsAt(left: number, right: number, ys: [number, number, number]): Row[] {
   return [
-    { layer: 'education', label: 'Education', x: left, y: ys[0] },
-    { layer: 'typing', label: 'Typing', x: right, y: ys[1] },
-    { layer: 'game', label: 'Games', x: left, y: ys[2] },
+    { layer: 'education', label: m.layer_education(), x: left, y: ys[0] },
+    { layer: 'typing', label: m.layer_typing(), x: right, y: ys[1] },
+    { layer: 'game', label: m.layer_games(), x: left, y: ys[2] },
   ];
 }
 
@@ -121,7 +123,7 @@ function createNameBar(row: Row, paper: PaperLayout) {
     position: { x: width / 2, y: BAR_HEIGHT / 2 },
     style: {
       fill: BAR_INK,
-      fontFamily: 'Concert One',
+      fontFamily: DISPLAY_FONT_FAMILY,
       fontSize: 60,
       fontWeight: '700',
     },

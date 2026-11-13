@@ -6,6 +6,7 @@ from ninja.throttling import AnonRateThrottle, AuthRateThrottle
 
 from apps.common.auth import jwt_auth
 from apps.common.permissions import require_perm
+from apps.common.translations import set_translations
 from apps.game.models import (
     Feedback,
     FeedbackImage,
@@ -52,12 +53,14 @@ router = Router(tags=["game"])
 
 def _unit_with_levels(unit_id: int) -> Unit:
     levels = Level.objects.select_related("mascot").order_by("sort_order", "id")
-    return Unit.objects.prefetch_related(Prefetch("levels", queryset=levels)).get(id=unit_id)
+    return Unit.objects.prefetch_related(Prefetch("levels", queryset=levels), "translations").get(
+        id=unit_id
+    )
 
 
 def _admin_units_with_levels(*, layer: Layer | None = None):
     levels = Level.objects.order_by("sort_order", "id")
-    qs = Unit.objects.prefetch_related(Prefetch("levels", queryset=levels))
+    qs = Unit.objects.prefetch_related(Prefetch("levels", queryset=levels), "translations")
     if layer is not None:
         qs = qs.filter(layer=layer)
     return qs.order_by("sort_order", "id")
@@ -74,6 +77,12 @@ def _apply_unit_payload(unit: Unit, payload: UnitUpdateIn) -> None:
     unit.subtitle_font_color = payload.subtitle_font_color
     unit.background_asset_path = payload.background_asset_path
     unit.is_published = payload.is_published
+
+
+def _save_unit_translations(unit: Unit, payload: UnitUpdateIn) -> None:
+    """Runs after the unit is saved, since translation rows point at its id."""
+    if payload.title_translations is not None:
+        set_translations(unit, "title", payload.title_translations)
 
 
 def _apply_level_payload(level: Level, payload: LevelWriteIn) -> None:
@@ -111,7 +120,7 @@ def list_units(request):
     )
     return (
         Unit.objects.filter(is_published=True, is_active=True)
-        .prefetch_related(Prefetch("levels", queryset=levels))
+        .prefetch_related(Prefetch("levels", queryset=levels), "translations")
         .order_by("sort_order", "id")
     )
 
@@ -305,7 +314,9 @@ def create_unit(request, payload: UnitUpdateIn):
     _apply_unit_payload(unit, payload)
     unit.created_by = request.auth
     unit.updated_by = request.auth
-    unit.save()
+    with transaction.atomic():
+        unit.save()
+        _save_unit_translations(unit, payload)
     return _unit_with_levels(unit.id)
 
 
@@ -335,8 +346,11 @@ def update_unit(request, unit_id: int, payload: UnitUpdateIn):
 
     _apply_unit_payload(unit, payload)
     unit.updated_by = request.auth
-    unit.save()
-    return unit
+    with transaction.atomic():
+        unit.save()
+        _save_unit_translations(unit, payload)
+    # Re-read so the response carries the translations just written, not the prefetched ones.
+    return _unit_with_levels(unit.id)
 
 
 @router.delete(

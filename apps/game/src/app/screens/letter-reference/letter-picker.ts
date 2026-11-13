@@ -2,6 +2,7 @@ import { animate } from 'motion';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { responsive } from '../../../engine/utils/viewport';
+import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import { getFontFamilyForScript } from '../../../utils/script';
 import {
   addHover,
@@ -126,7 +127,7 @@ export class LetterChip extends Container {
     this.count = new Text({
       anchor: { x: 0, y: 0.5 },
       resolution: 2,
-      style: { fontFamily: 'Concert One', fontSize: 36, fill: FRAME_COLOR },
+      style: { fontFamily: DISPLAY_FONT_FAMILY, fontSize: 36, fill: FRAME_COLOR },
       position: { x: CHIP_COUNT_X, y: 0 },
     });
     drawPill(this.bg, CHIP_WIDTH, CHIP_HEIGHT, TILE_COLOR, TILE_EDGE_COLOR, FRAME_COLOR);

@@ -6,7 +6,9 @@ import { Container } from 'pixi.js';
 import { engine } from '../../../engine/getEngine';
 import { responsive, topClearance } from '../../../engine/utils/viewport';
 import { ensureValidSession } from '../../../lib/authSession';
+import { m } from '../../../paraglide/messages.js';
 import { continueIntoGame } from '../../../utils/continueIntoGame';
+import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import { useAuthStore } from '../../../zustandStores/auth';
 import { useOverlayStore } from '../../../zustandStores/overlayStore';
 import { AuthScreen } from './auth';
@@ -73,7 +75,7 @@ export class HomeScreen extends Container {
       text: 'SOZLER SEYLISI',
       style: {
         fill: 0x284937,
-        fontFamily: 'Concert One',
+        fontFamily: DISPLAY_FONT_FAMILY,
         fontSize: responsive({ sm: 116, lg: 200 }),
         fontWeight: '700',
         // dropShadow: textDropShadow,
@@ -83,10 +85,10 @@ export class HomeScreen extends Container {
     this.titleWidth = this.title.getLocalBounds().width;
 
     this.subtitle = new Text({
-      text: 'A TYPING ADVENTURE!',
+      text: m.home_tagline(),
       style: {
         fill: 0xffffff,
-        fontFamily: 'Concert One',
+        fontFamily: DISPLAY_FONT_FAMILY,
         fontSize: responsive({ sm: 76, lg: 95 }),
         dropShadow: textDropShadow,
       },
@@ -108,11 +110,11 @@ export class HomeScreen extends Container {
         .fill(0x2a523c),
       padding: 20,
       text: new Text({
-        text: 'START',
+        text: m.start(),
         style: {
           fill: 0xfdf7e7,
           fontSize: 80,
-          fontFamily: 'Concert One',
+          fontFamily: DISPLAY_FONT_FAMILY,
           fontWeight: '700',
         },
       }),

@@ -56,11 +56,21 @@ export interface Level {
   is_published: boolean;
 }
 
+/** Game languages other than English that content can be translated into; mirrors the backend. */
+export const TRANSLATION_LOCALES = [{ code: 'tr', label: 'Turkish' }] as const;
+export type TranslationLocale = (typeof TRANSLATION_LOCALES)[number]['code'];
+export const TRANSLATION_LOCALE_CODES = TRANSLATION_LOCALES.map(({ code }) => code) as [
+  TranslationLocale,
+  ...TranslationLocale[],
+];
+
 export interface Unit {
   id: number;
   sort_order: number;
   layer: Layer;
   title: string;
+  /** Locale → title, only for the locales that have one; the game falls back to `title`. */
+  title_translations: Partial<Record<TranslationLocale, string>>;
   title_font_size: number;
   title_font_color: number;
   title_is_curved: boolean;

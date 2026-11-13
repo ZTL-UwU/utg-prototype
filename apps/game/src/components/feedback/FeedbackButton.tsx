@@ -1,4 +1,5 @@
 import { feedbackHotkeyLabel } from '../../lib/feedback';
+import { m } from '../../paraglide/messages.js';
 import { openFeedback } from './FeedbackOverlay';
 
 /** Lucide `message-square-warning`, the feedback icon used in the admin app. */
@@ -26,8 +27,8 @@ export function FeedbackButton() {
   return (
     <button
       type="button"
-      aria-label="Send feedback"
-      title={`Send feedback (${feedbackHotkeyLabel()})`}
+      aria-label={m.feedback_send()}
+      title={m.feedback_send_with_hotkey({ hotkey: feedbackHotkeyLabel() })}
       className={[
         // Bottom-right, clear of the safe-area insets
         'pointer-events-auto fixed z-30',

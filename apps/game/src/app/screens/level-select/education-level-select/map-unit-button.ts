@@ -5,6 +5,7 @@ import { Graphics, Text, Texture, type DestroyOptions } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { isMapUnitComplete, isMapUnitUnlocked } from '../../../../lib/progression';
+import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { useLevelProgress } from '../../../../zustandStores/levelProgressStore';
 import { drawDashedRing, FILL_ANIM_DELAY, FILL_ANIM_DURATION } from '../../../ui/dashed-ring';
 import { LevelMapScreen } from '../../level-map';
@@ -41,7 +42,7 @@ export class MapUnitButton extends FancyButton {
         ? new Text({
             text: String(index + 1),
             style: {
-              fontFamily: 'Concert One',
+              fontFamily: DISPLAY_FONT_FAMILY,
               fontSize: 110,
               fontWeight: 'bold',
               fill: 0x8b4513,

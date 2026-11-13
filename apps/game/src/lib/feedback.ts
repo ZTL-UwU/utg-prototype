@@ -2,6 +2,7 @@ import { sound } from '@pixi/sound';
 import { FetchError } from 'ofetch';
 
 import { engine } from '../engine/getEngine';
+import { m } from '../paraglide/messages.js';
 import { useAuthStore } from '../zustandStores/auth';
 import { api } from './api';
 
@@ -9,10 +10,10 @@ export const FEEDBACK_REQUEST_TYPES = ['issue', 'new_feature', 'content', 'other
 export type FeedbackRequestType = (typeof FEEDBACK_REQUEST_TYPES)[number];
 
 export const FEEDBACK_REQUEST_TYPE_LABELS: Record<FeedbackRequestType, string> = {
-  issue: 'Issue',
-  new_feature: 'New feature',
-  content: 'Content',
-  other: 'Other',
+  issue: m.feedback_type_issue(),
+  new_feature: m.feedback_type_new_feature(),
+  content: m.feedback_type_content(),
+  other: m.feedback_type_other(),
 };
 
 export function isFeedbackHotkey(event: KeyboardEvent): boolean {
@@ -40,10 +41,10 @@ export function feedbackImageType(file: File): string {
 
 export function feedbackImageError(file: File): string | null {
   if (!FEEDBACK_IMAGE_TYPES.has(feedbackImageType(file))) {
-    return 'Images must be JPEG, PNG, or WebP.';
+    return m.feedback_image_type();
   }
   if (file.size > MAX_FEEDBACK_IMAGE_BYTES) {
-    return 'Each image must be 8 MB or smaller.';
+    return m.feedback_image_size();
   }
   return null;
 }

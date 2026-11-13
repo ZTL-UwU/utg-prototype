@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
+import { m } from '../../../paraglide/messages.js';
 import { Button, FormError, Input } from '../../ui';
 import type { SignUpData } from '../types';
 
@@ -20,7 +21,7 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
     event.preventDefault();
 
     if (password !== confirmPassword) {
-      setError('Those passwords are different. Type the same one twice.');
+      setError(m.auth_passwords_differ());
       return;
     }
 
@@ -39,7 +40,7 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
         name="username"
         autoComplete="username"
         required
-        placeholder="Username"
+        placeholder={m.auth_username()}
         value={username}
         onValueChange={setUsername}
       />
@@ -49,7 +50,7 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
         type="email"
         autoComplete="email"
         required
-        placeholder="Email"
+        placeholder={m.auth_email()}
         value={email}
         onValueChange={setEmail}
       />
@@ -59,7 +60,7 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
         type="password"
         autoComplete="new-password"
         required
-        placeholder="Password"
+        placeholder={m.auth_password()}
         value={password}
         onValueChange={setPassword}
       />
@@ -69,7 +70,7 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
         type="password"
         autoComplete="new-password"
         required
-        placeholder="Confirm password"
+        placeholder={m.auth_confirm_password()}
         value={confirmPassword}
         onValueChange={setConfirmPassword}
       />
@@ -77,7 +78,7 @@ export function SignUpForm({ onSubmit }: SignUpFormProps) {
       {error !== null && <FormError>{error}</FormError>}
 
       <Button type="submit" disabled={submitting}>
-        {submitting ? 'Creating account…' : 'Sign up'}
+        {submitting ? m.auth_creating_account() : m.auth_sign_up()}
       </Button>
     </form>
   );

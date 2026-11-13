@@ -3,6 +3,8 @@ import { Container, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { responsive } from '../../../../engine/utils/viewport';
+import { m } from '../../../../paraglide/messages.js';
+import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { QuitPopup } from '../../../popups/quit';
 import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
@@ -55,9 +57,9 @@ export class TypingLevelScreen extends Container {
     this.letterRow = new LetterRow(this.keyboard, level);
 
     this.title = new Text({
-      text: 'TAKLAMAKAN DESERT',
+      text: m.desert_title(),
       style: {
-        fontFamily: 'Concert One',
+        fontFamily: DISPLAY_FONT_FAMILY,
         fontSize: responsive({ sm: 72, lg: 100 }),
         fontWeight: '800',
         fill: 0x6b3f1f,

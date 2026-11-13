@@ -1,6 +1,8 @@
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
+import { m } from '../../../../paraglide/messages.js';
+import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { NaanPiece } from './naan-piece';
 
 const STACK_OFFSET_Y = 22;
@@ -31,12 +33,12 @@ export class PlateStack extends Container {
     this.plate.height = (width / this.plate.texture.width) * this.plate.texture.height;
 
     this.plateFullLabel = new Text({
-      text: 'PLATE FULL!',
+      text: m.naan_plate_full(),
       resolution: 2,
       anchor: 0.5,
       style: {
         fill: 0x6b411e,
-        fontFamily: 'Concert One',
+        fontFamily: DISPLAY_FONT_FAMILY,
         fontSize: 52,
         fontWeight: '700',
         letterSpacing: 2,

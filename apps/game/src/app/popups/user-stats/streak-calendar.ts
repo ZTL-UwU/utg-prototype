@@ -8,6 +8,7 @@ import {
   getWeekdayInitials,
   toLocalDayKey,
 } from '../../../utils/date';
+import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 
 /** Always six, so the panel never changes height between a 28-day and a 31-day month. */
 const WEEK_ROWS = 6;
@@ -43,13 +44,13 @@ const ACTIVE_CELL_FILL = { color: 0xffe2b8, alpha: 1 } as const;
 const TODAY_STROKE = { color: 0xd89456, width: 3 } as const;
 
 const WEEKDAY_STYLE = {
-  fontFamily: 'Concert One',
+  fontFamily: DISPLAY_FONT_FAMILY,
   fontSize: 22,
   fill: 0x808080,
 } as const;
 
 const DAY_NUMBER_STYLE = {
-  fontFamily: 'Concert One',
+  fontFamily: DISPLAY_FONT_FAMILY,
   fontSize: 22,
   fill: 0x808080,
 } as const;

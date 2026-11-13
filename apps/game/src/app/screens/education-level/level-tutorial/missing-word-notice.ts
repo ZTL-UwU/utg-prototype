@@ -1,5 +1,7 @@
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 
+import { m } from '../../../../paraglide/messages.js';
+
 const PANEL_WIDTH = 360;
 const PANEL_HEIGHT = 120;
 const BG_COLOR = 0xfde2e2;
@@ -37,7 +39,7 @@ export class MissingWordNotice extends Container {
     panel.addChild(bg);
 
     const message = new Text({
-      text: 'Example coming soon',
+      text: m.education_example_coming_soon(),
       style: new TextStyle({
         fontFamily: 'sans-serif',
         fontSize: 24,

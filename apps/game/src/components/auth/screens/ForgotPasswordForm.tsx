@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
+import { m } from '../../../paraglide/messages.js';
 import { Button, DialogDescription, DialogTitle, Input } from '../../ui';
 
 export interface ForgotPasswordFormProps {
@@ -24,28 +25,26 @@ export function ForgotPasswordForm({ onSubmit, onBack }: ForgotPasswordFormProps
 
   return (
     <form className="flex flex-col gap-4" onSubmit={(event) => void handleSubmit(event)}>
-      <DialogTitle>Forgot Password?</DialogTitle>
+      <DialogTitle>{m.auth_forgot_password()}</DialogTitle>
 
-      <DialogDescription>
-        Type your email and we&apos;ll send you a link to pick a new password.
-      </DialogDescription>
+      <DialogDescription>{m.auth_forgot_description()}</DialogDescription>
 
       <Input
         name="email"
         type="email"
         autoComplete="email"
         required
-        placeholder="Email"
+        placeholder={m.auth_email()}
         value={email}
         onValueChange={setEmail}
       />
 
       <Button type="submit" disabled={submitting}>
-        {submitting ? 'Sending…' : 'Send reset link'}
+        {submitting ? m.sending() : m.auth_send_reset_link()}
       </Button>
 
       <Button variant="link" onClick={onBack}>
-        Back to login
+        {m.auth_back_to_login()}
       </Button>
     </form>
   );

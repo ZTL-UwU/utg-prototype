@@ -1,6 +1,8 @@
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Graphics, Text, TextStyle } from 'pixi.js';
 
+import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
+
 const PILL_HEIGHT = 56;
 const PILL_PADDING_X = 28;
 const PILL_RADIUS = PILL_HEIGHT / 2;
@@ -29,7 +31,7 @@ export class CopiedToast extends Container {
     this.messageText = new Text({
       text: '',
       style: new TextStyle({
-        fontFamily: 'Concert One',
+        fontFamily: DISPLAY_FONT_FAMILY,
         fontSize: 28,
         fill: TEXT_COLOR,
         align: 'center',

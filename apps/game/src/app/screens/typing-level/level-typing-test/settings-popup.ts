@@ -10,6 +10,8 @@ import { BlurFilter, Container, Graphics, Rectangle, Sprite, Text, Texture } fro
 
 import { engine } from '../../../../engine/getEngine';
 import { responsive } from '../../../../engine/utils/viewport';
+import { m } from '../../../../paraglide/messages.js';
+import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { layoutPopup } from '../../../ui/layout-popup';
 import { availableModes } from './test-content';
 
@@ -35,9 +37,9 @@ const TOGGLE_WIDTH = 96;
 const TOGGLE_HEIGHT = 48;
 
 const MODE_LABELS: Record<TypingTestMode, string> = {
-  letters: 'Letters',
-  words: 'Words',
-  sentences: 'Sentences',
+  letters: m.typing_test_letters(),
+  words: m.typing_test_words(),
+  sentences: m.typing_test_sentences(),
 };
 
 export type TypingTestSettings = {
@@ -58,7 +60,7 @@ function createLabel(text: string, fontSize: number, fill: number) {
   return new Text({
     text,
     resolution: 2,
-    style: { fontFamily: 'Concert One', fontSize, fontWeight: '700', fill },
+    style: { fontFamily: DISPLAY_FONT_FAMILY, fontSize, fontWeight: '700', fill },
     anchor: 0.5,
   });
 }
@@ -68,7 +70,7 @@ function createFlowLabel(text: string, fontSize: number, fill: number) {
   return new Text({
     text,
     resolution: 2,
-    style: { fontFamily: 'Concert One', fontSize, fontWeight: '700', fill },
+    style: { fontFamily: DISPLAY_FONT_FAMILY, fontSize, fontWeight: '700', fill },
     layout: true,
   });
 }
@@ -205,8 +207,8 @@ export class TypingTestSettingsPopup extends Container {
       .fill(COLORS.PANEL);
     background.layout = { width: PANEL_WIDTH, height: PANEL_HEIGHT };
 
-    const title = createFlowLabel('TYPING TEST', 72, COLORS.BUTTON);
-    const subtitle = createFlowLabel('Choose your preferences for this test', 32, COLORS.TEXT);
+    const title = createFlowLabel(m.typing_test_title(), 72, COLORS.BUTTON);
+    const subtitle = createFlowLabel(m.typing_test_subtitle(), 32, COLORS.TEXT);
 
     const modeControl = new SegmentedControl(
       modes.map((mode) => ({ value: mode, label: MODE_LABELS[mode] })),
@@ -219,7 +221,10 @@ export class TypingTestSettingsPopup extends Container {
     const durationControl = new SegmentedControl<number>(
       TYPING_TEST_DURATIONS_SECONDS.map((seconds) => ({
         value: seconds,
-        label: seconds % 60 === 0 ? `${seconds / 60} min` : `${seconds}s`,
+        label:
+          seconds % 60 === 0
+            ? m.typing_test_minutes({ minutes: seconds / 60 })
+            : m.typing_test_seconds({ seconds }),
       })),
       this.settings.durationSeconds,
       (seconds) => {
@@ -227,7 +232,7 @@ export class TypingTestSettingsPopup extends Container {
       },
     );
 
-    const keyboardLabel = createFlowLabel('Show keyboard', 32, COLORS.TEXT);
+    const keyboardLabel = createFlowLabel(m.typing_test_show_keyboard(), 32, COLORS.TEXT);
 
     const keyboardToggle = new Toggle(this.settings.showKeyboard, (showKeyboard) => {
       this.settings.showKeyboard = showKeyboard;
@@ -249,8 +254,8 @@ export class TypingTestSettingsPopup extends Container {
         .roundRect(0, 0, 300, 130, 40)
         .fill(COLORS.BUTTON),
       text: new Text({
-        text: 'START',
-        style: { fontFamily: 'Concert One', fontSize: 68, fill: COLORS.BUTTON_TEXT },
+        text: m.start(),
+        style: { fontFamily: DISPLAY_FONT_FAMILY, fontSize: 68, fill: COLORS.BUTTON_TEXT },
       }),
       animations: { hover: { props: { scale: { x: 1.1, y: 1.1 } }, duration: 100 } },
       anchor: 0.5,

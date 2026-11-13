@@ -3,6 +3,8 @@ import { Container, Graphics, Text } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { responsive } from '../../../../engine/utils/viewport';
+import { m } from '../../../../paraglide/messages.js';
+import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { getMappedFromKeyCode } from '../../../../utils/keymap';
 import { getScriptFontFamily } from '../../../../utils/script';
 import { BackButton } from '../../../ui/back-button';
@@ -49,7 +51,12 @@ export type TypingTestResultsPopupProps = {
   onRetry: () => void;
 };
 
-function createText(text: string, fontSize: number, fill: number, fontFamily = 'Concert One') {
+function createText(
+  text: string,
+  fontSize: number,
+  fill: number,
+  fontFamily: string | string[] = DISPLAY_FONT_FAMILY,
+) {
   return new Text({
     text,
     resolution: 2,
@@ -130,9 +137,14 @@ export class TypingTestResultsPopup extends Container {
     this.background = new Graphics();
 
     const title = new Text({
-      text: 'Results',
+      text: m.typing_test_results(),
       resolution: 2,
-      style: { fontFamily: 'Concert One', fontSize: 72, fontWeight: '700', fill: COLORS.TEXT },
+      style: {
+        fontFamily: DISPLAY_FONT_FAMILY,
+        fontSize: 72,
+        fontWeight: '700',
+        fill: COLORS.TEXT,
+      },
       layout: true,
     });
 
@@ -140,9 +152,9 @@ export class TypingTestResultsPopup extends Container {
       layout: { flexDirection: 'row', alignItems: 'center', gap: 24 },
       scale: responsive({ sm: 0.72, lg: 1 }),
       children: [
-        createStatPill('Accuracy', `${accuracy}%`),
-        createStatPill('Speed', `${wpm}wpm`),
-        createStatPill('Mistakes', String(mistakes)),
+        createStatPill(m.typing_test_accuracy(), m.percent({ accuracy })),
+        createStatPill(m.typing_test_speed(), m.typing_test_wpm({ wpm })),
+        createStatPill(m.typing_test_mistakes(), String(mistakes)),
       ],
     });
 
@@ -154,9 +166,14 @@ export class TypingTestResultsPopup extends Container {
       layout: { flexDirection: 'row', alignItems: 'center', gap: 16 },
       children: [
         new Text({
-          text: 'Problem keys',
+          text: m.typing_test_problem_keys(),
           resolution: 2,
-          style: { fontFamily: 'Concert One', fontSize: 44, fontWeight: '700', fill: COLORS.TEXT },
+          style: {
+            fontFamily: DISPLAY_FONT_FAMILY,
+            fontSize: 44,
+            fontWeight: '700',
+            fill: COLORS.TEXT,
+          },
           layout: true,
         }),
         ...rankedCodes.slice(0, PROBLEM_KEY_COUNT).map(createProblemKeyChip),

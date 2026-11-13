@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
+import { m } from '../../../paraglide/messages.js';
 import { Button, Input } from '../../ui';
 import type { LoginCredentials } from '../types';
 
@@ -34,7 +35,7 @@ export function LoginForm({ onSubmit, onGuest, onTester, onForgot, onSignUpNav }
         type="email"
         autoComplete="email"
         required
-        placeholder="Email"
+        placeholder={m.auth_email()}
         value={email}
         onValueChange={setEmail}
         className="py-4"
@@ -45,18 +46,18 @@ export function LoginForm({ onSubmit, onGuest, onTester, onForgot, onSignUpNav }
         type="password"
         autoComplete="current-password"
         required
-        placeholder="Password"
+        placeholder={m.auth_password()}
         value={password}
         onValueChange={setPassword}
         className="py-4"
       />
 
       <Button variant="link" onClick={onForgot}>
-        Forgot Password?
+        {m.auth_forgot_password()}
       </Button>
 
       <Button type="submit" className="py-4" disabled={submitting}>
-        {submitting ? 'Logging in…' : 'Log in'}
+        {submitting ? m.auth_logging_in() : m.auth_log_in()}
       </Button>
 
       <div className="mx-auto flex w-4/5 gap-3 max-sm:w-full">
@@ -65,7 +66,7 @@ export function LoginForm({ onSubmit, onGuest, onTester, onForgot, onSignUpNav }
           className="mx-0 w-auto flex-1 px-4 py-4 max-sm:text-xl"
           onClick={onGuest}
         >
-          Guest mode
+          {m.auth_guest_mode()}
         </Button>
 
         <Button
@@ -73,14 +74,14 @@ export function LoginForm({ onSubmit, onGuest, onTester, onForgot, onSignUpNav }
           className="mx-0 w-auto flex-1 px-4 py-4 max-sm:text-xl"
           onClick={onTester}
         >
-          Tester mode
+          {m.auth_tester_mode()}
         </Button>
       </div>
 
-      <p className="text-center font-body text-base text-muted">New to the game?</p>
+      <p className="text-center font-body text-base text-muted">{m.auth_new_to_game()}</p>
 
       <Button variant="secondary" className="py-4" onClick={onSignUpNav}>
-        Sign up
+        {m.auth_sign_up()}
       </Button>
     </form>
   );

@@ -2,9 +2,10 @@ import uuid
 from pathlib import Path
 
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
-from apps.common.models import AuditingMixin, Layer
+from apps.common.models import AuditingMixin, Layer, Translation
 from apps.common.storage import UniqueUploadTo, public_storage
 
 
@@ -58,6 +59,8 @@ class Unit(AuditingMixin, models.Model):
     subtitle_font_size = models.PositiveIntegerField(null=True, blank=True)
     subtitle_font_color = models.BigIntegerField(null=True, blank=True)
     background_asset_path = models.CharField(max_length=255)
+    # Only `title` is translated; the subtitle is Uyghur and stays as written.
+    translations = GenericRelation(Translation)
 
     class Meta:
         db_table = "units"

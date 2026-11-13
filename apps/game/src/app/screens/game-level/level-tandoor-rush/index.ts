@@ -2,6 +2,8 @@ import { Container, Sprite, Text, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { responsive } from '../../../../engine/utils/viewport';
+import { m } from '../../../../paraglide/messages.js';
+import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { convertKeyboardLettersToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
@@ -95,11 +97,11 @@ export class GameLevelOneScreen extends Container {
     padding: 12,
   });
   private readonly prompt = new Text({
-    text: 'TYPE THIS LETTER',
+    text: m.tandoor_type_this_letter(),
     resolution: 2,
     style: {
       fill: 0x6b411e,
-      fontFamily: 'Concert One',
+      fontFamily: DISPLAY_FONT_FAMILY,
       fontSize: 36,
       fontWeight: '700',
       letterSpacing: 2,
@@ -114,7 +116,7 @@ export class GameLevelOneScreen extends Container {
     anchor: 0.5,
     style: {
       fill: 0x000000,
-      fontFamily: 'Concert One',
+      fontFamily: DISPLAY_FONT_FAMILY,
       fontSize: 80,
       fontWeight: '700',
     },

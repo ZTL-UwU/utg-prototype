@@ -1,5 +1,6 @@
 import type { ComponentProps } from 'react';
 
+import { m } from '../../paraglide/messages.js';
 import { Button } from './button';
 import { DialogClose } from './dialog';
 
@@ -30,7 +31,7 @@ function CloseIcon() {
 
 export function BackButton({ children, ...props }: BackButtonProps) {
   return (
-    <Button variant="icon" aria-label="Back" {...props}>
+    <Button variant="icon" aria-label={m.back()} {...props}>
       {children ?? <BackIcon />}
     </Button>
   );
@@ -39,7 +40,7 @@ export function BackButton({ children, ...props }: BackButtonProps) {
 /** Always a Base UI `Dialog.Close`, so Escape and the X share one dismiss path. */
 export function CloseButton({ children, ...props }: CloseButtonProps) {
   return (
-    <DialogClose render={<Button variant="icon" />} aria-label="Close" {...props}>
+    <DialogClose render={<Button variant="icon" />} aria-label={m.close()} {...props}>
       {children ?? <CloseIcon />}
     </DialogClose>
   );

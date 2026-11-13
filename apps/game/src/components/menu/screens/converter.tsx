@@ -2,6 +2,7 @@ import { convert, type TargetScript } from '@utg/script-converter';
 import { useState } from 'react';
 import type { ChangeEvent } from 'react';
 
+import { m } from '../../../paraglide/messages.js';
 import { BackButton, Field, FieldLabel, Textarea } from '../../ui';
 
 export interface MenuConverterScreenProps {
@@ -67,7 +68,7 @@ export function MenuConverterScreen({ onBack }: MenuConverterScreenProps) {
       <div className="flex min-h-0 w-full flex-1 flex-col justify-center gap-5 py-2 md:gap-6">
         <ConverterField
           id="converter-arabic"
-          label="Uyghur Arabic"
+          label={m.converter_uyghur_arabic()}
           value={arabic}
           onChange={(value) => onFieldChange('arabic', value)}
           dir="rtl"
@@ -75,13 +76,13 @@ export function MenuConverterScreen({ onBack }: MenuConverterScreenProps) {
         />
         <ConverterField
           id="converter-latin"
-          label="Latin (ULY)"
+          label={m.converter_latin()}
           value={latin}
           onChange={(value) => onFieldChange('latin', value)}
         />
         <ConverterField
           id="converter-cyrillic"
-          label="Cyrillic"
+          label={m.script_cyrillic()}
           value={cyrillic}
           onChange={(value) => onFieldChange('cyrillic', value)}
         />

@@ -3,6 +3,7 @@ import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, type FederatedPointerEvent, Graphics, Rectangle, Text } from 'pixi.js';
 
 import { responsive, safeAreaInsets } from '../../engine/utils/viewport';
+import { DISPLAY_FONT_FAMILY } from '../../utils/fonts';
 import {
   getKeyFromChar,
   getKeyStrokeFromChar,
@@ -244,7 +245,7 @@ class KeyCap extends Container {
       style: {
         align: 'center',
         fill: isShift ? shiftHintColor : textColor,
-        fontFamily: isAuxiliary ? 'Concert One' : getScriptFontFamily(),
+        fontFamily: isAuxiliary ? DISPLAY_FONT_FAMILY : getScriptFontFamily(),
         fontSize: isAuxiliary ? 26 : 30,
         fontWeight: '700',
         lineHeight: isAuxiliary ? 26 : 30,
