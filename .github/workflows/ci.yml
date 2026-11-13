@@ -32,6 +32,9 @@ jobs:
       - name: Generate React Router types
         run: vp exec --filter @utg/admin react-router typegen
 
+      - name: Compile Paraglide messages
+        run: vp run --filter @utg/game i18n
+
       - name: Check
         run: vp check
 
