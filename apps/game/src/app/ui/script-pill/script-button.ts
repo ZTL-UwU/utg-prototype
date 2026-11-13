@@ -7,8 +7,8 @@ import { scriptState, type ORTHO_ENUM } from '../../../zustandStores/scriptState
 
 const LABELS: Record<ORTHO_ENUM, string> = {
   Arabic: 'ئۇيغۇر',
-  Cyrillic: 'КИР',
-  Latin: 'LATIN',
+  Cyrillic: 'уйғур',
+  Latin: 'Uyghur',
 };
 
 const SELECTED_FILL_COLOR = 0xfdf7e7;
