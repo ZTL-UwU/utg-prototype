@@ -231,7 +231,7 @@ export class TypingSpringScreen extends Container {
     this.updateSentenceDisplay();
     this.timerRunning = !this.paused;
     this.layoutContent();
-    playSentenceAudio(getSentenceAudioAlias(this.currentRound.sentenceId));
+    void playSentenceAudio(getSentenceAudioAlias(this.currentRound.sentenceId));
   }
 
   private async onSentenceTimeout() {
