@@ -16,10 +16,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '~/components/ui/alert-dialog';
+import { Badge } from '~/components/ui/badge';
 import { Button } from '~/components/ui/button';
 import { ColorInput } from '~/components/ui/color-input';
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '~/components/ui/field';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from '~/components/ui/field';
 import { Input } from '~/components/ui/input';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '~/components/ui/input-group';
 import {
   Select,
   SelectContent,
@@ -290,34 +300,70 @@ export function UnitForm(props: UnitFormProps) {
             />
           </div>
 
-          {TRANSLATION_LOCALES.map(({ code, label }) => (
-            <form.Field
-              key={code}
-              name={`title_translations.${code}`}
-              children={(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+          <FieldSet className="gap-2">
+            <FieldLegend
+              variant="label"
+              className="mb-0 flex w-full items-baseline justify-between"
+            >
+              Title translations
+              <form.Subscribe
+                selector={(state) =>
+                  TRANSLATION_LOCALE_CODES.filter((code) =>
+                    Boolean(state.values.title_translations[code]?.trim()),
+                  ).length
+                }
+                children={(translatedCount) => (
+                  <span className="text-xs font-normal text-muted-foreground tabular-nums">
+                    {translatedCount}/{TRANSLATION_LOCALES.length} translated
+                  </span>
+                )}
+              />
+            </FieldLegend>
+            <FieldDescription>Languages left blank show the title above.</FieldDescription>
+            <form.Subscribe
+              selector={(state) => state.values.title.trim()}
+              children={(fallbackTitle) => (
+                <div className="flex flex-col gap-2">
+                  {TRANSLATION_LOCALES.map(({ code, label }) => (
+                    <form.Field
+                      key={code}
+                      name={`title_translations.${code}`}
+                      children={(field) => {
+                        const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
 
-                return (
-                  <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>Title ({label})</FieldLabel>
-                    <FieldDescription>
-                      Shown when the game is in {label}. Leave blank to use the title above.
-                    </FieldDescription>
-                    <Input
-                      id={field.name}
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(event) => field.handleChange(event.target.value)}
-                      lang={code}
-                      aria-invalid={isInvalid}
+                        return (
+                          <Field data-invalid={isInvalid}>
+                            <InputGroup>
+                              <InputGroupAddon className="w-28 justify-start border-r pr-2">
+                                <Badge variant="secondary" className="font-mono uppercase">
+                                  {code}
+                                </Badge>
+                                <label htmlFor={field.name} className="truncate">
+                                  {label}
+                                </label>
+                              </InputGroupAddon>
+                              <InputGroupInput
+                                id={field.name}
+                                name={field.name}
+                                value={field.state.value}
+                                onBlur={field.handleBlur}
+                                onChange={(event) => field.handleChange(event.target.value)}
+                                placeholder={fallbackTitle || 'Same as title'}
+                                lang={code}
+                                dir="auto"
+                                aria-invalid={isInvalid}
+                              />
+                            </InputGroup>
+                            {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                          </Field>
+                        );
+                      }}
                     />
-                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                  </Field>
-                );
-              }}
+                  ))}
+                </div>
+              )}
             />
-          ))}
+          </FieldSet>
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <form.Field
