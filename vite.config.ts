@@ -10,12 +10,12 @@ export default defineConfig({
     '*': 'vp check --fix',
   },
   fmt: {
-    ignorePatterns: ['.agents/**', 'apps/backend/**'],
+    ignorePatterns: ['.agents/**', 'apps/backend/**', 'apps/game/src/paraglide/**'],
     singleQuote: true,
     sortImports: true,
   },
   lint: {
-    ignorePatterns: ['.agents/**', 'apps/backend/**'],
+    ignorePatterns: ['.agents/**', 'apps/backend/**', 'apps/game/src/paraglide/**'],
     options: {
       typeAware: true,
       typeCheck: true,

@@ -5,6 +5,7 @@ import { Graphics, Texture, Text, type DestroyOptions } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { hasCompletedLevel, isLevelUnlocked } from '../../../lib/progression';
+import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import { useLevelProgress } from '../../../zustandStores/levelProgressStore';
 import { drawDashedRing, FILL_ANIM_DELAY, FILL_ANIM_DURATION } from '../../ui/dashed-ring';
 import { LevelLoadingScreen } from '../level-loading';
@@ -41,7 +42,7 @@ export class LevelButton extends FancyButton {
         ? new Text({
             text: String(idx),
             style: {
-              fontFamily: 'Concert One',
+              fontFamily: DISPLAY_FONT_FAMILY,
               fontSize: 110,
               fontWeight: 'bold',
               fill: 0x8b4513,

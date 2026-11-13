@@ -3,6 +3,7 @@ import { Container, Graphics, Text, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { responsive } from '../../../../engine/utils/viewport';
+import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { getKeyFromChar, getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useLevelProgress } from '../../../../zustandStores/levelProgressStore';
 import { REMOTE_SENTENCES_BUNDLE } from '../../../../zustandStores/sentenceStore';
@@ -96,7 +97,12 @@ export class TypingTestScreen extends Container {
     this.timerText = new Text({
       text: '',
       resolution: 2,
-      style: { fontFamily: 'Concert One', fontSize: 64, fontWeight: '700', fill: COLORS.TIMER },
+      style: {
+        fontFamily: DISPLAY_FONT_FAMILY,
+        fontSize: 64,
+        fontWeight: '700',
+        fill: COLORS.TIMER,
+      },
       anchor: { x: 1, y: 0.5 },
     });
 

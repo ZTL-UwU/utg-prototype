@@ -91,6 +91,14 @@ Every game screen has a URL, in dev and prod. Screens keep navigating with `navi
 - New level type: nothing to do; `/:layer/levels/:id/play` covers everything in `LEVEL_TYPE_SCREENS`.
 - Hosting must serve `index.html` for unknown paths (`vercel.json` does).
 
+## Game i18n (Paraglide, `apps/game`)
+
+English is the base locale; Turkish (`tr`) is the only other one so far. Messages live in `apps/game/messages/{locale}.json` and compile to `src/paraglide` (gitignored), which the Vite plugin and `vp run i18n` regenerate.
+
+- Use `m.some_key()` from `src/paraglide/messages.js` for English UI text. Never translate Uyghur content: letters, words, sentences, subtitles, script names in their own script.
+- Switching language reloads the page, so Pixi text built once at construction is fine.
+- Unit titles come translated from the backend's `translations` table (`title_translations` on unit responses); the game picks `getLocale()` and falls back to `title`.
+
 ## Level types (`@utg/level-types`)
 
 Shared source of truth for level type ids and per-type `level_props` Zod schemas. Admin UI forms stay in `@utg/admin` (`level-type-forms`); keep the Django `LevelType` allow-list (`apps/backend/apps/game/models.py`) in sync when adding ids.

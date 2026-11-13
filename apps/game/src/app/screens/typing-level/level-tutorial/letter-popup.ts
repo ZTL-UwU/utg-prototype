@@ -5,6 +5,8 @@ import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { responsive } from '../../../../engine/utils/viewport';
+import { m } from '../../../../paraglide/messages.js';
+import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { getKeyFromChar } from '../../../../utils/keymap';
 import {
   convertToCurrentScript,
@@ -110,7 +112,7 @@ function createShiftGuideKey(phone: boolean) {
     resolution: 2,
     style: {
       fill: COLORS.shiftText,
-      fontFamily: 'Concert One',
+      fontFamily: DISPLAY_FONT_FAMILY,
       fontSize: 25,
       fontWeight: '700',
       padding: 10,
@@ -118,12 +120,12 @@ function createShiftGuideKey(phone: boolean) {
   });
   label.position.set(SHIFT_WIDTH / 2, SHIFT_HEIGHT / 2);
   const hold = new Text({
-    text: phone ? 'TAP' : 'HOLD',
+    text: phone ? m.typing_tutorial_tap() : m.typing_tutorial_hold(),
     anchor: 0.5,
     resolution: 2,
     style: {
       fill: COLORS.shiftText,
-      fontFamily: 'Concert One',
+      fontFamily: DISPLAY_FONT_FAMILY,
       fontSize: 25,
       fontWeight: '700',
       padding: 10,
@@ -389,7 +391,7 @@ export class LetterPopup extends Container {
       resolution: 2,
       style: {
         fill: 0x000000,
-        fontFamily: 'Concert One',
+        fontFamily: DISPLAY_FONT_FAMILY,
         fontSize: 58,
         fontWeight: '700',
         padding: 8,

@@ -5,8 +5,11 @@ from typing import Any, Literal
 from ninja import Schema
 
 from apps.common.schemas import AuditingOut
+from apps.common.translations import translations_for
 
 LayerValue = Literal["typing", "education", "game"]
+# Keep in sync with `TranslationLocale`.
+TranslationLocaleValue = Literal["tr"]
 
 
 class ImageOut(Schema):
@@ -102,11 +105,16 @@ class UnitOut(AuditingOut):
     subtitle_font_size: int | None
     subtitle_font_color: int | None
     background_asset_path: str
+    title_translations: dict[str, str]
     levels: list[LevelOut]
 
     @staticmethod
     def resolve_levels(obj):
         return list(obj.levels.all())
+
+    @staticmethod
+    def resolve_title_translations(obj) -> dict[str, str]:
+        return translations_for(obj, "title")
 
 
 class UnitByLayerOut(AuditingOut):
@@ -121,11 +129,16 @@ class UnitByLayerOut(AuditingOut):
     subtitle_font_size: int | None
     subtitle_font_color: int | None
     background_asset_path: str
+    title_translations: dict[str, str]
     levels: list[LevelShortOut]
 
     @staticmethod
     def resolve_levels(obj):
         return list(obj.levels.all())
+
+    @staticmethod
+    def resolve_title_translations(obj) -> dict[str, str]:
+        return translations_for(obj, "title")
 
 
 class UnitByIdOut(AuditingOut):
@@ -140,11 +153,16 @@ class UnitByIdOut(AuditingOut):
     subtitle_font_size: int | None
     subtitle_font_color: int | None
     background_asset_path: str
+    title_translations: dict[str, str]
     levels: list[LevelOut]
 
     @staticmethod
     def resolve_levels(obj):
         return list(obj.levels.all())
+
+    @staticmethod
+    def resolve_title_translations(obj) -> dict[str, str]:
+        return translations_for(obj, "title")
 
 
 class SidebarUnitOut(Schema):
@@ -164,6 +182,8 @@ class UnitUpdateIn(Schema):
     subtitle_font_color: int | None = None
     background_asset_path: str
     is_published: bool
+    # Locale -> title; a blank title removes that locale. Left out, translations are unchanged.
+    title_translations: dict[TranslationLocaleValue, str] | None = None
 
 
 class LevelWriteIn(Schema):

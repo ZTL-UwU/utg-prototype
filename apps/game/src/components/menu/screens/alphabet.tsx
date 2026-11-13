@@ -1,6 +1,7 @@
 import { EDUCATION_LETTERS } from '@utg/letters';
 import { convertArabic } from '@utg/script-converter';
 
+import { m } from '../../../paraglide/messages.js';
 import { BackButton, cn } from '../../ui';
 
 export interface MenuAlphabetScreenProps {
@@ -61,7 +62,7 @@ const ALPHABET_ENTRIES: AlphabetEntry[] = EDUCATION_LETTERS.map((arabic) => ({
 const LEFT_COLUMN = ALPHABET_ENTRIES.filter((_, i) => i % 2 === 0);
 const RIGHT_COLUMN = ALPHABET_ENTRIES.filter((_, i) => i % 2 === 1);
 
-const HEADERS = ['Arabic', 'Latin', 'Cyrillic', 'IPA'] as const;
+const HEADERS = [m.script_arabic(), m.script_latin(), m.script_cyrillic(), m.script_ipa()];
 
 function AlphabetTable({ rows }: { rows: AlphabetEntry[] }) {
   return (

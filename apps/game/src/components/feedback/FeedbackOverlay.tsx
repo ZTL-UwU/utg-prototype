@@ -17,6 +17,7 @@ import {
   resumeGameAfterFeedback,
   submitFeedback,
 } from '../../lib/feedback';
+import { m } from '../../paraglide/messages.js';
 import { useFeedbackStore } from '../../zustandStores/feedbackStore';
 import {
   Button,
@@ -67,7 +68,7 @@ export function FeedbackOverlay({ screenshot }: { screenshot: HTMLCanvasElement 
       if (removed) URL.revokeObjectURL(removed.url);
       return current.filter((upload) => upload.id !== id);
     });
-    setError((current) => (current === 'You can attach up to 3 images.' ? null : current));
+    setError((current) => (current === m.feedback_max_images() ? null : current));
   };
 
   const addUploads = (fileList: FileList | null) => {
@@ -76,7 +77,7 @@ export function FeedbackOverlay({ screenshot }: { screenshot: HTMLCanvasElement 
     let message: string | null = null;
     for (const file of fileList) {
       if (next.length >= MAX_FEEDBACK_UPLOADS) {
-        message = 'You can attach up to 3 images.';
+        message = m.feedback_max_images();
         break;
       }
       const fileError = feedbackImageError(file);
@@ -94,17 +95,17 @@ export function FeedbackOverlay({ screenshot }: { screenshot: HTMLCanvasElement 
     mutationFn: async () => {
       const trimmedTitle = title.trim();
       if (!trimmedTitle) {
-        throw new Error('Please add a title.');
+        throw new Error(m.feedback_need_title());
       }
       const trimmedDescription = description.trim();
       if (!trimmedDescription) {
-        throw new Error('Please add a description.');
+        throw new Error(m.feedback_need_description());
       }
       let image: Blob | null = null;
       if (includeScreenshot) {
         const canvas = annotatorRef.current?.getCanvas();
         if (!canvas) {
-          throw new Error('Screenshot is not ready.');
+          throw new Error(m.feedback_screenshot_not_ready());
         }
         image = await canvasToJpegBlob(canvas);
       }
@@ -122,7 +123,7 @@ export function FeedbackOverlay({ screenshot }: { screenshot: HTMLCanvasElement 
       setSent(true);
     },
     onError: (sendError) => {
-      setError(feedbackErrorMessage(sendError, 'Could not send feedback.'));
+      setError(feedbackErrorMessage(sendError, m.feedback_send_failed()));
     },
   });
 
@@ -154,8 +155,8 @@ export function FeedbackOverlay({ screenshot }: { screenshot: HTMLCanvasElement 
 
         {sent ? (
           <>
-            <DialogTitle>Sent. Thank you!</DialogTitle>
-            <DialogDescription>You can keep playing.</DialogDescription>
+            <DialogTitle>{m.feedback_sent_title()}</DialogTitle>
+            <DialogDescription>{m.feedback_sent_description()}</DialogDescription>
           </>
         ) : (
           <form
@@ -165,8 +166,10 @@ export function FeedbackOverlay({ screenshot }: { screenshot: HTMLCanvasElement 
               if (!busy) send.mutate();
             }}
           >
-            <DialogTitle>Send feedback</DialogTitle>
-            <DialogDescription>{feedbackHotkeyLabel()} opens this from anywhere.</DialogDescription>
+            <DialogTitle>{m.feedback_send()}</DialogTitle>
+            <DialogDescription>
+              {m.feedback_hotkey_hint({ hotkey: feedbackHotkeyLabel() })}
+            </DialogDescription>
 
             <div className="flex flex-col gap-2">
               <div className={includeScreenshot ? undefined : 'hidden'}>
@@ -181,12 +184,12 @@ export function FeedbackOverlay({ screenshot }: { screenshot: HTMLCanvasElement 
                     className="self-end"
                     onClick={() => setIncludeScreenshot(false)}
                   >
-                    Don't include screenshot
+                    {m.feedback_exclude_screenshot()}
                   </Button>
                 </div>
               ) : (
                 <div className="flex items-center justify-between gap-3 rounded-2xl border-[3px] border-dashed border-ink/30 px-4 py-3">
-                  <p className="font-body text-sm text-muted">Screenshot left out</p>
+                  <p className="font-body text-sm text-muted">{m.feedback_screenshot_left_out()}</p>
                   <Button
                     type="button"
                     variant="secondary"
@@ -194,7 +197,7 @@ export function FeedbackOverlay({ screenshot }: { screenshot: HTMLCanvasElement 
                     className="mx-0 w-auto px-3 py-1 text-sm"
                     onClick={() => setIncludeScreenshot(true)}
                   >
-                    Include screenshot
+                    {m.feedback_include_screenshot()}
                   </Button>
                 </div>
               )}
@@ -202,8 +205,8 @@ export function FeedbackOverlay({ screenshot }: { screenshot: HTMLCanvasElement 
 
             <Field>
               <FieldLabel>
-                Additional Images{' '}
-                <span className="font-normal text-muted">(optional, up to 3)</span>
+                {m.feedback_additional_images()}{' '}
+                <span className="font-normal text-muted">{m.feedback_optional_up_to_3()}</span>
               </FieldLabel>
               <div className="flex flex-wrap items-center gap-2">
                 {uploads.map((upload, index) => (
@@ -217,7 +220,7 @@ export function FeedbackOverlay({ screenshot }: { screenshot: HTMLCanvasElement 
                       type="button"
                       variant="icon"
                       disabled={busy}
-                      aria-label={`Remove image ${index + 1}`}
+                      aria-label={m.feedback_remove_image({ index: index + 1 })}
                       className="absolute -top-2 -right-2 size-7 border-[3px] border-ink bg-cream text-lg leading-none"
                       onClick={() => removeUpload(upload.id)}
                     >
@@ -233,7 +236,7 @@ export function FeedbackOverlay({ screenshot }: { screenshot: HTMLCanvasElement 
                     className="mx-0 size-20 w-20 rounded-xl px-2 py-2 text-sm"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    Add
+                    {m.add()}
                   </Button>
                 ) : null}
               </div>
@@ -242,7 +245,7 @@ export function FeedbackOverlay({ screenshot }: { screenshot: HTMLCanvasElement 
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 multiple
-                aria-label="Add images"
+                aria-label={m.feedback_add_images()}
                 tabIndex={-1}
                 className="sr-only"
                 disabled={busy}
@@ -254,8 +257,12 @@ export function FeedbackOverlay({ screenshot }: { screenshot: HTMLCanvasElement 
             </Field>
 
             <Field>
-              <FieldLabel>Type of request</FieldLabel>
-              <div role="radiogroup" aria-label="Type of request" className="flex flex-wrap gap-2">
+              <FieldLabel>{m.feedback_type_of_request()}</FieldLabel>
+              <div
+                role="radiogroup"
+                aria-label={m.feedback_type_of_request()}
+                className="flex flex-wrap gap-2"
+              >
                 {FEEDBACK_REQUEST_TYPES.map((type) => {
                   const selected = requestType === type;
                   return (
@@ -277,7 +284,7 @@ export function FeedbackOverlay({ screenshot }: { screenshot: HTMLCanvasElement 
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="feedback-title">Title</FieldLabel>
+              <FieldLabel htmlFor="feedback-title">{m.feedback_title()}</FieldLabel>
               <Textarea
                 id="feedback-title"
                 name="title"
@@ -285,21 +292,21 @@ export function FeedbackOverlay({ screenshot }: { screenshot: HTMLCanvasElement 
                 maxLength={255}
                 disabled={busy}
                 rows={1}
-                placeholder="Short summary"
+                placeholder={m.feedback_title_placeholder()}
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
               />
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="feedback-description">Description</FieldLabel>
+              <FieldLabel htmlFor="feedback-description">{m.feedback_description()}</FieldLabel>
               <Textarea
                 id="feedback-description"
                 name="description"
                 required
                 disabled={busy}
                 rows={4}
-                placeholder="What should we look at?"
+                placeholder={m.feedback_description_placeholder()}
                 value={description}
                 className="min-h-28 resize-y"
                 onChange={(event) => setDescription(event.target.value)}
@@ -315,13 +322,13 @@ export function FeedbackOverlay({ screenshot }: { screenshot: HTMLCanvasElement 
             {error !== null ? <FormError>{error}</FormError> : null}
 
             <Button type="submit" disabled={busy}>
-              {send.isPending ? 'Sending…' : 'Send'}
+              {send.isPending ? m.sending() : m.send()}
             </Button>
             <DialogClose
               disabled={send.isPending}
               render={<Button type="button" variant="secondary" />}
             >
-              Cancel
+              {m.cancel()}
             </DialogClose>
           </form>
         )}

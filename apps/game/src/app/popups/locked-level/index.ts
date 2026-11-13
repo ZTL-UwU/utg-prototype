@@ -4,13 +4,15 @@ import { DropShadowFilter } from 'pixi-filters';
 import { BlurFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { m } from '../../../paraglide/messages.js';
+import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import type { TLayer } from '../../screens/level-map/units';
 
 // TODO: replace placeholder copy
-const LOCKED_MESSAGES: Record<TLayer, string> = {
-  education: 'Please complete all previous games to unlock this game!',
-  typing: 'Please complete the previous typing journey to unlock this level!',
-  game: 'Please complete all of education and typing journey to unlock the games!',
+const LOCKED_MESSAGES: Record<TLayer, () => string> = {
+  education: m.locked_previous_games,
+  typing: m.locked_previous_typing,
+  game: m.locked_games,
 };
 
 export type LockedLevelPopupProps = {
@@ -55,9 +57,9 @@ export class LockedLevelPopup extends Container {
       layout: { width: 180, height: 180 },
     });
     const message = new Text({
-      text: LOCKED_MESSAGES[layer],
+      text: LOCKED_MESSAGES[layer](),
       style: {
-        fontFamily: 'Concert One',
+        fontFamily: DISPLAY_FONT_FAMILY,
         fontSize: 36,
         wordWrap: true,
         wordWrapWidth: contentWidth,
@@ -86,8 +88,8 @@ export class LockedLevelPopup extends Container {
         .roundRect(0, 0, 240, 110, 30)
         .fill(0xa66129),
       text: new Text({
-        text: 'OK',
-        style: { fontFamily: 'Concert One', fontSize: 64, fill: 0xfff4e0 },
+        text: m.ok(),
+        style: { fontFamily: DISPLAY_FONT_FAMILY, fontSize: 64, fill: 0xfff4e0 },
       }),
       animations: {
         hover: { props: { scale: { x: 1.05, y: 1.05 } }, duration: 100 },
@@ -110,9 +112,9 @@ export class LockedLevelPopup extends Container {
           width: 6,
         }),
       title: new Text({
-        text: 'LEVEL LOCKED',
+        text: m.locked_title(),
         style: {
-          fontFamily: 'Concert One',
+          fontFamily: DISPLAY_FONT_FAMILY,
           fontSize: 48,
           fontWeight: 'bold',
           align: 'center',

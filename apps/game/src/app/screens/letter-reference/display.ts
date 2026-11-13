@@ -1,5 +1,7 @@
 import { Container, Graphics, GraphicsContext, GraphicsPath, Text } from 'pixi.js';
 
+import { m } from '../../../paraglide/messages.js';
+import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import { DrawingCanvas, type StrokePoint } from '../../ui/drawing-canvas';
 import { calculateDrawingAccuracy, parseStrokePath } from './calculate-accuracy';
 import { LABEL_COLOR, NAV_COLOR, NAV_SHADOW_COLOR } from './controls';
@@ -30,7 +32,7 @@ const RESULT_HEIGHT = 72;
 
 // TODO: write the results message; accuracy is a percentage from 0 to 100
 function getResultsMessage(accuracy: number): string {
-  return `Accuracy: ${Math.round(accuracy)}%`;
+  return m.accuracy_percent({ accuracy: Math.round(accuracy) });
 }
 
 /**
@@ -96,7 +98,7 @@ export class OutlineDisplay extends Container {
     this.resultText = new Text({
       anchor: 0.5,
       resolution: 2,
-      style: { fontFamily: 'Concert One', fontSize: 40, fill: LABEL_COLOR },
+      style: { fontFamily: DISPLAY_FONT_FAMILY, fontSize: 40, fill: LABEL_COLOR },
     });
     this.result = new Container({ children: [this.resultBg, this.resultText], visible: false });
 

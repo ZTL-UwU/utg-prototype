@@ -2,6 +2,8 @@ import { FancyButton } from '@pixi/ui';
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Graphics, Text } from 'pixi.js';
 
+import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
+
 export const FRAME_COLOR = 0x844f01;
 export const FRAME_SHADOW_COLOR = 0x5a3601;
 export const LABEL_COLOR = 0xf3e3c6;
@@ -198,7 +200,7 @@ export function createTileCaption(text: string) {
     text,
     anchor: 0.5,
     resolution: 2,
-    style: { fontFamily: 'Concert One', fontSize: TILE_CAPTION_SIZE },
+    style: { fontFamily: DISPLAY_FONT_FAMILY, fontSize: TILE_CAPTION_SIZE },
   });
 }
 

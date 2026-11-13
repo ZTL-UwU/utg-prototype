@@ -2,6 +2,8 @@ import { FancyButton } from '@pixi/ui';
 import { Container, Graphics, Sprite, Text, Texture, type TextDropShadow } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { m } from '../../../paraglide/messages.js';
+import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import useCourseStore from '../../../zustandStores/courseStore';
 
 const textDropShadow: Partial<TextDropShadow> = {
@@ -42,9 +44,9 @@ export class CourseLoadErrorScreen extends Container {
     });
 
     this.title = new Text({
-      text: "Couldn't load course",
+      text: m.course_load_failed(),
       style: {
-        fontFamily: 'Concert One',
+        fontFamily: DISPLAY_FONT_FAMILY,
         fontSize: 72,
         fontWeight: '700',
         fill: 0xffffff,
@@ -55,9 +57,9 @@ export class CourseLoadErrorScreen extends Container {
 
     const errorDetail = useCourseStore.getState().error;
     this.message = new Text({
-      text: errorDetail ?? 'Check your connection and try again.',
+      text: errorDetail ?? m.course_load_hint(),
       style: {
-        fontFamily: 'Concert One',
+        fontFamily: DISPLAY_FONT_FAMILY,
         fontSize: 36,
         fill: 0xffffff,
         align: 'center',
@@ -77,9 +79,9 @@ export class CourseLoadErrorScreen extends Container {
         .roundRect(0, 0, buttonWidth, buttonHeight, 36)
         .fill(0x2a523c),
       text: new Text({
-        text: 'RETRY',
+        text: m.retry(),
         style: {
-          fontFamily: 'Concert One',
+          fontFamily: DISPLAY_FONT_FAMILY,
           fontSize: 56,
           fontWeight: '700',
           fill: 0xfdf7e7,
@@ -112,7 +114,7 @@ export class CourseLoadErrorScreen extends Container {
   private async handleRetry() {
     void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
     this.retryButton.enabled = false;
-    this.message.text = 'Loading…';
+    this.message.text = m.loading();
 
     await useCourseStore.getState().fetchCourseStructure();
 
@@ -123,7 +125,7 @@ export class CourseLoadErrorScreen extends Container {
       return;
     }
 
-    this.message.text = useCourseStore.getState().error ?? 'Check your connection and try again.';
+    this.message.text = useCourseStore.getState().error ?? m.course_load_hint();
     this.retryButton.enabled = true;
   }
 

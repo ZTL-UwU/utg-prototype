@@ -2,6 +2,7 @@ import type { AssetPackConfig } from '@assetpack/core';
 import { AssetPack } from '@assetpack/core';
 import { pixiPipes } from '@assetpack/core/pixi';
 import { webfont } from '@assetpack/core/webfont';
+import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import type { Plugin, ResolvedConfig } from 'vite';
@@ -78,14 +79,30 @@ export default defineConfig({
     '*': 'vp check --fix',
   },
   lint: {
+    ignorePatterns: ['src/paraglide/**'],
     options: {
       typeAware: true,
       typeCheck: true,
     },
   },
   fmt: {
+    ignorePatterns: ['src/paraglide/**'],
     singleQuote: true,
     sortImports: true,
   },
-  plugins: [react(), tailwindcss(), assetpackPlugin()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    assetpackPlugin(),
+    paraglideVitePlugin({
+      project: './project.inlang',
+      outdir: './src/paraglide',
+      // Real files, the same ones `vp run i18n` writes, so type checking works without a dev server.
+      outputStructure: 'message-modules',
+      emitTsDeclarations: true,
+      // A saved pick from the profile popup wins, then the device language, then English.
+      // Keep in sync with the `i18n` script in package.json.
+      strategy: ['localStorage', 'preferredLanguage', 'baseLocale'],
+    }),
+  ],
 });

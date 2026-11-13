@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
+import { m } from '../../paraglide/messages.js';
 import { Button, Dialog, DialogDescription, DialogTitle, Input } from '../ui';
 import { AuthCard } from './AuthCard';
 
@@ -43,9 +44,9 @@ export function ReauthPrompt({ email, onLogin, onLogOut }: ReauthPromptProps) {
     >
       <AuthCard avatarVariant="outline" backdrop>
         <form className="flex flex-col gap-4" onSubmit={(event) => void handleSubmit(event)}>
-          <DialogTitle>Session expired</DialogTitle>
+          <DialogTitle>{m.auth_session_expired()}</DialogTitle>
 
-          <DialogDescription>Log in again to keep saving your progress.</DialogDescription>
+          <DialogDescription>{m.auth_session_expired_description()}</DialogDescription>
 
           <Input name="email" type="email" autoComplete="username" readOnly value={email} />
 
@@ -55,17 +56,17 @@ export function ReauthPrompt({ email, onLogin, onLogOut }: ReauthPromptProps) {
             autoComplete="current-password"
             required
             autoFocus
-            placeholder="Password"
+            placeholder={m.auth_password()}
             value={password}
             onValueChange={setPassword}
           />
 
           <Button type="submit" disabled={submitting}>
-            {submitting ? 'Logging in…' : 'Log in'}
+            {submitting ? m.auth_logging_in() : m.auth_log_in()}
           </Button>
 
           <Button variant="secondary" disabled={submitting} onClick={onLogOut}>
-            Log out
+            {m.auth_log_out()}
           </Button>
         </form>
       </AuthCard>

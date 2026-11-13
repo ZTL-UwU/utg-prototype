@@ -4,6 +4,8 @@ import { Container, Graphics, Sprite, Text, Texture, type TextDropShadow } from 
 
 import { engine } from '../../../../engine/getEngine';
 import { responsive, topClearance } from '../../../../engine/utils/viewport';
+import { m } from '../../../../paraglide/messages.js';
+import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { convertToCurrentScript, getScriptFontFamily } from '../../../../utils/script';
 import { HUD } from '../../../ui/hud';
 import { LayerSelectScreen } from '../../layer-select';
@@ -25,7 +27,7 @@ function createMapNavButton(label: string) {
       .fill(0xa66129),
     text: new Text({
       text: label,
-      style: { fontFamily: 'Concert One', fontSize: 80, fill: 0xfff4e0 },
+      style: { fontFamily: DISPLAY_FONT_FAMILY, fontSize: 80, fill: 0xfff4e0 },
     }),
     animations: {
       hover: { props: { scale: { x: 1.1, y: 1.1 } }, duration: 100 },
@@ -100,9 +102,9 @@ export class EducationLevelSelect extends Container {
     };
 
     this.title = new Text({
-      text: 'ALPHABETS',
+      text: m.education_alphabets(),
       style: {
-        fontFamily: 'Concert One',
+        fontFamily: DISPLAY_FONT_FAMILY,
         fontSize: responsive({ sm: 140, lg: 180 }),
         fontWeight: '800',
         fill: 0xffffff,

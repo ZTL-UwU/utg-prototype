@@ -5,7 +5,7 @@ import { cn } from './utils';
 
 const pillLayout = [
   'inline-flex shrink-0 items-center justify-center whitespace-nowrap',
-  'mx-auto w-4/5 rounded-pill px-6 py-4.5 font-display text-2xl font-semibold',
+  'mx-auto w-4/5 rounded-pill px-6 py-4.5 font-body text-2xl font-extrabold',
 ];
 
 const buttonVariants = cva(

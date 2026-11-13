@@ -1,6 +1,7 @@
 import { BlurFilter, Container, Graphics, Sprite, Text, TextStyle, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { m } from '../../../paraglide/messages.js';
 import useSessionStore from '../../../zustandStores/sessionStore';
 import { BackButton } from '../../ui/back-button';
 import { HomeScreen } from '../home';
@@ -53,7 +54,7 @@ export class EndScreen extends Container {
     });
 
     const titleStyle = new TextStyle({
-      fontFamily: 'Fredoka One',
+      fontFamily: 'Nunito',
       fontSize: 90,
       fontWeight: '400',
       fill: 0x4a2810,
@@ -61,7 +62,7 @@ export class EndScreen extends Container {
     });
 
     const statStyle = new TextStyle({
-      fontFamily: 'Fredoka One',
+      fontFamily: 'Nunito',
       fontSize: 48,
       fontWeight: '400',
       fill: 0x4a2810,
@@ -69,17 +70,17 @@ export class EndScreen extends Container {
     });
 
     const labelStyle = new TextStyle({
-      fontFamily: 'Fredoka One',
+      fontFamily: 'Nunito',
       fontSize: 34,
       fontWeight: '400',
       fill: 0xffffff,
       letterSpacing: 1,
     });
 
-    this.title = new Text({ text: 'RESULTS', style: titleStyle });
-    this.correctText = new Text({ text: `Correct      ${correct}`, style: statStyle });
-    this.missesText = new Text({ text: `Misses       ${mistakes}`, style: statStyle });
-    this.accuracyText = new Text({ text: `Accuracy     ${accuracy}%`, style: statStyle });
+    this.title = new Text({ text: m.end_screen_results(), style: titleStyle });
+    this.correctText = new Text({ text: m.end_screen_correct({ correct }), style: statStyle });
+    this.missesText = new Text({ text: m.end_screen_misses({ mistakes }), style: statStyle });
+    this.accuracyText = new Text({ text: m.end_screen_accuracy({ accuracy }), style: statStyle });
 
     if (type) {
       this.typeText = new Text({ text: type.toUpperCase(), style: labelStyle });

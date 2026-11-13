@@ -17,6 +17,7 @@ import {
 import { api } from '../lib/api';
 import { mediaUrl } from '../lib/media';
 import { ensureRemoteReady, type RemoteStatus } from '../lib/remoteResource';
+import { getLocale } from '../paraglide/runtime.js';
 
 /** Client-only shadow for non-curved unit titles (not sent by the API). */
 const textDropShadow: Partial<TextDropShadow> = {
@@ -64,6 +65,8 @@ interface ApiUnit {
   sort_order: number;
   layer: string;
   title: string;
+  /** Locale → title, for the locales an admin translated; the rest fall back to `title`. */
+  title_translations?: Partial<Record<string, string>>;
   title_font_size: number;
   title_font_color: number;
   title_is_curved: boolean;
@@ -184,7 +187,7 @@ function mapUnit(
     type: unit.layer,
     background: unit.background_asset_path,
     title: {
-      text: unit.title,
+      text: unit.title_translations?.[getLocale()] || unit.title,
       fontSize: unit.title_font_size,
       fontColor: unit.title_font_color,
       isCurved,

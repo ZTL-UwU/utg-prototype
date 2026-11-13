@@ -9,6 +9,7 @@ import { isFeedbackHotkey } from '../lib/feedback';
 import type { PasswordResetParams } from '../lib/passwordReset';
 import { useReauthStore } from '../lib/reauth';
 import { signOut } from '../lib/signOut';
+import { m } from '../paraglide/messages.js';
 import { continueIntoGame } from '../utils/continueIntoGame';
 import { useAuthStore, type AuthUser } from '../zustandStores/auth';
 import { useFeedbackStore } from '../zustandStores/feedbackStore';
@@ -87,7 +88,7 @@ export function ScreenOverlay() {
     },
     onError: () => {
       useAuthStore.getState().clearTokens();
-      window.alert('Login failed. Please log in again.');
+      window.alert(m.auth_login_failed());
     },
   });
 
@@ -99,7 +100,7 @@ export function ScreenOverlay() {
       setAuth(data.access, data.refresh, data.user);
     },
     onError: (error) => {
-      alertApiError(error, 'Login failed. Check your password and try again.');
+      alertApiError(error, m.auth_reauth_failed());
     },
   });
 
@@ -118,7 +119,7 @@ export function ScreenOverlay() {
       setAuth(data.access, data.refresh, data.user);
     },
     onError: (error) => {
-      alertApiError(error, 'Sign up failed. Please try again.');
+      alertApiError(error, m.auth_sign_up_failed());
     },
   });
 
@@ -130,7 +131,7 @@ export function ScreenOverlay() {
       });
     },
     onError: (error) => {
-      alertApiError(error, 'Could not send reset email. Please try again.');
+      alertApiError(error, m.auth_reset_email_failed());
     },
   });
 
@@ -148,7 +149,7 @@ export function ScreenOverlay() {
       void import('../router').then(({ router }) => router.replace('/auth'));
     },
     onError: (error) => {
-      alertApiError(error, 'Could not reset password. Please try again.');
+      alertApiError(error, m.auth_reset_failed());
     },
   });
 

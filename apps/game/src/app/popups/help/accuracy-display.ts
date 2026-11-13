@@ -6,6 +6,8 @@ const PROGRESS_BAR_HEIGHT = 24;
 const PROGRESS_BAR_RADIUS = 12;
 const PROGRESS_BAR_BORDER = 2;
 
+import { m } from '../../../paraglide/messages.js';
+import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import { getAccuracyPercent } from '../../../zustandStores/scoreManager';
 
 function createAccuracyProgressBar() {
@@ -46,10 +48,10 @@ export class AccuracyDisplay {
 
   constructor() {
     this.label = new Text({
-      text: 'Accuracy: 0%',
+      text: m.accuracy_percent({ accuracy: 0 }),
       resolution: 2,
       style: {
-        fontFamily: 'Concert One',
+        fontFamily: DISPLAY_FONT_FAMILY,
         fontSize: 24,
         fill: 0x000000,
       },
@@ -66,7 +68,7 @@ export class AccuracyDisplay {
   update(correctCount: number, mistakeCount: number) {
     const accuracy = getAccuracyPercent(correctCount, mistakeCount);
 
-    this.label.text = `Accuracy: ${accuracy}%`;
+    this.label.text = m.accuracy_percent({ accuracy });
     this.progressBar.progress = accuracy;
   }
 }

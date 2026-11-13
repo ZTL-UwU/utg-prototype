@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 
+import { m } from '../../../paraglide/messages.js';
 import { Button, DialogDescription, DialogTitle, FormError, Input } from '../../ui';
 
 export interface ResetPasswordFormProps {
@@ -17,7 +18,7 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
     event.preventDefault();
 
     if (password !== confirmPassword) {
-      setError('Those passwords are different. Type the same one twice.');
+      setError(m.auth_passwords_differ());
       return;
     }
 
@@ -32,16 +33,16 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
 
   return (
     <form className="flex flex-col gap-4" onSubmit={(event) => void handleSubmit(event)}>
-      <DialogTitle>New password</DialogTitle>
+      <DialogTitle>{m.auth_new_password()}</DialogTitle>
 
-      <DialogDescription>Pick a new password for your account.</DialogDescription>
+      <DialogDescription>{m.auth_new_password_description()}</DialogDescription>
 
       <Input
         name="password"
         type="password"
         autoComplete="new-password"
         required
-        placeholder="Password"
+        placeholder={m.auth_password()}
         value={password}
         onValueChange={setPassword}
       />
@@ -51,7 +52,7 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
         type="password"
         autoComplete="new-password"
         required
-        placeholder="Confirm password"
+        placeholder={m.auth_confirm_password()}
         value={confirmPassword}
         onValueChange={setConfirmPassword}
       />
@@ -59,7 +60,7 @@ export function ResetPasswordForm({ onSubmit }: ResetPasswordFormProps) {
       {error !== null && <FormError>{error}</FormError>}
 
       <Button type="submit" disabled={submitting}>
-        {submitting ? 'Saving…' : 'Save new password'}
+        {submitting ? m.auth_saving() : m.auth_save_new_password()}
       </Button>
     </form>
   );

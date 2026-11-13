@@ -5,8 +5,10 @@ import { BlurFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js'
 import { engine } from '../../../engine/getEngine';
 import { responsive } from '../../../engine/utils/viewport';
 import { signOut } from '../../../lib/signOut';
+import { m } from '../../../paraglide/messages.js';
 import { getAvatarPath } from '../../../utils/avatars';
 import { formatMonthTitle } from '../../../utils/date';
+import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import { useAuthStore } from '../../../zustandStores/auth';
 import useResultStore, {
   selectResultTotals,
@@ -15,6 +17,7 @@ import useResultStore, {
 import { AvatarSelectScreen } from '../../screens/avatar-select';
 import { BackButton } from '../../ui/back-button';
 import { removeFilter } from '../../ui/remove-filter';
+import { createLanguagePicker } from './language-picker';
 import { StreakCalendar } from './streak-calendar';
 
 const POPUP_WIDTH = responsive({ sm: 740, lg: 1481 });
@@ -28,34 +31,34 @@ const LABEL_COLOR = 0x808080;
 const VALUE_COLOR = 0x000000;
 
 const LABEL_STYLE = {
-  fontFamily: 'Concert One',
+  fontFamily: DISPLAY_FONT_FAMILY,
   fontSize: 28,
   fill: LABEL_COLOR,
 } as const;
 
 const VALUE_STYLE = {
-  fontFamily: 'Concert One',
+  fontFamily: DISPLAY_FONT_FAMILY,
   fontSize: 55,
   fontWeight: 'bold' as const,
   fill: VALUE_COLOR,
 } as const;
 
 const HEADER_NAME_STYLE = {
-  fontFamily: 'Concert One',
+  fontFamily: DISPLAY_FONT_FAMILY,
   fontSize: 45,
   fontWeight: 'bold' as const,
   fill: VALUE_COLOR,
 } as const;
 
 const SECTION_TITLE_STYLE = {
-  fontFamily: 'Concert One',
+  fontFamily: DISPLAY_FONT_FAMILY,
   fontSize: 45,
   fontWeight: 'bold' as const,
   fill: VALUE_COLOR,
 } as const;
 
 const MONTH_LABEL_STYLE = {
-  fontFamily: 'Concert One',
+  fontFamily: DISPLAY_FONT_FAMILY,
   fontSize: 30,
   fill: LABEL_COLOR,
 } as const;
@@ -64,7 +67,7 @@ const LOGOUT_BUTTON_WIDTH = 190;
 const LOGOUT_BUTTON_HEIGHT = 62;
 
 const LOGOUT_LABEL_STYLE = {
-  fontFamily: 'Concert One',
+  fontFamily: DISPLAY_FONT_FAMILY,
   fontSize: 30,
   fontWeight: 'bold' as const,
   fill: 0xfdf7e7,
@@ -135,8 +138,16 @@ export class UserStatsPopup extends Container {
       void engine().navigation.showNestedPopup(AvatarSelectScreen, { mode: 'profile' });
     });
 
+    const { isGuest, isTester } = useAuthStore.getState();
+    // Guest and tester names are stored with the session, so they keep the language they were
+    // created in; name them in the current one instead.
+    const displayName = isTester
+      ? m.profile_tester()
+      : isGuest
+        ? m.profile_guest()
+        : (user?.name ?? m.profile_player());
     const userName = new Text({
-      text: user?.name ?? 'Player',
+      text: displayName,
       style: HEADER_NAME_STYLE,
       layout: true,
     });
@@ -145,7 +156,7 @@ export class UserStatsPopup extends Container {
       defaultView: new Graphics()
         .roundRect(0, 0, LOGOUT_BUTTON_WIDTH, LOGOUT_BUTTON_HEIGHT, 20)
         .fill(0xd89456),
-      text: new Text({ text: 'Logout', style: LOGOUT_LABEL_STYLE }),
+      text: new Text({ text: m.profile_logout(), style: LOGOUT_LABEL_STYLE }),
       animations: {
         hover: {
           props: { scale: { x: 1.1, y: 1.1 } },
@@ -180,7 +191,11 @@ export class UserStatsPopup extends Container {
     });
 
     this.totalStarsValue = new Text({ text: '0', style: VALUE_STYLE, layout: true });
-    this.averageAccuracyValue = new Text({ text: '0%', style: VALUE_STYLE, layout: true });
+    this.averageAccuracyValue = new Text({
+      text: m.percent({ accuracy: 0 }),
+      style: VALUE_STYLE,
+      layout: true,
+    });
     this.correctAttemptsValue = new Text({ text: '0', style: VALUE_STYLE, layout: true });
     this.incorrectAttemptsValue = new Text({ text: '0', style: VALUE_STYLE, layout: true });
 
@@ -193,10 +208,10 @@ export class UserStatsPopup extends Container {
         paddingLeft: responsive({ sm: 0, lg: 60 }),
       },
       children: [
-        createStatRow('Total Stars', this.totalStarsValue),
-        createStatRow('Average Accuracy', this.averageAccuracyValue),
-        createStatRow('Correct Attempts', this.correctAttemptsValue),
-        createStatRow('Incorrect Attempts', this.incorrectAttemptsValue),
+        createStatRow(m.profile_total_stars(), this.totalStarsValue),
+        createStatRow(m.profile_average_accuracy(), this.averageAccuracyValue),
+        createStatRow(m.profile_correct_attempts(), this.correctAttemptsValue),
+        createStatRow(m.profile_incorrect_attempts(), this.incorrectAttemptsValue),
       ],
     });
 
@@ -212,7 +227,7 @@ export class UserStatsPopup extends Container {
         width: '100%',
       },
       children: [
-        new Text({ text: 'Streaks', style: SECTION_TITLE_STYLE, layout: true }),
+        new Text({ text: m.profile_streaks(), style: SECTION_TITLE_STYLE, layout: true }),
         new Text({ text: formatMonthTitle(streakMonth), style: MONTH_LABEL_STYLE, layout: true }),
       ],
     });
@@ -245,6 +260,15 @@ export class UserStatsPopup extends Container {
       children: [statsColumn, streaksSection],
     });
 
+    // Pinned in a corner the layout leaves empty: beside the header row on a landscape card, and
+    // beside the stats column on a phone, whose card has no height to spare for another row.
+    const languagePicker = createLanguagePicker();
+    languagePicker.layout = {
+      position: 'absolute',
+      right: 60,
+      top: responsive({ sm: 220, lg: 79 }),
+    };
+
     const content = new Container({
       layout: {
         position: 'absolute',
@@ -255,7 +279,7 @@ export class UserStatsPopup extends Container {
         padding: 60,
         gap: 30,
       },
-      children: [header, body],
+      children: [header, body, languagePicker],
     });
 
     // Drawn rather than a texture so the corners and rim stay crisp at any card aspect ratio.
@@ -292,7 +316,7 @@ export class UserStatsPopup extends Container {
     const { totalStars, correct, mistake, accuracy } = selectResultTotals(results);
 
     this.totalStarsValue.text = String(totalStars);
-    this.averageAccuracyValue.text = `${accuracy}%`;
+    this.averageAccuracyValue.text = m.percent({ accuracy });
     this.correctAttemptsValue.text = String(correct);
     this.incorrectAttemptsValue.text = String(mistake);
 

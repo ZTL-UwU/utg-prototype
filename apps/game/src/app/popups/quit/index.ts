@@ -4,6 +4,8 @@ import { DropShadowFilter } from 'pixi-filters';
 import { BlurFilter, Container, Graphics, Texture, Sprite, Text } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { m } from '../../../paraglide/messages.js';
+import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import { REMOTE_MASCOTS_BUNDLE, type TMascotAssets } from '../../screens/level-map/units';
 
 const FALLBACK_SAD_TEXTURE = 'mascots/sheep/sad.png';
@@ -110,9 +112,9 @@ export class QuitPopup extends Container {
           width: 6,
         }),
       title: new Text({
-        text: 'ARE YOU SURE YOU WANT TO QUIT?',
+        text: m.quit_confirm(),
         style: {
-          fontFamily: 'Concert One',
+          fontFamily: DISPLAY_FONT_FAMILY,
           fontSize: 48,
           fontWeight: 'bold',
           wordWrap: true,

@@ -31,10 +31,20 @@ import {
 import { Switch } from '~/components/ui/switch';
 import { UnitLevelsSection } from '~/components/unit-levels-section';
 import { api } from '~/lib/api';
-import { LAYERS, LAYER_TITLES, type Layer, type Unit } from '~/lib/game';
+import {
+  LAYERS,
+  LAYER_TITLES,
+  TRANSLATION_LOCALE_CODES,
+  TRANSLATION_LOCALES,
+  type Layer,
+  type TranslationLocale,
+  type Unit,
+} from '~/lib/game';
 
 const unitFormSchema = z.object({
   title: z.string().min(1, 'Title is required.').max(255),
+  // Blank means untranslated: the backend drops that locale and the game shows `title`.
+  title_translations: z.record(z.enum(TRANSLATION_LOCALE_CODES), z.string().max(255)),
   layer: z.enum(LAYERS, { error: 'Select a layer.' }),
   title_font_size: z.number().int().positive('Font size must be positive.'),
   title_font_color: z.number().int(),
@@ -71,9 +81,18 @@ function unitPayload(values: UnitFormValues): UnitWritePayload {
   };
 }
 
+function titleTranslationValues(
+  translations: Partial<Record<TranslationLocale, string>> = {},
+): Record<TranslationLocale, string> {
+  return Object.fromEntries(
+    TRANSLATION_LOCALE_CODES.map((code) => [code, translations[code] ?? '']),
+  ) as Record<TranslationLocale, string>;
+}
+
 function defaultValuesForCreate(layer: Layer): UnitFormValues {
   return {
     title: '',
+    title_translations: titleTranslationValues(),
     layer,
     title_font_size: 48,
     title_font_color: 0xffffff,
@@ -89,6 +108,7 @@ function defaultValuesForCreate(layer: Layer): UnitFormValues {
 function defaultValuesForEdit(unit: Unit): UnitFormValues {
   return {
     title: unit.title,
+    title_translations: titleTranslationValues(unit.title_translations),
     layer: unit.layer,
     title_font_size: unit.title_font_size,
     title_font_color: unit.title_font_color,
@@ -269,6 +289,35 @@ export function UnitForm(props: UnitFormProps) {
               }}
             />
           </div>
+
+          {TRANSLATION_LOCALES.map(({ code, label }) => (
+            <form.Field
+              key={code}
+              name={`title_translations.${code}`}
+              children={(field) => {
+                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>Title ({label})</FieldLabel>
+                    <FieldDescription>
+                      Shown when the game is in {label}. Leave blank to use the title above.
+                    </FieldDescription>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(event) => field.handleChange(event.target.value)}
+                      lang={code}
+                      aria-invalid={isInvalid}
+                    />
+                    {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                  </Field>
+                );
+              }}
+            />
+          ))}
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <form.Field

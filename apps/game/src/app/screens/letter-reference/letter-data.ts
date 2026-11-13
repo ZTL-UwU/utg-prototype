@@ -1,3 +1,4 @@
+import { m } from '../../../paraglide/messages.js';
 import type { GlyphPart } from './glyph-mask';
 import lettersJson from './letters.json';
 
@@ -7,10 +8,10 @@ export type LETTER_FORMS = 'initial' | 'medial' | 'final' | 'isolated';
 export const FORM_ORDER: readonly LETTER_FORMS[] = ['isolated', 'initial', 'medial', 'final'];
 
 export const FORM_LABELS: Record<LETTER_FORMS, string> = {
-  isolated: 'alone',
-  initial: 'start',
-  medial: 'middle',
-  final: 'end',
+  isolated: m.letter_form_isolated(),
+  initial: m.letter_form_initial(),
+  medial: m.letter_form_medial(),
+  final: m.letter_form_final(),
 };
 
 const HAMZA = 'ئ';

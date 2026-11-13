@@ -6,11 +6,13 @@ import { engine } from '../../../../engine/getEngine';
 import { randomShuffle } from '../../../../engine/utils/random';
 import { responsive } from '../../../../engine/utils/viewport';
 import { waitFor } from '../../../../engine/utils/waitFor';
+import { m } from '../../../../paraglide/messages.js';
 import {
   createExampleWordStyle,
   getCompletedWordMarkup,
   getMissingWordMarkup,
 } from '../../../../utils/example-words';
+import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { convertToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
@@ -205,9 +207,9 @@ export class EducationWordScreen extends Container {
     this.panel.addChild(image, this.wordText, this.soundButton);
 
     this.feedback = new Text({
-      text: 'CORRECT!',
+      text: m.education_correct(),
       style: {
-        fontFamily: 'Concert One',
+        fontFamily: DISPLAY_FONT_FAMILY,
         fontSize: 130,
         fontWeight: '800',
         fill: 0xfff7e5,

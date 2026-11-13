@@ -1,6 +1,8 @@
 import { animate } from 'motion';
 import { Container, Graphics, Text } from 'pixi.js';
 
+import { m } from '../../../../paraglide/messages.js';
+import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { getScriptFontFamily } from '../../../../utils/script';
 
 // wide, short bar that sits above the grid; sized for up to ~15 words in 2 rows
@@ -40,10 +42,10 @@ export class WordListPanel extends Container {
     super();
 
     this.title = new Text({
-      text: 'WORDS',
+      text: m.word_search_words(),
       resolution: 2,
       anchor: 0.5,
-      style: { fontFamily: 'Concert One', fontSize: TITLE_FONT_SIZE, fill: WORD_COLOR },
+      style: { fontFamily: DISPLAY_FONT_FAMILY, fontSize: TITLE_FONT_SIZE, fill: WORD_COLOR },
     });
 
     this.addChild(this.background, this.title, this.wordsBlock);

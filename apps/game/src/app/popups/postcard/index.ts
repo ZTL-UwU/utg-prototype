@@ -3,6 +3,7 @@ import { animate } from 'motion';
 import { Assets, Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { m } from '../../../paraglide/messages.js';
 import { CopiedToast } from './copied-toast';
 import { canCopyImages, loadFrontPng, POSTCARD_ROOT } from './front-png';
 
@@ -184,9 +185,9 @@ export class PostcardPopup extends Container {
       }
 
       await navigator.clipboard.write([item]);
-      void this.copiedToast.flash('Copied!');
+      void this.copiedToast.flash(m.postcard_copied());
     } catch {
-      void this.copiedToast.flash("Couldn't copy");
+      void this.copiedToast.flash(m.postcard_copy_failed());
     } finally {
       this.isCopying = false;
     }

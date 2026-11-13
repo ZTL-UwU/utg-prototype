@@ -2,10 +2,16 @@ import { animate } from 'motion';
 import { Container, Text, TextStyle } from 'pixi.js';
 import type { DestroyOptions } from 'pixi.js';
 
+import { m } from '../../../../paraglide/messages.js';
+import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import useSessionStore from '../../../../zustandStores/sessionStore';
-const BASE_STYLE = new TextStyle({ fontSize: 128, fontFamily: 'Concert One', fill: 0xffffff });
-const CORRECT_TEXT = 'CORRECT!';
-const WRONG_TEXT = 'WRONG';
+const BASE_STYLE = new TextStyle({
+  fontSize: 128,
+  fontFamily: DISPLAY_FONT_FAMILY,
+  fill: 0xffffff,
+});
+const CORRECT_TEXT = m.education_correct();
+const WRONG_TEXT = m.education_wrong();
 
 export class MessageContainer extends Container {
   private correctText: Text;

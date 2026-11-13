@@ -1,3 +1,4 @@
+import { m } from '../../../paraglide/messages.js';
 import { BackButton, CardTitle } from '../../ui';
 
 export interface MenuProjectScreenProps {
@@ -9,7 +10,7 @@ export function MenuProjectScreen({ onBack }: MenuProjectScreenProps) {
     <>
       <BackButton className="absolute top-4 left-4 z-10" onClick={onBack} />
       <CardTitle className="absolute top-4 right-14 left-14 flex h-10 items-center justify-center">
-        Project
+        {m.menu_project_title()}
       </CardTitle>
       <div className="min-h-0 flex-1 overflow-y-auto py-2"></div>
     </>

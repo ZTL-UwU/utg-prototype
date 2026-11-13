@@ -4,8 +4,10 @@ import { Container, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { saveAvatar } from '../../../lib/profile';
+import { m } from '../../../paraglide/messages.js';
 import { AVATARS, type AvatarDef } from '../../../utils/avatars';
 import { enterGame } from '../../../utils/continueIntoGame';
+import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import { useAuthStore } from '../../../zustandStores/auth';
 
 const CELL_SIZE = 200;
@@ -75,10 +77,10 @@ export class AvatarSelectScreen extends Container {
     });
 
     this.title = new Text({
-      text: 'PICK YOUR AVATAR:',
+      text: m.avatar_pick(),
       style: {
         fill: 0x284937,
-        fontFamily: 'Concert One',
+        fontFamily: DISPLAY_FONT_FAMILY,
         fontSize: 72,
         fontWeight: '700',
       },
