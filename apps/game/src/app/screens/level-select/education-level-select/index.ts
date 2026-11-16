@@ -122,14 +122,20 @@ export class EducationLevelSelect extends Container {
     this.scrollY = 0;
     this.map = this.createMap();
     this.addChildAt(this.map, index);
-    if (this.viewWidth > 0) this.map.resize(this.viewWidth, this.viewHeight);
+    if (this.viewWidth > 0) this.sizeMap();
   }
 
   public resize(width: number, height: number) {
     this.viewWidth = width;
     this.viewHeight = height;
     this.layout = { width, height };
-    this.map.resize(width, height);
+    this.sizeMap();
+  }
+
+  /** Lays out the map below the titles, so the sheep on rock 1 never covers them. */
+  private sizeMap() {
+    this.map.titleBottom = this.subtitleTop + this.subtitle.getLocalBounds().maxY;
+    this.map.resize(this.viewWidth, this.viewHeight);
   }
 
   /** The y offset that moves an element fully above the top screen edge. */

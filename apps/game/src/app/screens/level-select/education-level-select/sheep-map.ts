@@ -34,6 +34,8 @@ const PHONE_ROW_GAP = 400;
 const PHONE_COLUMNS = [0.3, 0.7];
 // Room kept above the first rock for the title, subtitle and the sheep standing on rock 1
 const PHONE_TOP_SPACE = 640;
+/** Space between the subtitle and the top of the sheep on rock 1. */
+const PHONE_TITLE_GAP = 30;
 const PHONE_BOTTOM_SPACE = 260;
 
 /** Sheep width relative to a rock. */
@@ -87,6 +89,8 @@ export class SheepMap extends Container {
 
   /** Fired whenever the phone map scrolls, so the screen can move its titles along. */
   public onScroll?: (scrollY: number) => void;
+  /** Where the screen's subtitle ends, so the sheep on rock 1 stands clear of it on phones. */
+  public titleBottom?: number;
 
   private readonly onOpen: (mapUnit: TMapUnit) => void;
 
@@ -135,7 +139,13 @@ export class SheepMap extends Container {
 
     const rockSize = this.vertical ? PHONE_ROCK_SIZE : WIDE_ROCK_SIZE * height;
     const rockScale = rockSize / ROCK_BASE_SIZE;
-    const top = PHONE_TOP_SPACE + topClearance(height);
+    let top = PHONE_TOP_SPACE + topClearance(height);
+    if (this.vertical && this.titleBottom !== undefined && this.sheep) {
+      // Rock 1 sits low enough that the sheep standing on it clears the titles
+      const { width: sheepWidth, height: sheepHeight } = this.sheep.texture;
+      const sheepTall = rockSize * SHEEP_SIZE * (sheepHeight / sheepWidth);
+      top = Math.max(top, this.titleBottom + PHONE_TITLE_GAP + sheepTall + rockSize * 0.3);
+    }
 
     this.rocks.forEach((rock, index) => {
       rock.setBaseScale(rockScale);
