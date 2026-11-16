@@ -1,7 +1,7 @@
 import { FancyButton } from '@pixi/ui';
 import { Container, Sprite, Texture } from 'pixi.js';
 
-import { responsive, safeAreaInsets } from '../../engine/utils/viewport';
+import { isPhone, safeAreaInsets } from '../../engine/utils/viewport';
 
 const BUTTON_ASSET = 'ui/next-button.svg';
 const BUTTON_GAP = 16;
@@ -66,7 +66,7 @@ export function layoutLetterPopupControls(
   const stride = navButtonStride();
   const halfHeight = Math.max(closeButton.height, stride - BUTTON_GAP) / 2;
 
-  if (!responsive({ sm: true, lg: false })) {
+  if (!isPhone()) {
     closeButton.layout = { position: 'absolute', top: '10%', left: '5%' };
     nextButton.layout = { position: 'absolute', top: '10%', left: '95%' };
     prevButton.layout = {

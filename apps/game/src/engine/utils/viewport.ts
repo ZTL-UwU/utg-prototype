@@ -20,12 +20,17 @@ export function responsive<T>(values: ResponsiveValues<T>): T {
   return value;
 }
 
+/** Phone-sized window: below the `lg` breakpoint. Reads the window on each call, like `responsive`. */
+export function isPhone() {
+  return responsive({ sm: true, lg: false });
+}
+
 // Phones keep top controls clear of notches even when the browser reports no inset
 const PHONE_MIN_TOP_CLEARANCE = 60;
 
 // Extra top offset for controls on phones, in view units; 0 on wider screens
 export function topClearance(viewHeight: number) {
-  if (!responsive({ sm: true, lg: false })) return 0;
+  if (!isPhone()) return 0;
   return Math.max(safeAreaInsetsInView(viewHeight).top, PHONE_MIN_TOP_CLEARANCE);
 }
 

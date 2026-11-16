@@ -1,7 +1,7 @@
 import { animate } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
-import { responsive, topClearance } from '../../../engine/utils/viewport';
+import { isPhone, topClearance } from '../../../engine/utils/viewport';
 import { FreeScroll } from '../../ui/free-scroll';
 import { MASTERY_BACKGROUND_ALIAS, MasteryTile } from './mastery-tile';
 import { getLayerMaps } from './units';
@@ -54,7 +54,7 @@ export class MasteryGrid extends Container {
   }
 
   public resize(width: number, height: number) {
-    const phone = responsive({ sm: true, lg: false });
+    const phone = isPhone();
     const columns = phone ? 1 : WIDE_COLUMNS;
     const gap = phone ? PHONE_GAP : WIDE_GAP;
     const top =

@@ -2,7 +2,7 @@ import type { TypingTestProps } from '@utg/level-types';
 import { Container, Graphics, Text, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { responsive, topClearance } from '../../../../engine/utils/viewport';
+import { isPhone, topClearance } from '../../../../engine/utils/viewport';
 import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { getKeyFromChar, getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useLevelProgress } from '../../../../zustandStores/levelProgressStore';
@@ -129,7 +129,7 @@ export class TypingTestScreen extends Container {
 
     this.background.clear().rect(0, 0, this._sw, this._sh).fill(COLORS.BACKGROUND);
 
-    const phone = responsive({ sm: true, lg: false });
+    const phone = isPhone();
     const hudCenterY = HUD_CENTER_Y + topClearance(this._sh);
 
     const panelWidth = phone
@@ -206,7 +206,7 @@ export class TypingTestScreen extends Container {
   private startTest(settings: TypingTestSettings) {
     lastSettings = settings;
     // Phones have no physical keyboard, so the on-screen one is the only way to type.
-    const phone = responsive({ sm: true, lg: false });
+    const phone = isPhone();
     this.settings = { ...settings, showKeyboard: settings.showKeyboard || phone };
     this.promptView = createPromptView(settings.mode, this.props);
     this.addChildAt(this.promptView, this.getChildIndex(this.panel) + 1);

@@ -2,7 +2,7 @@ import { animate } from 'motion';
 import { Graphics, type Container } from 'pixi.js';
 
 import { engine } from '../../engine/getEngine';
-import { responsive, topClearance } from '../../engine/utils/viewport';
+import { isPhone, responsive, topClearance } from '../../engine/utils/viewport';
 
 /**
  * Map screens show their buttons as a path joined by short lines: a row across the middle of
@@ -25,7 +25,7 @@ const OFF_SCREEN_MARGIN = 40;
 
 /** Phones are too narrow for a row of buttons, so they stack them in a column. */
 export function isPathVertical() {
-  return responsive({ sm: true, lg: false });
+  return isPhone();
 }
 
 /** Where the path sits: in the screen's centered column on phones, pinned at mid-height otherwise. */

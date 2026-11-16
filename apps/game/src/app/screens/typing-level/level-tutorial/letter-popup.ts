@@ -4,7 +4,7 @@ import { animate } from 'motion';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { responsive } from '../../../../engine/utils/viewport';
+import { isPhone } from '../../../../engine/utils/viewport';
 import { m } from '../../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { getKeyFromChar } from '../../../../utils/keymap';
@@ -164,7 +164,7 @@ export class LetterPopup extends Container {
 
   private readonly letter: string;
   /** Teaches the phone keyboard: its key labels, a tapped Shift, and no touch-typing hands. */
-  private readonly phone = responsive({ sm: true, lg: false });
+  private readonly phone = isPhone();
   private readonly keyboard: KeyboardLayout;
   private readonly handGuide: HandGuide;
   private readonly background: Graphics;

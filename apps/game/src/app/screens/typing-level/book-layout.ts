@@ -1,6 +1,6 @@
 import { Container, NineSliceSprite, Sprite, Texture } from 'pixi.js';
 
-import { responsive } from '../../../engine/utils/viewport';
+import { isPhone } from '../../../engine/utils/viewport';
 
 /** Where the book is drawn inside its image, as shares of the image's width and height. */
 export type BookArt = {
@@ -49,7 +49,7 @@ export class Book extends Container {
     this.art = art;
     const texture = Texture.from(alias);
 
-    if (responsive({ sm: true, lg: false })) {
+    if (isPhone()) {
       this.phone = new NineSliceSprite({
         texture,
         leftWidth: 0,
