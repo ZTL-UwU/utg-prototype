@@ -6,14 +6,19 @@ import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 import { engine } from '../../../engine/getEngine';
 import { responsive, topClearance } from '../../../engine/utils/viewport';
 import { isMapUnitUnlocked } from '../../../lib/progression';
+import { m } from '../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import { convertToCurrentScript, getScriptFontFamily } from '../../../utils/script';
 import { HUD } from '../../ui/hud';
 import { LayerSelectScreen } from '../layer-select';
 import { EducationLevelSelect } from '../level-select/education-level-select';
+import { TypingTutorialScreen } from '../typing-level/level-tutorial';
 import { CurvedText } from './curved-text';
 import { LevelRow } from './level-row';
-import { getNextMap, getPrevMap, type TMapUnit } from './units';
+import { MasteryGrid } from './mastery-grid';
+import { masteryArtAliases } from './mastery-tile';
+import { TypingJourney } from './typing-journey';
+import { getLayerMaps, getNextMap, getPrevMap, type TMapUnit } from './units';
 
 /** Phones drop the titles below the back button and script pill, which would cover them. */
 const TITLE_TOP = { sm: 170, lg: 100 };
@@ -25,7 +30,20 @@ const OFF_SCREEN_MARGIN = 40;
 
 export class LevelMapScreen extends Container {
   public readonly screenName = 'LevelMapScreen';
-  public static assetBundles = ['typing-level-map', 'education-level-map', 'game-level-map', 'ui'];
+  public static assetBundles = [
+    'typing-level-map',
+    'education-level-map',
+    'game-level-map',
+    'mascots',
+    'locked-popup',
+    'end-screen',
+    'ui',
+  ];
+
+  /** The Mastery grid shows each game level's art, which lives in that level's own bundle. */
+  public static assets(props?: unknown): string[] {
+    return (props as TMapUnit | undefined)?.type === 'game' ? masteryArtAliases() : [];
+  }
 
   private background: Sprite;
   private title: CurvedText | Text;
@@ -34,8 +52,15 @@ export class LevelMapScreen extends Container {
   /** Unscaled title width, for shrinking long titles to fit phones. */
   private titleWidth: number;
   private subtitle?: Text;
-  private levelRow: LevelRow;
+  /**
+   * Education: a unit's row of level buttons. Typing and game: one overview of the whole
+   * layer, the Typing Journey or The Mastery grid.
+   */
+  private body: LevelRow | TypingJourney | MasteryGrid;
   private hud: HUD;
+  /** How far the overview is scrolled; the title rides along with it. */
+  private scrollY = 0;
+  private titleAnimating = false;
   private nextMapButton?: FancyButton;
   private prevMapButton?: FancyButton;
 
@@ -63,10 +88,16 @@ export class LevelMapScreen extends Container {
         void engine().navigation.showScreen(
           mapUnit.type === 'education' ? EducationLevelSelect : LayerSelectScreen,
         ),
-      // Typing maps surface the tutorial as a node in the level row instead.
       help:
         mapUnit.type === 'typing'
-          ? undefined
+          ? {
+              kind: 'tutorial',
+              onPress: () =>
+                void engine().navigation.showScreen(
+                  TypingTutorialScreen,
+                  getLayerMaps('typing')[0] ?? mapUnit,
+                ),
+            }
           : { kind: 'tutorial', mapUnit, presentation: 'screen' },
     });
 
@@ -77,15 +108,21 @@ export class LevelMapScreen extends Container {
       fill: mapUnit.title.fontColor,
       padding: 30,
     };
-    this.title = mapUnit.title.isCurved
-      ? new CurvedText({ text: mapUnit.title.text, style: titleStyle })
-      : new Text({
-          text: mapUnit.title.text,
-          style: {
-            ...titleStyle,
-            ...(mapUnit.title.dropShadow && { dropShadow: mapUnit.title.dropShadow }),
-          },
-        });
+    const overview = mapUnit.type !== 'education';
+    this.title = overview
+      ? new Text({
+          text: mapUnit.type === 'typing' ? m.typing_journey() : m.game_mastery(),
+          style: { ...titleStyle, fontSize: responsive({ sm: 120, lg: 170 }), fill: 0xffffff },
+        })
+      : mapUnit.title.isCurved
+        ? new CurvedText({ text: mapUnit.title.text, style: titleStyle })
+        : new Text({
+            text: mapUnit.title.text,
+            style: {
+              ...titleStyle,
+              ...(mapUnit.title.dropShadow && { dropShadow: mapUnit.title.dropShadow }),
+            },
+          });
     this.title.filters = [
       new DropShadowFilter({
         color: 0x000000,
@@ -105,7 +142,7 @@ export class LevelMapScreen extends Container {
       transformOrigin: 'center top',
     };
 
-    if (mapUnit.subtitle) {
+    if (mapUnit.subtitle && !overview) {
       this.subtitle = new Text({
         text: convertToCurrentScript(mapUnit.subtitle.text),
         style: {
@@ -130,7 +167,16 @@ export class LevelMapScreen extends Container {
       };
     }
 
-    this.levelRow = new LevelRow(mapUnit);
+    if (overview) {
+      const body = mapUnit.type === 'typing' ? new TypingJourney(mapUnit) : new MasteryGrid();
+      body.onScroll = (scrollY) => {
+        this.scrollY = scrollY;
+        if (!this.titleAnimating) this.title.y = scrollY;
+      };
+      this.body = body;
+    } else {
+      this.body = new LevelRow(mapUnit);
+    }
 
     const createMapNavButton = (label: string) => {
       const size = 120;
@@ -152,7 +198,8 @@ export class LevelMapScreen extends Container {
       });
     };
 
-    const prevMap = getPrevMap(mapUnit);
+    // The overviews show every unit of their layer at once, so they have no << >> paging
+    const prevMap = overview ? undefined : getPrevMap(mapUnit);
     if (prevMap) {
       this.prevMapButton = createMapNavButton('<<');
       this.prevMapButton.onPress.connect(() => {
@@ -161,7 +208,7 @@ export class LevelMapScreen extends Container {
       });
     }
 
-    const nextMap = getNextMap(mapUnit);
+    const nextMap = overview ? undefined : getNextMap(mapUnit);
     if (nextMap) {
       this.nextMapButton = createMapNavButton('>>');
       this.nextMapButton.onPress.connect(() => {
@@ -172,10 +219,11 @@ export class LevelMapScreen extends Container {
     }
 
     this.addChild(
-      this.background,
+      // The overviews bring their own background, which scrolls with them
+      ...(overview ? [this.body] : [this.background]),
       this.title,
       ...(this.subtitle ? [this.subtitle] : []),
-      this.levelRow,
+      ...(overview ? [] : [this.body]),
       ...(this.prevMapButton ? [this.prevMapButton] : []),
       ...(this.nextMapButton ? [this.nextMapButton] : []),
       this.hud,
@@ -191,7 +239,11 @@ export class LevelMapScreen extends Container {
   public resize(width: number, height: number) {
     this.layout = { width, height };
     this.title.scale.set(Math.min(1, (width - 2 * TITLE_SIDE_MARGIN) / this.titleWidth));
-    this.levelRow.resize(width, height);
+    if (this.body instanceof MasteryGrid) {
+      // The tiles start under the title, however tall it renders on this screen
+      this.body.titleBottom = this.titleTop + this.title.getLocalBounds().maxY * this.title.scale.y;
+    }
+    this.body.resize(width, height);
     const navButtonY = responsive({ sm: height - 200, lg: height / 2 });
     if (this.prevMapButton) {
       this.prevMapButton.position.set(responsive({ sm: 90, lg: 40 }), navButtonY);
@@ -202,15 +254,16 @@ export class LevelMapScreen extends Container {
   }
 
   public async show() {
+    this.titleAnimating = true;
     this.title.y = this.offScreenY(this.title, this.titleTop);
     if (this.subtitle) this.subtitle.y = this.offScreenY(this.subtitle, this.subtitleTop);
 
     const animations = [
-      animate(this.title, { y: 0 }, { duration: 0.4, ease: 'backOut' }),
+      animate(this.title, { y: this.scrollY }, { duration: 0.4, ease: 'backOut' }),
       ...(this.subtitle
         ? [animate(this.subtitle, { y: 0 }, { duration: 0.4, ease: 'backOut' })]
         : []),
-      this.levelRow.playEnterAnimation(),
+      this.body.playEnterAnimation(),
     ];
 
     if (this.prevMapButton) {
@@ -230,9 +283,13 @@ export class LevelMapScreen extends Container {
     }
 
     await Promise.all(animations);
+    this.titleAnimating = false;
+    this.title.y = this.scrollY;
+    if (this.body instanceof LevelRow) await this.body.playPendingHop();
   }
 
   public async hide() {
+    this.titleAnimating = true;
     const animations = [
       animate(
         this.title,
@@ -248,7 +305,7 @@ export class LevelMapScreen extends Container {
             ),
           ]
         : []),
-      this.levelRow.playExitAnimation(),
+      this.body.playExitAnimation(),
     ];
 
     if (this.prevMapButton) {

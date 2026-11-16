@@ -130,3 +130,16 @@ export function getNextLevelAfter(
   if (!nextLevel || !isLevelUnlocked(nextLevel)) return;
   return { mapUnit: findMapUnitForLevel(nextLevel), level: nextLevel };
 }
+
+/**
+ * Index of the first unfinished unit in the layer at or after `fromIndex`, wrapping around to
+ * the start when every later unit is done. The last unit when the whole layer is complete.
+ */
+export function getFirstUnfinishedMapUnitIndex(layer: TLayer, fromIndex = 0): number {
+  const maps = getLayerMaps(layer);
+  for (let offset = 0; offset < maps.length; offset++) {
+    const index = (fromIndex + offset) % maps.length;
+    if (!isMapUnitComplete(maps[index])) return index;
+  }
+  return Math.max(maps.length - 1, 0);
+}
