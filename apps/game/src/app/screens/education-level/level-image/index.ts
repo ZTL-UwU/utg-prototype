@@ -4,7 +4,7 @@ import { Container, Graphics } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { randomShuffle } from '../../../../engine/utils/random';
-import { responsive } from '../../../../engine/utils/viewport';
+import { isPhone, responsive } from '../../../../engine/utils/viewport';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import {
@@ -109,7 +109,7 @@ export class EducationImageScreen extends Container {
       bottom: responsive<`${number}%`>({ sm: '5%', lg: '20%' }),
     };
 
-    const imageSize = responsive({ sm: true, lg: false }) ? PHONE_IMAGE_SIZE : undefined;
+    const imageSize = isPhone() ? PHONE_IMAGE_SIZE : undefined;
     this.choices = displayWords.map(
       (word) =>
         new LetterChoice(

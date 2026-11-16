@@ -11,7 +11,7 @@ import {
 } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { responsive } from '../../../../engine/utils/viewport';
+import { isPhone, responsive } from '../../../../engine/utils/viewport';
 import { getSentenceMarkup } from '../../../../utils/example-words';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import {
@@ -354,7 +354,7 @@ export class GameLevelSki extends Container {
     this.sentencePanelWidth = width / uiScale;
     this.sentencePanelX = (DESIGN_WIDTH - this.sentencePanelWidth) / 2;
     this.layoutSentencePanel();
-    if (responsive({ sm: true, lg: false })) {
+    if (isPhone()) {
       this.keyboard.resizeToScreen(this.gameplay, width, height);
     } else {
       this.keyboard.resize(DESIGN_WIDTH, DESIGN_HEIGHT);

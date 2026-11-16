@@ -1,7 +1,7 @@
 import { Container, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { responsive } from '../../../../engine/utils/viewport';
+import { isPhone, responsive } from '../../../../engine/utils/viewport';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { convertToCurrentScript } from '../../../../utils/script';
 import { useScoreManager } from '../../../../zustandStores/scoreManager';
@@ -157,7 +157,7 @@ export class GameLevelTrout extends Container {
     this.keyboard.resize(width, height);
     // Mockup places the keyboard under the timer, above the river. Phones keep it at the
     // bottom like every other level, with the river above it.
-    if (responsive({ sm: false, lg: true })) {
+    if (!isPhone()) {
       this.keyboard.scale.set(0.8);
       this.keyboard.position.set(Math.round((width - this.keyboard.width) / 2), KEYBOARD_TOP);
       this.keyboard.position.y = KEYBOARD_TOP;

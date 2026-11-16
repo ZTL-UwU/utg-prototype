@@ -1,7 +1,7 @@
 import { animate } from 'motion';
 import { Assets, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
-import { responsive, topClearance } from '../../../engine/utils/viewport';
+import { isPhone, topClearance } from '../../../engine/utils/viewport';
 import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import { convertToCurrentScript, getScriptFontFamily } from '../../../utils/script';
 import { FreeScroll } from '../../ui/free-scroll';
@@ -163,7 +163,7 @@ export class TypingJourney extends Container {
   }
 
   public resize(width: number, height: number) {
-    const vertical = responsive({ sm: true, lg: false });
+    const vertical = isPhone();
     const count = this.groups.length;
     let contentHeight = height;
 

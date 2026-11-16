@@ -2,7 +2,7 @@ import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Sprite, Texture, type DestroyOptions } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { responsive, topClearance } from '../../../../engine/utils/viewport';
+import { isPhone, topClearance } from '../../../../engine/utils/viewport';
 import {
   getFirstUnfinishedMapUnitIndex,
   isMapUnitComplete,
@@ -135,7 +135,7 @@ export class SheepMap extends Container {
   }
 
   public resize(width: number, height: number) {
-    this.vertical = responsive({ sm: true, lg: false });
+    this.vertical = isPhone();
 
     const rockSize = this.vertical ? PHONE_ROCK_SIZE : WIDE_ROCK_SIZE * height;
     const rockScale = rockSize / ROCK_BASE_SIZE;

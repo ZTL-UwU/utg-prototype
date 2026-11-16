@@ -9,7 +9,7 @@ import { animate } from 'motion';
 import { BlurFilter, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { responsive } from '../../../../engine/utils/viewport';
+import { isPhone, responsive } from '../../../../engine/utils/viewport';
 import { m } from '../../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { layoutPopup } from '../../../ui/layout-popup';
@@ -284,7 +284,7 @@ export class TypingTestSettingsPopup extends Container {
         subtitle,
         modeControl,
         durationControl,
-        ...(responsive({ sm: true, lg: false }) ? [] : [keyboardRow]),
+        ...(isPhone() ? [] : [keyboardRow]),
         startButton,
       ],
     });

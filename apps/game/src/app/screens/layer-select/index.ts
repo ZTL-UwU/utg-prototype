@@ -3,7 +3,7 @@ import { animate } from 'motion';
 import { Container, Graphics, NineSliceSprite, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { responsive, safeAreaInsetsInView, topClearance } from '../../../engine/utils/viewport';
+import { isPhone, safeAreaInsetsInView, topClearance } from '../../../engine/utils/viewport';
 import { isLayerUnlocked } from '../../../lib/progression';
 import { m } from '../../../paraglide/messages.js';
 import { getAvatarPath } from '../../../utils/avatars';
@@ -399,7 +399,7 @@ export class LayerSelectScreen extends Container {
   }
 
   public resize(width: number, height: number) {
-    const phone = responsive({ sm: true, lg: false });
+    const phone = isPhone();
     if (phone !== this.phoneLayout) this.applyPaperLayout(phone);
     const paper = paperLayout(phone);
     const insets = safeAreaInsetsInView(height);

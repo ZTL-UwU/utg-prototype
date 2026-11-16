@@ -2,7 +2,7 @@ import type { TypingTestProps } from '@utg/level-types';
 import { Container, Graphics, Text, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { responsive } from '../../../../engine/utils/viewport';
+import { isPhone, topClearance } from '../../../../engine/utils/viewport';
 import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { getKeyFromChar, getMappedFromKeyboardEvent } from '../../../../utils/keymap';
 import { useLevelProgress } from '../../../../zustandStores/levelProgressStore';
@@ -29,6 +29,13 @@ const PANEL_MAX_WIDTH = 1500;
 const PANEL_TOP_RATIO = 0.12;
 const PANEL_HEIGHT_RATIO_WITH_KEYBOARD = 0.34;
 const PANEL_HEIGHT_RATIO = 0.5;
+/** Phones get a near full-width panel; 80% of 768 leaves the letter row no room. */
+const PHONE_PANEL_MARGIN_X = 24;
+/** Space between the panel and the HUD row above it or the keyboard below it on phones. */
+const PHONE_PANEL_GAP = 32;
+/** Centre of the HUD's back button, before the phone's top clearance (see `HUD`). */
+const HUD_CENTER_Y = 90;
+const HUD_BUTTON_RADIUS = 62;
 
 const COLORS = {
   BACKGROUND: 0xfdf3e0,
@@ -122,12 +129,23 @@ export class TypingTestScreen extends Container {
 
     this.background.clear().rect(0, 0, this._sw, this._sh).fill(COLORS.BACKGROUND);
 
-    const panelWidth = Math.min(this._sw * PANEL_WIDTH_RATIO, PANEL_MAX_WIDTH);
-    const panelHeight =
-      this._sh *
-      (this.settings?.showKeyboard ? PANEL_HEIGHT_RATIO_WITH_KEYBOARD : PANEL_HEIGHT_RATIO);
+    const phone = isPhone();
+    const hudCenterY = HUD_CENTER_Y + topClearance(this._sh);
+
+    const panelWidth = phone
+      ? this._sw - 2 * PHONE_PANEL_MARGIN_X
+      : Math.min(this._sw * PANEL_WIDTH_RATIO, PANEL_MAX_WIDTH);
     const panelX = (this._sw - panelWidth) / 2;
-    const panelY = this._sh * PANEL_TOP_RATIO;
+    // A phone's panel is as wide as the screen, so it starts below the back button.
+    const panelY = phone
+      ? hudCenterY + HUD_BUTTON_RADIUS + PHONE_PANEL_GAP
+      : this._sh * PANEL_TOP_RATIO;
+    const panelHeight =
+      phone && this.settings?.showKeyboard
+        ? // Fills the space down to the keyboard instead of leaving a gap above it.
+          this.keyboard.y - PHONE_PANEL_GAP - panelY
+        : this._sh *
+          (this.settings?.showKeyboard ? PANEL_HEIGHT_RATIO_WITH_KEYBOARD : PANEL_HEIGHT_RATIO);
 
     this.panel
       .clear()
@@ -135,7 +153,8 @@ export class TypingTestScreen extends Container {
       .fill(COLORS.PANEL);
 
     this.promptView?.place(panelX, panelY, panelWidth, panelHeight);
-    this.timerText.position.set(this._sw - 80, panelY / 2);
+    // Level with the back button, which sits in the same top row.
+    this.timerText.position.set(this._sw - 80, hudCenterY);
   }
 
   update(ticker: Ticker) {
@@ -187,7 +206,7 @@ export class TypingTestScreen extends Container {
   private startTest(settings: TypingTestSettings) {
     lastSettings = settings;
     // Phones have no physical keyboard, so the on-screen one is the only way to type.
-    const phone = responsive({ sm: true, lg: false });
+    const phone = isPhone();
     this.settings = { ...settings, showKeyboard: settings.showKeyboard || phone };
     this.promptView = createPromptView(settings.mode, this.props);
     this.addChildAt(this.promptView, this.getChildIndex(this.panel) + 1);
