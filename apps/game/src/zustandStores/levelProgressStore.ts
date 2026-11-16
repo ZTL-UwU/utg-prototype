@@ -15,6 +15,8 @@ interface LevelProgressState {
   attemptedLevels: Record<string, boolean>;
   pendingAnimations: Record<string, boolean>;
   pendingMapUnitAnimations: Record<string, boolean>;
+  /** Education unit the level-select sheep stands on, kept where the player last sent it. */
+  sheepUnitId: number | null;
 
   markAttempted: (mapType: TLayer, levelId: number) => void;
   isAttempted: (mapType: TLayer, levelId: number) => boolean;
@@ -22,6 +24,8 @@ interface LevelProgressState {
 
   queueMapUnitAnimation: (mapType: TLayer, mapUnitId: number) => void;
   consumeMapUnitPendingAnimation: (mapType: TLayer, mapUnitId: number) => boolean;
+
+  setSheepUnit: (mapUnitId: number) => void;
 
   resetAllAttempts: () => void;
 }
@@ -32,6 +36,7 @@ export const useLevelProgress = create<LevelProgressState>()(
       attemptedLevels: {},
       pendingAnimations: {},
       pendingMapUnitAnimations: {},
+      sheepUnitId: null,
 
       markAttempted: (mapType, levelId) => {
         const k = key(mapType, levelId);
@@ -74,12 +79,17 @@ export const useLevelProgress = create<LevelProgressState>()(
         return true;
       },
 
+      setSheepUnit: (mapUnitId) => set({ sheepUnitId: mapUnitId }),
+
       resetAllAttempts: () =>
         set({ attemptedLevels: {}, pendingAnimations: {}, pendingMapUnitAnimations: {} }),
     }),
     {
       name: 'utg-level-progress',
-      partialize: (state) => ({ attemptedLevels: state.attemptedLevels }),
+      partialize: (state) => ({
+        attemptedLevels: state.attemptedLevels,
+        sheepUnitId: state.sheepUnitId,
+      }),
     },
   ),
 );

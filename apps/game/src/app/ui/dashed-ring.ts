@@ -12,9 +12,9 @@ export function drawDashedRing(
   filledColor = RING_COLOR_FILLED,
   unfilledColor = RING_COLOR_UNFILLED,
   width = 15,
+  dashCount = 8,
 ) {
   g.clear();
-  const dashCount = 8;
   const gapRatio = 0.1;
   const segmentAngle = (Math.PI * 2) / dashCount;
   const gapAngle = segmentAngle * gapRatio;

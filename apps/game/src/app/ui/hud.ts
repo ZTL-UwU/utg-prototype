@@ -11,7 +11,10 @@ import { TypingTutorialPopup, TypingTutorialScreen } from '../screens/typing-lev
 import { BackButton } from './back-button';
 import { HelpButton } from './help-button';
 
-export type THudHelp = { kind: 'tutorial'; mapUnit: TMapUnit; presentation: 'popup' | 'screen' };
+export type THudHelp =
+  | { kind: 'tutorial'; mapUnit: TMapUnit; presentation: 'popup' | 'screen' }
+  /** A tutorial opened by the screen itself, for screens that show no single map unit. */
+  | { kind: 'tutorial'; onPress: () => void };
 
 interface HUDProps {
   onBack: () => void;
@@ -45,6 +48,7 @@ export class HUD extends Container {
 }
 
 function createHelpAction(help: THudHelp): (() => void) | undefined {
+  if ('onPress' in help) return help.onPress;
   const { mapUnit, presentation } = help;
   switch (mapUnit.type) {
     case 'education':

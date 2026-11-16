@@ -1,6 +1,5 @@
-import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
-import { Container, Graphics, Sprite, Text, Texture, type TextDropShadow } from 'pixi.js';
+import { Container, Text, type TextDropShadow } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { responsive, topClearance } from '../../../../engine/utils/viewport';
@@ -8,8 +7,10 @@ import { m } from '../../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { convertToCurrentScript, getScriptFontFamily } from '../../../../utils/script';
 import { HUD } from '../../../ui/hud';
+import { EducationTutorialScreen } from '../../education-level/level-tutorial';
 import { LayerSelectScreen } from '../../layer-select';
-import { EducationMapRow } from './education-map-row';
+import { LevelMapScreen } from '../../level-map';
+import { SheepMap } from './sheep-map';
 
 /** Phones drop the titles below the back button and script pill, which would cover them. */
 const TITLE_TOP = { sm: 170, lg: 100 };
@@ -17,39 +18,27 @@ const SUBTITLE_TOP = { sm: 310, lg: 300 };
 /** Extra margin so drop shadows don't peek in from the screen edge. */
 const OFF_SCREEN_MARGIN = 40;
 
-function createMapNavButton(label: string) {
-  const size = 120;
-  return new FancyButton({
-    defaultView: new Graphics()
-      .roundRect(0, 10, size, size, 20)
-      .fill(0x7a5520)
-      .roundRect(0, 0, size, size, 20)
-      .fill(0xa66129),
-    text: new Text({
-      text: label,
-      style: { fontFamily: DISPLAY_FONT_FAMILY, fontSize: 80, fill: 0xfff4e0 },
-    }),
-    animations: {
-      hover: { props: { scale: { x: 1.1, y: 1.1 } }, duration: 100 },
-      pressed: { props: { scale: { x: 0.97, y: 0.97 } }, duration: 100 },
-    },
-    anchor: 0.5,
-  });
-}
-
 export class EducationLevelSelect extends Container {
   public readonly screenName = 'EducationLevelSelect';
-  public static assetBundles = ['education-level', 'education-level-map', 'ui'];
+  public static assetBundles = [
+    'education-level',
+    'education-level-map',
+    'mascots',
+    'locked-popup',
+    'ui',
+  ];
 
-  private background: Sprite;
-  private mapRow: EducationMapRow;
+  private map: SheepMap;
   private hud: HUD;
   private title: Text;
   private titleTop = responsive(TITLE_TOP) + topClearance(engine().navigation.height);
   private subtitleTop = responsive(SUBTITLE_TOP) + topClearance(engine().navigation.height);
   private subtitle: Text;
-  private prevMapButton: FancyButton;
-  private nextMapButton: FancyButton;
+  /** How far the phone map is scrolled; the titles ride along with it. */
+  private scrollY = 0;
+  private titlesAnimating = false;
+  private viewWidth = 0;
+  private viewHeight = 0;
 
   constructor() {
     super({
@@ -60,38 +49,14 @@ export class EducationLevelSelect extends Container {
       },
     });
 
-    this.background = new Sprite({
-      texture: Texture.from('education-levels/education-level/background.png'),
-      layout: {
-        width: '100%',
-        height: '100%',
-        position: 'absolute',
-        objectFit: 'cover',
-      },
-    });
-
-    this.mapRow = new EducationMapRow();
-
-    this.prevMapButton = createMapNavButton('<<');
-    this.prevMapButton.onPress.connect(() => {
-      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      void (async () => {
-        await this.mapRow.prevPage();
-        this.updateNavButtons();
-      })();
-    });
-
-    this.nextMapButton = createMapNavButton('>>');
-    this.nextMapButton.onPress.connect(() => {
-      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      void (async () => {
-        await this.mapRow.nextPage();
-        this.updateNavButtons();
-      })();
-    });
+    this.map = this.createMap();
 
     this.hud = new HUD({
       onBack: () => void engine().navigation.showScreen(LayerSelectScreen),
+      help: {
+        kind: 'tutorial',
+        onPress: () => void engine().navigation.showScreen(EducationTutorialScreen, {}),
+      },
     });
 
     const textDropShadow: Partial<TextDropShadow> = {
@@ -133,37 +98,38 @@ export class EducationLevelSelect extends Container {
       top: this.subtitleTop,
     };
 
-    this.addChild(
-      this.background,
-      this.mapRow,
-      this.prevMapButton,
-      this.nextMapButton,
-      this.hud,
-      this.title,
-      this.subtitle,
+    this.addChild(this.map, this.title, this.subtitle, this.hud);
+  }
+
+  private createMap() {
+    const map = new SheepMap(
+      (mapUnit) => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
     );
+    map.onScroll = (scrollY) => {
+      this.scrollY = scrollY;
+      if (this.titlesAnimating) return;
+      this.title.y = scrollY;
+      this.subtitle.y = scrollY;
+    };
+    return map;
   }
 
-  /** Pooled screen: rebuild unit buttons so unlocks and rings match latest results. */
-  public reset() {
-    const index = this.getChildIndex(this.mapRow);
-    this.removeChild(this.mapRow);
-    this.mapRow.destroy({ children: true });
-    this.mapRow = new EducationMapRow();
-    this.addChildAt(this.mapRow, index);
-  }
-
-  private updateNavButtons() {
-    this.prevMapButton.visible = this.mapRow.hasPrev;
-    this.nextMapButton.visible = this.mapRow.hasNext;
+  /** Fresh map on every visit, so locks, the sheep and completion hops match the latest results. */
+  private rebuildMap() {
+    const index = this.getChildIndex(this.map);
+    this.removeChild(this.map);
+    this.map.destroy({ children: true });
+    this.scrollY = 0;
+    this.map = this.createMap();
+    this.addChildAt(this.map, index);
+    if (this.viewWidth > 0) this.map.resize(this.viewWidth, this.viewHeight);
   }
 
   public resize(width: number, height: number) {
+    this.viewWidth = width;
+    this.viewHeight = height;
     this.layout = { width, height };
-    this.mapRow.resize(width, height);
-    const navButtonY = responsive({ sm: height - 200, lg: height / 2 });
-    this.prevMapButton.position.set(responsive({ sm: 90, lg: 40 }), navButtonY);
-    this.nextMapButton.position.set(width - responsive({ sm: 90, lg: 40 }), navButtonY);
+    this.map.resize(width, height);
   }
 
   /** The y offset that moves an element fully above the top screen edge. */
@@ -172,32 +138,25 @@ export class EducationLevelSelect extends Container {
   }
 
   public async show() {
+    this.rebuildMap();
+    this.titlesAnimating = true;
     this.title.y = this.offScreenY(this.title, this.titleTop);
     this.subtitle.y = this.offScreenY(this.subtitle, this.subtitleTop);
-    this.updateNavButtons();
 
-    const animations = [
-      animate(this.title, { y: 0 }, { duration: 0.4, ease: 'backOut' }),
-      animate(this.subtitle, { y: 0 }, { duration: 0.4, ease: 'backOut' }),
-      this.mapRow.playEnterAnimation(),
-    ];
+    await Promise.all([
+      animate(this.title, { y: this.scrollY }, { duration: 0.4, ease: 'backOut' }),
+      animate(this.subtitle, { y: this.scrollY }, { duration: 0.4, ease: 'backOut' }),
+      this.map.playEnterAnimation(),
+    ]);
+    this.titlesAnimating = false;
+    this.title.y = this.scrollY;
+    this.subtitle.y = this.scrollY;
 
-    const prevNaturalX = this.prevMapButton.x;
-    this.prevMapButton.x = prevNaturalX - engine().navigation.width;
-    animations.push(
-      animate(this.prevMapButton, { x: prevNaturalX }, { duration: 0.4, ease: 'easeOut' }),
-    );
-
-    const nextNaturalX = this.nextMapButton.x;
-    this.nextMapButton.x = nextNaturalX + engine().navigation.width;
-    animations.push(
-      animate(this.nextMapButton, { x: nextNaturalX }, { duration: 0.4, ease: 'easeOut' }),
-    );
-
-    await Promise.all(animations);
+    await this.map.playPendingHop();
   }
 
   public async hide() {
+    this.titlesAnimating = true;
     await Promise.all([
       animate(
         this.title,
@@ -209,17 +168,7 @@ export class EducationLevelSelect extends Container {
         { y: this.offScreenY(this.subtitle, this.subtitleTop) },
         { duration: 0.2, ease: 'backIn' },
       ),
-      animate(
-        this.prevMapButton,
-        { x: this.prevMapButton.x - engine().navigation.width },
-        { duration: 0.2, ease: 'easeIn' },
-      ),
-      animate(
-        this.nextMapButton,
-        { x: this.nextMapButton.x + engine().navigation.width },
-        { duration: 0.2, ease: 'easeIn' },
-      ),
-      this.mapRow.playExitAnimation(),
+      this.map.playExitAnimation(),
     ]);
   }
 }
