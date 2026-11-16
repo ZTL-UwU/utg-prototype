@@ -22,6 +22,8 @@ const SCROLL_DURATION_S = 0.25;
 const TILE_SIZE = 140;
 const TILE_GAP = 40;
 const TILE_STAGGER_S = 0.08;
+/** Room kept between the letter rows and the panel's sides. */
+const TILE_PANEL_PADDING = 40;
 const ERROR_DURATION_MS = 350;
 
 /** Draws one mode's prompt; the screen owns the typed text and the cursor. */
@@ -161,31 +163,44 @@ class SentenceView extends Container implements PromptView {
   }
 }
 
-/** A row of letter tiles; typed tiles stay green and focus moves straight on. */
+/**
+ * A row of letter tiles; typed tiles stay green and focus moves straight on. A row wider than
+ * the panel wraps into even lines, read top to bottom.
+ */
 class LetterTilesView extends Container implements PromptView {
   private readonly source: PromptSource<string[]>;
-  private readonly rtl = isCurrentScriptRtl();
-  /** In typing order, which for right-to-left scripts is right to left on screen. */
+  /** Right-to-left scripts fill each line from the right, so tiles stay in typing order. */
+  private readonly row = new Container({
+    layout: {
+      flexDirection: isCurrentScriptRtl() ? 'row-reverse' : 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: TILE_GAP,
+    },
+  });
+  /** In typing order. */
   private tiles: TypingLetter[] = [];
   /** Text offset just past each tile, so a cursor maps to its tile. */
   private tileEnds: number[] = [];
   private activeTile = 0;
+  private availableWidth = 0;
 
   constructor(source: PromptSource<string[]>) {
     super({
       layout: {
         position: 'absolute',
-        flexDirection: 'row',
+        flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        gap: TILE_GAP,
       },
     });
     this.source = source;
+    this.addChild(this.row);
   }
 
   next() {
-    this.removeChildren();
+    this.row.removeChildren();
     for (const tile of this.tiles) tile.destroy({ children: true });
 
     const letters = this.source.next();
@@ -196,7 +211,8 @@ class LetterTilesView extends Container implements PromptView {
     if (this.tiles.length === 0) return '';
 
     this.tiles[0].setActive(true, false);
-    this.addChild(...(this.rtl ? [...this.tiles].reverse() : this.tiles));
+    this.row.addChild(...this.tiles);
+    this.fitRow();
     void Promise.all(this.tiles.map((tile, index) => tile.playAppear(index * TILE_STAGGER_S)));
     return letters.join('');
   }
@@ -218,6 +234,22 @@ class LetterTilesView extends Container implements PromptView {
 
   place(x: number, y: number, width: number, height: number) {
     this.layout = { left: x, top: y, width, height };
+    this.availableWidth = width - 2 * TILE_PANEL_PADDING;
+    this.fitRow();
+  }
+
+  /** Narrows the row so wrapped lines split evenly (3 + 3, not 4 + 2). */
+  private fitRow() {
+    const count = this.tiles.length;
+    if (count === 0 || this.availableWidth <= 0) return;
+
+    const perLineMax = Math.max(
+      1,
+      Math.floor((this.availableWidth + TILE_GAP) / (TILE_SIZE + TILE_GAP)),
+    );
+    const lines = Math.ceil(count / perLineMax);
+    const perLine = Math.ceil(count / lines);
+    this.row.layout = { width: perLine * TILE_SIZE + (perLine - 1) * TILE_GAP };
   }
 }
 
