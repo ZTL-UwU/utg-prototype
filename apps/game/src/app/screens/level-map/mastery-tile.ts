@@ -1,12 +1,11 @@
-import { animate, type AnimationPlaybackControls } from 'motion';
+import { animate } from 'motion';
 import { Assets, Container, Graphics, Sprite, Text, Texture, type DestroyOptions } from 'pixi.js';
 
-import { engine } from '../../../engine/getEngine';
 import { isLevelUnlocked } from '../../../lib/progression';
 import { m } from '../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import { getFontFamilyForScript } from '../../../utils/script';
-import { LevelLoadingScreen } from '../level-loading';
+import { makeLevelStop } from './level-stop';
 import { findMapUnitForLevel, getLayerMaps, type TLevel } from './units';
 
 /** The grid's own background; a level using it as its art gets a plain tile instead. */
@@ -17,6 +16,7 @@ const RADIUS = 22;
 const BORDER = 5;
 const BORDER_COLOR = 0xffffff;
 const PLAIN_FILL = 0x5d5f5a;
+const LOCKED_FILL = 0x4a4c48;
 const OVERLAY_COLOR = 0x1b2433;
 const OVERLAY_ALPHA = 0.45;
 const LOCKED_TINT = 0x8a8a8a;
@@ -55,7 +55,8 @@ export class MasteryTile extends Container {
   private readonly locked: boolean;
   private tileWidth = 0;
   private tileHeight = 0;
-  private hoverAnimation?: AnimationPlaybackControls;
+  private readonly playable: boolean;
+  private readonly stopHover: () => void;
 
   constructor(level: TLevel, number: number, isDragging: () => boolean) {
     super();
@@ -103,26 +104,13 @@ export class MasteryTile extends Container {
 
     this.addArt(level);
 
-    // Levels without a screen have nothing to play, so they stay disabled.
-    if (!level.screen) {
-      this.alpha = 0.5;
-      return;
-    }
-
-    this.eventMode = 'static';
-    this.cursor = 'pointer';
-    let opening = false;
-    this.on('pointertap', () => {
-      if (opening || isDragging()) return;
-      opening = true;
-      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      void engine().navigation.showScreen(LevelLoadingScreen, {
-        level,
-        mapUnit: findMapUnitForLevel(level),
-      });
+    this.playable = !!level.screen;
+    this.stopHover = makeLevelStop(this, {
+      level,
+      mapUnit: findMapUnitForLevel(level),
+      isDragging,
+      hoverScale: HOVER_SCALE,
     });
-    this.on('pointerover', () => this.animateHover(HOVER_SCALE));
-    this.on('pointerout', () => this.animateHover(1));
   }
 
   /** The level's art, loaded by the map screen; the tile stays plain when it is missing. */
@@ -144,7 +132,7 @@ export class MasteryTile extends Container {
     this.frame
       .clear()
       .roundRect(left, top, width, height, RADIUS)
-      .fill(this.locked ? 0x4a4c48 : PLAIN_FILL)
+      .fill(this.locked ? LOCKED_FILL : PLAIN_FILL)
       .stroke({ color: BORDER_COLOR, width: BORDER, alignment: 1 });
     this.artMask.clear().roundRect(left, top, width, height, RADIUS).fill(0xffffff);
     this.overlay
@@ -176,8 +164,7 @@ export class MasteryTile extends Container {
   }
 
   public async playEnter(delay: number) {
-    this.alpha = this.eventMode === 'static' ? 1 : 0.5;
-    const target = this.alpha;
+    const target = this.playable ? 1 : 0.5;
     this.alpha = 0;
     this.scale.set(0.9);
     await Promise.all([
@@ -186,13 +173,8 @@ export class MasteryTile extends Container {
     ]);
   }
 
-  private animateHover(scale: number) {
-    this.hoverAnimation?.stop();
-    this.hoverAnimation = animate(this.scale, { x: scale, y: scale }, { duration: 0.15 });
-  }
-
   public override destroy(options?: DestroyOptions) {
-    this.hoverAnimation?.stop();
+    this.stopHover();
     super.destroy(options);
   }
 }

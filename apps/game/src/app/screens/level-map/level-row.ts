@@ -112,7 +112,7 @@ export class LevelRow extends Container {
   }
 
   /** After a finished game: once its ring fills, the sheep hops to the next unfinished one. */
-  public async playPendingHop() {
+  public async afterEnter() {
     if (this.pendingHop === undefined) return;
     const target = this.pendingHop;
     this.pendingHop = undefined;

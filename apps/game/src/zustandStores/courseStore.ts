@@ -8,7 +8,6 @@ import {
   getMascotStarAlias,
   REMOTE_MASCOTS_BUNDLE,
   type LevelScreenConstructor,
-  type SplashColorScheme,
   type TLayer,
   type TLevel,
   type TMapUnit,
@@ -140,15 +139,6 @@ function registerMascotsBundle(units: ApiUnit[]): void {
   Assets.addBundle(REMOTE_MASCOTS_BUNDLE, entries);
 }
 
-function mapSplashColorScheme(level: ApiLevel): SplashColorScheme {
-  return {
-    BUTTON_FILL: level.splash_button_color ?? 0xc08e82,
-    BUTTON_TEXT_FILL: level.splash_button_text_color ?? 0xffffff,
-    LEVEL_FONT_FILL: level.splash_level_font_color ?? 0xffffff,
-    LEVEL_TITLE_FILL: level.splash_level_title_color ?? 0xffffff,
-  };
-}
-
 function mapLevel(
   level: ApiLevel,
   screens: Partial<Record<string, LevelScreenConstructor>>,
@@ -163,9 +153,6 @@ function mapLevel(
     unlocked: true,
     mascot: mapMascotAssets(level.mascot),
     screen: screens[levelType],
-    backdropColor: level.backdrop_color,
-    splashColorScheme: mapSplashColorScheme(level),
-    mascotOnSplash: level.show_mascot_on_splash,
     levelType,
     props: parseLevelProps(levelType, level.level_props),
   } as TLevel;

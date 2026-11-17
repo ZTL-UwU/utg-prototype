@@ -1,5 +1,5 @@
 import { animate, type AnimationPlaybackControls } from 'motion';
-import { Container, Sprite, Texture, type DestroyOptions } from 'pixi.js';
+import type { Container, DestroyOptions, Sprite } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { isPhone, topClearance } from '../../../../engine/utils/viewport';
@@ -10,8 +10,8 @@ import {
 } from '../../../../lib/progression';
 import { useLevelProgress } from '../../../../zustandStores/levelProgressStore';
 import { LockedLevelPopup } from '../../../popups/locked-level';
-import { FreeScroll } from '../../../ui/free-scroll';
 import { createMapSheep, hopSheep } from '../../../ui/map-sheep';
+import { ScrollingMap } from '../../../ui/scrolling-map';
 import { getLayerMaps, type TMapUnit } from '../../level-map/units';
 import { ROCK_BASE_SIZE, RockButton, STAND_OFFSET_RATIO } from './rock-button';
 
@@ -69,10 +69,8 @@ function consumeCompletedUnit(maps: TMapUnit[]): number {
  * visit makes the sheep hop on to the next unfinished unit. Phones get a tall map scrolled
  * freely by dragging.
  */
-export class SheepMap extends Container {
+export class SheepMap extends ScrollingMap {
   private readonly maps = getLayerMaps('education');
-  private readonly content = new Container();
-  private readonly background: Sprite;
   private readonly rocks: RockButton[];
   private readonly sheep?: Sprite;
   private sheepIndex = 0;
@@ -83,36 +81,28 @@ export class SheepMap extends Container {
   /** True while hopping or opening a unit, so taps are ignored. */
   private busy = false;
 
-  private vertical = false;
   private scrolledIntoView = false;
-  private readonly scroll: FreeScroll;
 
-  /** Fired whenever the phone map scrolls, so the screen can move its titles along. */
-  public onScroll?: (scrollY: number) => void;
   /** Where the screen's subtitle ends, so the sheep on rock 1 stands clear of it on phones. */
   public titleBottom?: number;
 
   private readonly onOpen: (mapUnit: TMapUnit) => void;
 
   constructor(onOpen: (mapUnit: TMapUnit) => void) {
-    super();
+    super(BACKGROUND_ALIAS);
     this.onOpen = onOpen;
 
-    this.background = new Sprite({ texture: Texture.from(BACKGROUND_ALIAS), anchor: 0.5 });
     this.rocks = this.maps.map(
       (mapUnit, index) =>
         new RockButton(index, !isMapUnitUnlocked(mapUnit), () => void this.onRockTap(index)),
     );
-    this.content.addChild(this.background, ...this.rocks);
+    this.content.addChild(...this.rocks);
 
     if (this.maps.length > 0) {
       this.sheep = createMapSheep();
       this.content.addChild(this.sheep);
       this.placeSheep();
     }
-    this.addChild(this.content);
-
-    this.scroll = new FreeScroll(this, this.content, (scrollY) => this.onScroll?.(scrollY));
   }
 
   /** Puts the sheep on the right rock and queues a hop after a completed unit. */
@@ -135,12 +125,12 @@ export class SheepMap extends Container {
   }
 
   public resize(width: number, height: number) {
-    this.vertical = isPhone();
+    const vertical = isPhone();
 
-    const rockSize = this.vertical ? PHONE_ROCK_SIZE : WIDE_ROCK_SIZE * height;
+    const rockSize = vertical ? PHONE_ROCK_SIZE : WIDE_ROCK_SIZE * height;
     const rockScale = rockSize / ROCK_BASE_SIZE;
     let top = PHONE_TOP_SPACE + topClearance(height);
-    if (this.vertical && this.titleBottom !== undefined && this.sheep) {
+    if (vertical && this.titleBottom !== undefined && this.sheep) {
       // Rock 1 sits low enough that the sheep standing on it clears the titles
       const { width: sheepWidth, height: sheepHeight } = this.sheep.texture;
       const sheepTall = rockSize * SHEEP_SIZE * (sheepHeight / sheepWidth);
@@ -152,7 +142,7 @@ export class SheepMap extends Container {
 
     this.rocks.forEach((rock, index) => {
       rock.setBaseScale(rockScale);
-      if (this.vertical) {
+      if (vertical) {
         rock.position.set(
           PHONE_COLUMNS[index % PHONE_COLUMNS.length] * width,
           top + index * PHONE_ROW_GAP,
@@ -163,15 +153,10 @@ export class SheepMap extends Container {
       }
     });
 
-    const contentHeight = this.vertical
+    const contentHeight = vertical
       ? Math.max(height, top + (this.rocks.length - 1) * PHONE_ROW_GAP + PHONE_BOTTOM_SPACE)
       : height;
-    this.scroll.setBounds(width, height, contentHeight, this.vertical);
-
-    // Cover the whole map, cropping whichever sides overflow
-    const texture = this.background.texture;
-    this.background.scale.set(Math.max(width / texture.width, contentHeight / texture.height));
-    this.background.position.set(width / 2, contentHeight / 2);
+    this.setContentHeight(width, height, contentHeight, vertical);
 
     if (this.sheep) {
       this.sheepScale = (rockSize * SHEEP_SIZE) / this.sheep.texture.width;
@@ -180,9 +165,9 @@ export class SheepMap extends Container {
     }
 
     // Start with the sheep in view, once; after that only the player moves the map
-    if (this.vertical && !this.scrolledIntoView && this.rocks[this.sheepIndex]) {
+    if (vertical && !this.scrolledIntoView && this.rocks[this.sheepIndex]) {
       this.scrolledIntoView = true;
-      this.scroll.setScroll(height / 2 - this.rocks[this.sheepIndex].y);
+      this.scrollTo(height / 2 - this.rocks[this.sheepIndex].y);
     }
   }
 
@@ -192,7 +177,7 @@ export class SheepMap extends Container {
   }
 
   private async onRockTap(index: number) {
-    if (this.busy || this.scroll.dragged) return;
+    if (this.busy || this.isDragging()) return;
     const mapUnit = this.maps[index];
     void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
 

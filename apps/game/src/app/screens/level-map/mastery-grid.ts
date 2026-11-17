@@ -1,8 +1,7 @@
 import { animate } from 'motion';
-import { Container, Sprite, Texture } from 'pixi.js';
 
 import { isPhone, topClearance } from '../../../engine/utils/viewport';
-import { FreeScroll } from '../../ui/free-scroll';
+import { ScrollingMap } from '../../ui/scrolling-map';
 import { MASTERY_BACKGROUND_ALIAS, MasteryTile } from './mastery-tile';
 import { getLayerMaps } from './units';
 
@@ -15,6 +14,8 @@ const WIDE_GRID_WIDTH = 0.84;
 const WIDE_GAP = 14;
 const WIDE_TOP = 250;
 const WIDE_BOTTOM = 60;
+/** Wide screens: rows that fit without scrolling; longer grids scroll. */
+const WIDE_MAX_ROWS = 3;
 
 /** Phones: one full-width tile per row, in a list scrolled by dragging. */
 const PHONE_GUTTER = 16;
@@ -28,29 +29,17 @@ const PHONE_BOTTOM = 120;
  * order. A grid on wide screens; on phones a full-width list scrolled freely, as is the grid
  * whenever the levels outgrow the screen.
  */
-export class MasteryGrid extends Container {
-  private readonly content = new Container();
-  private readonly background: Sprite;
+export class MasteryGrid extends ScrollingMap {
   private readonly tiles: MasteryTile[];
-  private readonly scroll: FreeScroll;
 
-  /** Fired whenever the list scrolls, so the screen can move its title along. */
-  public onScroll?: (scrollY: number) => void;
   /** Where the screen's title ends, so the tiles start below it; the defaults are a fallback. */
   public titleBottom?: number;
 
   constructor() {
-    super();
-
-    this.background = new Sprite({ texture: Texture.from(MASTERY_BACKGROUND_ALIAS), anchor: 0.5 });
+    super(MASTERY_BACKGROUND_ALIAS);
     const levels = getLayerMaps('game').flatMap((mapUnit) => mapUnit.levels);
-    this.tiles = levels.map(
-      (level, index) => new MasteryTile(level, index + 1, () => this.scroll.dragged),
-    );
-    this.content.addChild(this.background, ...this.tiles);
-    this.addChild(this.content);
-
-    this.scroll = new FreeScroll(this, this.content, (scrollY) => this.onScroll?.(scrollY));
+    this.tiles = levels.map((level, index) => new MasteryTile(level, index + 1, this.isDragging));
+    this.content.addChild(...this.tiles);
   }
 
   public resize(width: number, height: number) {
@@ -59,7 +48,7 @@ export class MasteryGrid extends Container {
     const gap = phone ? PHONE_GAP : WIDE_GAP;
     const top =
       this.titleBottom !== undefined
-        ? this.titleBottom + (phone ? PHONE_GAP : WIDE_GAP) * 2
+        ? this.titleBottom + gap * 2
         : (phone ? PHONE_TOP : WIDE_TOP) + topClearance(height);
     const rows = Math.ceil(this.tiles.length / columns);
     let tileWidth =
@@ -67,8 +56,9 @@ export class MasteryGrid extends Container {
       columns;
     if (!phone) {
       // Shrink to keep the whole grid on screen; only very long level lists scroll
-      const room = height - top - WIDE_BOTTOM - (Math.min(rows, 3) - 1) * gap;
-      tileWidth = Math.min(tileWidth, (room / Math.min(rows, 3)) * TILE_ASPECT);
+      const shownRows = Math.min(rows, WIDE_MAX_ROWS);
+      const room = height - top - WIDE_BOTTOM - (shownRows - 1) * gap;
+      tileWidth = Math.min(tileWidth, (room / shownRows) * TILE_ASPECT);
     }
     const tileHeight = tileWidth / TILE_ASPECT;
     const left = (width - (columns * tileWidth + (columns - 1) * gap)) / 2;
@@ -87,12 +77,7 @@ export class MasteryGrid extends Container {
       height,
       top + rows * tileHeight + Math.max(rows - 1, 0) * gap + (phone ? PHONE_BOTTOM : WIDE_BOTTOM),
     );
-    this.scroll.setBounds(width, height, contentHeight, contentHeight > height);
-
-    // Cover the whole list, cropping whichever sides overflow
-    const texture = this.background.texture;
-    this.background.scale.set(Math.max(width / texture.width, contentHeight / texture.height));
-    this.background.position.set(width / 2, contentHeight / 2);
+    this.setContentHeight(width, height, contentHeight, contentHeight > height);
   }
 
   public async playEnterAnimation() {

@@ -4,12 +4,14 @@ import { DropShadowFilter } from 'pixi-filters';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { responsive, topClearance } from '../../../engine/utils/viewport';
+import { responsive } from '../../../engine/utils/viewport';
 import { isMapUnitUnlocked } from '../../../lib/progression';
 import { m } from '../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import { convertToCurrentScript, getScriptFontFamily } from '../../../utils/script';
 import { HUD } from '../../ui/hud';
+import { MAP_SHEEP_BUNDLES } from '../../ui/map-sheep';
+import { fitTitleScale, mapTitleTops, offScreenY } from '../../ui/map-titles';
 import { LayerSelectScreen } from '../layer-select';
 import { EducationLevelSelect } from '../level-select/education-level-select';
 import { TypingTutorialScreen } from '../typing-level/level-tutorial';
@@ -20,21 +22,87 @@ import { masteryArtAliases } from './mastery-tile';
 import { TypingJourney } from './typing-journey';
 import { getLayerMaps, getNextMap, getPrevMap, type TMapUnit } from './units';
 
-/** Phones drop the titles below the back button and script pill, which would cover them. */
-const TITLE_TOP = { sm: 170, lg: 100 };
-const SUBTITLE_TOP = { sm: 310, lg: 300 };
-/** Space kept on each side of a title that is shrunk to fit a narrow screen. */
-const TITLE_SIDE_MARGIN = 40;
-/** Extra margin so drop shadows don't peek in from the screen edge. */
-const OFF_SCREEN_MARGIN = 40;
+const NAV_BUTTON_SIZE = 120;
+const NAV_BUTTON_FACE = 0xa66129;
+const NAV_BUTTON_SHADOW = 0x7a5520;
+/** A next unit that is still locked shows its >> button faded. */
+const LOCKED_NAV_ALPHA = 0.45;
+/** Phones put the << >> buttons this far above the bottom, clear of the level path. */
+const PHONE_NAV_BOTTOM = 200;
+const NAV_SIDE_INSET = { sm: 90, lg: 40 };
+
+/**
+ * What a map screen shows under its title: an education unit's row of level buttons, or the
+ * whole-layer overview of the typing and game layers.
+ */
+interface MapBody extends Container {
+  resize(width: number, height: number): void;
+  playEnterAnimation(): Promise<void>;
+  playExitAnimation(): Promise<void>;
+  /** Runs once the screen has entered, such as a completion hop. */
+  afterEnter?(): Promise<void>;
+  /** Overviews scroll, and the title rides along. */
+  onScroll?: (scrollY: number) => void;
+  /** Where the title ends, for bodies that start below it. */
+  titleBottom?: number;
+}
+
+function createTitleShadow() {
+  return new DropShadowFilter({ color: 0x000000, blur: 8, quality: 5, offset: { x: 0, y: 0 } });
+}
+
+function createMapNavButton(label: string, onPress: () => void) {
+  const size = NAV_BUTTON_SIZE;
+  const button = new FancyButton({
+    defaultView: new Graphics()
+      .roundRect(0, 10, size, size, 20)
+      .fill(NAV_BUTTON_SHADOW)
+      .roundRect(0, 0, size, size, 20)
+      .fill(NAV_BUTTON_FACE),
+    text: new Text({
+      text: label,
+      style: { fontFamily: DISPLAY_FONT_FAMILY, fontSize: 80, fill: 0xfff4e0 },
+    }),
+    animations: {
+      hover: { props: { scale: { x: 1.1, y: 1.1 } }, duration: 100 },
+      pressed: { props: { scale: { x: 0.97, y: 0.97 } }, duration: 100 },
+    },
+    anchor: 0.5,
+  });
+  button.onPress.connect(() => {
+    void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+    onPress();
+  });
+  return button;
+}
+
+/** The HUD's Back leaves for the layer's chooser; Help opens the layer's tutorial. */
+function createMapHud(mapUnit: TMapUnit) {
+  return new HUD({
+    onBack: () =>
+      void engine().navigation.showScreen(
+        mapUnit.type === 'education' ? EducationLevelSelect : LayerSelectScreen,
+      ),
+    help:
+      mapUnit.type === 'typing'
+        ? {
+            kind: 'tutorial',
+            onPress: () =>
+              void engine().navigation.showScreen(
+                TypingTutorialScreen,
+                getLayerMaps('typing')[0] ?? mapUnit,
+              ),
+          }
+        : { kind: 'tutorial', mapUnit, presentation: 'screen' },
+  });
+}
 
 export class LevelMapScreen extends Container {
   public readonly screenName = 'LevelMapScreen';
   public static assetBundles = [
     'typing-level-map',
-    'education-level-map',
     'game-level-map',
-    'mascots',
+    ...MAP_SHEEP_BUNDLES,
     'locked-popup',
     'end-screen',
     'ui',
@@ -46,17 +114,15 @@ export class LevelMapScreen extends Container {
   }
 
   private background: Sprite;
+  private readonly mapUnit: TMapUnit;
+  /** Typing and game maps show one overview of the whole layer instead of a single unit. */
+  private readonly overview: boolean;
   private title: CurvedText | Text;
-  private titleTop = responsive(TITLE_TOP) + topClearance(engine().navigation.height);
-  private subtitleTop = responsive(SUBTITLE_TOP) + topClearance(engine().navigation.height);
-  /** Unscaled title width, for shrinking long titles to fit phones. */
-  private titleWidth: number;
+  /** Where the titles sit, set in `resize`. */
+  private titleTop = 0;
+  private subtitleTop = 0;
   private subtitle?: Text;
-  /**
-   * Education: a unit's row of level buttons. Typing and game: one overview of the whole
-   * layer, the Typing Journey or The Mastery grid.
-   */
-  private body: LevelRow | TypingJourney | MasteryGrid;
+  private body: MapBody;
   private hud: HUD;
   /** How far the overview is scrolled; the title rides along with it. */
   private scrollY = 0;
@@ -72,7 +138,8 @@ export class LevelMapScreen extends Container {
         justifyContent: 'center',
       },
     });
-    engine().audio.bgm.setVolume(0.5);
+    this.mapUnit = mapUnit;
+    this.overview = mapUnit.type !== 'education';
     this.background = new Sprite({
       texture: Texture.from(mapUnit.background),
       layout: {
@@ -82,181 +149,131 @@ export class LevelMapScreen extends Container {
         objectFit: 'cover',
       },
     });
-
-    this.hud = new HUD({
-      onBack: () =>
-        void engine().navigation.showScreen(
-          mapUnit.type === 'education' ? EducationLevelSelect : LayerSelectScreen,
-        ),
-      help:
-        mapUnit.type === 'typing'
-          ? {
-              kind: 'tutorial',
-              onPress: () =>
-                void engine().navigation.showScreen(
-                  TypingTutorialScreen,
-                  getLayerMaps('typing')[0] ?? mapUnit,
-                ),
-            }
-          : { kind: 'tutorial', mapUnit, presentation: 'screen' },
-    });
-
-    const titleStyle = {
-      fontFamily: DISPLAY_FONT_FAMILY,
-      fontSize: mapUnit.title.fontSize,
-      fontWeight: '800' as const,
-      fill: mapUnit.title.fontColor,
-      padding: 30,
-    };
-    const overview = mapUnit.type !== 'education';
-    this.title = overview
-      ? new Text({
-          text: mapUnit.type === 'typing' ? m.typing_journey() : m.game_mastery(),
-          style: { ...titleStyle, fontSize: responsive({ sm: 120, lg: 170 }), fill: 0xffffff },
-        })
-      : mapUnit.title.isCurved
-        ? new CurvedText({ text: mapUnit.title.text, style: titleStyle })
-        : new Text({
-            text: mapUnit.title.text,
-            style: {
-              ...titleStyle,
-              ...(mapUnit.title.dropShadow && { dropShadow: mapUnit.title.dropShadow }),
-            },
-          });
-    this.title.filters = [
-      new DropShadowFilter({
-        color: 0x000000,
-        blur: 8,
-        quality: 5,
-        offset: { x: 0, y: 0 },
-      }),
-    ];
-    const titleBounds = this.title.getLocalBounds();
-    this.titleWidth = titleBounds.width;
-    this.title.layout = {
-      position: 'absolute',
-      top: this.titleTop,
-      width: titleBounds.width,
-      height: titleBounds.height,
-      // Shrink from the top edge, so a scaled-down title stays clear of the subtitle.
-      transformOrigin: 'center top',
-    };
-
-    if (mapUnit.subtitle && !overview) {
-      this.subtitle = new Text({
-        text: convertToCurrentScript(mapUnit.subtitle.text),
-        style: {
-          fontFamily: getScriptFontFamily(),
-          fontSize: mapUnit.subtitle.fontSize,
-          fontWeight: '700',
-          fill: mapUnit.subtitle.fontColor,
-          padding: 30,
-        },
-        filters: [
-          new DropShadowFilter({
-            color: 0x000000,
-            blur: 8,
-            quality: 5,
-            offset: { x: 0, y: 0 },
-          }),
-        ],
-      });
-      this.subtitle.layout = {
-        position: 'absolute',
-        top: this.subtitleTop,
-      };
-    }
-
-    if (overview) {
-      const body = mapUnit.type === 'typing' ? new TypingJourney(mapUnit) : new MasteryGrid();
-      body.onScroll = (scrollY) => {
-        this.scrollY = scrollY;
-        if (!this.titleAnimating) this.title.y = scrollY;
-      };
-      this.body = body;
-    } else {
-      this.body = new LevelRow(mapUnit);
-    }
-
-    const createMapNavButton = (label: string) => {
-      const size = 120;
-      return new FancyButton({
-        defaultView: new Graphics()
-          .roundRect(0, 10, size, size, 20)
-          .fill(0x7a5520)
-          .roundRect(0, 0, size, size, 20)
-          .fill(0xa66129),
-        text: new Text({
-          text: label,
-          style: { fontFamily: DISPLAY_FONT_FAMILY, fontSize: 80, fill: 0xfff4e0 },
-        }),
-        animations: {
-          hover: { props: { scale: { x: 1.1, y: 1.1 } }, duration: 100 },
-          pressed: { props: { scale: { x: 0.97, y: 0.97 } }, duration: 100 },
-        },
-        anchor: 0.5,
-      });
-    };
+    this.hud = createMapHud(mapUnit);
+    this.title = this.createTitle();
+    this.subtitle = this.createSubtitle();
+    this.body = this.createBody();
 
     // The overviews show every unit of their layer at once, so they have no << >> paging
-    const prevMap = overview ? undefined : getPrevMap(mapUnit);
+    const prevMap = this.overview ? undefined : getPrevMap(mapUnit);
     if (prevMap) {
-      this.prevMapButton = createMapNavButton('<<');
-      this.prevMapButton.onPress.connect(() => {
-        void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-        void engine().navigation.showScreen(LevelMapScreen, prevMap);
-      });
+      this.prevMapButton = createMapNavButton(
+        '<<',
+        () => void engine().navigation.showScreen(LevelMapScreen, prevMap),
+      );
     }
-
-    const nextMap = overview ? undefined : getNextMap(mapUnit);
+    const nextMap = this.overview ? undefined : getNextMap(mapUnit);
     if (nextMap) {
-      this.nextMapButton = createMapNavButton('>>');
-      this.nextMapButton.onPress.connect(() => {
-        void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-        void engine().navigation.showScreen(LevelMapScreen, nextMap);
-      });
-      if (!isMapUnitUnlocked(nextMap)) this.nextMapButton.alpha = 0.45;
+      this.nextMapButton = createMapNavButton(
+        '>>',
+        () => void engine().navigation.showScreen(LevelMapScreen, nextMap),
+      );
+      if (!isMapUnitUnlocked(nextMap)) this.nextMapButton.alpha = LOCKED_NAV_ALPHA;
     }
 
     this.addChild(
       // The overviews bring their own background, which scrolls with them
-      ...(overview ? [this.body] : [this.background]),
+      ...(this.overview ? [this.body] : [this.background]),
       this.title,
       ...(this.subtitle ? [this.subtitle] : []),
-      ...(overview ? [] : [this.body]),
+      ...(this.overview ? [] : [this.body]),
       ...(this.prevMapButton ? [this.prevMapButton] : []),
       ...(this.nextMapButton ? [this.nextMapButton] : []),
       this.hud,
     );
   }
 
-  /** The y offset that moves an element fully above the top screen edge. */
-  private offScreenY(element: Container, layoutTop: number) {
-    return -(layoutTop + element.getLocalBounds().maxY + OFF_SCREEN_MARGIN);
+  /** The unit's title, or the overview's name; curved when the unit asks for it. */
+  private createTitle() {
+    const { title, type } = this.mapUnit;
+    const style = {
+      fontFamily: DISPLAY_FONT_FAMILY,
+      fontSize: title.fontSize,
+      fontWeight: '800' as const,
+      fill: title.fontColor,
+      padding: 30,
+    };
+    const text = this.overview
+      ? new Text({
+          text: type === 'typing' ? m.typing_journey() : m.game_mastery(),
+          style: { ...style, fill: 0xffffff },
+        })
+      : title.isCurved
+        ? new CurvedText({ text: title.text, style })
+        : new Text({
+            text: title.text,
+            style: { ...style, ...(title.dropShadow && { dropShadow: title.dropShadow }) },
+          });
+    text.filters = [createTitleShadow()];
+    // Shrink from the top edge, so a scaled-down title stays clear of the subtitle.
+    text.layout = { position: 'absolute', transformOrigin: 'center top' };
+    return text;
+  }
+
+  /** The unit's name in the player's script, under its title; overviews have none. */
+  private createSubtitle() {
+    const { subtitle } = this.mapUnit;
+    if (!subtitle || this.overview) return undefined;
+    const text = new Text({
+      text: convertToCurrentScript(subtitle.text),
+      style: {
+        fontFamily: getScriptFontFamily(),
+        fontSize: subtitle.fontSize,
+        fontWeight: '700',
+        fill: subtitle.fontColor,
+        padding: 30,
+      },
+      filters: [createTitleShadow()],
+    });
+    text.layout = { position: 'absolute' };
+    return text;
+  }
+
+  private createBody(): MapBody {
+    const { mapUnit } = this;
+    if (!this.overview) return new LevelRow(mapUnit);
+    const body = mapUnit.type === 'typing' ? new TypingJourney(mapUnit) : new MasteryGrid();
+    body.onScroll = (scrollY) => {
+      this.scrollY = scrollY;
+      if (!this.titleAnimating) this.title.y = scrollY;
+    };
+    return body;
   }
 
   /** Resize the screen, fired whenever window size changes */
   public resize(width: number, height: number) {
     this.layout = { width, height };
-    this.title.scale.set(Math.min(1, (width - 2 * TITLE_SIDE_MARGIN) / this.titleWidth));
-    if (this.body instanceof MasteryGrid) {
-      // The tiles start under the title, however tall it renders on this screen
-      this.body.titleBottom = this.titleTop + this.title.getLocalBounds().maxY * this.title.scale.y;
+
+    const tops = mapTitleTops(height);
+    this.titleTop = tops.title;
+    this.subtitleTop = tops.subtitle;
+    if (this.overview && this.title instanceof Text) {
+      this.title.style.fontSize = responsive({ sm: 120, lg: 170 });
     }
+    const titleBounds = this.title.getLocalBounds();
+    this.title.layout = {
+      top: this.titleTop,
+      width: titleBounds.width,
+      height: titleBounds.height,
+    };
+    this.title.scale.set(fitTitleScale(width, titleBounds.width));
+    if (this.subtitle) this.subtitle.layout = { top: this.subtitleTop };
+
+    // Bodies that start under the title do so however tall it renders on this screen
+    this.body.titleBottom = this.titleTop + titleBounds.maxY * this.title.scale.y;
     this.body.resize(width, height);
-    const navButtonY = responsive({ sm: height - 200, lg: height / 2 });
-    if (this.prevMapButton) {
-      this.prevMapButton.position.set(responsive({ sm: 90, lg: 40 }), navButtonY);
-    }
-    if (this.nextMapButton) {
-      this.nextMapButton.position.set(width - responsive({ sm: 90, lg: 40 }), navButtonY);
-    }
+
+    const navButtonY = responsive({ sm: height - PHONE_NAV_BOTTOM, lg: height / 2 });
+    const navInset = responsive(NAV_SIDE_INSET);
+    this.prevMapButton?.position.set(navInset, navButtonY);
+    this.nextMapButton?.position.set(width - navInset, navButtonY);
   }
 
   public async show() {
+    engine().audio.bgm.setVolume(0.5);
     this.titleAnimating = true;
-    this.title.y = this.offScreenY(this.title, this.titleTop);
-    if (this.subtitle) this.subtitle.y = this.offScreenY(this.subtitle, this.subtitleTop);
+    this.title.y = offScreenY(this.title, this.titleTop);
+    if (this.subtitle) this.subtitle.y = offScreenY(this.subtitle, this.subtitleTop);
 
     const animations = [
       animate(this.title, { y: this.scrollY }, { duration: 0.4, ease: 'backOut' }),
@@ -285,7 +302,7 @@ export class LevelMapScreen extends Container {
     await Promise.all(animations);
     this.titleAnimating = false;
     this.title.y = this.scrollY;
-    if (this.body instanceof LevelRow) await this.body.playPendingHop();
+    await this.body.afterEnter?.();
   }
 
   public async hide() {
@@ -293,14 +310,14 @@ export class LevelMapScreen extends Container {
     const animations = [
       animate(
         this.title,
-        { y: this.offScreenY(this.title, this.titleTop) },
+        { y: offScreenY(this.title, this.titleTop) },
         { duration: 0.2, ease: 'backIn' },
       ),
       ...(this.subtitle
         ? [
             animate(
               this.subtitle,
-              { y: this.offScreenY(this.subtitle, this.subtitleTop) },
+              { y: offScreenY(this.subtitle, this.subtitleTop) },
               { duration: 0.2, ease: 'backIn' },
             ),
           ]
