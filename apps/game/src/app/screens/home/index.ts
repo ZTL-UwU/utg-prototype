@@ -1,7 +1,6 @@
 import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
-import { Graphics, Sprite, Text, Texture, type TextDropShadow, type Ticker } from 'pixi.js';
-import { Container } from 'pixi.js';
+import { Container, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { responsive, topClearance } from '../../../engine/utils/viewport';
@@ -11,6 +10,7 @@ import { continueIntoGame } from '../../../utils/continueIntoGame';
 import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import { useAuthStore } from '../../../zustandStores/auth';
 import { useOverlayStore } from '../../../zustandStores/overlayStore';
+import { BACKDROP_TEXT_SHADOW, createPrimaryButton } from '../../ui/primary-button';
 import { AuthScreen } from './auth';
 import { Butterfly } from './butterfly';
 
@@ -18,6 +18,8 @@ const TITLE_ENTER_OFFSET = 60;
 const BUTTON_ENTER_OFFSET = 100;
 // Safari fakes Concert One's bold wider than Chrome, so the title shrinks to fit narrow screens
 const TITLE_SIDE_MARGIN = 32;
+/** The menu button's distance from the top and right edges, below the notch on phones. */
+const MENU_BUTTON_INSET = 90;
 /** The screen that holds the app */
 export class HomeScreen extends Container {
   public readonly screenName = 'HomeScreen';
@@ -64,13 +66,6 @@ export class HomeScreen extends Container {
       },
     });
 
-    const textDropShadow: Partial<TextDropShadow> = {
-      color: 0x000000,
-      blur: 5,
-      distance: 0,
-      alpha: 0.75,
-    };
-
     this.title = new Text({
       text: 'SOZLER SEYLISI',
       style: {
@@ -78,7 +73,6 @@ export class HomeScreen extends Container {
         fontFamily: DISPLAY_FONT_FAMILY,
         fontSize: responsive({ sm: 116, lg: 200 }),
         fontWeight: '700',
-        // dropShadow: textDropShadow,
       },
       layout: true,
     });
@@ -90,7 +84,7 @@ export class HomeScreen extends Container {
         fill: 0xffffff,
         fontFamily: DISPLAY_FONT_FAMILY,
         fontSize: responsive({ sm: 76, lg: 95 }),
-        dropShadow: textDropShadow,
+        dropShadow: BACKDROP_TEXT_SHADOW,
       },
       layout: true,
     });
@@ -100,45 +94,15 @@ export class HomeScreen extends Container {
     const bottomGroup = new Container({
       layout: { flexDirection: 'column', alignItems: 'center', gap: 30 }, // tight gap here
     });
-    const buttonHeight = 180;
-    const buttonWidth = 400;
-    this.startButton = new FancyButton({
-      defaultView: new Graphics()
-        .roundRect(0, 15, buttonWidth, buttonHeight, 40)
-        .fill({ color: 0x000000, alpha: 0.7 })
-        .roundRect(0, 0, buttonWidth, buttonHeight, 40)
-        .fill(0x2a523c),
+    this.startButton = createPrimaryButton({
+      text: m.start(),
+      width: 400,
+      height: 180,
+      fontSize: 80,
+      radius: 40,
+      shadowOffset: 15,
       padding: 20,
-      text: new Text({
-        text: m.start(),
-        style: {
-          fill: 0xfdf7e7,
-          fontSize: 80,
-          fontFamily: DISPLAY_FONT_FAMILY,
-          fontWeight: '700',
-        },
-      }),
-      animations: {
-        hover: {
-          props: {
-            scale: { x: 1.1, y: 1.1 },
-          },
-          duration: 100,
-        },
-        pressed: {
-          props: {
-            scale: { x: 0.9, y: 0.9 },
-          },
-          duration: 100,
-        },
-      },
-      anchor: 0.5,
     });
-    this.startButton.layout = {
-      width: buttonWidth,
-      height: buttonHeight,
-      isLeaf: true, // Fixes the position issue of the button
-    };
     this.startButton.onPress.connect(() => {
       void this.start();
     });
@@ -162,11 +126,7 @@ export class HomeScreen extends Container {
       },
       anchor: 0.5,
     });
-    this.menuButton.layout = {
-      position: 'absolute',
-      top: 90 + topClearance(engine().navigation.height),
-      right: 90,
-    };
+    this.menuButton.layout = { position: 'absolute', right: MENU_BUTTON_INSET };
     this.menuButton.onPress.connect(() => {
       useOverlayStore.getState().show('menu');
     });
@@ -194,10 +154,9 @@ export class HomeScreen extends Container {
   }
 
   private async start() {
-    void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-
     if (!this.startButton.enabled) return;
     this.startButton.enabled = false;
+    void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
 
     try {
       const ok = await ensureValidSession();
@@ -210,24 +169,10 @@ export class HomeScreen extends Container {
       }
       await engine().navigation.showScreen(AuthScreen);
     } finally {
-      this.startButton.enabled = true;
+      // Gone once another screen took over.
+      if (!this.destroyed) this.startButton.enabled = true;
     }
   }
-
-  /** Prepare the screen just before showing */
-  public prepare() {}
-
-  /** Update the screen */
-  public update(_time: Ticker) {}
-
-  /** Pause gameplay - automatically fired when a popup is presented */
-  public async pause() {}
-
-  /** Resume gameplay */
-  public async resume() {}
-
-  /** Fully reset */
-  public reset() {}
 
   /** Resize the screen, fired whenever window size changes */
   public resize(width: number, height: number) {
@@ -235,6 +180,7 @@ export class HomeScreen extends Container {
       width,
       height,
     };
+    this.menuButton.layout = { top: MENU_BUTTON_INSET + topClearance(height) };
     this.butterfly.resize(width, height);
     this.title.scale.set(Math.min(1, (width - 2 * TITLE_SIDE_MARGIN) / this.titleWidth));
   }
@@ -267,7 +213,4 @@ export class HomeScreen extends Container {
       animate(this.startButton, { y: BUTTON_ENTER_OFFSET }, { duration: 0.2, ease: 'backIn' }),
     ]);
   }
-
-  /** Auto pause the app when window go out of focus */
-  public blur() {}
 }
