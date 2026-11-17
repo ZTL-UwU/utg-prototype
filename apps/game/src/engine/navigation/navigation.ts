@@ -1,3 +1,4 @@
+import { propEffect } from 'motion';
 import type { Ticker } from 'pixi.js';
 import { Assets, Container, type ResolvedAsset } from 'pixi.js';
 
@@ -100,6 +101,31 @@ function filesToUnload(
   return [...filesOf(released.bundles, released.assets)]
     .filter(([src]) => !keep.has(src))
     .map(([, alias]) => alias);
+}
+
+/**
+ * Stop every motion animation on `root` and its descendants, and detach motion from them.
+ * A destroyed Pixi object has no transform, so an animation still writing its `x` or `y`
+ * throws, and a throw inside motion's frame loop halts every animation in the app. Covers
+ * `animate(object | object.scale | object.position | filter, ...)`; animations of plain
+ * numbers driving an `onUpdate` have no target here and must be stopped by their owner.
+ */
+function detachAnimations(root: Container) {
+  // `animate()` writes plain objects, Pixi's included, through `propEffect`. Releasing
+  // unbinds the values first, so the last frame `stop()` flushes writes nothing.
+  const detach = (target: object) => {
+    propEffect
+      .state(target)
+      ?.release()
+      .forEach((value) => value.stop());
+  };
+  const visit = (node: Container) => {
+    for (const target of [node, node.scale, node.position, node.pivot, node.skew]) detach(target);
+    const filters = node.filters;
+    if (filters) for (const filter of Array.isArray(filters) ? filters : [filters]) detach(filter);
+    for (const child of node.children) visit(child);
+  };
+  visit(root);
 }
 
 export class Navigation {
@@ -337,9 +363,9 @@ export class Navigation {
    *
    * Every screen and popup is built fresh each time it is shown, so the one leaving is never
    * shown again. Destroying it runs its `destroy` override (and its children's), which is
-   * where animations, timers and listeners are stopped: anything still animating a destroyed
-   * object would throw, since Pixi drops its transform. Async work that outlives the screen
-   * checks `destroyed` before touching it.
+   * where timers, listeners and `onUpdate` animations are stopped; animations of its objects
+   * are detached first (see `detachAnimations`). Async work that outlives the screen checks
+   * `destroyed` before touching it.
    */
   private async hideAndRemoveScreen(screen: AppScreen, animate = true) {
     // Prevent interaction in the screen
@@ -366,6 +392,7 @@ export class Navigation {
       screen.reset();
     }
 
+    detachAnimations(screen);
     screen.destroy({ children: true });
   }
 
