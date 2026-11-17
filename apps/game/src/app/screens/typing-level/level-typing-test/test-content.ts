@@ -2,8 +2,8 @@ import type { TypingTestMode, TypingTestProps } from '@utg/level-types';
 
 import { convertKeyboardLettersToCurrentScript } from '../../../../utils/script';
 import { makeRow } from '../level-desert/letter-row';
-import { generateRoundsDictionary, type Round } from '../level-word';
 import { generateSentenceRounds } from '../sentence-rounds';
+import { generateWordRounds, type WordRound } from '../word-rounds';
 
 /** Characters of prompt text built per page; the next page is built when this one is typed out. */
 const PAGE_LENGTH = 150;
@@ -19,8 +19,8 @@ function letterPool(props: TypingTestProps): string[] {
 }
 
 /** Every configured word once, in random order. */
-function wordRounds(props: TypingTestProps): Round[] {
-  return generateRoundsDictionary(props.wordIds, props.wordIds.length).filter(
+function wordRounds(props: TypingTestProps): WordRound[] {
+  return generateWordRounds(props.wordIds, props.wordIds.length).filter(
     (round) => round.word.length > 0,
   );
 }
@@ -54,8 +54,8 @@ export function createLetterSource(props: TypingTestProps): PromptSource<string[
 }
 
 /** Every word once in random order, then a fresh shuffle. */
-export function createWordSource(props: TypingTestProps): PromptSource<Round | undefined> {
-  let rounds: Round[] = [];
+export function createWordSource(props: TypingTestProps): PromptSource<WordRound | undefined> {
+  let rounds: WordRound[] = [];
   return {
     next: () => {
       if (rounds.length === 0) rounds = wordRounds(props);

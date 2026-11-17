@@ -18,7 +18,7 @@ import { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { LevelMapScreen } from '../../level-map';
 import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
-import { generateRoundsDictionary, playRoundAudio, type Round } from '../level-word';
+import { generateWordRounds, playRoundAudio, type WordRound } from '../word-rounds';
 
 const FONT_SIZE = responsive({ sm: 76, lg: 100 });
 const PAD_Y = responsive({ sm: 50, lg: 75 });
@@ -57,8 +57,8 @@ export class TypingMarketScreen extends Container {
   private wordContainer: Container = new Container();
   private wordText: HTMLText;
   private contentContainer: Container;
-  private rounds: Round[];
-  private currentRound?: Round;
+  private rounds: WordRound[];
+  private currentRound?: WordRound;
   private _cardW: number = 0;
   private _sw: number = 0;
   private _sh: number = 0;
@@ -92,7 +92,7 @@ export class TypingMarketScreen extends Container {
     });
 
     this.keyboard = new KeyboardLayout({ text: 'words' });
-    this.rounds = generateRoundsDictionary(typedLevel.props.wordIds, typedLevel.props.roundCount);
+    this.rounds = generateWordRounds(typedLevel.props.wordIds, typedLevel.props.roundCount);
 
     this.card = new Sprite({
       texture: Texture.from('typing-levels/typing-level-market/card-background.png'),
