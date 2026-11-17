@@ -2,30 +2,39 @@ import { animate } from 'motion';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { randomShuffle } from '../../../../engine/utils/random';
 import { responsive } from '../../../../engine/utils/viewport';
 import { m } from '../../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
-import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { getTypedText } from '../../../../utils/keymap';
 import { getCurrentKeyboardLetters, getScriptFontFamily } from '../../../../utils/script';
-import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
-import { EndScreenPopup } from '../../../popups/end-screen';
-import { QuitPopup } from '../../../popups/quit';
-import { HUD } from '../../../ui/hud';
-import { KeyboardLayout, type KeyboardColorOptions } from '../../../ui/keyboard-layout';
+import type { HUD } from '../../../ui/hud';
+import {
+  KEY_FEEDBACK_MS,
+  KeyboardLayout,
+  type KeyboardColorOptions,
+} from '../../../ui/keyboard-layout';
 import { TypingLetter } from '../../../ui/typing-letter';
-import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
+import { createLevelHud, finishLevel } from '../../level-flow';
+import { getTypedLevel, type TLevel } from '../../level-map/units';
 
-const SLOT_WIDTH = 250;
+/** Phones fit the four slots across with narrower cards and gaps. */
+const SLOT_WIDTH = { sm: 150, lg: 250 };
+const SLOT_GAP = { sm: 16, lg: 80 };
 const SLOT_HEIGHT = 100;
-const SLOT_GAP = 80;
 const SLOT_RADIUS = 16;
+/** The queue's top: phones drop it below the corner buttons. */
+const QUEUE_TOP = { sm: 170, lg: 36 };
+/** Notes shown at a time; each batch of them fills the queue left to right. */
+const QUEUE_SIZE = 4;
 const TARGET_SIZE = 150;
 const SHADOW_OFFSET = 10;
-const FEEDBACK_DURATION_MS = 350;
-const ENTER_STAGGER_MS = 0.08;
-const EXIT_STAGGER_MS = 0.02;
+const ENTER_STAGGER_S = 0.08;
+const EXIT_STAGGER_S = 0.02;
+/** The instrument sits this far left of centre; the target card just left of it. */
+const INSTRUMENT_OFFSET_X = { sm: 210, lg: 300 };
+const TARGET_OFFSET_X = 66;
 
 const COLORS = {
   queue: 0xa6bbd2,
@@ -62,28 +71,31 @@ class NoteCard extends Container {
     anchor: 0.5,
   });
 
-  private readonly cardWidth: number;
+  private cardWidth = 0;
   private readonly cardHeight: number;
   private readonly defaultColor: number;
+  private state: NoteCardState = 'default';
+  private letter = '';
 
-  constructor(width: number, height: number, defaultColor: number) {
-    super({
-      layout: {
-        width,
-        height,
-        flexShrink: 0,
-      },
-    });
-    this.cardWidth = width;
+  constructor(height: number, defaultColor: number) {
+    super({ layout: { height, flexShrink: 0 } });
     this.cardHeight = height;
     this.defaultColor = defaultColor;
-    this.noteLabel.position.set(width / 2, height / 2);
     this.noteLabel.visible = false;
     this.addChild(this.shadow, this.face, this.noteLabel);
-    this.setState('default');
+  }
+
+  /** Resize the card and redraw it as it is. */
+  public setWidth(width: number) {
+    this.cardWidth = width;
+    this.layout = { width };
+    this.noteLabel.position.set(width / 2, this.cardHeight / 2);
+    this.setState(this.state, this.letter);
   }
 
   public setState(state: NoteCardState, letter = '') {
+    this.state = state;
+    this.letter = letter;
     const color =
       state === 'success' ? COLORS.success : state === 'error' ? COLORS.error : this.defaultColor;
 
@@ -99,13 +111,13 @@ class NoteCard extends Container {
   }
 }
 
+/** `noteCount` notes: the letters in random order, round after round. */
 function shuffledNotes(letters: readonly string[], noteCount: number) {
   if (letters.length === 0) return [];
 
   const result: string[] = [];
   while (result.length < noteCount) {
-    const shuffled = [...letters].sort(() => Math.random() - 0.5);
-    result.push(...shuffled);
+    result.push(...randomShuffle([...letters]));
   }
 
   return result.slice(0, noteCount);
@@ -124,12 +136,10 @@ export class TypingInstrumentScreen extends Container {
   private readonly queue = new Container({
     layout: {
       position: 'absolute',
-      top: responsive({ sm: 170, lg: 36 }),
       width: '100%',
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      gap: responsive({ sm: 16, lg: SLOT_GAP }),
     },
   });
   private readonly targetLabel = new Text({
@@ -147,8 +157,9 @@ export class TypingInstrumentScreen extends Container {
   private target!: TypingLetter;
   private readonly queueCards: NoteCard[];
   private readonly notes: string[];
-  private readonly queueSize = 4;
-  private feedbackTimer?: number;
+  private feedbackTimer?: ReturnType<typeof setTimeout>;
+  /** A note's feedback that ended behind a popup, run once it closes. */
+  private pendingFeedback?: () => void;
   private noteIndex = 0;
   private paused = true;
   private completed = false;
@@ -161,13 +172,12 @@ export class TypingInstrumentScreen extends Container {
 
   constructor(level: TLevel) {
     const typedLevel = getTypedLevel(level, 'typing-instrument');
-    const mapUnit = findMapUnitForLevel(typedLevel);
     super();
     this.level = typedLevel;
     this.notes = shuffledNotes(getCurrentKeyboardLetters(), typedLevel.props.noteCount);
     this.queueCards = Array.from(
-      { length: this.queueSize },
-      () => new NoteCard(responsive({ sm: 150, lg: SLOT_WIDTH }), SLOT_HEIGHT, COLORS.queue),
+      { length: QUEUE_SIZE },
+      () => new NoteCard(SLOT_HEIGHT, COLORS.queue),
     );
 
     this.background = new Sprite({
@@ -179,14 +189,7 @@ export class TypingInstrumentScreen extends Container {
       anchor: 0.5,
     });
 
-    this.hud = new HUD({
-      onBack: () =>
-        void engine().navigation.showPopup(QuitPopup, {
-          mascot: typedLevel.mascot,
-          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
-        }),
-      help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
-    });
+    this.hud = createLevelHud(typedLevel);
 
     this.queueCards.forEach((card) => this.queue.addChild(card));
     this.addChild(
@@ -204,15 +207,15 @@ export class TypingInstrumentScreen extends Container {
     this.layout = { width, height };
     this.background.layout = { width, height };
     this.keyboard.resize(width, height);
+    this.queue.layout = { top: responsive(QUEUE_TOP), gap: responsive(SLOT_GAP) };
+    const slotWidth = responsive(SLOT_WIDTH);
+    for (const card of this.queueCards) card.setWidth(slotWidth);
 
     this.instrumentRestY = height * 0.35;
     this.targetLabelRestY = height * 0.25;
-    this.instrument.position.set(
-      width / 2 - responsive({ sm: 210, lg: 300 }),
-      this.instrumentRestY,
-    );
+    this.instrument.position.set(width / 2 - responsive(INSTRUMENT_OFFSET_X), this.instrumentRestY);
     this.targetLabel.position.set(width / 2 + 10, this.targetLabelRestY);
-    this.targetPosition = { x: width / 2 - 66, y: height * 0.3 };
+    this.targetPosition = { x: width / 2 - TARGET_OFFSET_X, y: height * 0.3 };
     this.target?.position.set(this.targetPosition.x, this.targetPosition.y);
   }
 
@@ -242,7 +245,7 @@ export class TypingInstrumentScreen extends Container {
         { duration: 0.4, ease: 'backOut' },
       ),
       ...this.queueCards.flatMap((card, index) => {
-        const delay = (this.queueSize - 1 - index) * ENTER_STAGGER_MS;
+        const delay = (QUEUE_SIZE - 1 - index) * ENTER_STAGGER_S;
         return [
           animate(card, { alpha: 1 }, { duration: 0.35, ease: 'backOut', delay }),
           animate(card.scale, { x: 1, y: 1 }, { duration: 0.35, ease: 'backOut', delay }),
@@ -267,7 +270,7 @@ export class TypingInstrumentScreen extends Container {
         { duration: 0.2, ease: 'backIn' },
       ),
       ...this.queueCards.flatMap((card, index) => {
-        const delay = (this.queueSize - 1 - index) * EXIT_STAGGER_MS;
+        const delay = (QUEUE_SIZE - 1 - index) * EXIT_STAGGER_S;
         return [
           animate(card, { alpha: 0 }, { duration: 0.2, ease: 'backIn', delay }),
           animate(card.scale, { x: 0.85, y: 0.85 }, { duration: 0.2, ease: 'backIn', delay }),
@@ -288,22 +291,36 @@ export class TypingInstrumentScreen extends Container {
     this.paused = false;
     window.addEventListener('keydown', this.handleKeyDown);
     await this.keyboard.resume();
+    const pending = this.pendingFeedback;
+    this.pendingFeedback = undefined;
+    pending?.();
   }
 
-  public reset() {
+  override destroy(options?: Parameters<Container['destroy']>[0]) {
     window.removeEventListener('keydown', this.handleKeyDown);
-    if (this.feedbackTimer) window.clearTimeout(this.feedbackTimer);
+    clearTimeout(this.feedbackTimer);
+    super.destroy(options);
+  }
+
+  /** Run `then` once a note's feedback has shown; behind a popup, once the popup closes. */
+  private afterFeedback(then: () => void) {
+    this.feedbackTimer = setTimeout(() => {
+      if (this.paused) this.pendingFeedback = then;
+      else then();
+    }, KEY_FEEDBACK_MS);
   }
 
   private renderNotes() {
-    const batchStart = Math.floor(this.noteIndex / this.queueSize) * this.queueSize;
+    const batchStart = Math.floor(this.noteIndex / QUEUE_SIZE) * QUEUE_SIZE;
     const completedInBatch = this.noteIndex - batchStart;
     this.queueCards.forEach((card, index) => {
       const isSuccess = index < completedInBatch;
       const letter = this.notes[batchStart + index] ?? '';
       card.setState(isSuccess ? 'success' : 'default', isSuccess ? letter : '');
     });
-    this.setTargetLetter(this.notes[this.noteIndex] ?? '');
+    const note = this.notes[this.noteIndex];
+    this.setTargetLetter(note ?? '');
+    this.keyboard.setHintedLetter(note);
   }
 
   private setTargetLetter(letter: string) {
@@ -318,20 +335,8 @@ export class TypingInstrumentScreen extends Container {
   }
 
   private readonly handleKeyDown = (event: KeyboardEvent) => {
-    if (
-      this.paused ||
-      this.completed ||
-      this.awaitingFeedback ||
-      event.repeat ||
-      event.key === 'Shift' ||
-      event.ctrlKey ||
-      event.metaKey ||
-      event.altKey
-    ) {
-      return;
-    }
-
-    const typed = getMappedFromKeyboardEvent(event);
+    if (this.paused || this.completed || this.awaitingFeedback) return;
+    const typed = getTypedText(event);
     if (!typed) return;
 
     if (typed === this.notes[this.noteIndex]) {
@@ -347,12 +352,12 @@ export class TypingInstrumentScreen extends Container {
     void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
     this.keyboard.setKeyFeedback(code, 'success');
     this.target.setFeedback('success');
-    this.queueCards[this.noteIndex % this.queueSize]?.setState(
+    this.queueCards[this.noteIndex % QUEUE_SIZE]?.setState(
       'success',
       this.notes[this.noteIndex] ?? '',
     );
 
-    this.feedbackTimer = window.setTimeout(() => {
+    this.afterFeedback(() => {
       this.keyboard.clearKeyFeedback(code);
       this.noteIndex += 1;
       if (this.noteIndex >= this.notes.length) {
@@ -361,7 +366,7 @@ export class TypingInstrumentScreen extends Container {
       }
       this.renderNotes();
       this.awaitingFeedback = false;
-    }, FEEDBACK_DURATION_MS);
+    });
   }
 
   private handleIncorrectNote(code: string) {
@@ -371,19 +376,17 @@ export class TypingInstrumentScreen extends Container {
     this.keyboard.setKeyFeedback(code, 'error');
     this.target.setFeedback('error');
 
-    this.feedbackTimer = window.setTimeout(() => {
+    this.afterFeedback(() => {
       this.keyboard.clearKeyFeedback(code);
       this.target.setFeedback('none', false);
       this.awaitingFeedback = false;
-    }, FEEDBACK_DURATION_MS);
+    });
   }
 
   private endGame() {
     this.completed = true;
     this.paused = true;
     window.removeEventListener('keydown', this.handleKeyDown);
-    const { correct, mistakes } = useSessionStore.getState();
-    useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
+    finishLevel(this, this.level);
   }
 }
