@@ -3,10 +3,13 @@ import { RoundedProgressBar } from './rounded-progress-bar';
 /** Green while over two thirds of the time is left, then orange, then red for the last third. */
 export const TIMER_COLORS = { green: 0x7ed957, orange: 0xf5a623, red: 0xef5a42 } as const;
 
-function timerColor(remaining: number) {
-  if (remaining > 2 / 3) return TIMER_COLORS.green;
-  if (remaining > 1 / 3) return TIMER_COLORS.orange;
-  return TIMER_COLORS.red;
+export type TimerBand = keyof typeof TIMER_COLORS;
+
+/** Which third of its time a countdown is in, from the share of time left. */
+export function timerBand(remaining: number): TimerBand {
+  if (remaining > 2 / 3) return 'green';
+  if (remaining > 1 / 3) return 'orange';
+  return 'red';
 }
 
 type TimerBarOptions = Omit<
@@ -23,7 +26,7 @@ export class TimerBar extends RoundedProgressBar {
 
   /** Show the fraction of time left, from 1 (full) to 0. */
   public setRemaining(remaining: number) {
-    this.setColors(timerColor(remaining));
+    this.setColors(TIMER_COLORS[timerBand(remaining)]);
     this.progress = remaining;
   }
 }

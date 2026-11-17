@@ -13,7 +13,7 @@ import { GameLevelFruitScreen } from '../game-level/level-fruit-fall';
 import { GameLevelKite } from '../game-level/level-kite';
 import { GameNaanStackScreen } from '../game-level/level-naan-stack';
 import { GameLevelSki } from '../game-level/level-ski';
-import { GameLevelOneScreen } from '../game-level/level-tandoor-rush';
+import { GameTandoorRushScreen } from '../game-level/level-tandoor-rush';
 import { GameLevelTrout } from '../game-level/level-trout';
 import { TypingLevelScreen } from '../typing-level/level-desert';
 import { TypingGoatsScreen } from '../typing-level/level-goat';
@@ -44,7 +44,7 @@ export const LEVEL_TYPE_SCREENS: Record<LevelTypeId, LevelScreenConstructor> = {
   'typing-goat': TypingGoatsScreen,
   'typing-spring': TypingSpringScreen,
   'typing-test': TypingTestScreen,
-  'game-tandoor-rush': GameLevelOneScreen,
+  'game-tandoor-rush': GameTandoorRushScreen,
   'game-naan-stack': GameNaanStackScreen,
   'game-fruit-fall': GameLevelFruitScreen,
   'game-flying': GameLevelFlying,

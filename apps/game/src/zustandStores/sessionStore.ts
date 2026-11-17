@@ -12,6 +12,8 @@ interface SessionStore {
   startSession: (type: TLayer) => void;
   recordCorrect: () => void;
   recordMistake: () => void;
+  /** Count several mistakes at once, such as the targets left when time runs out. */
+  recordMistakes: (count: number) => void;
   reset: () => void;
 }
 
@@ -25,6 +27,7 @@ const useSessionStore = create<SessionStore>()(
       set((state) => ({ attempt: state.attempt + 1, levelType: type, correct: 0, mistakes: 0 })),
     recordCorrect: () => set((state) => ({ correct: state.correct + 1 })),
     recordMistake: () => set((state) => ({ mistakes: state.mistakes + 1 })),
+    recordMistakes: (count) => set((state) => ({ mistakes: state.mistakes + count })),
     reset: () => set({ levelType: null, correct: 0, mistakes: 0 }),
   })),
 );

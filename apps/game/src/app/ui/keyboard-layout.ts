@@ -161,6 +161,16 @@ const KEY_PRESSED_COLOR = 0x8d6241;
 const TEXT_COLOR = 0xffffff;
 const SHIFT_HINT_COLOR = 0xffde59;
 
+/** The blue keyboard of the game levels' mockups. */
+export const BLUE_KEYBOARD_COLORS: KeyboardColorOptions = {
+  PANEL_COLOR: 0x6080ab,
+  PANEL_SHADOW_COLOR: 0xe9ddc8,
+  KEY_COLOR: 0xf5f3ef,
+  KEY_PRESSED_COLOR: 0xafafaf,
+  TEXT_COLOR: 0x495669,
+  SHIFT_HINT_COLOR: 0xffde59,
+};
+
 const DEFAULT_COLOR_OPTIONS: KeyboardColorOptions = {
   PANEL_COLOR,
   PANEL_SHADOW_COLOR,
