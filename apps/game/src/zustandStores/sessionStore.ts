@@ -4,6 +4,8 @@ import { subscribeWithSelector } from 'zustand/middleware';
 import type { TLayer } from '../app/screens/level-map/units';
 
 interface SessionStore {
+  /** Counts the levels started, so state kept between a level's rounds knows a new attempt. */
+  attempt: number;
   levelType: TLayer | null;
   correct: number;
   mistakes: number;
@@ -15,10 +17,12 @@ interface SessionStore {
 
 const useSessionStore = create<SessionStore>()(
   subscribeWithSelector((set) => ({
+    attempt: 0,
     levelType: null,
     correct: 0,
     mistakes: 0,
-    startSession: (type) => set({ levelType: type, correct: 0, mistakes: 0 }),
+    startSession: (type) =>
+      set((state) => ({ attempt: state.attempt + 1, levelType: type, correct: 0, mistakes: 0 })),
     recordCorrect: () => set((state) => ({ correct: state.correct + 1 })),
     recordMistake: () => set((state) => ({ mistakes: state.mistakes + 1 })),
     reset: () => set({ levelType: null, correct: 0, mistakes: 0 }),
