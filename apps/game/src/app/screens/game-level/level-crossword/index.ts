@@ -5,14 +5,11 @@ import { engine } from '../../../../engine/getEngine';
 import { responsive } from '../../../../engine/utils/viewport';
 import { waitFor } from '../../../../engine/utils/waitFor';
 import { convertToCurrentScript, isCurrentScriptRtl } from '../../../../utils/script';
-import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import { levelWordAssets, resolveWordsByIds } from '../../../../zustandStores/wordStore';
-import { EndScreenPopup } from '../../../popups/end-screen';
-import { QuitPopup } from '../../../popups/quit';
-import { HUD } from '../../../ui/hud';
-import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
+import { hudButtonTop, type HUD } from '../../../ui/hud';
+import { createLevelHud, finishLevel } from '../../level-flow';
+import { getTypedLevel, type TLevel } from '../../level-map/units';
 import { Matrix, type PlacedWord } from './grid';
 import { WordGridPanel } from './word-grid-panel';
 import { LIST_HEIGHT, LIST_WIDTH, WordListPanel } from './word-list-panel';
@@ -24,7 +21,8 @@ const PANEL_SHADOW = 16;
 const PANEL_GAP = PANEL_SHADOW + 12;
 const BACKGROUND_COLOR = 0xf3e3c6;
 const PHONE_MARGIN = 16;
-const PHONE_TOP = 170;
+/** Phones start the word list this far below the top of the back button, clear of it. */
+const PHONE_BELOW_HUD = 20;
 const PHONE_LIST_HEIGHT = 300;
 /** Lets the last word's green pulse play out before the end popup. */
 const END_DELAY_SECONDS = 0.6;
@@ -58,12 +56,13 @@ export class GameWordSearchScreen extends Container {
   private readonly remaining: PlacedWord[];
   private resolving = false;
   private completed = false;
+  /** Behind a popup, such as Quit, which the end popup must not replace. */
+  private paused = false;
   private hintTimer?: ReturnType<typeof setTimeout>;
 
   constructor(level: TLevel) {
     super();
     const typedLevel = getTypedLevel(level, 'game-word-search');
-    const mapUnit = findMapUnitForLevel(typedLevel);
     this.level = typedLevel;
 
     const matrix = new Matrix(playableWords(typedLevel.props.wordIds), {
@@ -84,13 +83,7 @@ export class GameWordSearchScreen extends Container {
     this.grid.pivot.set(this.grid.panelWidth / 2, this.grid.panelHeight / 2);
     this.content.addChild(this.wordList, this.grid);
 
-    this.hud = new HUD({
-      onBack: () =>
-        void engine().navigation.showPopup(QuitPopup, {
-          mascot: typedLevel.mascot,
-          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
-        }),
-    });
+    this.hud = createLevelHud(typedLevel);
 
     this.addChild(this.background, this.content, this.hud);
   }
@@ -102,11 +95,12 @@ export class GameWordSearchScreen extends Container {
     // Word list then grid, stacked and centered. Phones fit the grid to the screen rather than
     // shrinking the whole wide stage to it, keeping below the back button.
     const fitScale = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
+    const phoneTop = hudButtonTop(height) + PHONE_BELOW_HUD;
     const phoneHeight = PHONE_LIST_HEIGHT + PANEL_GAP + this.grid.panelHeight + PANEL_SHADOW;
     const scale = responsive({
       sm: Math.min(
         (width - PHONE_MARGIN * 2) / this.grid.panelWidth,
-        (height - PHONE_TOP - PHONE_MARGIN) / phoneHeight,
+        (height - phoneTop - PHONE_MARGIN) / phoneHeight,
       ),
       lg: fitScale,
     });
@@ -123,7 +117,7 @@ export class GameWordSearchScreen extends Container {
     const gridTop = listHeight + PANEL_GAP;
     const totalHeight = gridTop + this.grid.panelHeight + PANEL_SHADOW;
     const top = responsive({
-      sm: Math.max(PHONE_TOP / scale, (stageHeight - totalHeight) / 2),
+      sm: Math.max(phoneTop / scale, (stageHeight - totalHeight) / 2),
       lg: (stageHeight - totalHeight) / 2,
     });
     const centerX = stageWidth / 2;
@@ -167,11 +161,15 @@ export class GameWordSearchScreen extends Container {
   }
 
   public async pause() {
+    this.paused = true;
     this.stopHints();
   }
 
   public async resume() {
-    this.scheduleHint();
+    this.paused = false;
+    // The last word was found just as a popup opened; end once it is closed.
+    if (this.remaining.length === 0 && this.placed.length > 0) this.endGame();
+    else this.scheduleHint();
   }
 
   public override destroy(options?: Parameters<Container['destroy']>[0]) {
@@ -231,6 +229,7 @@ export class GameWordSearchScreen extends Container {
 
     if (this.remaining.length === 0) {
       await waitFor(END_DELAY_SECONDS);
+      // Waits out an open popup (see resume); finishLevel ignores a screen already left.
       this.endGame();
       return;
     }
@@ -241,12 +240,10 @@ export class GameWordSearchScreen extends Container {
   }
 
   private endGame() {
-    if (this.completed) return;
+    if (this.completed || this.paused) return;
     this.completed = true;
     this.stopHints();
     this.grid.setLocked(true);
-    const { correct, mistakes } = useSessionStore.getState();
-    useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
+    finishLevel(this, this.level);
   }
 }
