@@ -9,10 +9,13 @@ import { AVATARS, type AvatarDef } from '../../../utils/avatars';
 import { enterGame } from '../../../utils/continueIntoGame';
 import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import { useAuthStore } from '../../../zustandStores/auth';
+import { layoutPopup } from '../../ui/layout-popup';
 
 const CELL_SIZE = 200;
 const GRID_GAP = 48;
 const COLUMNS = 3;
+/** Least room kept between the card and the view's edges. */
+const CARD_MARGIN = 24;
 
 type AvatarSelectMode = {
   mode?: 'onboarding' | 'profile';
@@ -29,6 +32,10 @@ export class AvatarSelectScreen extends Container {
   private title: Text;
   private mode: 'onboarding' | 'profile';
   private returnTo?: string;
+  private cardWidth: number;
+  private cardHeight: number;
+  /** Set by the first pick, so a double tap does not continue twice. */
+  private selected = false;
 
   constructor({ mode = 'onboarding', returnTo }: AvatarSelectMode = {}) {
     super({
@@ -53,6 +60,8 @@ export class AvatarSelectScreen extends Container {
     });
 
     const parchmentTexture = Texture.from('avatar-select/parchment.png');
+    this.cardWidth = parchmentTexture.width;
+    this.cardHeight = parchmentTexture.height;
     this.card = new Container({
       layout: {
         width: parchmentTexture.width,
@@ -173,8 +182,10 @@ export class AvatarSelectScreen extends Container {
 
   /** Persist the chosen avatar id on the user, then continue or close the selector based on mode. */
   private selectAvatar(id: number) {
-    const { user, setUser } = useAuthStore.getState();
+    if (this.selected) return;
+    this.selected = true;
 
+    const { user, setUser } = useAuthStore.getState();
     if (user) setUser({ ...user, avatar: id });
     void saveAvatar(id);
 
@@ -186,12 +197,19 @@ export class AvatarSelectScreen extends Container {
     enterGame(this.returnTo);
   }
 
+  /** The parchment is wider than a phone, so the whole screen scales down until the card fits. */
   public resize(width: number, height: number) {
-    this.layout = { width, height };
+    const scale = Math.min(
+      1,
+      (width - 2 * CARD_MARGIN) / this.cardWidth,
+      (height - 2 * CARD_MARGIN) / this.cardHeight,
+    );
+    layoutPopup(this, width, height, scale);
   }
 
   public async show(): Promise<void> {
-    void engine().audio.sfx.play('preload-audio/sfx/popup.mp3');
+    // Opened over the user stats as a popup; onboarding shows it as a plain screen.
+    if (this.mode === 'profile') void engine().audio.sfx.play('preload-audio/sfx/popup.mp3');
 
     this.card.alpha = 0;
     this.card.scale.set(0.85);
