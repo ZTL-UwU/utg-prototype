@@ -2,26 +2,30 @@ import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { frameDeltaMs } from '../../../../engine/utils/maths';
+import { randomInt } from '../../../../engine/utils/random';
 import { isPhone, responsive } from '../../../../engine/utils/viewport';
-import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { getTypedText } from '../../../../utils/keymap';
 import { convertKeyboardLettersToCurrentScript } from '../../../../utils/script';
-import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
-import { EndScreenPopup } from '../../../popups/end-screen';
-import { QuitPopup } from '../../../popups/quit';
-import { HUD } from '../../../ui/hud';
+import type { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
-import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
-import { LivesBar } from './lives-bar';
+import { LivesBar } from '../../../ui/lives-bar';
+import { createLevelHud, finishLevel } from '../../level-flow';
+import { getTypedLevel, type TLevel } from '../../level-map/units';
 import { NaanPiece } from './naan-piece';
 import { PlateStack } from './plate-stack';
 import { SpeedSlider } from './speed-slider';
 
 const DESIGN_WIDTH = 1920;
 const DESIGN_HEIGHT = 1080;
-const FEEDBACK_DURATION_MS = 350;
 const NAAN_WIDTH = 220;
+const HEART_ASSET = 'game-levels/game-level-naan-stack/heart-full.png';
+/** The speed slider goes from half to twice the level's own speed. */
+const MIN_SPEED_FACTOR = 0.5;
+const MAX_SPEED_FACTOR = 2;
+/** Shortest time between naan, so a spawn delay of 0 can't spawn one every frame. */
+const MIN_SPAWN_INTERVAL_MS = 100;
 
 const LAYOUT = {
   leftPlate: { x: 390, y: 535 },
@@ -39,7 +43,6 @@ const PHONE_STAGE_TOP = 380;
 type MovingNaan = {
   letter: string;
   piece: NaanPiece;
-  resolving: boolean;
 };
 
 export class GameNaanStackScreen extends Container {
@@ -69,8 +72,9 @@ export class GameNaanStackScreen extends Container {
   private readonly plates: PlateStack[];
 
   private movingNaan: MovingNaan[] = [];
+  /** Naan typed and flying to a plate; the level waits for them to land. */
+  private flyingNaan = 0;
   private effectAnimations: AnimationPlaybackControls[] = [];
-  private feedbackTimeouts: number[] = [];
   private spawnDelayMs = 0;
   private stageRight = DESIGN_WIDTH;
   private paused = true;
@@ -78,34 +82,24 @@ export class GameNaanStackScreen extends Container {
 
   constructor(level: TLevel) {
     const typedLevel = getTypedLevel(level, 'game-naan-stack');
-    const mapUnit = findMapUnitForLevel(typedLevel);
     super();
     this.level = typedLevel;
     this.letterPool = convertKeyboardLettersToCurrentScript(typedLevel.props.letters);
     this.plateCapacity = typedLevel.props.plateCapacity;
-    this.spawnIntervalMs = typedLevel.props.spawnDelayMs;
+    this.spawnIntervalMs = Math.max(MIN_SPAWN_INTERVAL_MS, typedLevel.props.spawnDelayMs);
     this.moveSpeed = typedLevel.props.moveSpeed;
 
-    this.hud = new HUD({
-      onBack: () =>
-        void engine().navigation.showPopup(QuitPopup, {
-          mascot: typedLevel.mascot,
-          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
-        }),
-    });
-
-    this.livesBar = new LivesBar(typedLevel.props.maxLives);
-    this.livesBar.position.set(LAYOUT.lives.x, LAYOUT.lives.y);
+    this.hud = createLevelHud(typedLevel);
+    this.livesBar = new LivesBar({ maxLives: typedLevel.props.maxLives, icon: HEART_ASSET });
 
     this.speedSlider = new SpeedSlider({
-      min: this.moveSpeed * 0.5,
-      max: this.moveSpeed * 2,
+      min: this.moveSpeed * MIN_SPEED_FACTOR,
+      max: this.moveSpeed * MAX_SPEED_FACTOR,
       value: this.moveSpeed,
       onChange: (speed) => {
         this.moveSpeed = speed;
       },
     });
-    this.speedSlider.position.set(LAYOUT.speedSlider.x, LAYOUT.speedSlider.y);
 
     this.leftPlate = new PlateStack({
       texture: 'game-levels/game-level-naan-stack/plate-blue.png',
@@ -159,6 +153,12 @@ export class GameNaanStackScreen extends Container {
   }
 
   public async show() {
+    // A level with no letters has nothing to type.
+    if (this.letterPool.length === 0) {
+      this.completed = true;
+      finishLevel(this, this.level);
+      return;
+    }
     window.addEventListener('keydown', this.handleKeyDown);
     this.paused = false;
     await this.keyboard.playEnterAnimation();
@@ -182,14 +182,10 @@ export class GameNaanStackScreen extends Container {
     await this.keyboard.resume();
   }
 
-  public reset() {
-    this.cleanupLevel();
-  }
-
   public update(ticker: Ticker) {
     if (this.paused || this.completed) return;
 
-    const deltaMs = Math.min(ticker.deltaMS, 50);
+    const deltaMs = frameDeltaMs(ticker);
     this.updateSpawning(deltaMs);
     this.updateMovingNaan(deltaMs);
   }
@@ -212,7 +208,7 @@ export class GameNaanStackScreen extends Container {
   private updateMovingNaan(deltaMs: number) {
     for (let index = this.movingNaan.length - 1; index >= 0; index -= 1) {
       const moving = this.movingNaan[index];
-      if (!moving || moving.resolving) continue;
+      if (!moving) continue;
 
       moving.piece.x -= this.moveSpeed * (deltaMs / 1000);
 
@@ -223,7 +219,7 @@ export class GameNaanStackScreen extends Container {
   }
 
   private spawnNaan() {
-    const letter = this.letterPool[Math.floor(Math.random() * this.letterPool.length)] ?? '';
+    const letter = this.letterPool[randomInt(0, this.letterPool.length - 1)] ?? '';
     const piece = new NaanPiece({ letter, width: NAAN_WIDTH });
     piece.position.set(this.stageRight + piece.halfWidth, LAYOUT.naanFlightY);
     piece.alpha = 0;
@@ -231,27 +227,12 @@ export class GameNaanStackScreen extends Container {
     this.naanLayer.addChild(piece);
     void piece.playAppear();
 
-    this.movingNaan.push({
-      letter,
-      piece,
-      resolving: false,
-    });
+    this.movingNaan.push({ letter, piece });
   }
 
   private readonly handleKeyDown = (event: KeyboardEvent) => {
-    if (
-      this.paused ||
-      this.completed ||
-      event.repeat ||
-      event.key === 'Shift' ||
-      event.ctrlKey ||
-      event.metaKey ||
-      event.altKey
-    ) {
-      return;
-    }
-
-    const typedLetter = getMappedFromKeyboardEvent(event);
+    if (this.paused || this.completed) return;
+    const typedLetter = getTypedText(event);
     if (!typedLetter) return;
 
     const targetIndex = this.findStackableNaan(typedLetter);
@@ -262,10 +243,7 @@ export class GameNaanStackScreen extends Container {
 
     useSessionStore.getState().recordMistake();
     void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
-    this.keyboard.setKeyFeedback(event.code, 'error');
-    this.feedbackTimeouts.push(
-      window.setTimeout(() => this.keyboard.clearKeyFeedback(event.code), FEEDBACK_DURATION_MS),
-    );
+    this.keyboard.flashKeyFeedback(event.code, 'error');
   };
 
   /** Picks the matching naan closest to escaping (leftmost), wherever it is on screen. */
@@ -276,7 +254,7 @@ export class GameNaanStackScreen extends Container {
     let bestX = Infinity;
 
     this.movingNaan.forEach((moving, index) => {
-      if (moving.resolving || moving.letter !== letter) return;
+      if (moving.letter !== letter) return;
       if (moving.piece.x < bestX) {
         bestX = moving.piece.x;
         bestIndex = index;
@@ -304,24 +282,22 @@ export class GameNaanStackScreen extends Container {
 
   private async stackNaan(index: number, code: string) {
     const moving = this.movingNaan[index];
-    if (!moving || moving.resolving) return;
+    if (!moving) return;
 
     const plate = this.findNearestOpenPlate(moving.piece.x);
     if (!plate) return;
 
-    moving.resolving = true;
     useSessionStore.getState().recordCorrect();
     void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
-    this.keyboard.setKeyFeedback(code, 'success');
-    this.feedbackTimeouts.push(
-      window.setTimeout(() => this.keyboard.clearKeyFeedback(code), FEEDBACK_DURATION_MS),
-    );
+    this.keyboard.flashKeyFeedback(code, 'success');
     moving.piece.setFeedback('success');
 
     this.movingNaan.splice(index, 1);
+    this.flyingNaan += 1;
 
+    // The slot is claimed now, so a second naan typed during the flight aims at the next one.
     const targetX = plate.x;
-    const targetY = plate.y + plate.nextStackLocalY();
+    const targetY = plate.y + plate.reserveSlot();
     const flightDistance = Math.hypot(targetX - moving.piece.x, targetY - moving.piece.y);
     const animation = animate(
       moving.piece,
@@ -329,28 +305,12 @@ export class GameNaanStackScreen extends Container {
       { duration: Math.min(0.28 + flightDistance / 4000, 0.5), ease: 'easeOut' },
     );
     this.effectAnimations.push(animation);
+    await animation.finished;
+    this.removeEffectAnimation(animation);
 
-    try {
-      await animation.finished;
-      this.removeEffectAnimation(animation);
-      moving.piece.parent?.removeChild(moving.piece);
-
-      let targetPlate = plate.isFull
-        ? (this.plates.find((candidate) => !candidate.isFull) ?? plate)
-        : plate;
-
-      if (targetPlate !== plate && !targetPlate.isFull) {
-        moving.piece.position.set(targetPlate.x, targetPlate.y + targetPlate.nextStackLocalY());
-      }
-
-      const accepted = !targetPlate.isFull && (await targetPlate.acceptNaan(moving.piece));
-      if (!accepted) {
-        this.destroyNaan(moving.piece);
-      }
-    } catch {
-      // Animation interrupted during cleanup.
-    }
-
+    moving.piece.parent?.removeChild(moving.piece);
+    await plate.acceptNaan(moving.piece);
+    this.flyingNaan -= 1;
     this.tryEndGame();
   }
 
@@ -374,7 +334,7 @@ export class GameNaanStackScreen extends Container {
   private tryEndGame() {
     if (this.completed) return;
     if (!this.plates.every((plate) => plate.isFull)) return;
-    if (this.movingNaan.some((moving) => moving.resolving)) return;
+    if (this.flyingNaan > 0) return;
     this.endGame();
   }
 
@@ -383,9 +343,7 @@ export class GameNaanStackScreen extends Container {
     this.completed = true;
     this.paused = true;
     window.removeEventListener('keydown', this.handleKeyDown);
-    const { correct, mistakes } = useSessionStore.getState();
-    useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
+    finishLevel(this, this.level);
   }
 
   private destroyNaan(piece: NaanPiece) {
@@ -399,7 +357,6 @@ export class GameNaanStackScreen extends Container {
 
   private cleanupLevel() {
     window.removeEventListener('keydown', this.handleKeyDown);
-    this.clearFeedbackTimers();
 
     for (const animation of this.effectAnimations) {
       animation.stop();
@@ -412,12 +369,5 @@ export class GameNaanStackScreen extends Container {
     this.rightPlate.destroyEffects();
     this.leftPlate.clearStack();
     this.rightPlate.clearStack();
-  }
-
-  private clearFeedbackTimers() {
-    for (const timeout of this.feedbackTimeouts) {
-      window.clearTimeout(timeout);
-    }
-    this.feedbackTimeouts = [];
   }
 }
