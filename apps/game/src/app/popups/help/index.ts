@@ -1,21 +1,27 @@
 import { Dialog, FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
-import { BlurFilter, Container, Graphics, Text } from 'pixi.js';
+import { Container, Graphics, Text } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { m } from '../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import useResultStore, { selectResultTotals } from '../../../zustandStores/resultStore';
+import { ScreenBlur } from '../../ui/screen-blur';
 import { AccuracyDisplay } from './accuracy-display';
 
 function formatScoreContent(correctCount: number, mistakeCount: number) {
   return m.help_score({ correct: correctCount, mistakes: mistakeCount });
 }
 
+/** How hard the screen behind the popup is blurred. */
+const SCREEN_BLUR = 5;
+
 const POPUP_MASK_OPACITY = 0.7;
 
 export class HelpPopup extends Container {
   public readonly screenName = 'HelpPopup';
+  /** The blur this popup puts on the screen beneath it, joining its own filters. */
+  private screenBlur?: ScreenBlur;
   private popupMask: Graphics;
   private dialog: Dialog;
   private scoreContent: Text;
@@ -115,9 +121,7 @@ export class HelpPopup extends Container {
   /** Present the popup, animated */
   public async show() {
     const currentEngine = engine();
-    if (currentEngine.navigation.currentScreen) {
-      currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 5 })];
-    }
+    this.screenBlur = new ScreenBlur(SCREEN_BLUR);
     void currentEngine.audio.sfx.play('preload-audio/sfx/popup.mp3');
     this.popupMask.alpha = 0;
     animate(this.popupMask, { alpha: POPUP_MASK_OPACITY }, { duration: 0.2, ease: 'linear' });
@@ -128,7 +132,6 @@ export class HelpPopup extends Container {
   public async hide() {
     this.unsubscribeScore();
 
-    const currentEngine = engine();
     await Promise.all([
       animate(this.popupMask, { alpha: 0 }, { duration: 0.2, ease: 'linear' }),
       new Promise<void>((resolve) => {
@@ -140,9 +143,8 @@ export class HelpPopup extends Container {
       }),
     ]);
 
-    if (currentEngine.navigation.currentScreen) {
-      currentEngine.navigation.currentScreen.filters = [];
-    }
+    this.screenBlur?.remove();
+    this.screenBlur = undefined;
   }
 
   public resize(width: number, height: number) {

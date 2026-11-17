@@ -7,14 +7,14 @@ import {
   type TypingTestProps,
 } from '@utg/level-types';
 import { animate } from 'motion';
-import { BlurFilter, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
+import { Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { isPhone, responsive } from '../../../../engine/utils/viewport';
 import { m } from '../../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { layoutPopup } from '../../../ui/layout-popup';
-import { removeFilter } from '../../../ui/remove-filter';
+import { ScreenBlur } from '../../../ui/screen-blur';
 import { availableModes } from './test-content';
 
 const PANEL_WIDTH = 900;
@@ -182,7 +182,7 @@ export class TypingTestSettingsPopup extends Container {
   private readonly panel: Container;
   private readonly settings: TypingTestSettings;
   /** The blur this popup put on the screen beneath it, removed again in hide(). */
-  private screenBlur?: { screen: Container; filter: BlurFilter };
+  private screenBlur?: ScreenBlur;
 
   constructor({ levelProps, defaults, onStart }: TypingTestSettingsPopupProps) {
     super({
@@ -314,14 +314,7 @@ export class TypingTestSettingsPopup extends Container {
   public async show() {
     const currentEngine = engine();
     void currentEngine.audio.sfx.play('preload-audio/sfx/popup.mp3');
-    // Added to the screen's own filters, and later removed alone, rather than replacing them.
-    const screen = currentEngine.navigation.currentScreen;
-    if (screen) {
-      const filter = new BlurFilter({ strength: SCREEN_BLUR });
-      const filters = screen.filters;
-      screen.filters = [...(Array.isArray(filters) ? filters : filters ? [filters] : []), filter];
-      this.screenBlur = { screen, filter };
-    }
+    this.screenBlur = new ScreenBlur(SCREEN_BLUR);
 
     this.popupMask.alpha = 0;
     this.panel.alpha = 0;
@@ -341,7 +334,7 @@ export class TypingTestSettingsPopup extends Container {
       animate(this.panel.scale, { x: 0.94, y: 0.94 }, { duration: 0.2, ease: 'easeOut' }),
     ]);
 
-    if (this.screenBlur) removeFilter(this.screenBlur.screen, this.screenBlur.filter);
+    this.screenBlur?.remove();
     this.screenBlur = undefined;
   }
 
