@@ -1,18 +1,19 @@
 import { Container } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { getTypedText } from '../../../../utils/keymap';
 import { getCurrentKeyboardLetters, isCurrentScriptRtl } from '../../../../utils/script';
-import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
-import { EndScreenPopup } from '../../../popups/end-screen';
 import type { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { TypingLetter } from '../../../ui/typing-letter';
+import { finishLevel } from '../../level-flow';
 import { getTypedLevel, type TLevel, type TLevelOf } from '../../level-map/units';
 
 const CARD_SIZE = 140;
 const CARD_GAP = 40;
 const STEP = CARD_SIZE + CARD_GAP;
+/** How long a correct letter stays lit before it leaves the row. */
+const CORRECT_HOLD_MS = 600;
 
 export function makeRow(letters: readonly string[], rowSize: number): string[] {
   return Array.from({ length: rowSize }, () => {
@@ -31,6 +32,10 @@ export class LetterRow extends Container {
   private roundsRemaining: number;
   private isRemoving = false;
   private isTransitioning = false;
+  /** Behind a popup: a letter due to leave waits until the popup closes. */
+  private paused = false;
+  private removalPending = false;
+  private removeTimer?: ReturnType<typeof setTimeout>;
   private lettersContainer: Container;
   private readonly rtl = isCurrentScriptRtl();
 
@@ -83,55 +88,50 @@ export class LetterRow extends Container {
   }
 
   private readonly handleKeyDown = (event: KeyboardEvent) => {
-    if (
-      event.key === 'Shift' ||
-      event.key === 'CapsLock' ||
-      this.letters.length === 0 ||
-      this.isRemoving ||
-      this.isTransitioning
-    ) {
-      return;
-    }
-
-    if (event.repeat) return;
+    if (this.letters.length === 0 || this.isRemoving || this.isTransitioning) return;
+    // Tab, Escape, arrows and modifier chords type nothing, so they are not mistakes.
+    const typed = getTypedText(event);
+    if (!typed) return;
 
     const current = this.currentLetterCard;
     const currentLetter = this.currentLetter;
     if (!current || currentLetter === undefined) return;
 
-    const isCorrect = getMappedFromKeyboardEvent(event) === currentLetter;
-
-    if (isCorrect) {
+    if (typed === currentLetter) {
       useSessionStore.getState().recordCorrect();
       void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
       this.isRemoving = true;
       current.setFeedback('success', true);
-      this.keyboard.setKeyFeedback(event.code, 'success');
-      window.setTimeout(() => {
-        this.keyboard.clearKeyFeedback(event.code);
-        this.removeCurrentLetter();
-      }, 600);
+      this.keyboard.flashKeyFeedback(event.code, 'success', { ms: CORRECT_HOLD_MS });
+      this.removeTimer = setTimeout(() => {
+        this.removeTimer = undefined;
+        if (this.paused) this.removalPending = true;
+        else this.removeCurrentLetter();
+      }, CORRECT_HOLD_MS);
       return;
     }
 
     useSessionStore.getState().recordMistake();
     void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
     current.setFeedback('error', true);
-    if (event.code) {
-      this.keyboard.setKeyFeedback(event.code, 'error');
-      window.setTimeout(() => {
-        this.keyboard.clearKeyFeedback(event.code);
-        this.keyboard.setHintedLetter(this.currentLetter);
-      }, 350);
-    }
+    this.keyboard.flashKeyFeedback(event.code, 'error', {
+      onCleared: () => this.keyboard.setHintedLetter(this.currentLetter),
+    });
   };
 
   public async pause() {
+    this.paused = true;
     window.removeEventListener('keydown', this.handleKeyDown);
   }
 
   public async resume() {
+    this.paused = false;
     window.addEventListener('keydown', this.handleKeyDown);
+    if (this.removalPending) {
+      this.removalPending = false;
+      this.removeCurrentLetter();
+      return;
+    }
     // mid-transition the hint is set by startNextRound once the new row is in
     if (!this.isTransitioning) this.keyboard.setHintedLetter(this.currentLetter);
   }
@@ -186,6 +186,7 @@ export class LetterRow extends Container {
 
     this.buildRow();
     await this.playEnterAnimation();
+    if (this.destroyed) return;
 
     this.isTransitioning = false;
     this.keyboard.setHintedLetter(this.currentLetter);
@@ -193,6 +194,7 @@ export class LetterRow extends Container {
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {
     window.removeEventListener('keydown', this.handleKeyDown);
+    clearTimeout(this.removeTimer);
     super.destroy(options);
   }
 
@@ -209,12 +211,8 @@ export class LetterRow extends Container {
   }
 
   private endGame() {
-    this.roundsRemaining = 0;
     window.removeEventListener('keydown', this.handleKeyDown);
-
-    const { correct, mistakes } = useSessionStore.getState();
-    useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
-    return;
+    // The row lives inside the level's screen, which finishLevel checks is still current.
+    if (this.parent) finishLevel(this.parent, this.level);
   }
 }

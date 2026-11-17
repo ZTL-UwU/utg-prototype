@@ -15,7 +15,7 @@ import { GameNaanStackScreen } from '../game-level/level-naan-stack';
 import { GameLevelSki } from '../game-level/level-ski';
 import { GameTandoorRushScreen } from '../game-level/level-tandoor-rush';
 import { GameLevelTrout } from '../game-level/level-trout';
-import { TypingLevelScreen } from '../typing-level/level-desert';
+import { TypingDesertScreen } from '../typing-level/level-desert';
 import { TypingGoatsScreen } from '../typing-level/level-goat';
 import { TypingInstrumentScreen } from '../typing-level/level-instrument';
 import { TypingMarketScreen } from '../typing-level/level-market';
@@ -35,7 +35,7 @@ export const LEVEL_TYPE_SCREENS: Record<LevelTypeId, LevelScreenConstructor> = {
   'education-word': EducationWordScreen,
   'education-sheep-jump': EducationSheepJumpScreen,
   'education-whack-a-mole': EducationWhackAMoleScreen,
-  'typing-desert': TypingLevelScreen,
+  'typing-desert': TypingDesertScreen,
   'typing-sandstorm': TypingSandstormScreen,
   'typing-instrument': TypingInstrumentScreen,
   'typing-word': TypingWordScreen,
