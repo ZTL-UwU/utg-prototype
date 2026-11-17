@@ -9,6 +9,8 @@ const LEAF_FONT_COLORS: Record<string, number> = {
   'typing-levels/typing-level-sandstorm/leaf-3.svg': 0x502d1a,
 };
 
+const TYPED_TINT = 0xc4e86b;
+
 type LeafLetterOptions = {
   letter: string;
   size: number;
@@ -20,6 +22,7 @@ export class LeafLetter extends Container {
   private readonly leaf: Sprite;
   private readonly letterLabel: Text;
   private feedbackAnimation?: AnimationPlaybackControls;
+  private appearAnimations: AnimationPlaybackControls[] = [];
 
   constructor({ letter, size, leafAsset }: LeafLetterOptions) {
     super({
@@ -65,7 +68,7 @@ export class LeafLetter extends Container {
     this.alpha = 0;
     this.content.scale.set(0.6);
 
-    await Promise.all([
+    this.appearAnimations = [
       animate(0, 1, {
         duration: 0.4,
         ease: 'backOut',
@@ -75,12 +78,21 @@ export class LeafLetter extends Container {
         },
       }),
       animate(this.content.scale, { x: 1, y: 1 }, { duration: 0.4, ease: 'backOut', delay }),
-    ]);
+    ];
+    await Promise.all(this.appearAnimations.map((animation) => animation.finished));
   }
 
-  public setFeedback(feedback: 'success') {
+  /** Stop popping in, so a leaf typed early fades from where it is instead of fighting it. */
+  private stopAppear() {
+    for (const animation of this.appearAnimations) animation.stop();
+    this.appearAnimations = [];
+  }
+
+  /** The leaf turns green and bounces, once it has been typed. */
+  public setFeedback() {
+    this.stopAppear();
     this.feedbackAnimation?.stop();
-    this.leaf.tint = feedback === 'success' ? 0xc4e86b : 0xffffff;
+    this.leaf.tint = TYPED_TINT;
     this.feedbackAnimation = animate([
       [this.content.scale, { x: 1.12, y: 1.12 }, { duration: 0.14, ease: 'backOut' }],
       [this.content.scale, { x: 1, y: 1 }, { type: 'spring', bounce: 0.35, duration: 0.48 }],
@@ -88,6 +100,7 @@ export class LeafLetter extends Container {
   }
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {
+    this.stopAppear();
     this.feedbackAnimation?.stop();
     super.destroy(options);
   }
