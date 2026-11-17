@@ -107,7 +107,7 @@ export class Kite extends Container {
     this.startIdleAnimation(); // re-centre the bob on the new resting spot
   }
 
-  /** Pooled screens are reused, so the kite has to come back pristine. */
+  /** Back to the untouched kite, hidden until its entry animation brings it in. */
   public reset() {
     this.stopAnimations();
     this.damage = 0;

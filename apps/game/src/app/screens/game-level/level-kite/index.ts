@@ -1,9 +1,11 @@
 import { Container, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { frameDeltaMs } from '../../../../engine/utils/maths';
+import { randomShuffle } from '../../../../engine/utils/random';
+import { topClearance } from '../../../../engine/utils/viewport';
+import { getTypedText } from '../../../../utils/keymap';
 import { convertToCurrentScript } from '../../../../utils/script';
-import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import {
   getWordStandardAudioAlias,
@@ -11,22 +13,22 @@ import {
   levelWordAssets,
   resolveWordsByIds,
 } from '../../../../zustandStores/wordStore';
-import { EndScreenPopup } from '../../../popups/end-screen';
-import { QuitPopup } from '../../../popups/quit';
-import { HUD } from '../../../ui/hud';
+import { hudButtonTop, type HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
-import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
+import { LivesBar } from '../../../ui/lives-bar';
+import { createLevelHud, finishLevel } from '../../level-flow';
+import { getTypedLevel, type TLevel } from '../../level-map/units';
 import { Gust } from './gust';
 import { Kite } from './kite';
-import { KITE_WIDTH, KitesBar } from './kites-bar';
 import { ScoreCounter } from './score-counter';
 
 const KEY_FEEDBACK_MS = 300;
 const WORD_COMPLETE_HOLD_MS = 350; // let the last letter read as completed before the gust exits
 const HUD_MARGIN = 40;
-const SCORE_COUNTER_TOP = 172; // clears the back button, which is centred at y 90 and 123 tall
-const MAX_FRAME_MS = 50; // a backgrounded tab must not eat the timer
+/** The score sits this far below the back button's top, clear of the 123-tall button. */
+const SCORE_BELOW_HUD = 82;
+const KITE_ICON = 'game-levels/game-level-kite/kites/bar.png';
+const KITE_ICON_SIZE = 56;
 type Round = {
   word: string;
   wordId: number;
@@ -63,14 +65,15 @@ export class GameLevelKite extends Container {
   private kite: Kite;
 
   // hud
-  private kitesBar: KitesBar;
+  private kitesBar: LivesBar;
   private scoreCounter: ScoreCounter;
   private hud: HUD;
   private score: number = 0;
 
   // keyboard
   private keyboard: KeyboardLayout;
-  private feedbackTimeouts: number[] = [];
+  /** The hold before a finished word's gust exits. */
+  private holdTimeout?: ReturnType<typeof setTimeout>;
 
   private completed: boolean = false;
 
@@ -90,29 +93,18 @@ export class GameLevelKite extends Container {
     });
     this.keyboard = new KeyboardLayout({ text: 'words' });
 
-    this.wordPool = resolveWordsByIds(props.wordIds).map((word) => {
-      const round: Round = {
+    this.wordPool = randomShuffle(
+      resolveWordsByIds(props.wordIds).map((word) => ({
         word: convertToCurrentScript(word.word, { autoCapitalize: false }),
         wordId: word.id,
-      };
-
-      return round;
-    });
-    this.wordPool.sort(() => Math.random() - 0.5);
+      })),
+    );
 
     this.kite = new Kite();
 
-    this.kitesBar = new KitesBar(props.maxLives);
+    this.kitesBar = new LivesBar({ maxLives: props.maxLives, icon: KITE_ICON });
     this.scoreCounter = new ScoreCounter();
-
-    const mapUnit = findMapUnitForLevel(typedLevel);
-    this.hud = new HUD({
-      onBack: () =>
-        void engine().navigation.showPopup(QuitPopup, {
-          mascot: typedLevel.mascot,
-          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
-        }),
-    });
+    this.hud = createLevelHud(typedLevel);
 
     this.addChild(
       this.background,
@@ -130,22 +122,31 @@ export class GameLevelKite extends Container {
     this.gust?.resize(width, height);
     this.kite.resize(width, height);
     this.keyboard.resize(width, height);
-    this.kitesBar.position.set(width - HUD_MARGIN, HUD_MARGIN + KITE_WIDTH / 2);
-    this.scoreCounter.position.set(HUD_MARGIN, SCORE_COUNTER_TOP);
+    // Both drop below the notch on phones, with the back button.
+    this.kitesBar.position.set(
+      width - HUD_MARGIN,
+      HUD_MARGIN + topClearance(height) + KITE_ICON_SIZE / 2,
+    );
+    this.scoreCounter.position.set(HUD_MARGIN, hudButtonTop(height) + SCORE_BELOW_HUD);
     this.hud.layout = { width, height };
   }
   public update(ticker: Ticker) {
     if (!this.timerRunning || this.paused || this.completed || this.resolving) return;
-    this.wordTimerMs -= Math.min(ticker.deltaMS, MAX_FRAME_MS);
+    this.wordTimerMs -= frameDeltaMs(ticker);
     if (this.wordTimerMs <= 0) this.blowAwayGust();
   }
+  /** Behind a popup such as Quit: the clock stops and keys no longer play. */
   async pause() {
     this.paused = true;
+    window.removeEventListener('keydown', this.handleKeyDown);
+    await this.keyboard.pause();
     this.gust?.pause();
     this.kite.pauseIdle();
   }
   async resume() {
     this.paused = false;
+    if (!this.completed) window.addEventListener('keydown', this.handleKeyDown);
+    await this.keyboard.resume();
     this.gust?.resume();
     this.kite.resumeIdle();
   }
@@ -155,7 +156,6 @@ export class GameLevelKite extends Container {
     this.paused = false;
     this.timerRunning = false;
     this.wordTimerMs = 0;
-    this.kitesBar.reset();
     this.score = 0;
     this.scoreCounter.setScore(0);
     this.kite.reset();
@@ -168,12 +168,14 @@ export class GameLevelKite extends Container {
     window.removeEventListener('keydown', this.handleKeyDown);
     this.gust?.stopAnimations();
     this.kite.stopAnimations();
-    this.clearFeedbackTimeouts();
+    clearTimeout(this.holdTimeout);
     void this.keyboard.playExitAnimation();
   }
 
   private spawnGust() {
-    const word = this.wordPool[this.activeWordIdx] ?? this.wordPool[0]; // carousel, game only ends on mistakes
+    if (this.destroyed || this.completed) return;
+    // A carousel: the game only ends on mistakes, so the words come round again.
+    const word = this.wordPool[this.activeWordIdx % this.wordPool.length];
     if (!word) return; // no words configured
     this.gust = new Gust({ word: word.word, fontSize: this.wordFontSize });
     this.gust.resize(this.screenWidth, this.screenHeight);
@@ -187,7 +189,7 @@ export class GameLevelKite extends Container {
       this.kite.playEntryAnimation(),
       playWordAudio(getWordStandardAudioAlias(word.wordId)),
     ]).then(() => {
-      if (this.completed || this.resolving) return; // screen left, or already resolved
+      if (this.destroyed || this.completed || this.resolving) return; // left, or already resolved
       this.wordTimerMs = this.gustDurationMs;
       this.timerRunning = true;
     });
@@ -198,9 +200,10 @@ export class GameLevelKite extends Container {
     this.score += this.pointsOnWord;
     this.scoreCounter.setScore(this.score);
     this.keyboard.setHintedLetter(undefined);
-    this.pushTimeout(() => {
-      if (this.completed) return; // screen left while the completed word was held
+    this.holdTimeout = setTimeout(() => {
+      if (this.completed || this.destroyed) return; // screen left while the word was held
       void this.kite.playSoarAnimation().then(() => {
+        if (this.destroyed) return;
         void this.gust?.playExitAnimation().then(() => {
           this.gust?.destroy({ children: true });
           this.gust = undefined;
@@ -226,6 +229,7 @@ export class GameLevelKite extends Container {
     void this.kite.degrade(livesLeft);
 
     void gust.playExitAnimation().then(() => {
+      if (this.destroyed) return;
       gust.destroy({ children: true });
       this.gust = undefined;
       if (this.completed) return; // out of lives
@@ -236,10 +240,8 @@ export class GameLevelKite extends Container {
     if (livesLeft <= 0) this.gameOver();
   }
   private handleKeyDown = (event: KeyboardEvent) => {
-    if (this.completed || this.resolving) return;
-    if (event.repeat || event.key === 'Shift' || event.ctrlKey || event.metaKey || event.altKey)
-      return;
-    const typed = getMappedFromKeyboardEvent(event);
+    if (this.completed || this.resolving || this.paused) return;
+    const typed = getTypedText(event);
     if (!typed) return;
     const gust = this.gust;
     if (!gust) return;
@@ -247,25 +249,25 @@ export class GameLevelKite extends Container {
       useSessionStore.getState().recordCorrect();
       this.score += this.pointsOnLetter;
       this.scoreCounter.setScore(this.score);
-      this.keyboard.setKeyFeedback(event.code, 'success');
+      this.keyboard.flashKeyFeedback(event.code, 'success', { ms: KEY_FEEDBACK_MS });
       void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
-      this.pushTimeout(() => this.keyboard.clearKeyFeedback(event.code), KEY_FEEDBACK_MS);
       if (gust.isComplete) this.advanceWord();
       else this.keyboard.setHintedLetter(gust.currentLetter, gust.nextLetter);
     } else {
       useSessionStore.getState().recordMistake();
-      this.keyboard.setKeyFeedback(event.code, 'error');
       void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
       const livesLeft = this.kitesBar.loseLife();
       void this.kite.degrade(livesLeft);
       if (livesLeft <= 0) {
+        this.keyboard.setKeyFeedback(event.code, 'error');
         this.gameOver();
         return;
       }
-      this.pushTimeout(() => {
-        this.keyboard.clearKeyFeedback(event.code);
-        this.keyboard.setHintedLetter(this.gust?.currentLetter, this.gust?.nextLetter);
-      }, KEY_FEEDBACK_MS);
+      this.keyboard.flashKeyFeedback(event.code, 'error', {
+        ms: KEY_FEEDBACK_MS,
+        onCleared: () =>
+          this.keyboard.setHintedLetter(this.gust?.currentLetter, this.gust?.nextLetter),
+      });
     }
   };
   private gameOver() {
@@ -273,20 +275,14 @@ export class GameLevelKite extends Container {
     this.completed = true;
     this.timerRunning = false;
     window.removeEventListener('keydown', this.handleKeyDown);
-    this.clearFeedbackTimeouts();
+    clearTimeout(this.holdTimeout);
     this.gust?.stopAnimations();
-    const { correct, mistakes } = useSessionStore.getState();
-    useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
-  }
-  private pushTimeout(fn: () => void, ms: number) {
-    this.feedbackTimeouts.push(window.setTimeout(fn, ms));
+    finishLevel(this, this.level);
   }
 
-  private clearFeedbackTimeouts() {
-    for (const timeout of this.feedbackTimeouts) {
-      window.clearTimeout(timeout);
-    }
-    this.feedbackTimeouts = [];
+  override destroy(options?: Parameters<Container['destroy']>[0]) {
+    window.removeEventListener('keydown', this.handleKeyDown);
+    clearTimeout(this.holdTimeout);
+    super.destroy(options);
   }
 }
