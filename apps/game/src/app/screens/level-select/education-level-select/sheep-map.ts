@@ -13,7 +13,7 @@ import { LockedLevelPopup } from '../../../popups/locked-level';
 import { FreeScroll } from '../../../ui/free-scroll';
 import { createMapSheep, hopSheep } from '../../../ui/map-sheep';
 import { getLayerMaps, type TMapUnit } from '../../level-map/units';
-import { ROCK_BASE_SIZE, RockButton } from './rock-button';
+import { ROCK_BASE_SIZE, RockButton, STAND_OFFSET_RATIO } from './rock-button';
 
 const BACKGROUND_ALIAS = 'education-levels/education-level/background.png';
 
@@ -144,7 +144,10 @@ export class SheepMap extends Container {
       // Rock 1 sits low enough that the sheep standing on it clears the titles
       const { width: sheepWidth, height: sheepHeight } = this.sheep.texture;
       const sheepTall = rockSize * SHEEP_SIZE * (sheepHeight / sheepWidth);
-      top = Math.max(top, this.titleBottom + PHONE_TITLE_GAP + sheepTall + rockSize * 0.3);
+      top = Math.max(
+        top,
+        this.titleBottom + PHONE_TITLE_GAP + sheepTall + rockSize * STAND_OFFSET_RATIO,
+      );
     }
 
     this.rocks.forEach((rock, index) => {

@@ -1,64 +1,20 @@
 import { animate, type AnimationPlaybackControls } from 'motion';
-import { Assets, Container, Graphics, Sprite, Text, Texture, type DestroyOptions } from 'pixi.js';
+import { Assets, Container, Sprite, Text, Texture, type DestroyOptions } from 'pixi.js';
 
 import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 
-/** Swap these when the final art lands; missing textures fall back to a drawn rock. */
-export const ROCK_ALIAS = 'education-levels/education-level-map/rock.png';
-export const ROCK_LOCKED_ALIAS = 'education-levels/education-level-map/rock-locked.png';
+const ROCK_ALIAS = 'education-levels/education-level-map/rock.png';
 const PADLOCK_ALIAS = 'locked-popup/padlock.png';
 
 /** Width every rock is drawn at before the map scales it. */
 export const ROCK_BASE_SIZE = 260;
+/** Height above a rock's centre where a standing sheep's feet rest, as a share of its width. */
+export const STAND_OFFSET_RATIO = 0.3;
 const LOCKED_TINT = 0x9a9a9a;
 const HOVER_SCALE = 1.08;
 
-/** A drawn stand-in rock, used until the rock artwork is in the asset bundle. */
-function createPlaceholderRock(): Graphics {
-  const w = ROCK_BASE_SIZE;
-  const h = ROCK_BASE_SIZE * 0.85;
-  return new Graphics()
-    .poly([
-      -w * 0.42,
-      h * 0.45,
-      -w * 0.5,
-      h * 0.05,
-      -w * 0.36,
-      -h * 0.32,
-      -w * 0.08,
-      -h * 0.48,
-      w * 0.22,
-      -h * 0.44,
-      w * 0.44,
-      -h * 0.2,
-      w * 0.5,
-      h * 0.18,
-      w * 0.38,
-      h * 0.48,
-    ])
-    .fill(0x6f6f6f)
-    .poly([
-      -w * 0.36,
-      -h * 0.32,
-      -w * 0.08,
-      -h * 0.48,
-      w * 0.22,
-      -h * 0.44,
-      w * 0.44,
-      -h * 0.2,
-      w * 0.1,
-      -h * 0.12,
-      -w * 0.3,
-      -h * 0.1,
-    ])
-    .fill(0x8c8c8c);
-}
-
-function createRockView(locked: boolean): Container {
-  const alias = locked && Assets.cache.has(ROCK_LOCKED_ALIAS) ? ROCK_LOCKED_ALIAS : ROCK_ALIAS;
-  if (!Assets.cache.has(alias)) return createPlaceholderRock();
-
-  const sprite = new Sprite({ texture: Texture.from(alias), anchor: 0.5 });
+function createRockView(): Sprite {
+  const sprite = new Sprite({ texture: Texture.from(ROCK_ALIAS), anchor: 0.5 });
   sprite.scale.set(ROCK_BASE_SIZE / sprite.texture.width);
   return sprite;
 }
@@ -71,13 +27,14 @@ export class RockButton extends Container {
   /** Scale the map gives this rock; hover grows from it. */
   private baseScale = 1;
   private hoverAnimation?: AnimationPlaybackControls;
+  private enterAnimation?: AnimationPlaybackControls;
   public readonly locked: boolean;
 
   constructor(index: number, locked: boolean, onTap: () => void) {
     super();
     this.locked = locked;
 
-    const rock = createRockView(locked);
+    const rock = createRockView();
     if (locked) rock.tint = LOCKED_TINT;
 
     const number = new Text({
@@ -112,25 +69,36 @@ export class RockButton extends Container {
 
   /** Height above the rock's centre where the sheep's feet rest, in the rock's parent space. */
   public get standOffset() {
-    return ROCK_BASE_SIZE * 0.3 * this.baseScale;
+    return ROCK_BASE_SIZE * STAND_OFFSET_RATIO * this.baseScale;
   }
 
   public setBaseScale(scale: number) {
     this.baseScale = scale;
     this.hoverAnimation?.stop();
-    this.scale.set(scale);
+    // A running enter pop scales from baseScale each frame, so it follows on its own.
+    if (!this.enterAnimation) this.scale.set(scale);
   }
 
+  /**
+   * Pops the rock in. It animates a factor of `baseScale` rather than the scale itself, so a
+   * resize part way through never has to stop it, which would leave this promise unresolved.
+   */
   public async playEnter(delay: number) {
+    this.hoverAnimation?.stop();
     this.scale.set(0);
-    await animate(
-      this.scale,
-      { x: this.baseScale, y: this.baseScale },
-      { duration: 0.35, delay, ease: 'backOut' },
-    );
+    const animation = animate(0, 1, {
+      duration: 0.35,
+      delay,
+      ease: 'backOut',
+      onUpdate: (factor) => this.scale.set(this.baseScale * factor),
+    });
+    this.enterAnimation = animation;
+    await animation;
+    if (this.enterAnimation === animation) this.enterAnimation = undefined;
   }
 
   private animateHover(factor: number) {
+    if (this.enterAnimation) return;
     this.hoverAnimation?.stop();
     const target = this.baseScale * factor;
     this.hoverAnimation = animate(this.scale, { x: target, y: target }, { duration: 0.15 });
@@ -138,6 +106,7 @@ export class RockButton extends Container {
 
   public override destroy(options?: DestroyOptions) {
     this.hoverAnimation?.stop();
+    this.enterAnimation?.stop();
     super.destroy(options);
   }
 }
