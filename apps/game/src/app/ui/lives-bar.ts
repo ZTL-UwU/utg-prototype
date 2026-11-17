@@ -43,11 +43,13 @@ type LivesBarOptions = {
 export class LivesBar extends Container {
   private readonly icons: Sprite[] = [];
   private readonly blinkSeconds: number;
+  private readonly maxLives: number;
   private lives: number;
   private blink?: AnimationPlaybackControls;
 
   constructor({ maxLives, icon, blinkSeconds = 0 }: LivesBarOptions) {
     super();
+    this.maxLives = maxLives;
     this.lives = maxLives;
     this.blinkSeconds = blinkSeconds;
 
@@ -90,6 +92,14 @@ export class LivesBar extends Container {
   private settleBlink() {
     this.blink?.stop();
     this.blink = undefined;
+    this.applyAlphas();
+  }
+
+  /** Every life back, for levels that refill them each round. */
+  public reset() {
+    this.blink?.stop();
+    this.blink = undefined;
+    this.lives = this.maxLives;
     this.applyAlphas();
   }
 

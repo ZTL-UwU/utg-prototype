@@ -11,41 +11,34 @@ import {
 } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { frameDeltaMs, lerp } from '../../../../engine/utils/maths';
+import { randomInt } from '../../../../engine/utils/random';
 import { isPhone, responsive } from '../../../../engine/utils/viewport';
 import { getSentenceMarkup } from '../../../../utils/example-words';
-import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { getTypedText } from '../../../../utils/keymap';
 import {
   convertToCurrentScript,
   getScriptFontFamily,
   isCurrentScriptRtl,
 } from '../../../../utils/script';
-import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import { REMOTE_SENTENCES_BUNDLE } from '../../../../zustandStores/sentenceStore';
 import useSessionStore from '../../../../zustandStores/sessionStore';
-import { EndScreenPopup } from '../../../popups/end-screen';
-import { QuitPopup } from '../../../popups/quit';
-import { HUD } from '../../../ui/hud';
-import { KeyboardLayout, type KeyboardColorOptions } from '../../../ui/keyboard-layout';
-import { RoundedProgressBar } from '../../../ui/rounded-progress-bar';
-import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
+import type { HUD } from '../../../ui/hud';
+import { BLUE_KEYBOARD_COLORS, KeyboardLayout } from '../../../ui/keyboard-layout';
+import { LivesBar } from '../../../ui/lives-bar';
+import { TimerBar } from '../../../ui/timer-bar';
+import { createLevelHud, finishLevel } from '../../level-flow';
+import { getTypedLevel, type TLevel } from '../../level-map/units';
 import { generateSentenceRounds } from '../../typing-level/sentence-rounds';
-import { LivesBar } from './lives-bar';
 
 const DESIGN_WIDTH = 1920;
 const DESIGN_HEIGHT = 1080;
-const FEEDBACK_MS = 350;
-const MAX_FRAME_MS = 50;
-
-/** Matches the blue on-screen keyboard used in other game levels / mockups. */
-const KEYBOARD_COLORS: KeyboardColorOptions = {
-  PANEL_COLOR: 0x6080ab,
-  PANEL_SHADOW_COLOR: 0xe9ddc8,
-  KEY_COLOR: 0xf5f3ef,
-  KEY_PRESSED_COLOR: 0xafafaf,
-  TEXT_COLOR: 0x495669,
-  SHIFT_HINT_COLOR: 0xffde59,
-};
+const HEART_ASSET = 'game-levels/game-level-ski/heart-full.png';
+/** Widest the sentence wraps at, in design units; narrower screens wrap within their view. */
+const SENTENCE_MAX_WRAP = 1400;
+const SENTENCE_SIDE_PADDING = 40;
+const SENTENCE_PANEL_PAD_Y = 18;
+const SENTENCE_PANEL_MIN_HEIGHT = 64;
 const KEYBOARD_SCALE = 0.7;
 /** Design units a phone shows across its width, and how far down the stage starts. */
 const PHONE_STAGE = {
@@ -82,13 +75,6 @@ const SENTENCE_COLORS = {
   remaining: 0x333333,
 } as const;
 
-type TimerColor = 'green' | 'orange' | 'red';
-const TIMER_COLORS: Record<TimerColor, number> = {
-  green: 0x7ed957,
-  orange: 0xf5a623,
-  red: 0xef5a42,
-};
-
 const LAYOUT = {
   lives: { x: 1920, y: 60 },
   phoneLives: { x: 1480, y: -30 },
@@ -118,10 +104,22 @@ const BARRIER_MISS_HOLD_MS = 1400;
 const FINISH_RUN_MS = 1400;
 const SWAY_OFFSET_X = 28;
 const SWAY_RETURN_MS = 180;
-const RACE_HUD_FADE_MS = 0.35;
+const RACE_HUD_FADE_S = 0.35;
+/** The celebration's hold before the end popup. */
+const FINISH_HOLD_MS = 900;
+const FINISH_RISE = 30;
+const FINISH_SHRINK = 0.08;
+/** The barrier-miss wobble: how far the skier dips and squashes. */
+const MISS_DIP = 28;
+const MISS_SQUASH = 0.06;
+
+/** Seconds in `ms` milliseconds, for motion's durations. */
+const seconds = (ms: number) => ms / 1000;
 
 type SkiState =
   | 'countdown'
+  /** Countdown over, waiting for the keyboard to come in. */
+  | 'starting'
   | 'racing'
   | 'jumping'
   | 'tripping'
@@ -138,7 +136,7 @@ type SentenceRound = {
 /** Every sentence of one random story from the level's pool, in story order. */
 function pickStorySentences(storyIds: number[]): string[] {
   if (storyIds.length === 0) return [];
-  const storyId = storyIds[Math.floor(Math.random() * storyIds.length)]!;
+  const storyId = storyIds[randomInt(0, storyIds.length - 1)]!;
   return generateSentenceRounds(storyId).map((round) => round.sentence);
 }
 
@@ -149,7 +147,7 @@ function createSkiSentenceStyle(fontSize: number): HTMLTextStyle {
     fill: SENTENCE_COLORS.remaining,
     padding: 16,
     wordWrap: true,
-    wordWrapWidth: 1400,
+    wordWrapWidth: SENTENCE_MAX_WRAP,
     align: 'center',
     fontFamily: getScriptFontFamily(),
     cssOverrides: [`direction: ${rtl ? 'rtl' : 'ltr'}`],
@@ -160,8 +158,14 @@ function createSkiSentenceStyle(fontSize: number): HTMLTextStyle {
   });
 }
 
-function lerp(a: number, b: number, t: number) {
-  return a + (b - a) * t;
+/** The barrier's height on the slope and its scale, `t` of the way from far (0) to near (1). */
+function barrierPose(t: number) {
+  // Ease so the barrier lingers far away then rushes in.
+  const eased = Math.max(0, Math.min(1, t)) ** 2;
+  return {
+    y: lerp(LAYOUT.barrierFar.y, LAYOUT.barrierNear.y, eased),
+    scale: lerp(LAYOUT.barrierFar.scale, LAYOUT.barrierNear.scale, eased),
+  };
 }
 
 export class GameLevelSki extends Container {
@@ -185,7 +189,7 @@ export class GameLevelSki extends Container {
   private readonly sentencePanel: Graphics;
   private readonly sentenceText: HTMLText;
   private readonly countdownText: HTMLText;
-  private readonly progressBar: RoundedProgressBar;
+  private readonly progressBar: TimerBar;
   private readonly livesBar: LivesBar;
   private readonly keyboard: KeyboardLayout;
   private readonly hud: HUD;
@@ -204,14 +208,12 @@ export class GameLevelSki extends Container {
   private anim?: AnimationPlaybackControls;
   private raceHudAnims: AnimationPlaybackControls[] = [];
   private feedbackTimeouts: number[] = [];
-  private timerColor: TimerColor = 'green';
   /** Full viewport width in gameplay (design) coords — wider than DESIGN_WIDTH on ultrawide. */
   private sentencePanelWidth = DESIGN_WIDTH;
   private sentencePanelX = 0;
 
   constructor(level: TLevel) {
     const typedLevel = getTypedLevel(level, 'game-ski');
-    const mapUnit = findMapUnitForLevel(typedLevel);
     super();
     this.level = typedLevel;
     this.approachDurationMs = typedLevel.props.approachDurationMs;
@@ -253,22 +255,15 @@ export class GameLevelSki extends Container {
     this.hitFx.visible = false;
     this.hitFx.scale.set(0.85);
 
-    this.livesBar = new LivesBar(typedLevel.props.maxLives);
-    this.livesBar.position.set(
-      responsive({ sm: LAYOUT.phoneLives.x, lg: LAYOUT.lives.x }),
-      responsive({ sm: LAYOUT.phoneLives.y, lg: LAYOUT.lives.y }),
-    );
+    this.livesBar = new LivesBar({ maxLives: typedLevel.props.maxLives, icon: HEART_ASSET });
     this.livesBar.visible = false;
 
-    this.progressBar = new RoundedProgressBar({
+    this.progressBar = new TimerBar({
       width: LAYOUT.progress.width,
       height: LAYOUT.progress.height,
-      trackColor: TIMER_COLORS.green,
-      fillColor: TIMER_COLORS.green,
       strokeWidth: 6,
       padding: 8,
     });
-    this.progressBar.progress = 1;
     this.progressBar.position.set((DESIGN_WIDTH - LAYOUT.progress.width) / 2, LAYOUT.progress.y);
     this.progressBar.visible = false;
 
@@ -299,15 +294,8 @@ export class GameLevelSki extends Container {
       LAYOUT.startGate.y + LAYOUT.startGate.bannerOffsetY,
     );
 
-    this.keyboard = new KeyboardLayout({ colors: KEYBOARD_COLORS, text: 'sentences' });
-    this.hud = new HUD({
-      onBack: () =>
-        void engine().navigation.showPopup(QuitPopup, {
-          mascot: typedLevel.mascot,
-          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
-        }),
-      help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
-    });
+    this.keyboard = new KeyboardLayout({ colors: BLUE_KEYBOARD_COLORS, text: 'sentences' });
+    this.hud = createLevelHud(typedLevel);
 
     this.gameplay.addChild(
       this.startGate,
@@ -353,7 +341,16 @@ export class GameLevelSki extends Container {
     // Bleed past the letterboxed design area so the banner spans the real screen.
     this.sentencePanelWidth = width / uiScale;
     this.sentencePanelX = (DESIGN_WIDTH - this.sentencePanelWidth) / 2;
+    // A phone shows only about 1067 design units across, so wrap within what it shows.
+    this.sentenceStyle.wordWrapWidth = Math.min(
+      SENTENCE_MAX_WRAP,
+      this.sentencePanelWidth - 2 * SENTENCE_SIDE_PADDING,
+    );
     this.layoutSentencePanel();
+    this.livesBar.position.set(
+      responsive({ sm: LAYOUT.phoneLives.x, lg: LAYOUT.lives.x }),
+      responsive({ sm: LAYOUT.phoneLives.y, lg: LAYOUT.lives.y }),
+    );
     if (isPhone()) {
       this.keyboard.resizeToScreen(this.gameplay, width, height);
     } else {
@@ -370,7 +367,7 @@ export class GameLevelSki extends Container {
 
   public update(ticker: Ticker) {
     if (this.paused || this.state === 'over') return;
-    const deltaMs = Math.min(ticker.deltaMS, MAX_FRAME_MS);
+    const deltaMs = frameDeltaMs(ticker);
 
     if (this.state === 'countdown') {
       this.updateCountdown(deltaMs);
@@ -410,43 +407,6 @@ export class GameLevelSki extends Container {
     }
   }
 
-  public reset() {
-    this.anim?.stop();
-    this.anim = undefined;
-    this.stopRaceHudAnims();
-    this.clearFeedbackTimeouts();
-    this.livesBar.reset();
-    this.state = 'countdown';
-    this.sentences = pickStorySentences(this.storyIds);
-    this.sentenceIndex = 0;
-    this.currentRound = undefined;
-    this.approachElapsedMs = 0;
-    this.countdownIndex = 0;
-    this.countdownElapsedMs = 0;
-    this.swayLeft = true;
-    this.timerColor = 'green';
-    this.background.texture = Texture.from(ASSET.background);
-    this.startGate.visible = true;
-    this.countdownText.visible = true;
-    this.countdownText.style.fill = COUNTDOWN_COLORS[0];
-    this.countdownText.text = convertToCurrentScript(COUNTDOWN_ARABIC[0]);
-    this.barrier.visible = false;
-    this.hitFx.visible = false;
-    this.keyboard.visible = false;
-    this.keyboard.clearAllKeyFeedback();
-    this.setRaceUiVisible(false);
-    this.hud.visible = true;
-    this.progressBar.progress = 1;
-    this.progressBar.setColors(TIMER_COLORS.green);
-    this.leopard.texture = Texture.from(ASSET.leopardDefault);
-    this.leopard.position.set(DESIGN_WIDTH / 2, LAYOUT.leopardY);
-    this.leopard.scale.set(LAYOUT.leopardScale);
-    this.leopard.rotation = 0;
-    this.leopard.alpha = 1;
-    this.leopardBaseX = DESIGN_WIDTH / 2;
-    this.applyBarrierProgress(0);
-  }
-
   override destroy(options?: DestroyOptions) {
     window.removeEventListener('keydown', this.handleKeyDown);
     this.anim?.stop();
@@ -475,7 +435,7 @@ export class GameLevelSki extends Container {
 
     if (this.countdownIndex >= COUNTDOWN_ARABIC.length) {
       // Leave countdown immediately so a slow beginRace can't double-fire.
-      this.state = 'recovering';
+      this.state = 'starting';
       void this.beginRace();
       return;
     }
@@ -489,7 +449,18 @@ export class GameLevelSki extends Container {
     this.countdownText.visible = false;
     this.keyboard.visible = true;
     await this.keyboard.playEnterAnimation();
+    if (this.destroyed) return;
     this.startSentenceRound(0);
+  }
+
+  /** The skier standing at the centre of the slope in `texture`, its pose undone. */
+  private resetLeopard(texture: string = ASSET.leopardDefault) {
+    this.leopard.texture = Texture.from(texture);
+    this.leopard.x = this.leopardBaseX;
+    this.leopard.y = LAYOUT.leopardY;
+    this.leopard.scale.set(LAYOUT.leopardScale);
+    this.leopard.rotation = 0;
+    this.leopard.alpha = 1;
   }
 
   private startSentenceRound(index: number) {
@@ -506,17 +477,10 @@ export class GameLevelSki extends Container {
     };
     this.keyboard.setWordStart(true);
     this.approachElapsedMs = 0;
-    this.timerColor = 'green';
-    this.progressBar.setColors(TIMER_COLORS.green);
-    this.progressBar.progress = 1;
+    this.progressBar.setRemaining(1);
     this.barrier.visible = true;
     this.hitFx.visible = false;
-    this.leopard.texture = Texture.from(ASSET.leopardDefault);
-    this.leopard.x = this.leopardBaseX;
-    this.leopard.y = LAYOUT.leopardY;
-    this.leopard.scale.set(LAYOUT.leopardScale);
-    this.leopard.rotation = 0;
-    this.leopard.alpha = 1;
+    this.resetLeopard();
     this.applyBarrierProgress(0);
     this.renderSentence();
     this.keyboard.visible = true;
@@ -528,13 +492,7 @@ export class GameLevelSki extends Container {
   private updateRacing(deltaMs: number) {
     this.approachElapsedMs = Math.min(this.approachDurationMs, this.approachElapsedMs + deltaMs);
     const remaining = 1 - this.approachElapsedMs / this.approachDurationMs;
-    const nextColor: TimerColor =
-      remaining > 2 / 3 ? 'green' : remaining > 1 / 3 ? 'orange' : 'red';
-    if (nextColor !== this.timerColor) {
-      this.timerColor = nextColor;
-      this.progressBar.setColors(TIMER_COLORS[nextColor]);
-    }
-    this.progressBar.progress = remaining;
+    this.progressBar.setRemaining(remaining);
     this.applyBarrierProgress(1 - remaining);
 
     if (this.approachElapsedMs >= this.approachDurationMs) {
@@ -543,11 +501,8 @@ export class GameLevelSki extends Container {
   }
 
   private applyBarrierProgress(t: number) {
-    const clamped = Math.max(0, Math.min(1, t));
-    // Ease so the barrier lingers far away then rushes in.
-    const eased = clamped * clamped;
-    this.barrier.y = lerp(LAYOUT.barrierFar.y, LAYOUT.barrierNear.y, eased);
-    const scale = lerp(LAYOUT.barrierFar.scale, LAYOUT.barrierNear.scale, eased);
+    const { y, scale } = barrierPose(t);
+    this.barrier.y = y;
     this.barrier.scale.set(scale);
     this.barrier.x = DESIGN_WIDTH / 2;
   }
@@ -561,9 +516,8 @@ export class GameLevelSki extends Container {
   }
 
   private layoutSentencePanel() {
-    const padY = 18;
     const bounds = this.sentenceText.getLocalBounds();
-    const h = Math.max(64, bounds.height + padY * 2);
+    const h = Math.max(SENTENCE_PANEL_MIN_HEIGHT, bounds.height + SENTENCE_PANEL_PAD_Y * 2);
     this.sentencePanel
       .clear()
       .rect(0, -h / 2, this.sentencePanelWidth, h)
@@ -572,27 +526,14 @@ export class GameLevelSki extends Container {
   }
 
   private readonly handleKeyDown = (event: KeyboardEvent) => {
-    if (
-      this.paused ||
-      (this.state !== 'racing' && this.state !== 'tripping') ||
-      event.repeat ||
-      event.key === 'Shift' ||
-      event.ctrlKey ||
-      event.metaKey ||
-      event.altKey ||
-      !this.currentRound
-    ) {
-      return;
-    }
-
-    const typed = getMappedFromKeyboardEvent(event);
-    if (typed === '' && event.code !== 'Space') return;
+    if (this.paused || (this.state !== 'racing' && this.state !== 'tripping')) return;
+    if (!this.currentRound) return;
+    const typed = getTypedText(event);
+    if (!typed) return;
 
     const { sentence, correctIdx } = this.currentRound;
-    const matched = typed.length > 0 && sentence.startsWith(typed, correctIdx);
-    if (matched) {
-      this.keyboard.setKeyFeedback(event.code, 'success');
-      this.pushTimeout(() => this.keyboard.clearKeyFeedback(event.code), FEEDBACK_MS);
+    if (sentence.startsWith(typed, correctIdx)) {
+      this.keyboard.flashKeyFeedback(event.code, 'success');
       useSessionStore.getState().recordCorrect();
       this.pulseSkiSway();
       this.currentRound.correctIdx += typed.length;
@@ -615,8 +556,9 @@ export class GameLevelSki extends Container {
     const swayX = this.leopardBaseX + (this.swayLeft ? -SWAY_OFFSET_X : SWAY_OFFSET_X);
 
     this.anim?.stop();
+    // Out in half the sway's time, held, then back in the other half.
     this.anim = animate(this.leopard.x, swayX, {
-      duration: SWAY_RETURN_MS / 2000,
+      duration: seconds(SWAY_RETURN_MS / 2),
       ease: 'easeOut',
       onUpdate: (x) => {
         this.leopard.x = x;
@@ -630,7 +572,7 @@ export class GameLevelSki extends Container {
       this.leopard.texture = Texture.from(ASSET.leopardDefault);
       this.anim?.stop();
       this.anim = animate(this.leopard.x, this.leopardBaseX, {
-        duration: SWAY_RETURN_MS / 2000,
+        duration: seconds(SWAY_RETURN_MS / 2),
         ease: 'easeInOut',
         onUpdate: (x) => {
           this.leopard.x = x;
@@ -641,12 +583,11 @@ export class GameLevelSki extends Container {
 
   private onTypingMistake(code: string) {
     if (!this.currentRound) return;
-    this.keyboard.setKeyFeedback(code, 'error');
     void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
-    this.pushTimeout(() => {
-      this.keyboard.clearKeyFeedback(code);
-      this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
-    }, FEEDBACK_MS);
+    this.keyboard.flashKeyFeedback(code, 'error', {
+      onCleared: () =>
+        this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter),
+    });
     useSessionStore.getState().recordMistake();
 
     const livesLeft = this.livesBar.loseLife();
@@ -663,15 +604,16 @@ export class GameLevelSki extends Container {
     const fromX = this.leopard.x;
     const tripX = fromX + (Math.random() > 0.5 ? TRIP_OFFSET_X : -TRIP_OFFSET_X);
     this.anim?.stop();
+    // Out in half the trip, then back in the other half.
     this.anim = animate(fromX, tripX, {
-      duration: TRIP_MS / 2000,
+      duration: seconds(TRIP_MS / 2),
       ease: 'easeOut',
       onUpdate: (x) => {
         this.leopard.x = x;
       },
       onComplete: () => {
         this.anim = animate(tripX, this.leopardBaseX, {
-          duration: TRIP_MS / 2000,
+          duration: seconds(TRIP_MS / 2),
           ease: 'easeInOut',
           onUpdate: (x) => {
             this.leopard.x = x;
@@ -709,7 +651,7 @@ export class GameLevelSki extends Container {
     // Keyframe [0, 1] so Motion doesn't reuse a settled alpha=1 from the prior round
     // (which left these at the manual alpha=0 and never faded back in).
     this.raceHudAnims = targets.map((el) =>
-      animate(el, { alpha: [0, 1] }, { duration: RACE_HUD_FADE_MS, ease: 'easeOut' }),
+      animate(el, { alpha: [0, 1] }, { duration: RACE_HUD_FADE_S, ease: 'easeOut' }),
     );
   }
 
@@ -725,17 +667,10 @@ export class GameLevelSki extends Container {
 
     const startY = this.leopard.y;
     const peakY = startY - JUMP_PEAK_OFFSET;
-    const approachT = Math.min(1, this.approachElapsedMs / this.approachDurationMs);
-    // Match applyBarrierProgress easing so the jump continues from the live pose.
-    const approachEased = approachT * approachT;
-    const barrierStartY = lerp(LAYOUT.barrierFar.y, LAYOUT.barrierNear.y, approachEased);
-    const barrierStartScale = lerp(
-      LAYOUT.barrierFar.scale,
-      LAYOUT.barrierNear.scale,
-      approachEased,
-    );
+    // The jump carries the barrier on from where it is now.
+    const barrierStart = barrierPose(this.approachElapsedMs / this.approachDurationMs);
     this.anim = animate(0, 1, {
-      duration: JUMP_MS / 1000,
+      duration: seconds(JUMP_MS),
       ease: 'easeInOut',
       onUpdate: (t) => {
         // Hang near the apex so the airborne pose reads longer.
@@ -743,17 +678,15 @@ export class GameLevelSki extends Container {
         this.leopard.y = lerp(startY, peakY, arc);
         const scaleBoost = 1 + (JUMP_SCALE_PEAK - 1) * arc;
         this.leopard.scale.set(LAYOUT.leopardScale * scaleBoost);
-        this.barrier.y = lerp(barrierStartY, LAYOUT.barrierJump.y, t);
-        this.barrier.scale.set(lerp(barrierStartScale, LAYOUT.barrierJump.scale, t));
+        this.barrier.y = lerp(barrierStart.y, LAYOUT.barrierJump.y, t);
+        this.barrier.scale.set(lerp(barrierStart.scale, LAYOUT.barrierJump.scale, t));
         this.barrier.x = DESIGN_WIDTH / 2;
       },
     });
     await this.anim.finished;
 
     this.barrier.visible = false;
-    this.leopard.y = LAYOUT.leopardY;
-    this.leopard.scale.set(LAYOUT.leopardScale);
-    this.leopard.texture = Texture.from(ASSET.leopardDefault);
+    this.resetLeopard();
     this.startSentenceRound(this.sentenceIndex + 1);
   }
 
@@ -777,20 +710,19 @@ export class GameLevelSki extends Container {
     const startY = this.leopard.y;
     this.anim?.stop();
     this.anim = animate(0, 1, {
-      duration: BARRIER_MISS_HOLD_MS / 1000,
+      duration: seconds(BARRIER_MISS_HOLD_MS),
       ease: 'easeOut',
       onUpdate: (t) => {
-        this.leopard.y = startY + 28 * Math.sin(t * Math.PI);
-        this.leopard.rotation = CRASH_ROTATION * 0.35 * Math.sin(t * Math.PI);
-        this.leopard.scale.set(LAYOUT.leopardScale * (1 - 0.06 * Math.sin(t * Math.PI)));
+        const wobble = Math.sin(t * Math.PI);
+        this.leopard.y = startY + MISS_DIP * wobble;
+        this.leopard.rotation = CRASH_ROTATION * 0.35 * wobble;
+        this.leopard.scale.set(LAYOUT.leopardScale * (1 - MISS_SQUASH * wobble));
       },
     });
     await this.anim.finished;
 
     this.hitFx.visible = false;
-    this.leopard.rotation = 0;
-    this.leopard.scale.set(LAYOUT.leopardScale);
-    this.leopard.y = LAYOUT.leopardY;
+    this.resetLeopard(ASSET.leopardFailed);
     this.startSentenceRound(this.sentenceIndex + 1);
   }
 
@@ -806,7 +738,7 @@ export class GameLevelSki extends Container {
 
     const startY = this.leopard.y;
     this.anim = animate(0, 1, {
-      duration: CRASH_MS / 1000,
+      duration: seconds(CRASH_MS),
       ease: 'easeIn',
       onUpdate: (t) => {
         // Slow tumble down the slope — rotate, squash, and fade late.
@@ -825,27 +757,22 @@ export class GameLevelSki extends Container {
     this.barrier.visible = false;
     this.hitFx.visible = false;
     this.background.texture = Texture.from(ASSET.backgroundFinish);
-    this.leopard.texture = Texture.from(ASSET.leopardDefault);
-    this.leopard.x = this.leopardBaseX;
-    this.leopard.y = LAYOUT.leopardY;
-    this.leopard.rotation = 0;
-    this.leopard.alpha = 1;
-    this.leopard.scale.set(LAYOUT.leopardScale);
+    this.resetLeopard();
 
     // Short ski toward the finish, then celebrate with sticks raised.
     this.anim = animate(0, 1, {
-      duration: FINISH_RUN_MS / 1000,
+      duration: seconds(FINISH_RUN_MS),
       ease: 'easeOut',
       onUpdate: (t) => {
-        this.leopard.y = lerp(LAYOUT.leopardY, LAYOUT.leopardY - 30, t);
-        this.leopard.scale.set(LAYOUT.leopardScale * (1 - t * 0.08));
+        this.leopard.y = lerp(LAYOUT.leopardY, LAYOUT.leopardY - FINISH_RISE, t);
+        this.leopard.scale.set(LAYOUT.leopardScale * (1 - t * FINISH_SHRINK));
       },
     });
     await this.anim.finished;
 
     this.leopard.texture = Texture.from(ASSET.leopardFinish);
     this.leopard.scale.set(LAYOUT.leopardScale);
-    await this.wait(900);
+    await this.wait(FINISH_HOLD_MS);
     this.endGame();
   }
 
@@ -864,9 +791,7 @@ export class GameLevelSki extends Container {
     this.state = 'over';
     this.paused = true;
     window.removeEventListener('keydown', this.handleKeyDown);
-    const { correct, mistakes } = useSessionStore.getState();
-    useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
+    finishLevel(this, this.level);
   }
 
   private pushTimeout(fn: () => void, ms: number) {
