@@ -1,6 +1,5 @@
 import { sound } from '@pixi/sound';
 import { FancyButton } from '@pixi/ui';
-import { EDUCATION_LETTERS, type EducationLetter } from '@utg/letters';
 import { animate } from 'motion';
 import { Container, Graphics, HTMLText, Sprite, Texture } from 'pixi.js';
 
@@ -16,7 +15,13 @@ import {
   wordAssetAliases,
   type WordSimple,
 } from '../../../../zustandStores/wordStore';
-import { createLetterNavButtons, layoutLetterPopupControls } from '../../../ui/letter-nav-buttons';
+import {
+  createLetterNavButtons,
+  createLetterPopupCloseButton,
+  getAdjacentLetter,
+  getArrowLetterStep,
+  layoutLetterPopupControls,
+} from '../../../ui/letter-nav-buttons';
 import { SoundButton } from '../../../ui/sound-button';
 import { MissingWordNotice } from './missing-word-notice';
 
@@ -30,13 +35,8 @@ const PHONE_TOP_BAR_GAP = 40;
 const PHONE_SIDE_MARGIN = 20;
 /** Box the example picture is fitted into on phones. */
 const PHONE_IMAGE_SIZE = 360;
-
-function getAdjacentLetter(letter: string, delta: number): string {
-  const index = EDUCATION_LETTERS.indexOf(letter as EducationLetter);
-  if (index < 0) return EDUCATION_LETTERS[0]!;
-  const count = EDUCATION_LETTERS.length;
-  return EDUCATION_LETTERS[(index + delta + count) % count]!;
-}
+/** The popup slides in from, and out to, this far below the view. */
+const SLIDE_MARGIN = 10;
 
 export class LetterPopup extends Container {
   public readonly screenName = 'LetterPopup';
@@ -103,7 +103,13 @@ export class LetterPopup extends Container {
       height: '100%',
     };
 
-    this.closeButton = this.createCloseButton();
+    this.closeButton = createLetterPopupCloseButton(
+      'education-levels/education-tutorial/x.svg',
+      () => {
+        engine().audio.sfx.stop(this.getSoundAlias());
+        void engine().navigation.hidePopup();
+      },
+    );
     const { prevButton, nextButton } = createLetterNavButtons({
       onPrev: () => this.goToLetter(getAdjacentLetter(this.letter, -1)),
       onNext: () => this.goToLetter(getAdjacentLetter(this.letter, 1)),
@@ -200,7 +206,7 @@ export class LetterPopup extends Container {
   async show(animated = true) {
     window.addEventListener('keydown', this.onKeyDown);
     if (animated) {
-      this.y = screen.height + 10;
+      this.y = engine().navigation.height + SLIDE_MARGIN;
       await animate(this.position, { y: 0 }, { duration: 0.6, ease: 'easeOut' });
     } else {
       this.y = 0;
@@ -211,7 +217,11 @@ export class LetterPopup extends Container {
   async hide(animated = true) {
     window.removeEventListener('keydown', this.onKeyDown);
     if (!animated) return;
-    await animate(this.position, { y: screen.height + 10 }, { duration: 0.4, ease: 'easeOut' });
+    await animate(
+      this.position,
+      { y: engine().navigation.height + SLIDE_MARGIN },
+      { duration: 0.4, ease: 'easeOut' },
+    );
   }
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {
@@ -228,28 +238,9 @@ export class LetterPopup extends Container {
   }
 
   private readonly onKeyDown = (event: KeyboardEvent) => {
-    if (event.ctrlKey || event.metaKey || event.altKey) return;
-    if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
-    event.preventDefault();
-    if (event.repeat) return;
-    this.goToLetter(getAdjacentLetter(this.letter, event.key === 'ArrowRight' ? 1 : -1));
+    const step = getArrowLetterStep(event);
+    if (step) this.goToLetter(getAdjacentLetter(this.letter, step));
   };
-
-  private createCloseButton(): FancyButton {
-    const button = new FancyButton({
-      defaultView: 'education-levels/education-tutorial/x.svg',
-      animations: {
-        hover: { props: { scale: { x: 1.03, y: 1.03 } }, duration: 100 },
-        pressed: { props: { scale: { x: 0.97, y: 0.97 } }, duration: 100 },
-      },
-    });
-    button.anchor.set(0.5);
-    button.onPress.connect(() => {
-      engine().audio.sfx.stop(this.getSoundAlias());
-      void engine().navigation.hidePopup();
-    });
-    return button;
-  }
 
   // spam safe playSound method
   private async playSound(alias: string) {
