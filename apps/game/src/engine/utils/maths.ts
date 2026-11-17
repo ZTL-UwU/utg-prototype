@@ -15,3 +15,13 @@ export function clamp(v: number, min = 0, max = 1) {
   if (min > max) [min, max] = [max, min];
   return v < min ? min : v > max ? max : v;
 }
+
+/** Scale that fits a `width` × `height` box inside `maxWidth` × `maxHeight`, never growing it. */
+export function containScale(width: number, height: number, maxWidth: number, maxHeight: number) {
+  return Math.min(1, maxWidth / width, maxHeight / height);
+}
+
+/** Scale that covers `viewWidth` × `viewHeight` with a `width` × `height` box, cropping it. */
+export function coverScale(width: number, height: number, viewWidth: number, viewHeight: number) {
+  return Math.max(viewWidth / width, viewHeight / height);
+}

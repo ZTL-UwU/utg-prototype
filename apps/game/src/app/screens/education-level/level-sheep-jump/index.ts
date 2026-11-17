@@ -1,29 +1,20 @@
-import { sound } from '@pixi/sound';
 import { animate, type AnimationPlaybackControls, type AnimationSequence } from 'motion';
 import { Container, Sprite, Texture, TilingSprite } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { containScale, coverScale } from '../../../../engine/utils/maths';
 import { randomShuffle } from '../../../../engine/utils/random';
+import { StoppableAnimation } from '../../../../engine/utils/stoppable';
 import { responsive } from '../../../../engine/utils/viewport';
-import { waitFor } from '../../../../engine/utils/waitFor';
-import {
-  getAccuracyPercent,
-  getStarCount,
-  useScoreManager,
-} from '../../../../zustandStores/scoreManager';
+import { LetterAudioPlayer } from '../../../../utils/letter-audio';
+import { getAccuracyPercent, getStarCount } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
-import { EndScreenPopup } from '../../../popups/end-screen';
-import { QuitPopup } from '../../../popups/quit';
-import { HUD } from '../../../ui/hud';
+import type { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
-import { LevelMapScreen } from '../../level-map';
-import {
-  getTypedLevel,
-  findMapUnitForLevel,
-  type TLevel,
-  type TLevelOf,
-} from '../../level-map/units';
+import { createLevelHud, finishLevel } from '../../level-flow';
+import { getTypedLevel, type TLevel, type TLevelOf } from '../../level-map/units';
 import { LetterTile } from './letter-tile';
+import { ThankYouScene } from './thank-you-scene';
 
 /**
  * Where the sheep starts, and each choice's offset from the tile it jumps from, as screen
@@ -75,13 +66,13 @@ const STONE_PATH_MAX_HEIGHT_RATIO = 0.76;
 const STONE_PATH_TILE_OVERLAP = 8;
 const STONE_PATH_FADE_DURATION = 0.25;
 const SHEEP_WALKAWAY_DURATION = 1.7;
-const SHEEP_WALK_SOUND = 'education-levels/education-level-sheep-jump/sheep.mp3';
-const THANK_YOU_YURT_TEXTURE = 'education-levels/education-level-sheep-jump/kazakh-yurt.png';
-const THANK_YOU_SHEEP_TEXTURE = 'mascots/sheep/dialog/thank-you.png';
-const THANK_YOU_YURT_MAX_WIDTH_RATIO = 0.48;
-const THANK_YOU_YURT_MAX_HEIGHT_RATIO = 0.5;
-const THANK_YOU_SHEEP_MAX_WIDTH_RATIO = 0.24;
-const THANK_YOU_SHEEP_MAX_HEIGHT_RATIO = 0.46;
+/** Seconds per step as the sheep walks off, bobbing a little each one. */
+const SHEEP_WALK_STEP = 0.32;
+const SHEEP_WALK_BOB = 0.035;
+/** Where the sheep walks off to: above the top edge, by this share of its height. */
+const SHEEP_WALK_EXIT = 0.65;
+/** Letters on each row: the answer and two others. */
+const ROW_CHOICES = 3;
 
 type TileTarget = {
   tile: LetterTile;
@@ -125,29 +116,27 @@ export class EducationSheepJumpScreen extends Container {
   public static loadingBackgroundAsset =
     'education-levels/education-level-sheep-jump/background.png';
   public static helpAssets = ['tutorial-popups/education-level-sheep-jump.png'];
-  private isPlaying: boolean = false;
 
   private readonly background: TilingSprite;
   private readonly stonePath: Sprite;
-  private readonly thankYouScene: Container;
-  private readonly thankYouBackground: TilingSprite;
-  private readonly thankYouYurt: Sprite;
-  private readonly thankYouSheep: Sprite;
+  private readonly thankYouScene = new ThankYouScene();
   private readonly hud: HUD;
+  private readonly letterAudio = new LetterAudioPlayer();
   private readonly soundButton: SoundButton;
   private readonly initialTile: LetterTile;
   private readonly sheepGroundTexture: Texture;
   private readonly sheepAerialTexture: Texture;
   private readonly sheep: Sprite;
   private tileRows: LetterTile[][] = [];
-  private repositionAnimation?: AnimationPlaybackControls;
+  /** Stopped by a resize part way, so awaiting it must not hang (see StoppableAnimation). */
+  private repositionAnimation?: StoppableAnimation;
   private sheepAnimation?: AnimationPlaybackControls;
-  private thankYouAnimation?: AnimationPlaybackControls;
   private sheepLocation: SheepLocation = { type: 'origin' };
   private readonly level: TLevelOf<'education-sheep-jump'>;
   private readonly thankYouMinStars: number;
 
-  private map: {
+  /** One row of choices per letter, in the order they are asked. */
+  private rounds: {
     letters: string[];
     answer: number;
   }[];
@@ -155,7 +144,6 @@ export class EducationSheepJumpScreen extends Container {
 
   constructor(level: TLevel) {
     const typedLevel = getTypedLevel(level, 'education-sheep-jump');
-    const mapUnit = findMapUnitForLevel(typedLevel);
     super({
       layout: {
         position: 'relative',
@@ -169,10 +157,10 @@ export class EducationSheepJumpScreen extends Container {
     const letterPool: string[] = typedLevel.props.letters;
     this.thankYouMinStars = typedLevel.props.thankYouMinStars;
     const orderedLetters = randomShuffle<string>([...letterPool]);
-    this.map = orderedLetters.map((correctLetter) => {
+    this.rounds = orderedLetters.map((correctLetter) => {
       const distractors = randomShuffle<string>(
         letterPool.filter((letter) => letter !== correctLetter),
-      ).slice(0, 2);
+      ).slice(0, ROW_CHOICES - 1);
       const rowLetters = randomShuffle<string>([correctLetter, ...distractors]);
       return {
         letters: rowLetters,
@@ -192,30 +180,7 @@ export class EducationSheepJumpScreen extends Container {
     this.stonePath.visible = false;
     this.stonePath.alpha = 0;
 
-    this.thankYouScene = new Container();
-    this.thankYouScene.visible = false;
-    this.thankYouScene.alpha = 0;
-    this.thankYouBackground = new TilingSprite({
-      texture: Texture.from('education-levels/education-level-sheep-jump/background.png'),
-      width: engine().navigation.width,
-      height: engine().navigation.height,
-    });
-    this.thankYouYurt = new Sprite(Texture.from(THANK_YOU_YURT_TEXTURE));
-    this.thankYouYurt.anchor.set(0.5, 1);
-    this.thankYouSheep = new Sprite(Texture.from(THANK_YOU_SHEEP_TEXTURE));
-    this.thankYouSheep.anchor.set(0.5, 1);
-    this.thankYouScene.addChild(this.thankYouBackground, this.thankYouYurt, this.thankYouSheep);
-
-    this.hud = new HUD({
-      onBack: () =>
-        void engine().navigation.showPopup(QuitPopup, {
-          mascot: typedLevel.mascot,
-          onQuit: () => {
-            void engine().navigation.showScreen(LevelMapScreen, mapUnit);
-          },
-        }),
-      help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
-    });
+    this.hud = createLevelHud(typedLevel);
 
     const soundSize = responsive({ sm: 160, lg: 200 });
     this.soundButton = new SoundButton({
@@ -243,11 +208,11 @@ export class EducationSheepJumpScreen extends Container {
     this.resizeSheep();
     this.sheep.position.set(bottomCenter.x, bottomCenter.y);
 
-    for (let i = 0; i < this.map.length; i++) {
+    for (let i = 0; i < this.rounds.length; i++) {
       const parentPosition =
-        i === 0 ? bottomCenter : this.tileRows[i - 1][this.map[i - 1].answer].position;
+        i === 0 ? bottomCenter : this.tileRows[i - 1][this.rounds[i - 1].answer].position;
 
-      const tiles = this.map[i].letters.map((letter, j) => {
+      const tiles = this.rounds[i].letters.map((letter, j) => {
         const tile = new LetterTile({
           letter,
           onClick: () => this.handleTileClick(i, j),
@@ -280,20 +245,19 @@ export class EducationSheepJumpScreen extends Container {
 
     this.background.width = width;
     this.background.height = height;
-    const coverScale = Math.max(
-      width / this.background.texture.width,
-      height / this.background.texture.height,
-    );
-    this.background.tileScale.set(coverScale);
+    const { texture } = this.background;
+    this.background.tileScale.set(coverScale(texture.width, texture.height, width, height));
 
+    const tileScale = getTileScale();
+    for (const tile of [this.initialTile, ...this.tileRows.flat()]) tile.scale.set(tileScale);
     this.resizeSheep();
     void this.repositionTiles();
     this.positionStonePath();
-    this.positionThankYouScene(width, height);
+    this.thankYouScene.resize(width, height);
   }
 
-  public async handleTileClick(rowIndex: number, tileIndex: number) {
-    const currentRound = this.map[this.step];
+  private async handleTileClick(rowIndex: number, tileIndex: number) {
+    const currentRound = this.rounds[this.step];
     const tile = this.tileRows[rowIndex]?.[tileIndex];
     if (rowIndex !== this.step || !currentRound || !tile || tile.isWrong) return;
 
@@ -310,16 +274,17 @@ export class EducationSheepJumpScreen extends Container {
     await this.moveSheepToTile(rowIndex, tileIndex, tile);
     this.step++;
     await this.repositionTiles(true);
+    // The player quit while the sheep jumped.
+    if (this.destroyed) return;
 
-    if (this.step >= this.map.length) {
+    if (this.step >= this.rounds.length) {
       await this.playFinalWalkAnimation();
       const { correct, mistakes } = useSessionStore.getState();
       const starCount = getStarCount(getAccuracyPercent(correct, mistakes));
-      useScoreManager.getState().addSession(correct, mistakes);
-      if (starCount >= this.thankYouMinStars) {
-        await this.playThankYouScene();
+      if (starCount >= this.thankYouMinStars && !this.destroyed) {
+        await this.thankYouScene.play();
       }
-      void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
+      finishLevel(this, this.level);
       return;
     }
 
@@ -333,8 +298,8 @@ export class EducationSheepJumpScreen extends Container {
 
     let globalOffset = { x: 0, y: 0 };
     for (let i = 0; i < this.step; i++) {
-      globalOffset.x -= positionOffsets[this.map[i].answer].x;
-      globalOffset.y -= positionOffsets[this.map[i].answer].y;
+      globalOffset.x -= positionOffsets[this.rounds[i].answer].x;
+      globalOffset.y -= positionOffsets[this.rounds[i].answer].y;
     }
 
     const backgroundTarget = { x: globalOffset.x, y: globalOffset.y };
@@ -358,7 +323,7 @@ export class EducationSheepJumpScreen extends Container {
       const row = this.tileRows[i];
 
       for (let j = 0; j < row.length; j++) {
-        const answerIndex = this.map[i].answer;
+        const answerIndex = this.rounds[i].answer;
         const tileTarget = {
           tile: row[j],
           x: parentPosition.x + positionOffsets[j].x + globalOffset.x,
@@ -378,8 +343,8 @@ export class EducationSheepJumpScreen extends Container {
         }
       }
 
-      parentPosition.x += positionOffsets[this.map[i].answer].x;
-      parentPosition.y += positionOffsets[this.map[i].answer].y;
+      parentPosition.x += positionOffsets[this.rounds[i].answer].x;
+      parentPosition.y += positionOffsets[this.rounds[i].answer].y;
     }
 
     sheepTarget ??= { x: this.sheep.x, y: this.sheep.y };
@@ -424,11 +389,11 @@ export class EducationSheepJumpScreen extends Container {
       { duration: SHEEP_TURN_DURATION, ease: 'easeOut', at: TILE_FADE_DURATION },
     ]);
 
-    const animation = animate(sequence);
+    const animation = new StoppableAnimation(animate(sequence));
     this.repositionAnimation = animation;
 
     try {
-      await animation.finished;
+      await animation.done;
     } finally {
       if (this.repositionAnimation === animation) {
         this.repositionAnimation = undefined;
@@ -438,9 +403,9 @@ export class EducationSheepJumpScreen extends Container {
   }
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {
-    this.stopRepositionAnimations();
-    this.stopSheepAnimation();
-    this.stopThankYouAnimation();
+    this.repositionAnimation?.stop();
+    this.sheepAnimation?.stop();
+    this.letterAudio.stop();
     super.destroy(options);
   }
 
@@ -461,43 +426,6 @@ export class EducationSheepJumpScreen extends Container {
     this.resizeSheep();
   }
 
-  private stopThankYouAnimation() {
-    if (!this.thankYouAnimation) return;
-
-    this.thankYouAnimation.stop();
-    this.thankYouAnimation = undefined;
-  }
-
-  private async playThankYouScene() {
-    this.positionThankYouScene(engine().navigation.width, engine().navigation.height);
-    this.thankYouScene.visible = true;
-    this.thankYouScene.alpha = 0;
-
-    void engine().audio.sfx.play(SHEEP_WALK_SOUND);
-    await this.fadeThankYouScene(1);
-    await waitFor(Math.max(0, 1.5));
-  }
-
-  private async fadeThankYouScene(alpha: number) {
-    const animation = animate(
-      this.thankYouScene,
-      { alpha },
-      {
-        duration: 0.3,
-        ease: 'easeOut',
-      },
-    );
-    this.thankYouAnimation = animation;
-
-    try {
-      await animation.finished;
-    } finally {
-      if (this.thankYouAnimation === animation) {
-        this.thankYouAnimation = undefined;
-      }
-    }
-  }
-
   private async playFinalWalkAnimation() {
     this.stopSheepAnimation();
     this.interactiveChildren = false;
@@ -509,10 +437,10 @@ export class EducationSheepJumpScreen extends Container {
     const startY = this.sheep.y;
     const walkTarget = {
       x: this.stonePath.x,
-      y: -this.sheep.height * 0.65,
+      y: -this.sheep.height * SHEEP_WALK_EXIT,
     };
-    const walkStepCount = Math.max(4, Math.round(SHEEP_WALKAWAY_DURATION / 0.32));
-    const walkBobAmplitude = this.sheep.height * 0.035;
+    const walkStepCount = Math.max(4, Math.round(SHEEP_WALKAWAY_DURATION / SHEEP_WALK_STEP));
+    const walkBobAmplitude = this.sheep.height * SHEEP_WALK_BOB;
     const walkYKeyframes = [startY];
     for (let step = 1; step < walkStepCount; step++) {
       const progress = step / walkStepCount;
@@ -558,13 +486,8 @@ export class EducationSheepJumpScreen extends Container {
   }
 
   private playCurrentAnswerAudio() {
-    const round = this.map[this.step];
-    if (!round || this.isPlaying) return;
-    this.isPlaying = true;
-    const aliasString = `education-levels/education-letters-audio/${round.letters[round.answer]}.m4a`;
-    const durationMs = (sound.find(aliasString)?.duration ?? 0) * 1000;
-    void engine().audio.sfx.play(aliasString);
-    setTimeout(() => (this.isPlaying = false), durationMs);
+    const round = this.rounds[this.step];
+    if (round) this.letterAudio.play(round.letters[round.answer]);
   }
 
   private async moveSheepToTile(rowIndex: number, tileIndex: number, tile: LetterTile) {
@@ -685,10 +608,12 @@ export class EducationSheepJumpScreen extends Container {
 
   private getSheepBaseScale() {
     const { width, height } = engine().navigation;
-    return Math.min(
-      1,
-      (width * SHEEP_MAX_WIDTH_RATIO) / this.sheep.texture.width,
-      (height * SHEEP_MAX_HEIGHT_RATIO) / this.sheep.texture.height,
+    const { texture } = this.sheep;
+    return containScale(
+      texture.width,
+      texture.height,
+      width * SHEEP_MAX_WIDTH_RATIO,
+      height * SHEEP_MAX_HEIGHT_RATIO,
     );
   }
 
@@ -699,15 +624,18 @@ export class EducationSheepJumpScreen extends Container {
 
   private positionStonePath() {
     const { width, height } = engine().navigation;
-    const pathScale = Math.min(
-      1,
-      (width * STONE_PATH_MAX_WIDTH_RATIO) / this.stonePath.texture.width,
-      (height * STONE_PATH_MAX_HEIGHT_RATIO) / this.stonePath.texture.height,
+    const { texture } = this.stonePath;
+    this.stonePath.scale.set(
+      containScale(
+        texture.width,
+        texture.height,
+        width * STONE_PATH_MAX_WIDTH_RATIO,
+        height * STONE_PATH_MAX_HEIGHT_RATIO,
+      ),
     );
-    this.stonePath.scale.set(pathScale);
 
-    const finalRowIndex = this.map.length - 1;
-    const finalAnswerIndex = this.map[finalRowIndex]?.answer;
+    const finalRowIndex = this.rounds.length - 1;
+    const finalAnswerIndex = this.rounds[finalRowIndex]?.answer;
     const finalTile =
       finalAnswerIndex === undefined
         ? this.initialTile
@@ -716,31 +644,5 @@ export class EducationSheepJumpScreen extends Container {
       finalTile.x,
       finalTile.y - finalTile.height / 2 + STONE_PATH_TILE_OVERLAP,
     );
-  }
-
-  private positionThankYouScene(width: number, height: number) {
-    this.thankYouBackground.width = width;
-    this.thankYouBackground.height = height;
-    const coverScale = Math.max(
-      width / this.thankYouBackground.texture.width,
-      height / this.thankYouBackground.texture.height,
-    );
-    this.thankYouBackground.tileScale.set(coverScale);
-
-    const yurtScale = Math.min(
-      1,
-      (width * THANK_YOU_YURT_MAX_WIDTH_RATIO) / this.thankYouYurt.texture.width,
-      (height * THANK_YOU_YURT_MAX_HEIGHT_RATIO) / this.thankYouYurt.texture.height,
-    );
-    this.thankYouYurt.scale.set(yurtScale);
-    this.thankYouYurt.position.set(width * 0.56, height * 0.76);
-
-    const sheepScale = Math.min(
-      1,
-      (width * THANK_YOU_SHEEP_MAX_WIDTH_RATIO) / this.thankYouSheep.texture.width,
-      (height * THANK_YOU_SHEEP_MAX_HEIGHT_RATIO) / this.thankYouSheep.texture.height,
-    );
-    this.thankYouSheep.scale.set(sheepScale);
-    this.thankYouSheep.position.set(width * 0.34, height * 0.98);
   }
 }
