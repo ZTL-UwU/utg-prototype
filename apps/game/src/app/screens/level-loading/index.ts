@@ -119,11 +119,17 @@ export class LevelLoadingScreen extends Container {
         .navigation.preload(level.screen, level, (progress) => {
           this.loadProgress = progress;
         })
-        .then(() => {
-          this.loadProgress = 1;
-          this.loaded = true;
-          this.tryStart();
-        });
+        .then(
+          () => {
+            this.loadProgress = 1;
+            this.loaded = true;
+            this.tryStart();
+          },
+          (error: unknown) => {
+            console.warn(`[level-loading] Failed to load level ${level.id}`, error);
+            this.leave();
+          },
+        );
     }
   }
 
@@ -158,7 +164,9 @@ export class LevelLoadingScreen extends Container {
         : []),
     ]);
     this.entered = true;
-    this.tryStart();
+    // A level without a screen can never start, so there is nothing to wait for.
+    if (!this.level.screen) this.leave();
+    else this.tryStart();
   }
 
   public async hide() {
