@@ -1,114 +1,76 @@
-import { sound } from '@pixi/sound';
 import { Container, Graphics } from 'pixi.js';
 
-import { EducationLevelScreen } from '.';
 import { engine } from '../../../../engine/getEngine';
-import { randomShuffle } from '../../../../engine/utils/random';
 import { waitFor } from '../../../../engine/utils/waitFor';
-import { useScoreManager } from '../../../../zustandStores/scoreManager';
+import { LetterAudioPlayer } from '../../../../utils/letter-audio';
 import useSessionStore from '../../../../zustandStores/sessionStore';
-import { EndScreenPopup } from '../../../popups/end-screen';
 import { LetterChoice } from '../../../ui/letter-choice';
 import { SoundButton } from '../../../ui/sound-button';
-import { getTypedLevel, type TLevel, type TLevelOf } from '../../level-map/units';
 
-// Scene Object
 const CARD_SIZE = 150;
+const CARD_RADIUS = 18;
 const HGAP = CARD_SIZE * 1.5;
 const VGAP = CARD_SIZE / 4;
 const HPADDING = HGAP / 2;
 const VPADDING = VGAP / 2;
 const BUTTON_DIM = 150;
-const NUM_CHOICES = 4;
+const PANEL_WIDTH = CARD_SIZE * 2 + HGAP + HPADDING * 2;
+const PANEL_HEIGHT = BUTTON_DIM + 2 * (CARD_SIZE + VPADDING + VGAP);
+const PANEL_RADIUS = 60;
+const PANEL_SHADOW = 15;
+const PANEL_COLOR = 0xd1dcf0;
+const PANEL_SHADOW_COLOR = 0x1b427a;
+/** Seconds the correct card stays lit before the round ends. */
+const CORRECT_HOLD = 1;
 
+type LetterGridOptions = {
+  correctLetter: string;
+  /** Shown two over two, in this order. */
+  letters: string[];
+  onCorrect: () => void;
+};
+
+/** A panel with the sound button over a two-by-two grid of letter cards. */
 export class LetterGrid extends Container {
-  // Pixi Scene Objects
-  private backgroundTint: Graphics;
-  private soundButton: SoundButton;
-  private panel: Container;
-  private letterStrings: string[];
-  private topPanel: Container;
-  private bottomPanel: Container;
-
-  // Letter Attributes
-  private letters: LetterChoice[];
-  private letterMap: Map<string, LetterChoice>;
-  private correctLetterString: string;
-  private displayLetters: string[];
+  private readonly backgroundTint = new Graphics();
+  private readonly soundButton: SoundButton;
+  private readonly panel = new Container();
+  private readonly choices: LetterChoice[];
+  private readonly correctLetter: string;
+  private readonly onCorrect: () => void;
+  private readonly letterAudio = new LetterAudioPlayer();
   private isResolving = false;
 
-  // STATIC ROUND COUNTER, RESET ON FIN
-  public static rounds = 0;
-  public static roundOrder: string[] = [];
-  private level: TLevelOf<'education-letter-grid'>;
-  private isPlaying: boolean = false;
+  constructor({ correctLetter, letters, onCorrect }: LetterGridOptions) {
+    super({ layout: { position: 'absolute', width: '100%', height: '100%' } });
+    this.correctLetter = correctLetter;
+    this.onCorrect = onCorrect;
 
-  constructor(level: TLevel) {
-    super({
-      layout: {
-        position: 'absolute',
-        width: '100%',
-        height: '100%',
-      },
-    });
-
-    // init Scene Objects so linter is happy
-    this.panel = new Container();
-    this.backgroundTint = new Graphics();
-    this.topPanel = new Container();
-    this.bottomPanel = new Container();
-    this.soundButton = new SoundButton({ onClick: this.soundButtonClick, size: BUTTON_DIM });
-
-    const typedLevel = getTypedLevel(level, 'education-letter-grid');
-
-    // init Letter Attributes so linter is happy
-    this.letterStrings = typedLevel.props.letters;
-    this.correctLetterString = '';
-    this.displayLetters = [];
-    this.letterMap = new Map();
-    this.letters = [];
-
-    this.level = typedLevel;
-    // Constructor logic wrapped in helpers for better readability
-    this.initLetterAttributes();
-    this.initLayouts();
-    this.populatePanel();
-    this.addChild(this.panel);
-  }
-
-  // init letters, letterMap, correctLetterString, displayLetters
-  // ACCESSSES letterStrings
-  private initLetterAttributes() {
-    if (LetterGrid.rounds === 0) {
-      LetterGrid.roundOrder = randomShuffle([...this.letterStrings]);
-    }
-    this.correctLetterString = LetterGrid.roundOrder[LetterGrid.rounds];
-    const distractors = randomShuffle(
-      this.letterStrings.filter((letterString) => letterString !== this.correctLetterString),
-    ).slice(0, NUM_CHOICES - 1);
-    this.displayLetters = randomShuffle([this.correctLetterString, ...distractors]);
-
-    this.displayLetters.forEach((letterString) => {
-      this.letterMap.set(
-        letterString,
+    this.soundButton = new SoundButton({ onClick: () => this.playLetter(), size: BUTTON_DIM });
+    this.soundButton.anchor.set(0.5);
+    this.soundButton.layout = {
+      width: BUTTON_DIM,
+      height: BUTTON_DIM,
+      position: 'absolute',
+      left: '48%',
+      top: '15%',
+    };
+    this.choices = letters.map(
+      (letter) =>
         new LetterChoice({
-          letter: letterString,
+          letter,
           onPress: (choice) => void this.handleChoice(choice),
           size: CARD_SIZE,
-          cornerRadius: 18,
+          cornerRadius: CARD_RADIUS,
         }),
-      );
-    });
-    this.letters = [...this.letterMap.values()];
-  }
+    );
 
-  private initLayouts() {
     this.panel.layout = {
       position: 'absolute',
       display: 'flex',
       flexDirection: 'column',
-      width: CARD_SIZE * 2 + HGAP + HPADDING * 2,
-      height: BUTTON_DIM + 2 * (CARD_SIZE + VPADDING + VGAP),
+      width: PANEL_WIDTH,
+      height: PANEL_HEIGHT,
       gap: VGAP,
       paddingLeft: HPADDING,
       paddingRight: HPADDING,
@@ -118,61 +80,33 @@ export class LetterGrid extends Container {
       alignItems: 'center',
     };
     this.backgroundTint.layout = { position: 'absolute', width: '100%', height: '100%' };
-    this.topPanel.layout = { display: 'flex', gap: HGAP };
-    this.bottomPanel.layout = { display: 'flex', gap: HGAP };
-    this.soundButton.anchor.set(0.5);
-    this.soundButton.layout = {
-      width: BUTTON_DIM,
-      height: BUTTON_DIM,
-      position: 'absolute',
-      left: '48%',
-      top: '15%',
-    };
-  }
-
-  private populatePanel() {
-    // add letters equally to top/bottom panels
-    for (let i = 0; i < this.displayLetters.length; i++) {
-      const choiceSlot = this.createChoiceSlot(this.letters[i]);
-      if (i < this.displayLetters.length / 2) this.topPanel.addChild(choiceSlot);
-      else this.bottomPanel.addChild(choiceSlot);
-    }
-
-    this.panel.addChild(this.backgroundTint, this.soundButton, this.topPanel, this.bottomPanel);
-    // backgroundTint dimensions are drawn in resize() once layout constants are available
+    const half = Math.ceil(this.choices.length / 2);
+    const rows = [this.choices.slice(0, half), this.choices.slice(half)].map((row) => {
+      const panel = new Container({ layout: { display: 'flex', gap: HGAP } });
+      panel.addChild(...row.map((choice) => this.createChoiceSlot(choice)));
+      return panel;
+    });
+    this.panel.addChild(this.backgroundTint, this.soundButton, ...rows);
+    this.addChild(this.panel);
   }
 
   resize(width: number, height: number) {
-    const panelW = CARD_SIZE * 2 + HGAP + HPADDING * 2;
-    const panelH = BUTTON_DIM + 2 * (CARD_SIZE + VPADDING + VGAP);
-    this.panel.x = (width - panelW) / 2;
-    this.panel.y = (height - panelH) / 2;
+    this.panel.position.set((width - PANEL_WIDTH) / 2, (height - PANEL_HEIGHT) / 2);
     this.backgroundTint
       .clear()
-      .roundRect(0, 15, panelW, panelH, 60)
-      .fill({ color: 0x1b427a, alpha: 0.7 })
-      .roundRect(0, 0, panelW, panelH, 60)
-      .fill(0xd1dcf0);
+      .roundRect(0, PANEL_SHADOW, PANEL_WIDTH, PANEL_HEIGHT, PANEL_RADIUS)
+      .fill({ color: PANEL_SHADOW_COLOR, alpha: 0.7 })
+      .roundRect(0, 0, PANEL_WIDTH, PANEL_HEIGHT, PANEL_RADIUS)
+      .fill(PANEL_COLOR);
   }
 
-  private readonly soundButtonClick = () => {
-    if (this.isPlaying) return;
-    this.isPlaying = true;
-    const aliasString: string = `education-levels/education-letters-audio/${this.correctLetterString}.m4a`;
-    const durationMs = (sound.find(aliasString)?.duration ?? 0) * 1000;
-    void engine().audio.sfx.play(aliasString);
-    setTimeout(() => {
-      this.isPlaying = false;
-    }, durationMs);
-  };
+  public playLetter() {
+    this.letterAudio.play(this.correctLetter);
+  }
 
   private createChoiceSlot(choice: LetterChoice) {
     const slot = new Container({
-      layout: {
-        width: CARD_SIZE,
-        height: CARD_SIZE,
-        flexShrink: 0,
-      },
+      layout: { width: CARD_SIZE, height: CARD_SIZE, flexShrink: 0 },
     });
     choice.position.set(CARD_SIZE / 2, CARD_SIZE / 2);
     slot.addChild(choice);
@@ -183,7 +117,7 @@ export class LetterGrid extends Container {
     if (this.isResolving) return;
     this.isResolving = true;
 
-    if (choice.letter !== this.correctLetterString) {
+    if (choice.letter !== this.correctLetter) {
       void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
       useSessionStore.getState().recordMistake();
       await choice.showIncorrect();
@@ -193,28 +127,13 @@ export class LetterGrid extends Container {
 
     void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
     useSessionStore.getState().recordCorrect();
-    this.letters.forEach((letter) => letter.setInteractive(false));
-    await Promise.all([choice.showCorrect(), waitFor(1)]);
+    this.choices.forEach((letter) => letter.setInteractive(false));
+    await Promise.all([choice.showCorrect(), waitFor(CORRECT_HOLD)]);
+    this.onCorrect();
+  }
 
-    if (++LetterGrid.rounds < LetterGrid.roundOrder.length) {
-      void engine().navigation.showScreen(EducationLevelScreen, this.level);
-    } else {
-      LetterGrid.endGame(this.level);
-    }
-  }
-  async show() {
-    this.soundButtonClick();
-  }
   override destroy(options?: Parameters<Container['destroy']>[0]) {
+    this.letterAudio.stop();
     super.destroy(options);
-  }
-
-  public static endGame(level: TLevel) {
-    LetterGrid.rounds = 0;
-    LetterGrid.roundOrder = [];
-    const { correct, mistakes } = useSessionStore.getState();
-
-    useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { level });
   }
 }

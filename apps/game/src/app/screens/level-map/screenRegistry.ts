@@ -2,7 +2,7 @@ import { type LevelTypeId } from '@utg/level-types';
 
 import { EducationBubbleScreen } from '../education-level/level-bubble';
 import { EducationImageScreen } from '../education-level/level-image';
-import { EducationLevelScreen } from '../education-level/level-letter-grid';
+import { EducationLetterGridScreen } from '../education-level/level-letter-grid';
 import { EducationSheepScreen } from '../education-level/level-sheep';
 import { EducationSheepJumpScreen } from '../education-level/level-sheep-jump';
 import { EducationWhackAMoleScreen } from '../education-level/level-whack-a-mole';
@@ -28,7 +28,7 @@ import type { LevelScreenConstructor } from './units';
 
 /** Maps backend `level_type` ids to Pixi screen constructors. */
 export const LEVEL_TYPE_SCREENS: Record<LevelTypeId, LevelScreenConstructor> = {
-  'education-letter-grid': EducationLevelScreen,
+  'education-letter-grid': EducationLetterGridScreen,
   'education-bubble': EducationBubbleScreen,
   'education-sheep': EducationSheepScreen,
   'education-image': EducationImageScreen,
