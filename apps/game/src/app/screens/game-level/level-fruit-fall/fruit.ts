@@ -22,12 +22,13 @@ const FRUIT_NAMES = [
 const fruitTexturePath = (fruit: string, state: 'fresh' | 'rotten') =>
   `game-levels/game-level-fruit-fall/${state}/${fruit}.png`;
 
-export class Fruit extends Container {
-  public static assetBundles = ['game-level-fruit-fall'];
+const LETTER_FONT_SIZE = 80;
+const CORRECT_TINT = 0x8ec24d;
 
+export class Fruit extends Container {
   private fruitAsset: Sprite;
   private readonly fruitName: string;
-  public letter: string;
+  public readonly letter: string;
   private _isPlayable = true;
   private text: Text;
   constructor({ letter }: FruitProps) {
@@ -40,7 +41,7 @@ export class Fruit extends Container {
       text: letter,
       style: {
         fontFamily: getScriptFontFamily(),
-        fontSize: 80,
+        fontSize: LETTER_FONT_SIZE,
         fontWeight: '700',
         fill: 0xffffff,
         padding: 30,
@@ -64,6 +65,6 @@ export class Fruit extends Container {
   }
 
   public markCorrect() {
-    this.fruitAsset.tint = 0x8ec24d;
+    this.fruitAsset.tint = CORRECT_TINT;
   }
 }
