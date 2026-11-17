@@ -6,11 +6,13 @@ import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import { getFontFamilyForScript } from '../../../utils/script';
 import {
   addHover,
+  drawPill,
   FRAME_COLOR,
   FRAME_SHADOW_COLOR,
   LABEL_COLOR,
   NAV_COLOR,
   NAV_SHADOW_COLOR,
+  SHADOW_OFFSET,
   TILE_COLOR,
   TILE_EDGE_COLOR,
   TILE_TEXT_COLOR,
@@ -18,8 +20,7 @@ import {
 
 const ARABIC_FONT = getFontFamilyForScript('Arabic');
 const PANEL_COLOR = 0xfaf1de;
-const BORDER_WIDTH = 6;
-const SHADOW_OFFSET = 8;
+const PANEL_BORDER_WIDTH = 6;
 const HOVER_SCALE = 1.05;
 
 export const CHIP_WIDTH = 280;
@@ -44,17 +45,6 @@ const SCRIM_ALPHA = 0.35;
 /** Seconds the sheet takes to appear: the scrim fades in, the panel grows from this share of its size. */
 const APPEAR_DURATION = 0.15;
 const APPEAR_SCALE = 0.95;
-
-function drawPill(g: Graphics, w: number, h: number, fill: number, shadow: number, edge?: number) {
-  g.clear()
-    .roundRect(-w / 2, -h / 2 + SHADOW_OFFSET, w, h, h / 2)
-    .fill(shadow)
-    .roundRect(-w / 2, -h / 2, w, h, h / 2)
-    .fill(fill);
-  if (edge !== undefined) {
-    g.roundRect(-w / 2, -h / 2, w, h, h / 2).stroke({ width: BORDER_WIDTH, color: edge });
-  }
-}
 
 /** One letter in the sheet: teal where you are, with a dot once it's been practised. */
 class LetterTile extends Container {
@@ -130,7 +120,7 @@ export class LetterChip extends Container {
       style: { fontFamily: DISPLAY_FONT_FAMILY, fontSize: 36, fill: FRAME_COLOR },
       position: { x: CHIP_COUNT_X, y: 0 },
     });
-    drawPill(this.bg, CHIP_WIDTH, CHIP_HEIGHT, TILE_COLOR, TILE_EDGE_COLOR, FRAME_COLOR);
+    drawPill(this.bg, CHIP_WIDTH, CHIP_HEIGHT, TILE_COLOR, TILE_EDGE_COLOR, { edge: FRAME_COLOR });
     this.addChild(this.bg, this.glyph, this.caret, this.count);
 
     this.eventMode = 'static';
@@ -153,7 +143,7 @@ export class LetterChip extends Container {
       CHIP_HEIGHT,
       open ? LABEL_COLOR : TILE_COLOR,
       open ? FRAME_SHADOW_COLOR : TILE_EDGE_COLOR,
-      FRAME_COLOR,
+      { edge: FRAME_COLOR },
     );
   }
 }
@@ -215,7 +205,7 @@ export class AlphabetSheet extends Container {
       .fill(FRAME_SHADOW_COLOR)
       .roundRect(0, 0, width, height, SHEET_RADIUS)
       .fill(PANEL_COLOR)
-      .stroke({ width: BORDER_WIDTH, color: FRAME_COLOR });
+      .stroke({ width: PANEL_BORDER_WIDTH, color: FRAME_COLOR });
 
     this.tiles.forEach((tile, i) => {
       const column = columns - 1 - (i % columns);

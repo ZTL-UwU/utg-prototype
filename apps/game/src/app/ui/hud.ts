@@ -16,6 +16,13 @@ export type THudHelp =
   /** A tutorial opened by the screen itself, for screens that show no single map unit. */
   | { kind: 'tutorial'; onPress: () => void };
 
+/** Distance from the top of the view to the HUD buttons' top edge, below the notch on phones. */
+const HUD_TOP = 90;
+
+export function hudButtonTop(viewHeight: number) {
+  return HUD_TOP + topClearance(viewHeight);
+}
+
 interface HUDProps {
   onBack: () => void;
   help?: THudHelp;
@@ -31,8 +38,7 @@ export class HUD extends Container {
       },
     });
 
-    // Screen-level controls drop below the notch on phones
-    const top = 90 + topClearance(engine().navigation.height);
+    const top = hudButtonTop(engine().navigation.height);
 
     const backButton = new BackButton(onBack);
     backButton.layout = { top };

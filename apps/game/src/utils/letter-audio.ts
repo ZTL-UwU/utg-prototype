@@ -23,8 +23,8 @@ export class LetterAudioPlayer {
   }
 
   public play(letter: string) {
-    if (this.alias) return;
     const alias = getLetterAudioAlias(letter);
+    if (this.alias || !sound.exists(alias)) return;
     this.alias = alias;
     const durationMs = Math.max(MIN_PLAY_MS, (sound.find(alias)?.duration ?? 0) * 1000);
     void engine().audio.sfx.play(alias);

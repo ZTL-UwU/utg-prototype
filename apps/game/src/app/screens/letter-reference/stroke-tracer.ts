@@ -4,16 +4,18 @@ import {
   Container,
   Graphics,
   GraphicsContext,
-  GraphicsPath,
-  Polygon,
   Text,
+  type DestroyOptions,
+  type Polygon,
 } from 'pixi.js';
 
 import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
+import { FRAME_COLOR, NAV_COLOR } from './controls';
+import { pathPolygons } from './glyph-mask';
 
-const INK_COLOR = 0x844f01;
+const INK_COLOR = FRAME_COLOR;
 /** Teal, like the nav buttons, so the pen and stroke numbers stand apart from the ink. */
-const ACCENT_COLOR = 0x2f6f73;
+const ACCENT_COLOR = NAV_COLOR;
 const BADGE_TEXT_COLOR = 0xffffff;
 /** Outline units drawn per second, so long strokes take longer than dots. */
 const TRACE_SPEED = 18;
@@ -201,9 +203,7 @@ export class StrokeTracer extends Container {
 
     let time = LEAD_IN;
     for (const { d, width, clip, label } of strokes) {
-      const polylines = new GraphicsPath(d).shapePath.shapePrimitives
-        .map(({ shape }) => shape)
-        .filter((shape): shape is Polygon => shape instanceof Polygon)
+      const polylines = pathPolygons(d)
         .map(toPolyline)
         .filter((polyline) => polyline.length > 0);
       if (polylines.length === 0) continue;
@@ -266,6 +266,11 @@ export class StrokeTracer extends Container {
       const phase = (performance.now() / 1000 / PULSE_DURATION) * Math.PI;
       badge.scale.set(1 + ((PULSE_SCALE - 1) * (1 - Math.cos(phase))) / 2);
     };
+  }
+
+  override destroy(options?: DestroyOptions) {
+    this.animation?.stop();
+    super.destroy(options);
   }
 
   /** Stops the demo and any pulse, and wipes the ink and hints. */

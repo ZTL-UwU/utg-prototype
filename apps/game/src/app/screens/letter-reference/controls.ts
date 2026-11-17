@@ -18,11 +18,32 @@ export const TILE_EDGE_COLOR = 0xd9c49e;
 export const TILE_TEXT_COLOR = FRAME_SHADOW_COLOR;
 const DISABLED_COLOR = 0xa39a8c;
 const DISABLED_SHADOW_COLOR = 0x6f685e;
-const SHADOW_OFFSET = 8;
+/** How far the controls' drop shadow sits below their face. */
+export const SHADOW_OFFSET = 8;
+const PILL_BORDER_WIDTH = 6;
 const BUTTON_ANIMATIONS = {
   hover: { props: { scale: { x: 1.06, y: 1.06 } }, duration: 100 },
   pressed: { props: { scale: { x: 0.94, y: 0.94 } }, duration: 80 },
 };
+
+/** A pill centred on the origin, over its drop shadow, with an optional edge. */
+export function drawPill(
+  g: Graphics,
+  w: number,
+  h: number,
+  fill: number,
+  shadow: number,
+  { edge, shadowOffset = SHADOW_OFFSET }: { edge?: number; shadowOffset?: number } = {},
+) {
+  g.clear()
+    .roundRect(-w / 2, -h / 2 + shadowOffset, w, h, h / 2)
+    .fill(shadow)
+    .roundRect(-w / 2, -h / 2, w, h, h / 2)
+    .fill(fill);
+  if (edge !== undefined) {
+    g.roundRect(-w / 2, -h / 2, w, h, h / 2).stroke({ width: PILL_BORDER_WIDTH, color: edge });
+  }
+}
 
 /** The tiles the forms are shown on. */
 export const TILE_WIDTH = 150;
