@@ -2,6 +2,7 @@ import type { Container } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import type { AppScreenConstructor } from '../../../engine/navigation/navigation';
+import { randomShuffle } from '../../../engine/utils/random';
 import useSessionStore from '../../../zustandStores/sessionStore';
 import { finishLevel } from '../level-flow';
 import type { TLevel } from '../level-map/units';
@@ -68,4 +69,19 @@ export function finishRound(
   if (screen.destroyed || engine().navigation.currentScreen !== screen) return;
   if (rounds.advance()) void engine().navigation.showScreen(ctor, level);
   else finishLevel(screen, level);
+}
+
+/** One round of a level asked as a row of letters: the letters, and which one is the answer. */
+export type LetterRow = { letters: string[]; answer: number };
+
+/**
+ * One row per letter of `pool`, in a random order: the letter among `choices - 1` others from
+ * the pool, shuffled. Pools smaller than `choices` give shorter rows.
+ */
+export function createLetterRows(pool: readonly string[], choices: number): LetterRow[] {
+  return randomShuffle([...pool]).map((correctLetter) => {
+    const distractors = randomShuffle(pool.filter((letter) => letter !== correctLetter));
+    const letters = randomShuffle([correctLetter, ...distractors.slice(0, choices - 1)]);
+    return { letters, answer: letters.indexOf(correctLetter) };
+  });
 }

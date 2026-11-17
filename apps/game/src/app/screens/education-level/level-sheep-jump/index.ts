@@ -3,7 +3,6 @@ import { Container, Sprite, Texture, TilingSprite } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { containScale, coverScale } from '../../../../engine/utils/maths';
-import { randomShuffle } from '../../../../engine/utils/random';
 import { StoppableAnimation } from '../../../../engine/utils/stoppable';
 import { responsive } from '../../../../engine/utils/viewport';
 import { LetterAudioPlayer } from '../../../../utils/letter-audio';
@@ -13,6 +12,7 @@ import type { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
 import { createLevelHud, finishLevel } from '../../level-flow';
 import { getTypedLevel, type TLevel, type TLevelOf } from '../../level-map/units';
+import { createLetterRows, type LetterRow } from '../level-rounds';
 import { LetterTile } from './letter-tile';
 import { ThankYouScene } from './thank-you-scene';
 
@@ -136,10 +136,7 @@ export class EducationSheepJumpScreen extends Container {
   private readonly thankYouMinStars: number;
 
   /** One row of choices per letter, in the order they are asked. */
-  private rounds: {
-    letters: string[];
-    answer: number;
-  }[];
+  private readonly rounds: LetterRow[];
   private step: number = 0;
 
   constructor(level: TLevel) {
@@ -156,17 +153,7 @@ export class EducationSheepJumpScreen extends Container {
 
     const letterPool: string[] = typedLevel.props.letters;
     this.thankYouMinStars = typedLevel.props.thankYouMinStars;
-    const orderedLetters = randomShuffle<string>([...letterPool]);
-    this.rounds = orderedLetters.map((correctLetter) => {
-      const distractors = randomShuffle<string>(
-        letterPool.filter((letter) => letter !== correctLetter),
-      ).slice(0, ROW_CHOICES - 1);
-      const rowLetters = randomShuffle<string>([correctLetter, ...distractors]);
-      return {
-        letters: rowLetters,
-        answer: rowLetters.indexOf(correctLetter),
-      };
-    });
+    this.rounds = createLetterRows(letterPool, ROW_CHOICES);
 
     this.background = new TilingSprite({
       texture: Texture.from('education-levels/education-level-sheep-jump/background-grass.png'),

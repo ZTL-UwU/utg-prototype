@@ -1,29 +1,32 @@
-import { sound } from '@pixi/sound';
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { randomShuffle } from '../../../../engine/utils/random';
 import { responsive } from '../../../../engine/utils/viewport';
 import { waitFor } from '../../../../engine/utils/waitFor';
-import { useScoreManager } from '../../../../zustandStores/scoreManager';
+import { LetterAudioPlayer } from '../../../../utils/letter-audio';
 import useSessionStore from '../../../../zustandStores/sessionStore';
-import { EndScreenPopup } from '../../../popups/end-screen';
-import { QuitPopup } from '../../../popups/quit';
-import { HUD } from '../../../ui/hud';
+import type { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
-import { LevelMapScreen } from '../../level-map';
-import {
-  getTypedLevel,
-  findMapUnitForLevel,
-  type TLevel,
-  type TLevelOf,
-} from '../../level-map/units';
-import { MOLE_UP_Y, MoleTarget } from './mole-target';
+import { createLevelHud, finishLevel } from '../../level-flow';
+import { getTypedLevel, type TLevel, type TLevelOf } from '../../level-map/units';
+import { createLetterRows, type LetterRow } from '../level-rounds';
+import { MoleTarget } from './mole-target';
 
-const MOLE_DOWN_Y = 220;
+/** Holes, each with a mole holding one of the round's letters. */
+const MOLE_COUNT = 3;
 const MOLE_MOVE_DURATION = 0.3;
 const RABBIT_JUMP_DURATION = 0.7;
+/** Where the rabbit lands to hit a mole: this far to its side and above it, at the jump's apex this much higher. */
+const RABBIT_REACH_X = 118;
+const RABBIT_REACH_Y = 105;
+const RABBIT_JUMP_HEIGHT = 145;
+/** After the hit the rabbit stands this far below the mole's hole. */
+const RABBIT_STAND_Y = 58;
+/** Seconds the hit stays on screen before the next round. */
+const ROUND_END_HOLD = 0.55;
+const RABBIT_IDLE = 'education-levels/education-level-whack-a-mole/rabbit-idle.png';
+const RABBIT_AIRBORNE = 'education-levels/education-level-whack-a-mole/rabbit-airborne.png';
 
 type MoleCyclePhase = 'idle' | 'waiting' | 'animating';
 
@@ -35,23 +38,6 @@ function easeOut(t: number) {
   return 1 - (1 - t) ** 2;
 }
 
-type Round = {
-  letters: string[];
-  answer: number;
-};
-
-function createRound(correctLetter: string, pool: string[]): Round {
-  const distractors = randomShuffle<string>(
-    pool.filter((letter) => letter !== correctLetter),
-  ).slice(0, 2);
-  const letters = randomShuffle<string>([correctLetter, ...distractors]);
-
-  return {
-    letters,
-    answer: letters.indexOf(correctLetter),
-  };
-}
-
 export class EducationWhackAMoleScreen extends Container {
   public readonly screenName = 'EducationWhackAMoleScreen';
   public static assetBundles = [
@@ -60,9 +46,9 @@ export class EducationWhackAMoleScreen extends Container {
     'ui',
     'education-letters-audio',
   ];
-  // TODO: no tutorial asset authored for whack-a-mole yet.
   public static loadingBackgroundAsset =
     'education-levels/education-level-whack-a-mole/background-grass.png';
+  // TODO: no tutorial asset authored for whack-a-mole yet.
   public static helpAssets: string[] = [];
 
   private readonly hud: HUD;
@@ -71,27 +57,25 @@ export class EducationWhackAMoleScreen extends Container {
   private readonly soundButton: SoundButton;
   private readonly targets: MoleTarget[];
   private readonly rabbit: Sprite;
-  private readonly rounds: Round[];
+  private readonly rounds: LetterRow[];
   private readonly moleTurnDelayMs: number;
   private readonly initialMoleDelayMs: number;
   private step = 0;
   private hiddenTarget = -1;
   private isResolving = false;
-  private isPlaying = false;
-  private isDestroyed = false;
+  /** Behind a popup: the moles stop turning. */
+  private paused = false;
   private moleCyclePhase: MoleCyclePhase = 'idle';
   private cycleElapsedMs = 0;
   private cycleWaitMs = 0;
   private animLoweringTarget = -1;
   private animRisingTarget = -1;
   private pendingHiddenTarget = -1;
-  private audioTimer?: ReturnType<typeof setTimeout>;
-  private currentAnswerAudio?: string;
+  private readonly letterAudio = new LetterAudioPlayer();
   private rabbitAnimation?: AnimationPlaybackControls;
 
   constructor(level: TLevel) {
     const typedLevel = getTypedLevel(level, 'education-whack-a-mole');
-    const mapUnit = findMapUnitForLevel(typedLevel);
     super({ layout: { position: 'relative', width: '100%', height: '100%' } });
 
     engine().audio.bgm.setVolume(0);
@@ -100,8 +84,7 @@ export class EducationWhackAMoleScreen extends Container {
     const { letters: letterPool, moleTurnDelayMs, initialMoleDelayMs } = typedLevel.props;
     this.moleTurnDelayMs = moleTurnDelayMs;
     this.initialMoleDelayMs = initialMoleDelayMs;
-    const orderedLetters = randomShuffle<string>([...letterPool]);
-    this.rounds = orderedLetters.map((correctLetter) => createRound(correctLetter, letterPool));
+    this.rounds = createLetterRows(letterPool, MOLE_COUNT);
 
     this.background = new Sprite({
       texture: Texture.from(`education-levels/education-level-whack-a-mole/background-grass.png`),
@@ -109,12 +92,12 @@ export class EducationWhackAMoleScreen extends Container {
     });
 
     this.targets = Array.from(
-      { length: 3 },
+      { length: MOLE_COUNT },
       (_, index) => new MoleTarget(() => void this.handleTargetPress(index)),
     );
 
     this.rabbit = new Sprite({
-      texture: Texture.from(`education-levels/education-level-whack-a-mole/rabbit-idle.png`),
+      texture: Texture.from(RABBIT_IDLE),
       anchor: { x: 0.5, y: 1 },
     });
 
@@ -130,16 +113,7 @@ export class EducationWhackAMoleScreen extends Container {
     const soundInset = responsive({ sm: 40, lg: 100 }) + soundSize / 2;
     this.soundButton.layout = { position: 'absolute', bottom: soundInset, right: soundInset };
 
-    this.hud = new HUD({
-      onBack: () =>
-        void engine().navigation.showPopup(QuitPopup, {
-          mascot: level.mascot,
-          onQuit: () => {
-            void engine().navigation.showScreen(LevelMapScreen, mapUnit);
-          },
-        }),
-      help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
-    });
+    this.hud = createLevelHud(typedLevel);
 
     this.addChild(this.background, ...this.targets, this.rabbit, this.hud, this.soundButton);
 
@@ -152,8 +126,16 @@ export class EducationWhackAMoleScreen extends Container {
     this.positionScene(width, height);
   }
 
+  public async pause() {
+    this.paused = true;
+  }
+
+  public async resume() {
+    this.paused = false;
+  }
+
   public update(ticker: Ticker) {
-    if (this.isDestroyed || this.isResolving || this.moleCyclePhase === 'idle') return;
+    if (this.paused || this.isResolving || this.moleCyclePhase === 'idle') return;
 
     this.cycleElapsedMs += ticker.deltaMS;
 
@@ -165,12 +147,9 @@ export class EducationWhackAMoleScreen extends Container {
     const durationMs = MOLE_MOVE_DURATION * 1000;
     const progress = Math.min(this.cycleElapsedMs / durationMs, 1);
 
-    this.targets[this.animLoweringTarget].molePosition.y =
-      MOLE_UP_Y + (MOLE_DOWN_Y - MOLE_UP_Y) * easeIn(progress);
-
+    this.targets[this.animLoweringTarget].setMoleDepth(easeIn(progress));
     if (this.animRisingTarget >= 0) {
-      this.targets[this.animRisingTarget].molePosition.y =
-        MOLE_DOWN_Y + (MOLE_UP_Y - MOLE_DOWN_Y) * easeOut(progress);
+      this.targets[this.animRisingTarget].setMoleDepth(1 - easeOut(progress));
     }
 
     if (progress >= 1) {
@@ -183,11 +162,10 @@ export class EducationWhackAMoleScreen extends Container {
   }
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {
-    this.isDestroyed = true;
     this.stopMoleCycle();
     this.rabbitAnimation?.stop();
     this.rabbitAnimation = undefined;
-    this.stopAnswerAudio();
+    this.letterAudio.stop();
     super.destroy(options);
   }
 
@@ -211,9 +189,7 @@ export class EducationWhackAMoleScreen extends Container {
     });
 
     if (!this.isResolving) {
-      this.rabbit.texture = Texture.from(
-        `education-levels/education-level-whack-a-mole/rabbit-idle.png`,
-      );
+      this.rabbit.texture = Texture.from(RABBIT_IDLE);
       this.rabbit.anchor.set(0.5, 1);
       this.rabbit.position.set(width * 0.5, height * 0.9);
     }
@@ -225,10 +201,11 @@ export class EducationWhackAMoleScreen extends Container {
 
     this.isResolving = false;
     this.hiddenTarget = -1;
-    this.stopAnswerAudio();
+    this.letterAudio.stop();
     this.targets.forEach((target, index) => {
       target.reset();
-      target.setLetter(round.letters[index]);
+      // A pool of fewer letters than holes leaves the spare mole blank.
+      target.setLetter(round.letters[index] ?? '');
     });
     this.positionScene(engine().navigation.width, engine().navigation.height);
     this.playCurrentAnswerAudio();
@@ -272,44 +249,38 @@ export class EducationWhackAMoleScreen extends Container {
 
     this.isResolving = true;
     this.stopMoleCycle();
-    this.stopAnswerAudio();
+    this.letterAudio.stop();
     this.targets.forEach((item) => item.setEnabled(false));
     void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
     useSessionStore.getState().recordCorrect();
 
     target.showCorrectFeedback();
-    if (this.isDestroyed) return;
     await this.playRabbitHit(index);
-    if (this.isDestroyed) return;
-    await waitFor(0.55);
-    if (this.isDestroyed) return;
+    await waitFor(ROUND_END_HOLD);
+    // The player quit while the rabbit jumped.
+    if (this.destroyed) return;
 
     this.step++;
     if (this.step < this.rounds.length) {
       this.startRound();
       return;
     }
-
-    const { correct, mistakes } = useSessionStore.getState();
-    useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
+    finishLevel(this, this.level);
   }
 
+  /** The rabbit jumps onto the mole at `index`, which winces, then lands beside its hole. */
   private async playRabbitHit(index: number) {
     const target = this.targets[index];
-    const sceneScale = target.scale.x;
     const startX = this.rabbit.x;
     const startY = this.rabbit.y - this.rabbit.height / 2;
     const direction = target.x >= startX ? 1 : -1;
-    const targetX = target.x - direction * 118 * sceneScale;
-    const targetY = target.y - 105 * sceneScale;
-    const apexY = Math.min(startY, targetY) - 145 * sceneScale;
+    const targetX = target.x - direction * RABBIT_REACH_X;
+    const targetY = target.y - RABBIT_REACH_Y;
+    const apexY = Math.min(startY, targetY) - RABBIT_JUMP_HEIGHT;
 
-    this.rabbit.texture = Texture.from(
-      `education-levels/education-level-whack-a-mole/rabbit-airborne.png`,
-    );
+    this.rabbit.texture = Texture.from(RABBIT_AIRBORNE);
     this.rabbit.anchor.set(0.5);
-    this.rabbit.scale.set(direction * sceneScale, sceneScale);
+    this.rabbit.scale.set(direction, 1);
     this.rabbit.position.set(startX, startY);
 
     const jumpAnimation = animate(
@@ -322,38 +293,20 @@ export class EducationWhackAMoleScreen extends Container {
     );
     this.rabbitAnimation = jumpAnimation;
     await jumpAnimation.finished;
-    if (this.rabbitAnimation !== jumpAnimation || this.isDestroyed) return;
+    if (this.rabbitAnimation !== jumpAnimation || this.destroyed) return;
 
-    target.showImpact(direction);
-    const hitAnimation = animate(
-      target.hitSprite,
-      { alpha: 1 },
-      { duration: 0.14, ease: 'easeOut' },
-    );
-    const hitScaleAnimation = animate(
-      target.hitSprite.scale,
-      { x: direction, y: 1 },
-      { duration: 0.22, ease: 'backOut' },
-    );
-    this.rabbitAnimation = hitAnimation;
-    await Promise.all([hitAnimation.finished, hitScaleAnimation.finished]);
-    if (this.isDestroyed) return;
+    await target.playImpact(direction);
+    if (this.destroyed) return;
 
     target.hideMole();
-    this.rabbit.texture = Texture.from(
-      `education-levels/education-level-whack-a-mole/rabbit-idle.png`,
-    );
+    this.rabbit.texture = Texture.from(RABBIT_IDLE);
     this.rabbit.anchor.set(0.5, 1);
-    this.rabbit.scale.set(sceneScale);
-    this.rabbit.position.set(target.x, target.y + 58 * sceneScale);
+    this.rabbit.scale.set(1);
+    this.rabbit.position.set(target.x, target.y + RABBIT_STAND_Y);
 
-    const baseScale = sceneScale;
     const landAnimation = animate(
       this.rabbit.scale,
-      {
-        x: [baseScale * 1.08, baseScale * 0.95, baseScale],
-        y: [baseScale * 0.88, baseScale * 1.04, baseScale],
-      },
+      { x: [1.08, 0.95, 1], y: [0.88, 1.04, 1] },
       { duration: 0.25, ease: 'easeOut' },
     );
     this.rabbitAnimation = landAnimation;
@@ -363,27 +316,6 @@ export class EducationWhackAMoleScreen extends Container {
 
   private playCurrentAnswerAudio() {
     const round = this.rounds[this.step];
-    if (!round || this.isPlaying) return;
-
-    this.isPlaying = true;
-    const alias = `education-levels/education-letters-audio/${round.letters[round.answer]}.m4a`;
-    this.currentAnswerAudio = alias;
-    const durationMs = Math.max(250, (sound.find(alias)?.duration ?? 0) * 1000);
-    void engine().audio.sfx.play(alias);
-    if (this.audioTimer) clearTimeout(this.audioTimer);
-    this.audioTimer = setTimeout(() => {
-      this.isPlaying = false;
-      this.audioTimer = undefined;
-    }, durationMs);
-  }
-
-  private stopAnswerAudio() {
-    if (this.currentAnswerAudio) {
-      engine().audio.sfx.stop(this.currentAnswerAudio);
-      this.currentAnswerAudio = undefined;
-    }
-    if (this.audioTimer) clearTimeout(this.audioTimer);
-    this.audioTimer = undefined;
-    this.isPlaying = false;
+    if (round) this.letterAudio.play(round.letters[round.answer]);
   }
 }
