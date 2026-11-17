@@ -17,7 +17,8 @@ const DISPLAY_SIZE = 280;
 const WORD_FONT_SIZE = 72;
 const WORD_GAP = 20;
 
-export class LetterChoice extends Container {
+/** One answer: a word's picture, with the word under it. */
+export class WordImageChoice extends Container {
   public readonly letter: string;
   private readonly imageButton: FancyButton;
   private readonly isCorrect: boolean;
@@ -35,9 +36,9 @@ export class LetterChoice extends Container {
     this.isCorrect = letter === correctLetter;
     this.onCorrect = onCorrect;
 
-    const imageAlias = getWordImageAlias(word.id);
+    const texture = Texture.from(getWordImageAlias(word.id));
     this.imageButton = new FancyButton({
-      defaultView: Texture.from(imageAlias),
+      defaultView: texture,
       anchor: 0.5,
       animations: {
         hover: {
@@ -61,15 +62,14 @@ export class LetterChoice extends Container {
 
     this.addChild(this.imageButton, wordLabel);
 
-    const texture = Texture.from(imageAlias);
-    if (!texture?.width || !texture?.height) return;
-
-    const naturalHeight = texture.height;
-    if (naturalHeight <= 0) return;
-
-    const scale = imageSize ? imageSize / Math.max(texture.width, naturalHeight) : 0.75;
-    this.imageButton.scale.set(scale);
-    wordLabel.y = (naturalHeight * scale) / 2 + WORD_GAP;
+    // A missing picture (the loader skips failed files) still has to be pressable: it may be
+    // the answer, and the round could never end otherwise.
+    const { width, height } = texture;
+    if (width > 0 && height > 0) {
+      const scale = imageSize ? imageSize / Math.max(width, height) : 0.75;
+      this.imageButton.scale.set(scale);
+      wordLabel.y = (height * scale) / 2 + WORD_GAP;
+    }
 
     this.imageButton.eventMode = 'static';
     this.imageButton.onPress.connect(() => {
