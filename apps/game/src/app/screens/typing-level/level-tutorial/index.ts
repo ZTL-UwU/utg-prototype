@@ -10,6 +10,8 @@ import { LetterPopup } from './letter-popup';
 
 type TutorialPresentation = 'popup' | 'screen';
 
+const DIMMED_TINT = 0x666666;
+
 export class TypingTutorialScreen extends Container {
   public readonly screenName: string = 'TypingTutorialScreen';
   public static assetBundles = ['typing-level', 'ui'];
@@ -17,9 +19,11 @@ export class TypingTutorialScreen extends Container {
   private background?: Sprite;
   private hud: HUD;
   private letterGrid: AlphabetGrid;
+  private readonly presentation: TutorialPresentation;
 
   constructor(mapUnit: TMapUnit, presentation: TutorialPresentation = 'screen') {
     super();
+    this.presentation = presentation;
 
     this.hud = new HUD({
       onBack: () =>
@@ -46,11 +50,6 @@ export class TypingTutorialScreen extends Container {
       },
     );
 
-    if (presentation === 'popup') {
-      const currentScreen = engine().navigation.currentScreen;
-      if (currentScreen) currentScreen.tint = 0x666666;
-    }
-
     if (presentation === 'screen') {
       this.background = new Sprite({
         texture: Texture.from('typing-levels/typing-level/background-taklamakan.png'),
@@ -72,6 +71,9 @@ export class TypingTutorialScreen extends Container {
   }
 
   public async show() {
+    // Opened over a level, it dims the level behind it until it closes.
+    const currentScreen = engine().navigation.currentScreen;
+    if (this.presentation === 'popup' && currentScreen) currentScreen.tint = DIMMED_TINT;
     this.letterGrid.alpha = 0;
     this.letterGrid.scale.set(0.4);
     await Promise.all([
