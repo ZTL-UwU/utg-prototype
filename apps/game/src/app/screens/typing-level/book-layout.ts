@@ -39,29 +39,30 @@ const PHONE_WRAP_RATIO = 0.78;
  * view. Phones fit the book's covers to the screen's sides and run it down past the bottom;
  * only the plain pages stretch, so the curved page tops keep their shape.
  */
+/** Wide screens wrap the sentence to the smaller of these shares of the screen and the book. */
+const WIDE_WRAP_SCREEN_RATIO = 0.82;
+const WIDE_WRAP_BOOK_RATIO = 0.62;
+
 export class Book extends Container {
   private readonly art: BookArt;
-  private readonly wide?: Sprite;
-  private readonly phone?: NineSliceSprite;
+  private readonly wide: Sprite;
+  private readonly phone: NineSliceSprite;
 
+  /** Both shapes are built, and `fit` shows the one the screen size calls for. */
   constructor(alias: string, art: BookArt) {
     super();
     this.art = art;
     const texture = Texture.from(alias);
 
-    if (isPhone()) {
-      this.phone = new NineSliceSprite({
-        texture,
-        leftWidth: 0,
-        rightWidth: 0,
-        topHeight: art.pagesTop * texture.height,
-        bottomHeight: art.bottom * texture.height,
-      });
-      this.addChild(this.phone);
-    } else {
-      this.wide = new Sprite({ texture, anchor: 0.5 });
-      this.addChild(this.wide);
-    }
+    this.phone = new NineSliceSprite({
+      texture,
+      leftWidth: 0,
+      rightWidth: 0,
+      topHeight: art.pagesTop * texture.height,
+      bottomHeight: art.bottom * texture.height,
+    });
+    this.wide = new Sprite({ texture, anchor: 0.5 });
+    this.addChild(this.phone, this.wide);
   }
 
   /**
@@ -69,7 +70,10 @@ export class Book extends Container {
    * a sentence box `sentenceHeight` tall so it sits on the pages.
    */
   public fit(width: number, height: number, keyboardTop: number, sentenceHeight: number) {
-    if (this.phone) {
+    const phone = isPhone();
+    this.phone.visible = phone;
+    this.wide.visible = !phone;
+    if (phone) {
       const { width: textureWidth, height: textureHeight } = this.phone.texture;
       const scale = width / (this.art.width * textureWidth);
       const top = PHONE_BOOK_TOP - this.art.top * textureHeight * scale;
@@ -93,12 +97,12 @@ export class Book extends Container {
 
     const bookWidth = width * WIDE_WIDTH_RATIO;
     const bookHeight = height * WIDE_HEIGHT_RATIO;
-    this.wide!.setSize(bookWidth, bookHeight);
-    this.wide!.position.set(width / 2, height * WIDE_CENTER_Y_RATIO);
+    this.wide.setSize(bookWidth, bookHeight);
+    this.wide.position.set(width / 2, height * WIDE_CENTER_Y_RATIO);
     return {
       // Keep the wrapped sentence inside the page margins so nothing clips at the edges.
-      wrapWidth: Math.min(width * 0.82, bookWidth * 0.62),
-      sentenceY: this.wide!.y - bookHeight * WIDE_SENTENCE_RAISE,
+      wrapWidth: Math.min(width * WIDE_WRAP_SCREEN_RATIO, bookWidth * WIDE_WRAP_BOOK_RATIO),
+      sentenceY: this.wide.y - bookHeight * WIDE_SENTENCE_RAISE,
     };
   }
 }
