@@ -1,28 +1,26 @@
 import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
-import { BlurFilter, Container, Graphics, Sprite, Text, TextStyle, Texture } from 'pixi.js';
+import { Container, Graphics, Sprite, Text, TextStyle, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { responsive } from '../../../engine/utils/viewport';
 import { waitFor } from '../../../engine/utils/waitFor';
-import { submitLevelResult, type LevelResultOutcome } from '../../../lib/levelResults';
-import { getNextLevelAfter, isMapUnitComplete } from '../../../lib/progression';
+import type { LevelResultOutcome } from '../../../lib/levelResults';
+import { getNextLevelAfter } from '../../../lib/progression';
 import { m } from '../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
-import { useLevelProgress } from '../../../zustandStores/levelProgressStore';
 import { REMOTE_REWARDS_BUNDLE, resolveRewardsByIds } from '../../../zustandStores/rewardStore';
-import { getStarCount } from '../../../zustandStores/scoreManager';
-import useSessionStore from '../../../zustandStores/sessionStore';
 import { useUserRewardStore } from '../../../zustandStores/userRewardStore';
+import type { LevelRun } from '../../screens/level-flow';
 import { LevelLoadingScreen } from '../../screens/level-loading';
 import { LevelMapScreen } from '../../screens/level-map';
 import { findMapUnitForLevel, REMOTE_MASCOTS_BUNDLE } from '../../screens/level-map/units';
-import type { TLayer, TLevel } from '../../screens/level-map/units';
+import type { TLayer, TLevel, TMapUnit } from '../../screens/level-map/units';
 import { BackButton } from '../../ui/back-button';
 import { layoutPopup } from '../../ui/layout-popup';
 import { NextButton } from '../../ui/next-button';
-import { removeFilter } from '../../ui/remove-filter';
 import { RetryButton } from '../../ui/retry-button';
+import { ScreenBlur } from '../../ui/screen-blur';
 import { PassportPopup } from '../passport';
 import { hasPostcard, PostcardPopup, toPostcardSlug } from '../postcard';
 import { RewardCelebration } from './reward-celebration';
@@ -31,6 +29,8 @@ import { Stars } from './stars';
 const POPUP_WIDTH = 940;
 const POPUP_HEIGHT = 600;
 const POPUP_RADIUS = 32;
+/** Where the passport button sits, from the screen's top right, beside the panel. */
+const PASSPORT_BUTTON = { top: 300, right: 120 };
 
 /** Hang guard on the level-result POST; under any normal network the result wins. */
 const RESULT_TIMEOUT = 10;
@@ -72,25 +72,13 @@ function createStatStyle(layer: TLayer) {
   });
 }
 
-function readSessionResults() {
-  const { correct, mistakes } = useSessionStore.getState();
-  const total = correct + mistakes;
-  const accuracy = total === 0 ? 0 : Math.round((correct / total) * 100);
-
-  useSessionStore.getState().reset();
-
-  return {
-    correct,
-    mistakes,
-    accuracy,
-    starCount: getStarCount(accuracy),
-  };
-}
-
 type EndScreenPopupProps = {
   level: TLevel;
+  /** The run just recorded (see `finishLevel`). */
+  run: LevelRun;
 };
 
+/** Close the popup, then open the level's map. */
 function goToLevelMap(level: TLevel) {
   const mapUnit = findMapUnitForLevel(level);
   void engine()
@@ -98,23 +86,11 @@ function goToLevelMap(level: TLevel) {
     .then(() => engine().navigation.showScreen(LevelMapScreen, mapUnit));
 }
 
-/** Replays the level just finished. The loading screen starts a fresh session. */
-function goToRetryLevel(level: TLevel) {
-  const mapUnit = findMapUnitForLevel(level);
+/** Close the popup, then load `level`: the one just played, or the next. */
+function goToLevel(level: TLevel, mapUnit: TMapUnit) {
   void engine()
     .navigation.hidePopup()
     .then(() => engine().navigation.showScreen(LevelLoadingScreen, { level, mapUnit }));
-}
-
-function goToNextLevel(nextLevel: NonNullable<ReturnType<typeof getNextLevelAfter>>) {
-  void engine()
-    .navigation.hidePopup()
-    .then(() =>
-      engine().navigation.showScreen(LevelLoadingScreen, {
-        level: nextLevel.level,
-        mapUnit: nextLevel.mapUnit,
-      }),
-    );
 }
 
 export class EndScreenPopup extends Container {
@@ -130,7 +106,7 @@ export class EndScreenPopup extends Container {
 
   private innerContainer: Container;
   /** Blur this popup put on the screen beneath it, removed again in hide(). */
-  private screenBlur?: { screen: Container; filter: BlurFilter };
+  private screenBlur?: ScreenBlur;
   private background: Graphics;
   private contentContainer: Container;
   private stars: Stars;
@@ -142,7 +118,7 @@ export class EndScreenPopup extends Container {
   private resultPromise: Promise<LevelResultOutcome>;
   private rewardCelebration?: RewardCelebration;
 
-  constructor({ level }: EndScreenPopupProps) {
+  constructor({ level, run }: EndScreenPopupProps) {
     super({
       layout: {
         flexDirection: 'column',
@@ -150,31 +126,13 @@ export class EndScreenPopup extends Container {
         justifyContent: 'center',
       },
     });
-    const { correct, mistakes, accuracy, starCount } = readSessionResults();
+    const { correct, mistakes, accuracy, starCount } = run;
     this.starCount = starCount;
-    // useLevelProgress.getState().markAttempted(getLevelType(level), level.id);
+    this.resultPromise = run.submitted;
 
-    // readSessionResults() already reset the session store, so these are the only
-    // copies of the counts left. Unawaited, to overlap the show() animations.
-    this.resultPromise = submitLevelResult({
-      level: level.id,
-      star: starCount,
-      // No per-level score exists; the correct count stands in for one.
-      score: correct,
-      correct,
-      mistake: mistakes,
-    });
-
-    const progress = useLevelProgress.getState();
     const mapUnit = findMapUnitForLevel(level);
     const layer = mapUnit.type;
-    if (starCount > 0) {
-      progress.markAttempted(layer, level.id);
-      if (mapUnit.type === 'education' && isMapUnitComplete(mapUnit)) {
-        progress.queueMapUnitAnimation(mapUnit.type, mapUnit.id);
-      }
-    }
-    if (mapUnit.type === 'typing') {
+    if (layer === 'typing') {
       const slug = toPostcardSlug(level.title);
       if (slug && hasPostcard(slug)) {
         this.postcardSlug = slug;
@@ -273,7 +231,6 @@ export class EndScreenPopup extends Container {
       : null;
 
     const backButton = new BackButton(() => goToLevelMap(level));
-    backButton.anchor.set(0, 1);
     backButton.layout = {
       position: 'absolute',
       left: 28,
@@ -282,12 +239,13 @@ export class EndScreenPopup extends Container {
     backButton.anchor.set(0, 0);
     backButton.scale.set(0.7);
 
-    const retryButton = new RetryButton(() => goToRetryLevel(level));
+    // Retrying goes through the loading screen, which starts a fresh session.
+    const retryButton = new RetryButton(() => goToLevel(level, mapUnit));
     retryButton.scale.set(0.7);
 
     const nextLevel = getNextLevelAfter(level);
     const nextButton = new NextButton(() => {
-      if (nextLevel) goToNextLevel(nextLevel);
+      if (nextLevel) goToLevel(nextLevel.level, nextLevel.mapUnit);
     });
     nextButton.alpha = nextLevel ? 1 : 0.45;
     if (!nextLevel) nextButton.eventMode = 'none';
@@ -306,8 +264,8 @@ export class EndScreenPopup extends Container {
     });
     this.passportButton.layout = {
       position: 'absolute',
-      top: 300,
-      right: 120,
+      top: PASSPORT_BUTTON.top,
+      right: PASSPORT_BUTTON.right,
     };
     this.passportButton.onPress.connect(() => {
       void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
@@ -332,10 +290,8 @@ export class EndScreenPopup extends Container {
   public async show() {
     const currentEngine = engine();
     if (!currentEngine.navigation.currentScreen) return;
-    const screen = currentEngine.navigation.currentScreen;
-    const blur = new BlurFilter({ strength: 0 });
-    this.screenBlur = { screen, filter: blur };
-    screen.filters = [blur];
+    const blur = new ScreenBlur(0);
+    this.screenBlur = blur;
     if (this.starCount <= 1) {
       void engine().audio.sfx.play('end-screen/level-failed.mp3');
     } else {
@@ -350,7 +306,7 @@ export class EndScreenPopup extends Container {
       animate(this.innerContainer, { alpha: 1 }, { duration, ease: 'backOut' }),
       animate(this.innerContainer.scale, { x: 1, y: 1 }, { duration, ease: 'backOut' }),
       animate(this.passportButton, { alpha: 1 }, { duration, ease: 'backOut' }),
-      animate(blur, { strength: 9 }, { duration, ease: 'easeOut' }),
+      animate(blur.filter, { strength: 9 }, { duration, ease: 'easeOut' }),
       this.stars.playShowAnimation(),
     ]);
 
@@ -416,23 +372,27 @@ export class EndScreenPopup extends Container {
   }
 
   public async hide() {
-    // Not destroy(): Navigation never destroys popups, so that override would not fire.
     this.rewardCelebration?.stop();
 
     const screenBlur = this.screenBlur;
     this.screenBlur = undefined;
     if (!screenBlur) return;
-    const { screen, filter } = screenBlur;
 
     const duration = 0.2;
     await Promise.all([
       animate(this.innerContainer, { alpha: 0 }, { duration, ease: 'easeOut' }),
       animate(this.innerContainer.scale, { x: 0.94, y: 0.94 }, { duration, ease: 'easeOut' }),
       animate(this.passportButton, { alpha: 0 }, { duration, ease: 'easeOut' }),
-      animate(filter, { strength: 0 }, { duration, ease: 'easeOut' }),
+      animate(screenBlur.filter, { strength: 0 }, { duration, ease: 'easeOut' }),
     ]);
 
-    removeFilter(screen, filter);
+    screenBlur.remove();
+  }
+
+  override destroy(options?: Parameters<Container['destroy']>[0]) {
+    this.rewardCelebration?.stop();
+    this.screenBlur?.remove();
+    super.destroy(options);
   }
 
   public resize(width: number, height: number) {
