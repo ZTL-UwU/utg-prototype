@@ -2,6 +2,7 @@ import { FancyButton } from '@pixi/ui';
 import {
   TYPING_TEST_DURATIONS_SECONDS,
   TYPING_TEST_MODES,
+  type TypingTestDurationSeconds,
   type TypingTestMode,
   type TypingTestProps,
 } from '@utg/level-types';
@@ -13,6 +14,7 @@ import { isPhone, responsive } from '../../../../engine/utils/viewport';
 import { m } from '../../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { layoutPopup } from '../../../ui/layout-popup';
+import { removeFilter } from '../../../ui/remove-filter';
 import { availableModes } from './test-content';
 
 const PANEL_WIDTH = 900;
@@ -35,6 +37,8 @@ const SEGMENT_RADIUS = 30;
 const SEGMENT_PADDING_X = 28;
 const TOGGLE_WIDTH = 96;
 const TOGGLE_HEIGHT = 48;
+const DISABLED_ALPHA = 0.45;
+const SCREEN_BLUR = 5;
 
 const MODE_LABELS: Record<TypingTestMode, string> = {
   letters: m.typing_test_letters(),
@@ -44,7 +48,7 @@ const MODE_LABELS: Record<TypingTestMode, string> = {
 
 export type TypingTestSettings = {
   mode: TypingTestMode;
-  durationSeconds: number;
+  durationSeconds: TypingTestDurationSeconds;
   showKeyboard: boolean;
 };
 
@@ -177,6 +181,8 @@ export class TypingTestSettingsPopup extends Container {
   private readonly popupMask: Sprite;
   private readonly panel: Container;
   private readonly settings: TypingTestSettings;
+  /** The blur this popup put on the screen beneath it, removed again in hide(). */
+  private screenBlur?: { screen: Container; filter: BlurFilter };
 
   constructor({ levelProps, defaults, onStart }: TypingTestSettingsPopupProps) {
     super({
@@ -187,12 +193,14 @@ export class TypingTestSettingsPopup extends Container {
       },
     });
 
-    // With no content configured at all every mode is offered, so the popup still renders.
+    // With no content configured at all every mode is shown, but Start is off: any of them
+    // would give an empty prompt where every key counts as a mistake.
     const configured = availableModes(levelProps);
-    const modes = configured.length > 0 ? configured : [...TYPING_TEST_MODES];
+    const hasContent = configured.length > 0;
+    const modes = hasContent ? configured : [...TYPING_TEST_MODES];
     this.settings = {
       ...defaults,
-      mode: modes.includes(defaults.mode) ? defaults.mode : (modes[0] ?? defaults.mode),
+      mode: modes.includes(defaults.mode) ? defaults.mode : modes[0]!,
     };
 
     this.popupMask = new Sprite({
@@ -208,7 +216,11 @@ export class TypingTestSettingsPopup extends Container {
     background.layout = { width: PANEL_WIDTH, height: PANEL_HEIGHT };
 
     const title = createFlowLabel(m.typing_test_title(), 72, COLORS.BUTTON);
-    const subtitle = createFlowLabel(m.typing_test_subtitle(), 32, COLORS.TEXT);
+    const subtitle = createFlowLabel(
+      hasContent ? m.typing_test_subtitle() : m.typing_test_no_content(),
+      32,
+      COLORS.TEXT,
+    );
 
     const modeControl = new SegmentedControl(
       modes.map((mode) => ({ value: mode, label: MODE_LABELS[mode] })),
@@ -218,7 +230,7 @@ export class TypingTestSettingsPopup extends Container {
       },
     );
 
-    const durationControl = new SegmentedControl<number>(
+    const durationControl = new SegmentedControl<TypingTestDurationSeconds>(
       TYPING_TEST_DURATIONS_SECONDS.map((seconds) => ({
         value: seconds,
         label:
@@ -261,6 +273,10 @@ export class TypingTestSettingsPopup extends Container {
       anchor: 0.5,
     });
     startButton.layout = { width: 300, height: 142, isLeaf: true };
+    if (!hasContent) {
+      startButton.enabled = false;
+      startButton.alpha = DISABLED_ALPHA;
+    }
     startButton.onPress.connect(() => {
       void engine().audio.sfx.play('preload-audio/sfx/game-start.mp3');
       void engine()
@@ -298,8 +314,13 @@ export class TypingTestSettingsPopup extends Container {
   public async show() {
     const currentEngine = engine();
     void currentEngine.audio.sfx.play('preload-audio/sfx/popup.mp3');
-    if (currentEngine.navigation.currentScreen) {
-      currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 5 })];
+    // Added to the screen's own filters, and later removed alone, rather than replacing them.
+    const screen = currentEngine.navigation.currentScreen;
+    if (screen) {
+      const filter = new BlurFilter({ strength: SCREEN_BLUR });
+      const filters = screen.filters;
+      screen.filters = [...(Array.isArray(filters) ? filters : filters ? [filters] : []), filter];
+      this.screenBlur = { screen, filter };
     }
 
     this.popupMask.alpha = 0;
@@ -314,16 +335,14 @@ export class TypingTestSettingsPopup extends Container {
   }
 
   public async hide() {
-    const currentEngine = engine();
     await Promise.all([
       animate(this.popupMask, { alpha: 0 }, { duration: 0.2, ease: 'linear' }),
       animate(this.panel, { alpha: 0 }, { duration: 0.2, ease: 'easeOut' }),
       animate(this.panel.scale, { x: 0.94, y: 0.94 }, { duration: 0.2, ease: 'easeOut' }),
     ]);
 
-    if (currentEngine.navigation.currentScreen) {
-      currentEngine.navigation.currentScreen.filters = [];
-    }
+    if (this.screenBlur) removeFilter(this.screenBlur.screen, this.screenBlur.filter);
+    this.screenBlur = undefined;
   }
 
   public resize(width: number, height: number) {

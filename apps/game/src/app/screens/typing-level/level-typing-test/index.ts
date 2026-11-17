@@ -2,16 +2,15 @@ import type { TypingTestProps } from '@utg/level-types';
 import { Container, Graphics, Text, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { isPhone, topClearance } from '../../../../engine/utils/viewport';
+import { isPhone } from '../../../../engine/utils/viewport';
 import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
-import { getKeyFromChar, getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { getTypedText } from '../../../../utils/keymap';
 import { useLevelProgress } from '../../../../zustandStores/levelProgressStore';
 import { REMOTE_SENTENCES_BUNDLE } from '../../../../zustandStores/sentenceStore';
 import { levelWordAssets } from '../../../../zustandStores/wordStore';
-import { QuitPopup } from '../../../popups/quit';
-import { HUD } from '../../../ui/hud';
-import { KeyboardLayout, type KeyFeedback } from '../../../ui/keyboard-layout';
-import { LevelMapScreen } from '../../level-map';
+import { hudButtonTop, type HUD } from '../../../ui/hud';
+import { KeyboardLayout } from '../../../ui/keyboard-layout';
+import { createLevelHud } from '../../level-flow';
 import {
   findMapUnitForLevel,
   getTypedLevel,
@@ -22,7 +21,6 @@ import { createPromptView, type PromptView } from './prompt-views';
 import { TypingTestResultsPopup } from './results-popup';
 import { TypingTestSettingsPopup, type TypingTestSettings } from './settings-popup';
 
-const FEEDBACK_DURATION_MS = 350;
 const PANEL_RADIUS = 32;
 const PANEL_WIDTH_RATIO = 0.8;
 const PANEL_MAX_WIDTH = 1500;
@@ -33,9 +31,12 @@ const PANEL_HEIGHT_RATIO = 0.5;
 const PHONE_PANEL_MARGIN_X = 24;
 /** Space between the panel and the HUD row above it or the keyboard below it on phones. */
 const PHONE_PANEL_GAP = 32;
-/** Centre of the HUD's back button, before the phone's top clearance (see `HUD`). */
-const HUD_CENTER_Y = 90;
+/** Half the HUD's back button, whose centre `hudButtonTop` gives. */
 const HUD_BUTTON_RADIUS = 62;
+/** The countdown's right edge, in the top row where a Help button would be. */
+const TIMER_RIGHT_INSET = 80;
+/** Shortest the prompt panel may get, on very short screens. */
+const MIN_PANEL_HEIGHT = 160;
 
 const COLORS = {
   BACKGROUND: 0xfdf3e0,
@@ -43,8 +44,11 @@ const COLORS = {
   TIMER: 0x6b411e,
 };
 
-/** Remembered across retries so a replay does not re-ask for the same choices. */
-let lastSettings: TypingTestSettings | undefined;
+/**
+ * Remembered across retries so a replay does not re-ask for the same choices. Per level, so
+ * another typing test starts from its own defaults.
+ */
+const lastSettings = new Map<number, TypingTestSettings>();
 
 export class TypingTestScreen extends Container {
   public readonly screenName = 'TypingTestScreen';
@@ -77,10 +81,10 @@ export class TypingTestScreen extends Container {
   private completing = false;
   private correctChars = 0;
   private mistakes = 0;
-  private readonly mistakesByCode = new Map<string, number>();
-  private readonly feedbackTimeouts = new Map<string, number>();
-  private _sw = 0;
-  private _sh = 0;
+  /** Missed target characters, for the results' problem keys. */
+  private readonly mistakesByChar = new Map<string, number>();
+  private viewWidth = 0;
+  private viewHeight = 0;
 
   constructor(level: TLevel) {
     const typedLevel = getTypedLevel(level, 'typing-test');
@@ -90,14 +94,8 @@ export class TypingTestScreen extends Container {
     this.mapUnit = mapUnit;
     this.props = typedLevel.props;
 
-    // No help button: it sits where the countdown is drawn.
-    this.hud = new HUD({
-      onBack: () =>
-        void engine().navigation.showPopup(QuitPopup, {
-          mascot: typedLevel.mascot,
-          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
-        }),
-    });
+    // No help button: the test has no tutorial, and the countdown sits where it would be.
+    this.hud = createLevelHud(typedLevel);
 
     this.keyboard = new KeyboardLayout({ text: 'sentences' });
 
@@ -117,35 +115,42 @@ export class TypingTestScreen extends Container {
   }
 
   resize(width: number, height: number) {
-    this._sw = width;
-    this._sh = height;
+    this.viewWidth = width;
+    this.viewHeight = height;
     this.layout = { width, height };
     this.keyboard.resize(width, height);
     this.layoutContent();
   }
 
   private layoutContent() {
-    if (this._sw === 0 || this._sh === 0) return;
+    if (this.viewWidth === 0 || this.viewHeight === 0) return;
 
-    this.background.clear().rect(0, 0, this._sw, this._sh).fill(COLORS.BACKGROUND);
+    this.background.clear().rect(0, 0, this.viewWidth, this.viewHeight).fill(COLORS.BACKGROUND);
 
     const phone = isPhone();
-    const hudCenterY = HUD_CENTER_Y + topClearance(this._sh);
+    const hudCenterY = hudButtonTop(this.viewHeight);
 
     const panelWidth = phone
-      ? this._sw - 2 * PHONE_PANEL_MARGIN_X
-      : Math.min(this._sw * PANEL_WIDTH_RATIO, PANEL_MAX_WIDTH);
-    const panelX = (this._sw - panelWidth) / 2;
+      ? this.viewWidth - 2 * PHONE_PANEL_MARGIN_X
+      : Math.min(this.viewWidth * PANEL_WIDTH_RATIO, PANEL_MAX_WIDTH);
+    const panelX = (this.viewWidth - panelWidth) / 2;
     // A phone's panel is as wide as the screen, so it starts below the back button.
     const panelY = phone
       ? hudCenterY + HUD_BUTTON_RADIUS + PHONE_PANEL_GAP
-      : this._sh * PANEL_TOP_RATIO;
-    const panelHeight =
-      phone && this.settings?.showKeyboard
+      : this.viewHeight * PANEL_TOP_RATIO;
+    const showKeyboard = this.settings?.showKeyboard ?? false;
+    // Never down into the keyboard, and never so short (or negative) on a short screen
+    // that the prompt cannot draw.
+    const roomAboveKeyboard = this.keyboard.y - PHONE_PANEL_GAP - panelY;
+    const preferredHeight =
+      phone && showKeyboard
         ? // Fills the space down to the keyboard instead of leaving a gap above it.
-          this.keyboard.y - PHONE_PANEL_GAP - panelY
-        : this._sh *
-          (this.settings?.showKeyboard ? PANEL_HEIGHT_RATIO_WITH_KEYBOARD : PANEL_HEIGHT_RATIO);
+          roomAboveKeyboard
+        : this.viewHeight * (showKeyboard ? PANEL_HEIGHT_RATIO_WITH_KEYBOARD : PANEL_HEIGHT_RATIO);
+    const panelHeight = Math.max(
+      MIN_PANEL_HEIGHT,
+      showKeyboard ? Math.min(preferredHeight, roomAboveKeyboard) : preferredHeight,
+    );
 
     this.panel
       .clear()
@@ -154,7 +159,7 @@ export class TypingTestScreen extends Container {
 
     this.promptView?.place(panelX, panelY, panelWidth, panelHeight);
     // Level with the back button, which sits in the same top row.
-    this.timerText.position.set(this._sw - 80, hudCenterY);
+    this.timerText.position.set(this.viewWidth - TIMER_RIGHT_INSET, hudCenterY);
   }
 
   update(ticker: Ticker) {
@@ -167,11 +172,10 @@ export class TypingTestScreen extends Container {
   }
 
   async show() {
-    this.paused = false;
-    window.addEventListener('keydown', this.handleKeyDown);
+    // Keys are listened to once the settings popup closes and the screen resumes.
     void engine().navigation.showPopup(TypingTestSettingsPopup, {
       levelProps: this.props,
-      defaults: lastSettings ?? this.defaultSettings(),
+      defaults: lastSettings.get(this.level.id) ?? this.defaultSettings(),
       onStart: (settings) => this.startTest(settings),
     });
   }
@@ -184,8 +188,12 @@ export class TypingTestScreen extends Container {
   async pause() {
     this.paused = true;
     window.removeEventListener('keydown', this.handleKeyDown);
-    this.clearPendingFeedback();
     await this.keyboard.pause();
+  }
+
+  override destroy(options?: Parameters<Container['destroy']>[0]) {
+    window.removeEventListener('keydown', this.handleKeyDown);
+    super.destroy(options);
   }
 
   async resume() {
@@ -204,7 +212,7 @@ export class TypingTestScreen extends Container {
   }
 
   private startTest(settings: TypingTestSettings) {
-    lastSettings = settings;
+    lastSettings.set(this.level.id, settings);
     // Phones have no physical keyboard, so the on-screen one is the only way to type.
     const phone = isPhone();
     this.settings = { ...settings, showKeyboard: settings.showKeyboard || phone };
@@ -217,7 +225,7 @@ export class TypingTestScreen extends Container {
 
     if (this.settings.showKeyboard) {
       this.addChild(this.keyboard);
-      this.keyboard.resize(this._sw, this._sh);
+      this.keyboard.resize(this.viewWidth, this.viewHeight);
       void this.keyboard.playEnterAnimation();
     }
 
@@ -279,49 +287,21 @@ export class TypingTestScreen extends Container {
     this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
   }
 
-  /** Colours a key, then restores the hint — a stale clear must never leave the board blank. */
-  private flashKey(code: string, feedback: KeyFeedback) {
-    const pending = this.feedbackTimeouts.get(code);
-    if (pending) clearTimeout(pending);
-
-    this.keyboard.setKeyFeedback(code, feedback);
-    this.feedbackTimeouts.set(
-      code,
-      window.setTimeout(() => {
-        this.feedbackTimeouts.delete(code);
-        this.keyboard.clearKeyFeedback(code);
-        this.refreshHint();
-      }, FEEDBACK_DURATION_MS),
-    );
-  }
-
-  private clearPendingFeedback() {
-    for (const timeout of this.feedbackTimeouts.values()) clearTimeout(timeout);
-    this.feedbackTimeouts.clear();
+  /** Colours a key, then restores the hint, so a stale clear never leaves the board blank. */
+  private flashKey(code: string, feedback: 'success' | 'error') {
+    this.keyboard.flashKeyFeedback(code, feedback, { onCleared: () => this.refreshHint() });
   }
 
   private readonly handleKeyDown = (event: KeyboardEvent) => {
-    if (
-      !this.armed ||
-      this.paused ||
-      this.completing ||
-      event.repeat ||
-      event.key === 'Shift' ||
-      event.ctrlKey ||
-      event.metaKey ||
-      event.altKey
-    )
-      return;
-
-    const typedLetter = getMappedFromKeyboardEvent(event);
-    // Space maps to ' '; other unmapped keys are ''.
-    if (typedLetter === '' && event.code !== 'Space') return;
+    if (!this.armed || this.paused || this.completing) return;
+    // Space types ' '; keys that type nothing are ignored.
+    const typedLetter = getTypedText(event);
+    if (!typedLetter) return;
 
     // The clock starts on the first keystroke, so reading the prompt costs no time.
     if (!this.running) this.running = true;
 
-    const matched = typedLetter.length > 0 && this.text.startsWith(typedLetter, this.activeIdx);
-    if (matched) {
+    if (this.text.startsWith(typedLetter, this.activeIdx)) {
       this.correctChars += typedLetter.length;
       this.activeIdx += typedLetter.length;
 
@@ -339,19 +319,20 @@ export class TypingTestScreen extends Container {
     this.flashKey(event.code, 'error');
   };
 
-  /** The heatmap flags the key that should have been pressed, not the one that was. */
+  /**
+   * The heatmap flags what should have been typed, not the key that was. Kept by character, so
+   * a Shift-layer letter shows as itself rather than its unshifted key.
+   */
   private recordProblemKey() {
     const target = this.currentTargetLetter;
-    const code = target ? getKeyFromChar(target) : '';
-    if (!code) return;
-    this.mistakesByCode.set(code, (this.mistakesByCode.get(code) ?? 0) + 1);
+    if (!target) return;
+    this.mistakesByChar.set(target, (this.mistakesByChar.get(target) ?? 0) + 1);
   }
 
   private endTest() {
     this.armed = false;
     this.running = false;
     window.removeEventListener('keydown', this.handleKeyDown);
-    this.clearPendingFeedback();
 
     // The test is endlessly replayable and never scored, so finishing one run is all the
     // map ring can go on.
@@ -362,7 +343,7 @@ export class TypingTestScreen extends Container {
       durationMs: this.durationMs,
       correctChars: this.correctChars,
       mistakes: this.mistakes,
-      mistakesByCode: this.mistakesByCode,
+      mistakesByChar: this.mistakesByChar,
       onRetry: () => void engine().navigation.showScreen(TypingTestScreen, this.level),
     });
   }

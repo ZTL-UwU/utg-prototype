@@ -67,6 +67,7 @@
   "typing_tutorial_hold": "HOLD",
   "typing_test_title": "TYPING TEST",
   "typing_test_subtitle": "Choose your preferences for this test",
+  "typing_test_no_content": "Nothing to type here yet.",
   "typing_test_letters": "Letters",
   "typing_test_words": "Words",
   "typing_test_sentences": "Sentences",

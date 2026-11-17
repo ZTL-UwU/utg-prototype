@@ -5,9 +5,10 @@ import { engine } from '../../../../engine/getEngine';
 import { responsive } from '../../../../engine/utils/viewport';
 import { m } from '../../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
-import { getMappedFromKeyCode } from '../../../../utils/keymap';
+import { getKeyStrokeFromChar } from '../../../../utils/keymap';
 import { getScriptFontFamily } from '../../../../utils/script';
 import { BackButton } from '../../../ui/back-button';
+import { hudButtonTop } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { RetryButton } from '../../../ui/retry-button';
 import { LevelMapScreen } from '../../level-map';
@@ -41,13 +42,19 @@ const CONTENT_LAYOUT = {
 } as const;
 /** Keys ranked at or above this position get the strong red; the rest a lighter one. */
 const PROBLEM_KEY_COUNT = 3;
+/** The back and retry buttons' distance from the side edges. */
+const CORNER_BUTTON_INSET = 90;
+const STATS_SCALE = { sm: 0.72, lg: 1 };
+/** How a missed space reads on its chip. */
+const SPACE_GLYPH = '␣';
 
 export type TypingTestResultsPopupProps = {
   level: TLevel;
   durationMs: number;
   correctChars: number;
   mistakes: number;
-  mistakesByCode: Map<string, number>;
+  /** Missed target characters and how often each was missed. */
+  mistakesByChar: Map<string, number>;
   onRetry: () => void;
 };
 
@@ -83,13 +90,13 @@ function createStatPill(label: string, value: string) {
   return pill;
 }
 
-function createProblemKeyChip(code: string) {
+function createProblemKeyChip(char: string) {
   const chip = new Container();
   const background = new Graphics()
     .roundRect(0, 0, CHIP_SIZE, CHIP_SIZE, CHIP_RADIUS)
     .fill(COLORS.PROBLEM_KEY);
   const glyph = createText(
-    getMappedFromKeyCode(code, false),
+    char === ' ' ? SPACE_GLYPH : char,
     36,
     COLORS.PROBLEM_KEY_TEXT,
     getScriptFontFamily(),
@@ -112,13 +119,15 @@ export class TypingTestResultsPopup extends Container {
   private readonly keyboardSlot: Container;
   private readonly keyboardWidth: number;
   private readonly keyboardHeight: number;
+  private readonly statsRow: Container;
+  private readonly cornerButtons: Container[];
 
   constructor({
     level,
     durationMs,
     correctChars,
     mistakes,
-    mistakesByCode,
+    mistakesByChar,
     onRetry,
   }: TypingTestResultsPopupProps) {
     super({
@@ -150,7 +159,6 @@ export class TypingTestResultsPopup extends Container {
 
     const statsRow = new Container({
       layout: { flexDirection: 'row', alignItems: 'center', gap: 24 },
-      scale: responsive({ sm: 0.72, lg: 1 }),
       children: [
         createStatPill(m.typing_test_accuracy(), m.percent({ accuracy })),
         createStatPill(m.typing_test_speed(), m.typing_test_wpm({ wpm })),
@@ -158,9 +166,10 @@ export class TypingTestResultsPopup extends Container {
       ],
     });
 
-    const rankedCodes = [...mistakesByCode.entries()]
+    this.statsRow = statsRow;
+    const rankedChars = [...mistakesByChar.entries()]
       .sort((a, b) => b[1] - a[1])
-      .map(([code]) => code);
+      .map(([char]) => char);
 
     const problemKeysRow = new Container({
       layout: { flexDirection: 'row', alignItems: 'center', gap: 16 },
@@ -176,7 +185,7 @@ export class TypingTestResultsPopup extends Container {
           },
           layout: true,
         }),
-        ...rankedCodes.slice(0, PROBLEM_KEY_COUNT).map(createProblemKeyChip),
+        ...rankedChars.slice(0, PROBLEM_KEY_COUNT).map(createProblemKeyChip),
       ],
     });
 
@@ -185,8 +194,13 @@ export class TypingTestResultsPopup extends Container {
     // since pausing also clears every key's feedback.
     void this.keyboard.pause();
     void this.keyboard.playEnterAnimation(false);
-    rankedCodes.forEach((code, index) => {
-      this.keyboard.setKeyFeedback(code, index < PROBLEM_KEY_COUNT ? 'error' : 'error-soft');
+    rankedChars.forEach((char, index) => {
+      const stroke = getKeyStrokeFromChar(char);
+      if (!stroke) return;
+      const feedback = index < PROBLEM_KEY_COUNT ? 'error' : 'error-soft';
+      this.keyboard.setKeyFeedback(stroke.code, feedback);
+      // A Shift-layer letter needed Shift too.
+      if (stroke.shift) this.keyboard.setKeyFeedback('ShiftLeft', feedback);
     });
 
     const keyboardBounds = this.keyboard.getLocalBounds();
@@ -206,13 +220,14 @@ export class TypingTestResultsPopup extends Container {
         .then(() => engine().navigation.showScreen(LevelMapScreen, mapUnit));
     });
     backButton.scale.set(0.7);
-    backButton.layout = { position: 'absolute', left: 90, top: 90 };
+    backButton.layout = { position: 'absolute', left: CORNER_BUTTON_INSET };
 
     const retryButton = new RetryButton(() => {
       void engine().navigation.hidePopup().then(onRetry);
     });
     retryButton.scale.set(0.8);
-    retryButton.layout = { position: 'absolute', right: 90, top: 90 };
+    retryButton.layout = { position: 'absolute', right: CORNER_BUTTON_INSET };
+    this.cornerButtons = [backButton, retryButton];
 
     this.innerContainer = new Container({ layout: true });
     this.innerContainer.addChild(this.background, this.content, backButton, retryButton);
@@ -237,6 +252,9 @@ export class TypingTestResultsPopup extends Container {
     this.background.clear().rect(0, 0, width, height).fill(COLORS.BACKGROUND);
     this.background.layout = { width, height };
     this.content.layout = { ...CONTENT_LAYOUT, width, height };
+    this.statsRow.scale.set(responsive(STATS_SCALE));
+    // The popup covers the whole screen, so its corner buttons clear the notch like the HUD's.
+    for (const button of this.cornerButtons) button.layout = { top: hudButtonTop(height) };
 
     const keyboardScale =
       Math.min(KEYBOARD_MAX_WIDTH, width * KEYBOARD_WIDTH_RATIO) / this.keyboardWidth;
