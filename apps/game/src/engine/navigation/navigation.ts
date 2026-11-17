@@ -1,5 +1,5 @@
 import type { Ticker } from 'pixi.js';
-import { Assets, BigPool, Container, type ResolvedAsset } from 'pixi.js';
+import { Assets, Container, type ResolvedAsset } from 'pixi.js';
 
 import { ensureMascotsReady, REMOTE_MASCOTS_BUNDLE } from '../../zustandStores/courseStore';
 import { ensureRewardsReady, REMOTE_REWARDS_BUNDLE } from '../../zustandStores/rewardStore';
@@ -25,7 +25,7 @@ export interface AppScreen extends Container {
   resume?(): Promise<void>;
   /** Prepare screen, before showing */
   prepare?(): void;
-  /** Reset screen, after hidden */
+  /** Reset screen, after hidden and before it is destroyed */
   reset?(): void;
   /** Update the screen, passing delta time/step */
   update?(time: Ticker): void;
@@ -332,7 +332,15 @@ export class Navigation {
     }
   }
 
-  /** Remove screen from the stage, unlink update & resize functions */
+  /**
+   * Remove screen from the stage, unlink update & resize functions, then destroy it.
+   *
+   * Every screen and popup is built fresh each time it is shown, so the one leaving is never
+   * shown again. Destroying it runs its `destroy` override (and its children's), which is
+   * where animations, timers and listeners are stopped: anything still animating a destroyed
+   * object would throw, since Pixi drops its transform. Async work that outlives the screen
+   * checks `destroyed` before touching it.
+   */
   private async hideAndRemoveScreen(screen: AppScreen, animate = true) {
     // Prevent interaction in the screen
     screen.interactiveChildren = false;
@@ -354,10 +362,11 @@ export class Navigation {
       screen.parent.removeChild(screen);
     }
 
-    // Clean up the screen so that instance can be reused again later
     if (screen.reset) {
       screen.reset();
     }
+
+    screen.destroy({ children: true });
   }
 
   /**
@@ -392,9 +401,7 @@ export class Navigation {
 
       // Create the new screen and add that to the stage
       this.currentScreen =
-        props !== undefined
-          ? new (ctor as AppScreenConstructor<[unknown]>)(props)
-          : BigPool.get(ctor);
+        props !== undefined ? new (ctor as AppScreenConstructor<[unknown]>)(props) : new ctor();
       this.screenNeeds.set(this.currentScreen, needs);
     } finally {
       if (needs) this.pendingNeeds.delete(needs);
