@@ -1,7 +1,7 @@
 import { Container, Sprite, Text, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { isPhone, responsive } from '../../../../engine/utils/viewport';
+import { responsive, usesPhoneKeyboard } from '../../../../engine/utils/viewport';
 import { m } from '../../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
@@ -211,7 +211,7 @@ export class GameLevelOneScreen extends Container {
       responsive({ sm: 0, lg: (width - DESIGN_WIDTH * uiScale) / 2 }),
       responsive({ sm: PHONE_STAGE.top, lg: uiTop }),
     );
-    if (isPhone()) this.keyboard.resizeToScreen(this.gameplay, width, height);
+    if (usesPhoneKeyboard()) this.keyboard.resizeToScreen(this.gameplay, width, height);
     else this.keyboard.resize(DESIGN_WIDTH, DESIGN_HEIGHT);
     this.hud.layout = { width, height };
   }

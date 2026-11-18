@@ -2,7 +2,7 @@ import type { TargetScript } from '@utg/script-converter';
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, type FederatedPointerEvent, Graphics, Rectangle, Text } from 'pixi.js';
 
-import { isPhone, safeAreaInsets } from '../../engine/utils/viewport';
+import { safeAreaInsets, usesPhoneKeyboard } from '../../engine/utils/viewport';
 import { DISPLAY_FONT_FAMILY } from '../../utils/fonts';
 import {
   getKeyFromChar,
@@ -413,7 +413,7 @@ export class KeyboardLayout extends Container {
 
   /** Center horizontally and pin to the bottom of the given view size. */
   public resize(viewWidth: number, viewHeight: number, bottomMargin?: number) {
-    if (isPhone()) {
+    if (usesPhoneKeyboard()) {
       this.resizePhone(viewWidth, viewHeight, bottomMargin);
       return;
     }
