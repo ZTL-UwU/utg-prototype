@@ -31,6 +31,7 @@ import { EducationTutorialScreen } from '../app/screens/education-level/level-tu
 import { EducationYoutubeScreen } from '../app/screens/education-level/youtube-videos';
 import { HomeScreen } from '../app/screens/home';
 import { AuthScreen } from '../app/screens/home/auth';
+import { DeleteAccountScreen } from '../app/screens/home/delete-account';
 import { LayerSelectScreen } from '../app/screens/layer-select';
 import { LetterReferenceScreen } from '../app/screens/letter-reference';
 import { LevelLoadingScreen } from '../app/screens/level-loading';
@@ -56,7 +57,7 @@ import {
   type Route,
 } from './core/defineRoute';
 import { formatHref, parseHref } from './core/path';
-import { course, levelPlayer, player, session } from './guards';
+import { account, course, levelPlayer, player, session } from './guards';
 
 function mapById(mapId: string | undefined): TMapUnit | undefined {
   const id = parseId(mapId);
@@ -107,6 +108,14 @@ export const auth = defineRoute({
   transient: true,
   load: ({ next }) => ({ returnTo: returnTo(next) }),
   params: (props) => ({ next: props?.returnTo }),
+});
+
+/** Only a signed-in account has anything to delete; guests and testers go home. */
+export const deleteAccount = defineRoute({
+  path: '/account/delete',
+  screen: DeleteAccountScreen,
+  transient: true,
+  guards: [account],
 });
 
 export const avatarSelect = defineRoute({
@@ -209,6 +218,7 @@ export const routes: readonly Route[] = [
   home,
   resetPassword,
   auth,
+  deleteAccount,
   avatarSelect,
   layerSelect,
   letters,

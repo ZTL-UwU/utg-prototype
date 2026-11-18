@@ -191,14 +191,15 @@ def _delete_stored_files(files) -> None:
 @router.post(
     "/user/delete",
     auth=jwt_auth,
-    response={204: None, 400: ErrorOut, 401: ErrorOut},
+    response={204: None, 400: ErrorOut},
     summary="[Public] Permanently delete the current user's account and all their data",
     throttle=AuthRateThrottle("10/h"),
 )
 def delete_account(request, payload: DeleteAccountIn):
     user = request.auth
+    # 400, not 401: clients treat a 401 as an expired session and refresh/retry.
     if not user.check_password(payload.password):
-        return Status(401, {"detail": "Incorrect password."})
+        return Status(400, {"detail": "Incorrect password."})
     if user.is_superuser:
         return Status(400, {"detail": "Superuser accounts cannot be deleted from the app."})
 

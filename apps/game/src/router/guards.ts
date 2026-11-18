@@ -30,6 +30,13 @@ export const session: Guard = async (href) => {
   if (!(await hasSession())) return redirect(withNext('/auth', href));
 };
 
+/** A signed-in account with a backend user; guests and testers have nothing to delete. */
+export const account: Guard = async (href) => {
+  const outcome = await session(href);
+  if (outcome) return outcome;
+  if (useAuthStore.getState().isGuest) return redirect('/');
+};
+
 /** A session with an avatar picked, the same bar `continueIntoGame` sets for entering the game. */
 export const player: Guard = async (href) => {
   const outcome = await session(href);
