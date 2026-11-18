@@ -183,6 +183,10 @@ class DetailOut(Schema):
     detail: str
 
 
+class DeleteAccountIn(Schema):
+    password: str
+
+
 class PasswordResetRequestIn(Schema):
     email: str
 

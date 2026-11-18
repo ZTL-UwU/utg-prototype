@@ -15,6 +15,7 @@ import { useAuthStore, type AuthUser } from '../zustandStores/auth';
 import { useFeedbackStore } from '../zustandStores/feedbackStore';
 import { useOverlayStore } from '../zustandStores/overlayStore';
 import { AuthParent, type SignUpData } from './auth';
+import { DeleteAccountPrompt } from './auth/DeleteAccountPrompt';
 import { ReauthPrompt } from './auth/ReauthPrompt';
 import { FeedbackButton } from './feedback/FeedbackButton';
 import { FeedbackOverlay, openFeedback } from './feedback/FeedbackOverlay';
@@ -153,6 +154,19 @@ export function ScreenOverlay() {
     },
   });
 
+  const { mutateAsync: deleteAccount } = useMutation({
+    mutationFn: async (password: string) => {
+      await api('/user/delete', { method: 'POST', body: { password } });
+    },
+    onSuccess: async () => {
+      // The account is gone server-side; drop the local session it left behind.
+      await signOut();
+    },
+    onError: (error) => {
+      alertApiError(error, m.delete_account_failed());
+    },
+  });
+
   // Auth and menu own their Base UI dialog (backdrop, focus trap, Escape to
   // close), so the overlay only decides *which* flow is mounted. Feedback is
   // a separate dialog rendered on top so it can open over those flows too.
@@ -165,6 +179,15 @@ export function ScreenOverlay() {
       <div className="pointer-events-none absolute inset-0 z-10">
         <YoutubeEmbedOverlay />
       </div>
+    );
+  } else if (activeOverlay === 'delete-account') {
+    overlay = (
+      <DeleteAccountPrompt
+        onCancel={goToHomeScreen}
+        onDelete={async (password) => {
+          await deleteAccount(password);
+        }}
+      />
     );
   } else if (activeOverlay === 'auth') {
     overlay = (

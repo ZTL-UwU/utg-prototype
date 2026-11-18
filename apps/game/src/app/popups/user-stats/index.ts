@@ -73,6 +73,34 @@ const LOGOUT_LABEL_STYLE = {
   fill: 0xfdf7e7,
 } as const;
 
+const DELETE_BUTTON_WIDTH = 260;
+const DELETE_BUTTON_COLOR = 0xc0523a;
+
+const DELETE_LABEL_STYLE = {
+  ...LOGOUT_LABEL_STYLE,
+  fill: 0xffffff,
+} as const;
+
+const HEADER_BUTTON_ANIMATIONS = {
+  hover: {
+    props: { scale: { x: 1.1, y: 1.1 } },
+    duration: 100,
+  },
+  pressed: {
+    props: { scale: { x: 0.97, y: 0.97 } },
+    duration: 100,
+  },
+};
+
+/** Leaves the popup for the delete-account dialog over the home background. */
+async function openDeleteAccount() {
+  void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+  // Dismiss first: hide() unwinds the blur on the current screen, as in signOut().
+  await engine().navigation.hideAllPopups();
+  const { DeleteAccountScreen } = await import('../../screens/home/delete-account');
+  await engine().navigation.showScreen(DeleteAccountScreen);
+}
+
 function createStatRow(label: string, valueText: Text) {
   return new Container({
     layout: {
@@ -157,27 +185,51 @@ export class UserStatsPopup extends Container {
         .roundRect(0, 0, LOGOUT_BUTTON_WIDTH, LOGOUT_BUTTON_HEIGHT, 20)
         .fill(0xd89456),
       text: new Text({ text: m.profile_logout(), style: LOGOUT_LABEL_STYLE }),
-      animations: {
-        hover: {
-          props: { scale: { x: 1.1, y: 1.1 } },
-          duration: 100,
-        },
-        pressed: {
-          props: { scale: { x: 0.97, y: 0.97 } },
-          duration: 100,
-        },
-      },
+      animations: HEADER_BUTTON_ANIMATIONS,
       anchor: 0.5,
     });
     logoutButton.layout = {
       width: LOGOUT_BUTTON_WIDTH,
       height: LOGOUT_BUTTON_HEIGHT,
-      marginLeft: 20,
       isLeaf: true,
     };
     logoutButton.onPress.connect(() => {
       void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
       void signOut();
+    });
+
+    const accountButtons: Container[] = [logoutButton];
+
+    // Guests and testers have no backend account to delete.
+    if (!isGuest && !isTester) {
+      const deleteButton = new FancyButton({
+        defaultView: new Graphics()
+          .roundRect(0, 0, DELETE_BUTTON_WIDTH, LOGOUT_BUTTON_HEIGHT, 20)
+          .fill(DELETE_BUTTON_COLOR),
+        text: new Text({ text: m.profile_delete_account(), style: DELETE_LABEL_STYLE }),
+        animations: HEADER_BUTTON_ANIMATIONS,
+        anchor: 0.5,
+      });
+      deleteButton.layout = {
+        width: DELETE_BUTTON_WIDTH,
+        height: LOGOUT_BUTTON_HEIGHT,
+        isLeaf: true,
+      };
+      deleteButton.onPress.connect(() => {
+        void openDeleteAccount();
+      });
+      accountButtons.push(deleteButton);
+    }
+
+    // Side by side on a landscape card; stacked on a phone, whose header has no room for both.
+    const accountActions = new Container({
+      layout: {
+        flexDirection: responsive<'row' | 'column'>({ sm: 'column', lg: 'row' }),
+        alignItems: 'flex-start',
+        gap: 12,
+        marginLeft: 20,
+      },
+      children: accountButtons,
     });
 
     const header = new Container({
@@ -187,7 +239,7 @@ export class UserStatsPopup extends Container {
         alignItems: 'center',
         gap: 20,
       },
-      children: [this.profileIcon, userName, logoutButton],
+      children: [this.profileIcon, userName, accountActions],
     });
 
     this.totalStarsValue = new Text({ text: '0', style: VALUE_STYLE, layout: true });

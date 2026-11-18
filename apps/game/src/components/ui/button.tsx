@@ -25,6 +25,13 @@ const buttonVariants = cva(
           'hover:bg-forest-dark active:translate-y-[2px] active:scale-[0.97] active:shadow-[0_2px_0_0_var(--color-forest-dark)]',
           'disabled:active:translate-y-0 disabled:active:scale-100',
         ],
+        /** Red destructive action (delete account). */
+        danger: [
+          ...pillLayout,
+          'bg-alert text-white shadow-[0_4px_0_0_var(--color-alert-dark)]',
+          'hover:bg-alert-dark active:translate-y-[2px] active:scale-[0.97] active:shadow-[0_2px_0_0_var(--color-alert-dark)]',
+          'disabled:active:translate-y-0 disabled:active:scale-100',
+        ],
         /** Outlined cream secondary action. */
         secondary: [
           ...pillLayout,
