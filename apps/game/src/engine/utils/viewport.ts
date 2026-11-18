@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core';
+
 /** Tailwind's default breakpoints, so `md` here and `md:` in a class name change together. */
 const BREAKPOINTS = { sm: 640, md: 768, lg: 1024, xl: 1280 } as const;
 
@@ -23,6 +25,14 @@ export function responsive<T>(values: ResponsiveValues<T>): T {
 /** Phone-sized window: below the `lg` breakpoint. Reads the window on each call, like `responsive`. */
 export function isPhone() {
   return responsive({ sm: true, lg: false });
+}
+
+/** Running inside the Capacitor native app (iOS/Android), whatever the screen size. */
+export const isCapacitor = Capacitor.isNativePlatform();
+
+/** The touch keyboard with hold-to-accent: phones, plus native builds on tablets like the iPad. */
+export function usesPhoneKeyboard() {
+  return isPhone() || isCapacitor;
 }
 
 // Phones keep top controls clear of notches even when the browser reports no inset
