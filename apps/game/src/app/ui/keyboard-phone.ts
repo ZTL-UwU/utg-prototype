@@ -82,7 +82,11 @@ const ARABIC_ROWS: PhoneKeyDef[][] = [
   bottomRow('symbols', '123', '،', '.'),
 ];
 
-/** The iOS Uyghur grid in Cyrillic letters, matching the phonetic physical layout. */
+/**
+ * The iOS Uyghur grid in Cyrillic letters. Taps reach the Kazakh-based physical layout through
+ * `getKeyStrokeFromChar`, so key positions here don't need to match it.
+ * TODO: no я ю ц щ ъ ь э ё ы keys yet, and Shift switches letters instead of setting case.
+ */
 const CYRILLIC_ROWS: PhoneKeyDef[][] = [
   chars('ч в е р т й у ң о п'),
   chars('һ с д|ж а|ф ә|г и|х қ|җ к|ө л'),

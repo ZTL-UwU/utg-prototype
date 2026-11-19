@@ -13,7 +13,7 @@ const DISABLED_ALPHA = 0.5;
 const TOGGLE_DURATION = 0.3;
 
 const SCRIPTS: ORTHO_ENUM[] = ['Arabic', 'Latin', 'Cyrillic'];
-const DISABLED_SCRIPTS: ORTHO_ENUM[] = ['Cyrillic'];
+const DISABLED_SCRIPTS: ORTHO_ENUM[] = [];
 
 /** Left edge of the option slot at `index` */
 const slotX = (index: number) => PADDING + ICON_SIZE + GAP + index * (ScriptButton.BTN_WIDTH + GAP);
