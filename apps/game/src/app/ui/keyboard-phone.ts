@@ -82,11 +82,16 @@ const ARABIC_ROWS: PhoneKeyDef[][] = [
   bottomRow('symbols', '123', '،', '.'),
 ];
 
-/** The iOS Uyghur grid in Cyrillic letters, matching the phonetic physical layout. */
+/**
+ * Gboard Kazakh in Uyghur: the ЙЦУКЕН grid under a row of the letters it lacks, the same ones
+ * the desktop layout puts on its number row (җ in place of Kazakh ұ, no і). Like Latin, Shift
+ * and Caps Lock set the case. Shift and Backspace are one key wide to fit 11 letters a row.
+ */
 const CYRILLIC_ROWS: PhoneKeyDef[][] = [
-  chars('ч в е р т й у ң о п'),
-  chars('һ с д|ж а|ф ә|г и|х қ|җ к|ө л'),
-  [shift, ...chars('з ш ғ ү б н м'), backspace],
+  chars('ә ң ғ ү җ қ ө һ'),
+  chars('й ц у к е н г ш щ з х'),
+  chars('ф ы в а п р о л д ж э'),
+  [{ ...shift, width: 1 }, ...chars('я ч с м и т ь б ю'), { ...backspace, width: 1 }],
   bottomRow('symbols', '123', ',', '.'),
 ];
 
@@ -263,7 +268,7 @@ export class PhoneKeyCap extends Container {
   }
 
   /**
-   * Shift swaps in the Shift glyph; on Latin keys, Shift and Caps Lock pick the case; at the
+   * Shift swaps in the Shift glyph; on Latin and Cyrillic keys, Shift and Caps Lock pick the case; at the
    * start of a word, vowels show their ئ.
    */
   public setShifted(shifted: boolean, upperCase: boolean, wordStart: boolean) {

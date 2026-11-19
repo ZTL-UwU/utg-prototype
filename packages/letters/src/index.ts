@@ -113,7 +113,8 @@ export const TYPING_SEQUENCE_LATIN = new Map<EducationLetter, readonly string[]>
 
 /**
  * Physical key sequence required to type each education letter on the Cyrillic keyboard.
- * Layout mirrors Arabic key positions (phonetic); no hamza prefix.
+ * Layout is based on macOS Kazakh (Җ in place of Ұ), so every letter is one unshifted key;
+ * no hamza prefix.
  */
 export const TYPING_SEQUENCE_CYRILLIC = new Map<EducationLetter, readonly string[]>([
   ['ئا', ['а']],
@@ -121,20 +122,20 @@ export const TYPING_SEQUENCE_CYRILLIC = new Map<EducationLetter, readonly string
   ['ب', ['б']],
   ['پ', ['п']],
   ['ت', ['т']],
-  ['ج', ['shift', 'қ']],
+  ['ج', ['җ']],
   ['چ', ['ч']],
-  ['خ', ['shift', 'и']],
+  ['خ', ['х']],
   ['د', ['д']],
   ['ر', ['р']],
   ['ز', ['з']],
-  ['ژ', ['shift', 'д']],
+  ['ژ', ['ж']],
   ['س', ['с']],
   ['ش', ['ш']],
   ['غ', ['ғ']],
-  ['ف', ['shift', 'а']],
+  ['ف', ['ф']],
   ['ق', ['қ']],
   ['ك', ['к']],
-  ['گ', ['shift', 'ә']],
+  ['گ', ['г']],
   ['ڭ', ['ң']],
   ['ل', ['л']],
   ['م', ['м']],
@@ -142,7 +143,7 @@ export const TYPING_SEQUENCE_CYRILLIC = new Map<EducationLetter, readonly string
   ['ھ', ['һ']],
   ['ئو', ['о']],
   ['ئۇ', ['у']],
-  ['ئۆ', ['shift', 'к']],
+  ['ئۆ', ['ө']],
   ['ئۈ', ['ү']],
   ['ۋ', ['в']],
   ['ئې', ['е']],
