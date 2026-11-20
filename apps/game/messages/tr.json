@@ -55,6 +55,7 @@
   "delete_account_keep": "Hesabı koru",
   "delete_account_deleting": "Siliniyor…",
   "delete_account_failed": "Hesabın silinemedi. Tekrar dene.",
+  "delete_account_wrong_password": "Şifre yanlış. Tekrar dene.",
   "profile_total_stars": "Toplam Yıldız",
   "profile_average_accuracy": "Ortalama Doğruluk",
   "profile_correct_attempts": "Doğru Denemeler",

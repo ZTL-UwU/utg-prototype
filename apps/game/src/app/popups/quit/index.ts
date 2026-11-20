@@ -100,7 +100,8 @@ export class QuitPopup extends Container {
     };
 
     const quitButton = getBottomButton('quit/quit-button.svg', () => {
-      void engine().navigation.hidePopup().then(onQuit);
+      // The level stays paused: resuming it could end the level just before the map opens.
+      void engine().navigation.hidePopup({ resume: false }).then(onQuit);
     });
 
     const cancelButton = getBottomButton('quit/cancel-button.svg', () => {

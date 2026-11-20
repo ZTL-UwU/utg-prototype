@@ -2,7 +2,7 @@ import type { TypingTestProps } from '@utg/level-types';
 import { Container, Graphics, Text, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { isPhone } from '../../../../engine/utils/viewport';
+import { isPhone, usesPhoneKeyboard } from '../../../../engine/utils/viewport';
 import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { getTypedText } from '../../../../utils/keymap';
 import { useLevelProgress } from '../../../../zustandStores/levelProgressStore';
@@ -95,7 +95,7 @@ export class TypingTestScreen extends Container {
     this.props = typedLevel.props;
 
     // No help button: the test has no tutorial, and the countdown sits where it would be.
-    this.hud = createLevelHud(typedLevel);
+    this.hud = createLevelHud(typedLevel, { help: false });
 
     this.keyboard = new KeyboardLayout({ text: 'sentences' });
 
@@ -213,9 +213,9 @@ export class TypingTestScreen extends Container {
 
   private startTest(settings: TypingTestSettings) {
     lastSettings.set(this.level.id, settings);
-    // Phones have no physical keyboard, so the on-screen one is the only way to type.
-    const phone = isPhone();
-    this.settings = { ...settings, showKeyboard: settings.showKeyboard || phone };
+    // Phones and native tablets have no physical keyboard, so the on-screen one is the only
+    // way to type.
+    this.settings = { ...settings, showKeyboard: settings.showKeyboard || usesPhoneKeyboard() };
     this.promptView = createPromptView(settings.mode, this.props);
     this.addChildAt(this.promptView, this.getChildIndex(this.panel) + 1);
 

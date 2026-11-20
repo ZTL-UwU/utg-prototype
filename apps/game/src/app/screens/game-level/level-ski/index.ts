@@ -453,9 +453,9 @@ export class GameLevelSki extends Container {
     this.startSentenceRound(0);
   }
 
-  /** The skier standing at the centre of the slope in `texture`, its pose undone. */
-  private resetLeopard(texture: string = ASSET.leopardDefault) {
-    this.leopard.texture = Texture.from(texture);
+  /** The skier standing at the centre of the slope, its pose undone. */
+  private resetLeopard() {
+    this.leopard.texture = Texture.from(ASSET.leopardDefault);
     this.leopard.x = this.leopardBaseX;
     this.leopard.y = LAYOUT.leopardY;
     this.leopard.scale.set(LAYOUT.leopardScale);
@@ -722,7 +722,7 @@ export class GameLevelSki extends Container {
     await this.anim.finished;
 
     this.hitFx.visible = false;
-    this.resetLeopard(ASSET.leopardFailed);
+    this.resetLeopard();
     this.startSentenceRound(this.sentenceIndex + 1);
   }
 

@@ -2,7 +2,7 @@ import { Container, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { frameDeltaMs } from '../../../../engine/utils/maths';
-import { isPhone, responsive, topClearance } from '../../../../engine/utils/viewport';
+import { responsive, topClearance, usesPhoneKeyboard } from '../../../../engine/utils/viewport';
 import { getTypedText } from '../../../../utils/keymap';
 import { convertToCurrentScript } from '../../../../utils/script';
 import useSessionStore from '../../../../zustandStores/sessionStore';
@@ -53,6 +53,11 @@ const PHONE_SLOT_LAYOUT: Array<{ x: number; y: number }> = [
   { x: 0.5, y: 0.32 },
   { x: 0.48, y: 0.63 },
 ];
+
+/** Where the river's trout swim: above the bottom keyboard, or below the raised wide one. */
+function slotLayout() {
+  return usesPhoneKeyboard() ? PHONE_SLOT_LAYOUT : SLOT_LAYOUT;
+}
 
 export class GameLevelTrout extends Container {
   public readonly screenName = 'GameLevelTrout';
@@ -136,9 +141,9 @@ export class GameLevelTrout extends Container {
     this.screenHeight = height;
 
     this.keyboard.resize(width, height);
-    // Mockup places the keyboard under the timer, above the river. Phones keep it at the
-    // bottom like every other level, with the river above it.
-    if (!isPhone()) {
+    // Mockup places the keyboard under the timer, above the river. The phone keyboard (phones,
+    // and native tablets) stays at the bottom like every other level, with the river above it.
+    if (!usesPhoneKeyboard()) {
       this.keyboard.scale.set(WIDE_KEYBOARD_SCALE);
       this.keyboard.position.set(Math.round((width - this.keyboard.width) / 2), KEYBOARD_TOP);
     }
@@ -157,7 +162,7 @@ export class GameLevelTrout extends Container {
     );
     this.hud.layout = { width, height };
 
-    const slots = responsive({ sm: PHONE_SLOT_LAYOUT, lg: SLOT_LAYOUT });
+    const slots = slotLayout();
     for (let i = 0; i < this.trout.length; i++) {
       const slot = slots[i % slots.length];
       this.trout[i].setHome(width * slot.x, height * slot.y);
@@ -221,7 +226,7 @@ export class GameLevelTrout extends Container {
       if (!entry) break;
       usedStarts.add(startingLetter(entry.word));
 
-      const slot = responsive({ sm: PHONE_SLOT_LAYOUT, lg: SLOT_LAYOUT })[i];
+      const slot = slotLayout()[i];
       const trout = new Trout({
         wordId: entry.id,
         word: entry.word,

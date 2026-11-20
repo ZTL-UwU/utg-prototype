@@ -163,6 +163,11 @@ export function ScreenOverlay() {
       await signOut();
     },
     onError: (error) => {
+      // The backend's wrong-password text is English; show the translated one instead.
+      if (error instanceof FetchError && error.data?.detail === 'Incorrect password.') {
+        window.alert(m.delete_account_wrong_password());
+        return;
+      }
       alertApiError(error, m.delete_account_failed());
     },
   });

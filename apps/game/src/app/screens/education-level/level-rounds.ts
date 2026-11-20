@@ -4,7 +4,7 @@ import { engine } from '../../../engine/getEngine';
 import type { AppScreenConstructor } from '../../../engine/navigation/navigation';
 import { randomShuffle } from '../../../engine/utils/random';
 import useSessionStore from '../../../zustandStores/sessionStore';
-import { finishLevel } from '../level-flow';
+import { finishLevel, isLeaving } from '../level-flow';
 import type { TLevel } from '../level-map/units';
 
 /**
@@ -66,7 +66,7 @@ export function finishRound(
   level: TLevel,
   rounds: LevelRounds<unknown>,
 ) {
-  if (screen.destroyed || engine().navigation.currentScreen !== screen) return;
+  if (isLeaving(screen)) return;
   if (rounds.advance()) void engine().navigation.showScreen(ctor, level);
   else finishLevel(screen, level);
 }

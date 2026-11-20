@@ -28,6 +28,8 @@ export class TypingWordScreen extends Container {
   private readonly rounds: WordRound[];
   private currentRound?: WordRound;
   private paused = false;
+  /** A finished word is flashing; keys wait for the next one. */
+  private resolving = false;
   private readonly level: TLevel;
 
   constructor(level: TLevel) {
@@ -110,7 +112,8 @@ export class TypingWordScreen extends Container {
   }
   private readonly handleKeyDown = (event: KeyboardEvent) => {
     const round = this.currentRound;
-    if (this.paused || !round) return;
+    // Keys during the success flash would be checked against the finished word.
+    if (this.paused || this.resolving || !round) return;
     const typedLetter = getTypedText(event);
     if (!typedLetter) return;
 
@@ -136,8 +139,10 @@ export class TypingWordScreen extends Container {
     round.activeLetterIdx += 1;
 
     if (round.activeLetterIdx >= round.word.length) {
+      this.resolving = true;
       await this.wordCard.playSuccessFlash();
       if (this.destroyed) return;
+      this.resolving = false;
       this.popAndStartRound(); // drawCard resets tint to default here
     } else {
       this.wordCard.setProgress(round.activeLetterIdx);

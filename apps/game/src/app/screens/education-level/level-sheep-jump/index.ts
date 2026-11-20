@@ -227,6 +227,11 @@ export class EducationSheepJumpScreen extends Container {
     this.playCurrentAnswerAudio();
   }
 
+  public async show() {
+    // A level with no letters has nothing to ask.
+    if (this.rounds.length === 0) finishLevel(this, this.level);
+  }
+
   public resize(width: number, height: number) {
     this.layout = { width, height };
 

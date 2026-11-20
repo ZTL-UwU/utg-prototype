@@ -174,6 +174,9 @@ export class Navigation {
   /** `showScreen` calls between starting and putting their screen on stage. */
   private screenChanges = 0;
 
+  /** `showPopup` calls between starting and putting their popup on stage. */
+  private popupsOpening = 0;
+
   /** Whether another screen is on its way in, so the current one is about to leave. */
   public get changingScreen() {
     return this.screenChanges > 0;
@@ -354,8 +357,18 @@ export class Navigation {
     if (screen.show) {
       screen.interactiveChildren = false;
       await screen.show(animate);
-      screen.interactiveChildren = true;
+      // A screen can open a popup during its show, such as a level with nothing to play
+      // ending at once, or be replaced meanwhile. It stays blocked for either; closing the
+      // popup unblocks it.
+      if (screen !== this.currentScreen || !this.coveredOrLeaving) {
+        screen.interactiveChildren = true;
+      }
     }
+  }
+
+  /** Whether the current screen has a popup up or opening over it, or is being replaced. */
+  private get coveredOrLeaving() {
+    return this.currentPopup !== undefined || this.popupsOpening > 0 || this.changingScreen;
   }
 
   /**
@@ -479,16 +492,18 @@ export class Navigation {
   public async showPopup(ctor: AppScreenConstructor, props?: unknown, options?: TransitionOptions) {
     const animate = options?.animate ?? true;
 
-    if (this.currentScreen) {
-      this.currentScreen.interactiveChildren = false;
-      await this.currentScreen.pause?.();
-    }
-
-    // Load assets for the popup. Repeated loads are safe, so assets the screen
-    // already has are not fetched again.
-    const needs = await needsOf(ctor, props);
-    this.pendingNeeds.add(needs);
+    this.popupsOpening++;
+    let needs: AssetNeeds | undefined;
     try {
+      if (this.currentScreen) {
+        this.currentScreen.interactiveChildren = false;
+        await this.currentScreen.pause?.();
+      }
+
+      // Load assets for the popup. Repeated loads are safe, so assets the screen
+      // already has are not fetched again.
+      needs = await needsOf(ctor, props);
+      this.pendingNeeds.add(needs);
       await this.load(needs);
 
       if (this.currentPopup) {
@@ -499,7 +514,8 @@ export class Navigation {
         props !== undefined ? new (ctor as AppScreenConstructor<[unknown]>)(props) : new ctor();
       this.screenNeeds.set(this.currentPopup, needs);
     } finally {
-      this.pendingNeeds.delete(needs);
+      if (needs) this.pendingNeeds.delete(needs);
+      this.popupsOpening--;
     }
     void this.release();
     await this.addAndShowScreen(this.currentPopup, animate);
@@ -536,9 +552,10 @@ export class Navigation {
   }
 
   /**
-   * Dismiss current popup, if there is one
+   * Dismiss current popup, if there is one. Pass `resume: false` when the screen is about to
+   * leave, such as on quitting a level, so it stays paused and cannot react in between.
    */
-  public async hidePopup() {
+  public async hidePopup({ resume = true }: { resume?: boolean } = {}) {
     if (!this.currentPopup) return;
     const popup = this.currentPopup;
     this.currentPopup = undefined;
@@ -560,7 +577,7 @@ export class Navigation {
       return;
     }
 
-    if (this.currentScreen) {
+    if (this.currentScreen && resume && !this.changingScreen) {
       this.currentScreen.interactiveChildren = true;
       void this.currentScreen.resume?.();
     }

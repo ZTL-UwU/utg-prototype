@@ -15,13 +15,15 @@ import { findMapUnitForLevel, type TLevel } from './level-map/units';
 type LevelHudOptions = {
   /** Runs when the player confirms quitting, before the map opens. */
   onQuit?: () => void;
+  /** False leaves out the Help button, for levels with no tutorial to open. */
+  help?: boolean;
 };
 
 /**
  * The HUD every level screen shows: Back asks to quit and returns to the level's map, and Help
  * opens the unit's tutorial (game units have none, so they show no Help button).
  */
-export function createLevelHud(level: TLevel, { onQuit }: LevelHudOptions = {}): HUD {
+export function createLevelHud(level: TLevel, { onQuit, help = true }: LevelHudOptions = {}): HUD {
   const mapUnit = findMapUnitForLevel(level);
   return new HUD({
     onBack: () =>
@@ -32,7 +34,7 @@ export function createLevelHud(level: TLevel, { onQuit }: LevelHudOptions = {}):
           void engine().navigation.showScreen(LevelMapScreen, mapUnit);
         },
       }),
-    help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
+    help: help ? { kind: 'tutorial', mapUnit, presentation: 'popup' } : undefined,
   });
 }
 
@@ -79,10 +81,19 @@ export function recordLevelResult(level: TLevel): LevelRun {
 }
 
 /**
- * End a level: record the run and show the end popup. Does nothing once `screen` has left, so
+ * Whether `screen` has left or is leaving: destroyed, replaced, or about to be replaced while
+ * the next screen loads.
+ */
+export function isLeaving(screen: Container): boolean {
+  const { navigation } = engine();
+  return screen.destroyed || navigation.currentScreen !== screen || navigation.changingScreen;
+}
+
+/**
+ * End a level: record the run and show the end popup. Does nothing once `screen` is leaving, so
  * a round that resolves after the player quit cannot open the popup over the map.
  */
 export function finishLevel(screen: Container, level: TLevel) {
-  if (screen.destroyed || engine().navigation.currentScreen !== screen) return;
+  if (isLeaving(screen)) return;
   void engine().navigation.showPopup(EndScreenPopup, { level, run: recordLevelResult(level) });
 }

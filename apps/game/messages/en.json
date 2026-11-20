@@ -55,6 +55,7 @@
   "delete_account_keep": "Keep account",
   "delete_account_deleting": "Deleting…",
   "delete_account_failed": "Could not delete your account. Try again.",
+  "delete_account_wrong_password": "Incorrect password. Try again.",
   "profile_total_stars": "Total Stars",
   "profile_average_accuracy": "Average Accuracy",
   "profile_correct_attempts": "Correct Attempts",
