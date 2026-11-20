@@ -4,6 +4,7 @@
 // wrong direction and a wrong order all cost accuracy
 
 import type { StrokePoint } from '../../ui/drawing-canvas';
+import { parsePathNumbers } from './glyph-mask';
 
 /** Points each stroke is resampled to, evenly spaced along its length, before comparing. */
 const RESAMPLE_POINTS = 32;
@@ -38,7 +39,7 @@ const MAX_CANDIDATES = 4;
 
 /** Parses a reference stroke's centerline, which is only ever `M` then `L`s, into its points. */
 export function parseStrokePath(d: string): StrokePoint[] {
-  const numbers = d.match(/-?\d*\.?\d+(?:e-?\d+)?/gi)?.map(Number) ?? [];
+  const numbers = parsePathNumbers(d);
   const points: StrokePoint[] = [];
   for (let i = 0; i + 1 < numbers.length; i += 2) points.push({ x: numbers[i], y: numbers[i + 1] });
   return points;

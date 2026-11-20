@@ -1,24 +1,26 @@
 import { animate } from 'motion';
 import { Container, Sprite, Text, Texture } from 'pixi.js';
 
-import { engine } from '../../../../engine/getEngine';
 import { responsive } from '../../../../engine/utils/viewport';
 import { m } from '../../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
-import { QuitPopup } from '../../../popups/quit';
-import { HUD } from '../../../ui/hud';
+import type { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
-import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, type TLevel } from '../../level-map/units';
+import { createLevelHud } from '../../level-flow';
+import type { TLevel } from '../../level-map/units';
 import { Camel } from './camel';
 import { Clouds } from './clouds';
 import { LetterRow } from './letter-row';
 
-const TITLE_LAYOUT_TOP = 30;
+/** Phones drop the title below the corner buttons it would otherwise run into. */
+const TITLE_LAYOUT_TOP = { sm: 170, lg: 30 };
+const TITLE_FONT_SIZE = { sm: 72, lg: 100 };
 const TITLE_OFFSCREEN = 200;
+const PHONE_ROW_SCALE = 0.7;
 
-export class TypingLevelScreen extends Container {
-  public readonly screenName = 'TypingLevelScreen';
+/** Type the row of letters the camel walks past, a round at a time. */
+export class TypingDesertScreen extends Container {
+  public readonly screenName = 'TypingDesertScreen';
   public static assetBundles = ['typing-level', 'typing-level-desert', 'ui'];
   public static loadingBackgroundAsset = 'typing-levels/typing-level/background-taklamakan.png';
   public static helpAssets = ['tutorial-popups/typing-tutorial.png'];
@@ -32,7 +34,6 @@ export class TypingLevelScreen extends Container {
   private keyboard: KeyboardLayout;
 
   constructor(level: TLevel) {
-    const mapUnit = findMapUnitForLevel(level);
     super({
       layout: {
         flexDirection: 'column',
@@ -60,25 +61,13 @@ export class TypingLevelScreen extends Container {
       text: m.desert_title(),
       style: {
         fontFamily: DISPLAY_FONT_FAMILY,
-        fontSize: responsive({ sm: 72, lg: 100 }),
         fontWeight: '800',
         fill: 0x6b3f1f,
       },
-      layout: {
-        position: 'absolute',
-        // Phones drop it below the corner buttons it would otherwise run into.
-        top: responsive({ sm: 170, lg: TITLE_LAYOUT_TOP }),
-      },
+      layout: { position: 'absolute' },
     });
 
-    this.hud = new HUD({
-      onBack: () =>
-        void engine().navigation.showPopup(QuitPopup, {
-          mascot: level.mascot,
-          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
-        }),
-      help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
-    });
+    this.hud = createLevelHud(level);
 
     this.addChild(
       this.background,
@@ -114,11 +103,13 @@ export class TypingLevelScreen extends Container {
     this.clouds.resize(width, height);
     this.camel.resize(width, height);
     this.keyboard.resize(width, height);
-    this.letterRow.scale.set(responsive({ sm: 0.7, lg: 1 }));
+    this.letterRow.scale.set(responsive({ sm: PHONE_ROW_SCALE, lg: 1 }));
+    this.title.style.fontSize = responsive(TITLE_FONT_SIZE);
+    this.title.layout = { top: responsive(TITLE_LAYOUT_TOP) };
   }
 
   private get titleOffscreenY() {
-    return -(TITLE_OFFSCREEN + TITLE_LAYOUT_TOP);
+    return -(TITLE_OFFSCREEN + responsive(TITLE_LAYOUT_TOP));
   }
 
   public async show() {
@@ -139,9 +130,5 @@ export class TypingLevelScreen extends Container {
       this.letterRow.playExitAnimation(),
       this.keyboard.playExitAnimation(),
     ]);
-  }
-
-  public reset() {
-    this.letterRow.destroy({ children: true });
   }
 }

@@ -126,6 +126,7 @@ export class LetterBubble extends FancyButton {
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {
     this.pauseFloat();
+    this.animation?.stop();
     super.destroy(options);
   }
 

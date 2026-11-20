@@ -1,44 +1,34 @@
 import { animate } from 'motion';
-import { Container, Text, type TextDropShadow } from 'pixi.js';
+import { Container, Text } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { responsive, topClearance } from '../../../../engine/utils/viewport';
+import { responsive } from '../../../../engine/utils/viewport';
 import { m } from '../../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
 import { convertToCurrentScript, getScriptFontFamily } from '../../../../utils/script';
 import { HUD } from '../../../ui/hud';
+import { MAP_SHEEP_BUNDLES } from '../../../ui/map-sheep';
+import { fitTitleScale, mapTitleTops, offScreenY } from '../../../ui/map-titles';
+import { BACKDROP_TEXT_SHADOW } from '../../../ui/primary-button';
 import { EducationTutorialScreen } from '../../education-level/level-tutorial';
 import { LayerSelectScreen } from '../../layer-select';
 import { LevelMapScreen } from '../../level-map';
 import { SheepMap } from './sheep-map';
 
-/** Phones drop the titles below the back button and script pill, which would cover them. */
-const TITLE_TOP = { sm: 170, lg: 100 };
-const SUBTITLE_TOP = { sm: 310, lg: 300 };
-/** Extra margin so drop shadows don't peek in from the screen edge. */
-const OFF_SCREEN_MARGIN = 40;
-
 export class EducationLevelSelect extends Container {
   public readonly screenName = 'EducationLevelSelect';
-  public static assetBundles = [
-    'education-level',
-    'education-level-map',
-    'mascots',
-    'locked-popup',
-    'ui',
-  ];
+  public static assetBundles = ['education-level', ...MAP_SHEEP_BUNDLES, 'locked-popup', 'ui'];
 
   private map: SheepMap;
   private hud: HUD;
   private title: Text;
-  private titleTop = responsive(TITLE_TOP) + topClearance(engine().navigation.height);
-  private subtitleTop = responsive(SUBTITLE_TOP) + topClearance(engine().navigation.height);
+  /** Where the titles sit, set in `resize`. */
+  private titleTop = 0;
+  private subtitleTop = 0;
   private subtitle: Text;
   /** How far the phone map is scrolled; the titles ride along with it. */
   private scrollY = 0;
   private titlesAnimating = false;
-  private viewWidth = 0;
-  private viewHeight = 0;
 
   constructor() {
     super({
@@ -49,7 +39,15 @@ export class EducationLevelSelect extends Container {
       },
     });
 
-    this.map = this.createMap();
+    this.map = new SheepMap(
+      (mapUnit) => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
+    );
+    this.map.onScroll = (scrollY) => {
+      this.scrollY = scrollY;
+      if (this.titlesAnimating) return;
+      this.title.y = scrollY;
+      this.subtitle.y = scrollY;
+    };
 
     this.hud = new HUD({
       onBack: () => void engine().navigation.showScreen(LayerSelectScreen),
@@ -59,28 +57,18 @@ export class EducationLevelSelect extends Container {
       },
     });
 
-    const textDropShadow: Partial<TextDropShadow> = {
-      color: 0x000000,
-      blur: 5,
-      distance: 0,
-      alpha: 0.75,
-    };
-
     this.title = new Text({
       text: m.education_alphabets(),
       style: {
         fontFamily: DISPLAY_FONT_FAMILY,
-        fontSize: responsive({ sm: 140, lg: 180 }),
         fontWeight: '800',
         fill: 0xffffff,
-        dropShadow: textDropShadow,
+        dropShadow: BACKDROP_TEXT_SHADOW,
         padding: 8,
       },
     });
-    this.title.layout = {
-      position: 'absolute',
-      top: this.titleTop,
-    };
+    // Shrink from the top edge, so a scaled-down title stays clear of the subtitle.
+    this.title.layout = { position: 'absolute', transformOrigin: 'center top' };
 
     this.subtitle = new Text({
       text: convertToCurrentScript('ھەرپلەر'),
@@ -89,65 +77,40 @@ export class EducationLevelSelect extends Container {
         fontSize: 100,
         fontWeight: '700',
         fill: 0xffffff,
-        dropShadow: textDropShadow,
+        dropShadow: BACKDROP_TEXT_SHADOW,
         padding: 8,
       },
     });
-    this.subtitle.layout = {
-      position: 'absolute',
-      top: this.subtitleTop,
-    };
+    this.subtitle.layout = { position: 'absolute' };
 
     this.addChild(this.map, this.title, this.subtitle, this.hud);
   }
 
-  private createMap() {
-    const map = new SheepMap(
-      (mapUnit) => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
-    );
-    map.onScroll = (scrollY) => {
-      this.scrollY = scrollY;
-      if (this.titlesAnimating) return;
-      this.title.y = scrollY;
-      this.subtitle.y = scrollY;
-    };
-    return map;
-  }
-
-  /** Fresh map on every visit, so locks, the sheep and completion hops match the latest results. */
-  private rebuildMap() {
-    const index = this.getChildIndex(this.map);
-    this.removeChild(this.map);
-    this.map.destroy({ children: true });
-    this.scrollY = 0;
-    this.map = this.createMap();
-    this.addChildAt(this.map, index);
-    if (this.viewWidth > 0) this.sizeMap();
-  }
-
   public resize(width: number, height: number) {
-    this.viewWidth = width;
-    this.viewHeight = height;
     this.layout = { width, height };
-    this.sizeMap();
-  }
 
-  /** Lays out the map below the titles, so the sheep on rock 1 never covers them. */
-  private sizeMap() {
+    const tops = mapTitleTops(height);
+    this.titleTop = tops.title;
+    this.subtitleTop = tops.subtitle;
+    this.title.style.fontSize = responsive({ sm: 140, lg: 180 });
+    const titleBounds = this.title.getLocalBounds();
+    this.title.layout = {
+      top: this.titleTop,
+      width: titleBounds.width,
+      height: titleBounds.height,
+    };
+    this.title.scale.set(fitTitleScale(width, titleBounds.width));
+    this.subtitle.layout = { top: this.subtitleTop };
+
+    // Lay the map out below the titles, so the sheep on rock 1 never covers them.
     this.map.titleBottom = this.subtitleTop + this.subtitle.getLocalBounds().maxY;
-    this.map.resize(this.viewWidth, this.viewHeight);
-  }
-
-  /** The y offset that moves an element fully above the top screen edge. */
-  private offScreenY(element: Container, layoutTop: number) {
-    return -(layoutTop + element.getLocalBounds().maxY + OFF_SCREEN_MARGIN);
+    this.map.resize(width, height);
   }
 
   public async show() {
-    this.rebuildMap();
     this.titlesAnimating = true;
-    this.title.y = this.offScreenY(this.title, this.titleTop);
-    this.subtitle.y = this.offScreenY(this.subtitle, this.subtitleTop);
+    this.title.y = offScreenY(this.title, this.titleTop);
+    this.subtitle.y = offScreenY(this.subtitle, this.subtitleTop);
 
     await Promise.all([
       animate(this.title, { y: this.scrollY }, { duration: 0.4, ease: 'backOut' }),
@@ -166,12 +129,12 @@ export class EducationLevelSelect extends Container {
     await Promise.all([
       animate(
         this.title,
-        { y: this.offScreenY(this.title, this.titleTop) },
+        { y: offScreenY(this.title, this.titleTop) },
         { duration: 0.2, ease: 'backIn' },
       ),
       animate(
         this.subtitle,
-        { y: this.offScreenY(this.subtitle, this.subtitleTop) },
+        { y: offScreenY(this.subtitle, this.subtitleTop) },
         { duration: 0.2, ease: 'backIn' },
       ),
       this.map.playExitAnimation(),

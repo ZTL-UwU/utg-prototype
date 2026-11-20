@@ -1,6 +1,6 @@
 import { FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
-import { BlurFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
+import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { responsive } from '../../../engine/utils/viewport';
@@ -16,9 +16,13 @@ import useResultStore, {
 } from '../../../zustandStores/resultStore';
 import { AvatarSelectScreen } from '../../screens/avatar-select';
 import { BackButton } from '../../ui/back-button';
-import { removeFilter } from '../../ui/remove-filter';
+import { ScreenBlur } from '../../ui/screen-blur';
 import { createLanguagePicker } from './language-picker';
 import { StreakCalendar } from './streak-calendar';
+
+/** The screen behind dims and blurs to this. */
+const DIMMED_TINT = 0x666666;
+const SCREEN_BLUR = 9;
 
 const POPUP_WIDTH = responsive({ sm: 740, lg: 1481 });
 const POPUP_HEIGHT = responsive({ sm: 1320, lg: 833 });
@@ -126,7 +130,7 @@ export class UserStatsPopup extends Container {
   private streakCalendar: StreakCalendar;
   private unsubscribeScore: () => void;
   /** Blur this popup put on the screen beneath it, removed again in hide(). */
-  private screenBlur?: { screen: Container; filter: BlurFilter };
+  private screenBlur?: ScreenBlur;
 
   constructor() {
     super({
@@ -386,11 +390,10 @@ export class UserStatsPopup extends Container {
     const currentEngine = engine();
     if (!currentEngine.navigation.currentScreen) return;
     void currentEngine.audio.sfx.play('preload-audio/sfx/popup.mp3');
+    const blur = new ScreenBlur(0);
+    this.screenBlur = blur;
     const screen = currentEngine.navigation.currentScreen;
-    const blur = new BlurFilter({ strength: 0 });
-    this.screenBlur = { screen, filter: blur };
-    screen.filters = [blur];
-    screen.tint = 0x666666;
+    screen.tint = DIMMED_TINT;
 
     this.panel.alpha = 0;
     this.panel.scale.set(1);
@@ -401,7 +404,7 @@ export class UserStatsPopup extends Container {
     await Promise.all([
       animate(this.panel, { alpha: 1, y: 0 }, { duration, ease: 'backOut' }),
       animate(this.backButton, { alpha: 1 }, { duration, ease: 'backOut' }),
-      animate(blur, { strength: 9 }, { duration, ease: 'easeOut' }),
+      animate(blur.filter, { strength: SCREEN_BLUR }, { duration, ease: 'easeOut' }),
     ]);
   }
 
@@ -415,19 +418,17 @@ export class UserStatsPopup extends Container {
     const screenBlur = this.screenBlur;
     this.screenBlur = undefined;
     if (!screenBlur) return;
-    const { screen, filter } = screenBlur;
-
-    screen.tint = 0xffffff;
+    if (screenBlur.target) screenBlur.target.tint = 0xffffff;
 
     const duration = 0.2;
     const exitOffset = 300;
     await Promise.all([
       animate(this.panel, { alpha: 0, y: exitOffset }, { duration, ease: 'easeOut' }),
       animate(this.backButton, { alpha: 0 }, { duration, ease: 'easeOut' }),
-      animate(filter, { strength: 0 }, { duration, ease: 'easeOut' }),
+      animate(screenBlur.filter, { strength: 0 }, { duration, ease: 'easeOut' }),
     ]);
 
-    removeFilter(screen, filter);
+    screenBlur.remove();
   }
 
   public resize(width: number, height: number) {

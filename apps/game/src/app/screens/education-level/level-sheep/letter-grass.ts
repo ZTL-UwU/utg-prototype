@@ -3,14 +3,17 @@ import { Container, Sprite, Texture } from 'pixi.js';
 
 import { LetterChoice } from '../../../ui/letter-choice';
 
+/** The letter card's size, in grass-texture pixels: it scales with the grass. */
 const LETTER_BOX_SIZE = 250;
+/** The card floats this share of the grass's height above it. */
+const LETTER_BOX_RISE = 0.7;
 
 export class LetterGrass extends Container {
   public readonly letter: string;
   private readonly grass: Sprite;
   private readonly letterBox: LetterChoice;
 
-  constructor(letter: string, onClick: () => void, size = 50) {
+  constructor(letter: string, onClick: () => void) {
     super();
     this.grass = new Sprite({
       texture: Texture.from('education-levels/education-level-sheep/grass.png'),
@@ -23,14 +26,13 @@ export class LetterGrass extends Container {
       size: LETTER_BOX_SIZE,
     });
     this.addChild(this.letterBox, this.grass);
+    this.letterBox.y = -this.grass.texture.height * LETTER_BOX_RISE;
+  }
 
-    this.once('added', () => {
-      const naturalWidth = this.grass.texture.width;
-      if (naturalWidth > 0) {
-        this.scale.set(size / naturalWidth);
-        this.letterBox.y = -this.grass.texture.height * 0.7;
-      }
-    });
+  /** Scale the grass, and its card with it, to `size` across. */
+  public setSize(size: number) {
+    const naturalWidth = this.grass.texture.width;
+    if (naturalWidth > 0) this.scale.set(size / naturalWidth);
   }
 
   public setInteractive(enabled: boolean) {

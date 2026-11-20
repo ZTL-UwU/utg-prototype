@@ -1,10 +1,10 @@
 import { Container, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { isPhone, responsive } from '../../../../engine/utils/viewport';
-import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { frameDeltaMs } from '../../../../engine/utils/maths';
+import { responsive, topClearance, usesPhoneKeyboard } from '../../../../engine/utils/viewport';
+import { getTypedText } from '../../../../utils/keymap';
 import { convertToCurrentScript } from '../../../../utils/script';
-import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import {
   getWordStandardAudioAlias,
@@ -12,29 +12,23 @@ import {
   levelWordAssets,
   resolveWordsByIds,
 } from '../../../../zustandStores/wordStore';
-import { EndScreenPopup } from '../../../popups/end-screen';
-import { QuitPopup } from '../../../popups/quit';
-import { HUD } from '../../../ui/hud';
+import type { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
-import { RoundedProgressBar } from '../../../ui/rounded-progress-bar';
-import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
+import { TimerBar } from '../../../ui/timer-bar';
+import { createLevelHud, finishLevel } from '../../level-flow';
+import { getTypedLevel, type TLevel } from '../../level-map/units';
 import { CatchCounter } from './catch-counter';
 import { Trout } from './trout';
 
 const KEY_FEEDBACK_MS = 300;
-const MAX_FRAME_MS = 50;
 const HUD_MARGIN = 40;
+/** The catch counter sits this far below the top margin. */
+const CATCH_COUNTER_DROP = 24;
 const KEYBOARD_TOP = 90;
+const WIDE_KEYBOARD_SCALE = 0.8;
 const PROGRESS_BAR = { width: 520, height: 36, y: 28 } as const;
-
-const TIMER_COLORS = {
-  green: 0x7ed957,
-  orange: 0xe5903a,
-  red: 0xff3131,
-} as const;
-
-type TimerColor = keyof typeof TIMER_COLORS;
+/** A wrong key is quieter here: the river is busy with words already. */
+const WRONG_KEY_VOLUME = 0.3;
 
 /** River slots as fractions of the design view (left bank, below the keyboard). */
 const SLOT_LAYOUT: Array<{ x: number; y: number }> = [
@@ -60,6 +54,11 @@ const PHONE_SLOT_LAYOUT: Array<{ x: number; y: number }> = [
   { x: 0.48, y: 0.63 },
 ];
 
+/** Where the river's trout swim: above the bottom keyboard, or below the raised wide one. */
+function slotLayout() {
+  return usesPhoneKeyboard() ? PHONE_SLOT_LAYOUT : SLOT_LAYOUT;
+}
+
 export class GameLevelTrout extends Container {
   public readonly screenName = 'GameLevelTrout';
   public static assetBundles = ['game-level-trout', 'ui'];
@@ -77,7 +76,7 @@ export class GameLevelTrout extends Container {
 
   private readonly background: Sprite;
   private readonly keyboard: KeyboardLayout;
-  private readonly progressBar: RoundedProgressBar;
+  private readonly progressBar: TimerBar;
   private readonly catchCounter: CatchCounter;
   private readonly hud: HUD;
   private readonly troutLayer = new Container();
@@ -88,12 +87,10 @@ export class GameLevelTrout extends Container {
   private activeTrout: Trout | null = null;
   private wordTimerMs = 0;
   private timerRunning = false;
-  private timerColor: TimerColor = 'green';
   private catches = 0;
   private paused = false;
   private completed = false;
   private resolving = false;
-  private feedbackTimeouts: number[] = [];
 
   constructor(level: TLevel) {
     super();
@@ -119,25 +116,14 @@ export class GameLevelTrout extends Container {
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
     this.keyboard = new KeyboardLayout({ text: 'words' });
-    this.progressBar = new RoundedProgressBar({
+    this.progressBar = new TimerBar({
       width: PROGRESS_BAR.width,
       height: PROGRESS_BAR.height,
-      trackColor: TIMER_COLORS.green,
-      fillColor: TIMER_COLORS.green,
       strokeWidth: 6,
       padding: 8,
     });
-    this.progressBar.progress = 1;
     this.catchCounter = new CatchCounter();
-
-    const mapUnit = findMapUnitForLevel(typedLevel);
-    this.hud = new HUD({
-      onBack: () =>
-        void engine().navigation.showPopup(QuitPopup, {
-          mascot: typedLevel.mascot,
-          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
-        }),
-    });
+    this.hud = createLevelHud(typedLevel);
 
     this.addChild(
       this.background,
@@ -155,21 +141,28 @@ export class GameLevelTrout extends Container {
     this.screenHeight = height;
 
     this.keyboard.resize(width, height);
-    // Mockup places the keyboard under the timer, above the river. Phones keep it at the
-    // bottom like every other level, with the river above it.
-    if (!isPhone()) {
-      this.keyboard.scale.set(0.8);
+    // Mockup places the keyboard under the timer, above the river. The phone keyboard (phones,
+    // and native tablets) stays at the bottom like every other level, with the river above it.
+    if (!usesPhoneKeyboard()) {
+      this.keyboard.scale.set(WIDE_KEYBOARD_SCALE);
       this.keyboard.position.set(Math.round((width - this.keyboard.width) / 2), KEYBOARD_TOP);
-      this.keyboard.position.y = KEYBOARD_TOP;
     }
 
+    // The timer and the catch counter drop below the notch on phones.
+    const top = topClearance(height);
     const barScale = responsive({ sm: 0.7, lg: 1 });
     this.progressBar.scale.set(barScale);
-    this.progressBar.position.set((width - PROGRESS_BAR.width * barScale) / 2, PROGRESS_BAR.y);
-    this.catchCounter.position.set(width - HUD_MARGIN - this.catchCounter.width, HUD_MARGIN + 24);
+    this.progressBar.position.set(
+      (width - PROGRESS_BAR.width * barScale) / 2,
+      PROGRESS_BAR.y + top,
+    );
+    this.catchCounter.position.set(
+      width - HUD_MARGIN - this.catchCounter.width,
+      HUD_MARGIN + CATCH_COUNTER_DROP + top,
+    );
     this.hud.layout = { width, height };
 
-    const slots = responsive({ sm: PHONE_SLOT_LAYOUT, lg: SLOT_LAYOUT });
+    const slots = slotLayout();
     for (let i = 0; i < this.trout.length; i++) {
       const slot = slots[i % slots.length];
       this.trout[i].setHome(width * slot.x, height * slot.y);
@@ -178,50 +171,35 @@ export class GameLevelTrout extends Container {
 
   public update(ticker: Ticker) {
     if (this.paused || this.completed) return;
-    const deltaMs = Math.min(ticker.deltaMS, MAX_FRAME_MS);
+    const deltaMs = frameDeltaMs(ticker);
 
     for (const t of this.trout) t.updateSwim(deltaMs);
 
     if (!this.timerRunning || this.resolving || !this.activeTrout) return;
     this.wordTimerMs -= deltaMs;
-    const remaining = Math.max(0, this.wordTimerMs / this.wordDurationMs);
-    const nextColor: TimerColor =
-      remaining > 2 / 3 ? 'green' : remaining > 1 / 3 ? 'orange' : 'red';
-    if (nextColor !== this.timerColor) {
-      this.timerColor = nextColor;
-      this.progressBar.setColors(TIMER_COLORS[nextColor]);
-    }
-    this.progressBar.progress = remaining;
+    this.progressBar.setRemaining(Math.max(0, this.wordTimerMs / this.wordDurationMs));
     if (this.wordTimerMs <= 0) void this.onWordTimeout();
   }
 
+  /** Behind a popup such as Quit: the river and the keyboard hold still. */
   async pause() {
     this.paused = true;
     window.removeEventListener('keydown', this.handleKeyDown);
+    await this.keyboard.pause();
   }
 
   async resume() {
     if (this.completed) return;
     this.paused = false;
     window.addEventListener('keydown', this.handleKeyDown);
+    await this.keyboard.resume();
   }
 
   async show() {
-    this.completed = false;
-    this.resolving = false;
-    this.paused = false;
-    this.timerRunning = false;
-    this.wordTimerMs = 0;
-    this.catches = 0;
-    this.activeTrout = null;
     this.catchCounter.setCount(0);
-    this.resetProgressBar();
-    this.keyboard.setHintedLetter(undefined);
-
-    this.clearTrout();
-    this.spawnRound();
-    this.activateNextAvailableTrout();
-
+    // An empty or filtered word pool ends the level here.
+    this.startNewRound();
+    if (this.completed) return;
     window.addEventListener('keydown', this.handleKeyDown);
     await this.keyboard.playEnterAnimation();
   }
@@ -229,9 +207,13 @@ export class GameLevelTrout extends Container {
   async hide() {
     this.timerRunning = false;
     window.removeEventListener('keydown', this.handleKeyDown);
-    this.clearFeedbackTimeouts();
     this.keyboard.setHintedLetter(undefined);
     await this.keyboard.playExitAnimation();
+  }
+
+  override destroy(options?: Parameters<Container['destroy']>[0]) {
+    window.removeEventListener('keydown', this.handleKeyDown);
+    super.destroy(options);
   }
 
   /** Spawns a fresh set of trout. Catch counter is intentionally left alone. */
@@ -244,7 +226,7 @@ export class GameLevelTrout extends Container {
       if (!entry) break;
       usedStarts.add(startingLetter(entry.word));
 
-      const slot = responsive({ sm: PHONE_SLOT_LAYOUT, lg: SLOT_LAYOUT })[i];
+      const slot = slotLayout()[i];
       const trout = new Trout({
         wordId: entry.id,
         word: entry.word,
@@ -278,7 +260,7 @@ export class GameLevelTrout extends Container {
     return this.trout.some((t) => t.isPlayable && !t.isComplete);
   }
 
-  private async startNewRound() {
+  private startNewRound() {
     this.clearTrout();
     this.activeTrout = null;
     this.timerRunning = false;
@@ -294,10 +276,7 @@ export class GameLevelTrout extends Container {
 
   private readonly handleKeyDown = (event: KeyboardEvent) => {
     if (this.completed || this.resolving || this.paused) return;
-    if (event.repeat || event.key === 'Shift' || event.ctrlKey || event.metaKey || event.altKey)
-      return;
-
-    const typed = getMappedFromKeyboardEvent(event);
+    const typed = getTypedText(event);
     if (!typed) return;
 
     const active = this.activeTrout;
@@ -346,8 +325,7 @@ export class GameLevelTrout extends Container {
 
     if (trout.typeLetter(typed)) {
       useSessionStore.getState().recordCorrect();
-      this.keyboard.setKeyFeedback(code, 'success');
-      this.pushTimeout(() => this.keyboard.clearKeyFeedback(code), KEY_FEEDBACK_MS);
+      this.keyboard.flashKeyFeedback(code, 'success', { ms: KEY_FEEDBACK_MS });
 
       if (trout.isComplete) {
         void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
@@ -362,18 +340,21 @@ export class GameLevelTrout extends Container {
 
   private handleIncorrect(code: string) {
     useSessionStore.getState().recordMistake();
-    this.keyboard.setKeyFeedback(code, 'error');
-    void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3', { volume: 0.3 });
-    this.pushTimeout(() => {
-      this.keyboard.clearKeyFeedback(code);
-      this.keyboard.setHintedLetter(this.activeTrout?.currentLetter, this.activeTrout?.nextLetter);
-    }, KEY_FEEDBACK_MS);
+    void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3', {
+      volume: WRONG_KEY_VOLUME,
+    });
+    this.keyboard.flashKeyFeedback(code, 'error', {
+      ms: KEY_FEEDBACK_MS,
+      onCleared: () =>
+        this.keyboard.setHintedLetter(
+          this.activeTrout?.currentLetter,
+          this.activeTrout?.nextLetter,
+        ),
+    });
   }
 
   private resetProgressBar() {
-    this.timerColor = 'green';
-    this.progressBar.setColors(TIMER_COLORS.green);
-    this.progressBar.progress = 1;
+    this.progressBar.setRemaining(1);
   }
 
   private activateTrout(trout: Trout) {
@@ -409,19 +390,7 @@ export class GameLevelTrout extends Container {
 
     this.catches += 1;
     this.catchCounter.setCount(this.catches);
-
-    await trout.playPopAndHide();
-    if (this.completed) return;
-    this.removeTrout(trout);
-
-    if (this.catches >= this.totalCatches) {
-      this.endGame();
-      return;
-    }
-
-    if (!this.hasPlayableTrout()) await this.startNewRound();
-    else this.activateNextAvailableTrout();
-    this.resolving = false;
+    await this.finishTrout(trout, trout.playPopAndHide());
   }
 
   private async onWordTimeout() {
@@ -434,9 +403,13 @@ export class GameLevelTrout extends Container {
     useSessionStore.getState().recordMistake();
     void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
     this.keyboard.setHintedLetter(undefined);
+    await this.finishTrout(trout, trout.playEscape());
+  }
 
-    await trout.playEscape();
-    if (this.completed) return;
+  /** Once a caught or escaping trout's animation is over: end, or bring on the next fish. */
+  private async finishTrout(trout: Trout, leaving: Promise<void>) {
+    await leaving;
+    if (this.completed || this.destroyed) return;
     this.removeTrout(trout);
 
     if (this.catches >= this.totalCatches) {
@@ -444,7 +417,7 @@ export class GameLevelTrout extends Container {
       return;
     }
 
-    if (!this.hasPlayableTrout()) await this.startNewRound();
+    if (!this.hasPlayableTrout()) this.startNewRound();
     else this.activateNextAvailableTrout();
     this.resolving = false;
   }
@@ -455,19 +428,7 @@ export class GameLevelTrout extends Container {
     this.timerRunning = false;
     this.resolving = false;
     window.removeEventListener('keydown', this.handleKeyDown);
-    this.clearFeedbackTimeouts();
-    const { correct, mistakes } = useSessionStore.getState();
-    useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
-  }
-
-  private pushTimeout(fn: () => void, ms: number) {
-    this.feedbackTimeouts.push(window.setTimeout(fn, ms));
-  }
-
-  private clearFeedbackTimeouts() {
-    for (const timeout of this.feedbackTimeouts) window.clearTimeout(timeout);
-    this.feedbackTimeouts = [];
+    finishLevel(this, this.level);
   }
 }
 

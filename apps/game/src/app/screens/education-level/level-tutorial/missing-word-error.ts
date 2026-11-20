@@ -8,8 +8,15 @@ const BG_COLOR = 0xfde2e2;
 const BORDER_COLOR = 0xe57373;
 const TEXT_COLOR = 0xb71c1c;
 
-export class MissingWordNotice extends Container {
-  constructor() {
+/**
+ * Shown in place of a letter's example word when the word catalog has no tutorial word for it,
+ * either because the catalog failed to load or because none was authored. Either way it's a
+ * content error, so the console gets the letter.
+ */
+export class MissingWordError extends Container {
+  constructor(letter: string) {
+    console.error(`[letter-popup] No tutorial word for letter "${letter}"`);
+
     // Outer: fills the popup, centers its child via flex
     super({
       layout: {
@@ -39,7 +46,7 @@ export class MissingWordNotice extends Container {
     panel.addChild(bg);
 
     const message = new Text({
-      text: m.education_example_coming_soon(),
+      text: m.education_example_missing(),
       style: new TextStyle({
         fontFamily: 'sans-serif',
         fontSize: 24,

@@ -74,6 +74,16 @@ export function resolveWordsByIds(wordIds: number[]): WordSimple[] {
   });
 }
 
+/** A word education levels can ask about: one with the letter it teaches. */
+export type LetterWord = WordSimple & { target_letter: string };
+
+/** The level's words that teach a letter, the only ones education levels can play. */
+export function resolveLetterWords(wordIds: number[]): LetterWord[] {
+  return resolveWordsByIds(wordIds).filter(
+    (word): word is LetterWord => word.target_letter != null && word.target_letter.length > 0,
+  );
+}
+
 export type WordMedia = 'image' | 'educationAudio' | 'standardAudio';
 
 const WORD_MEDIA_ALIAS: Record<WordMedia, (wordId: number) => string> = {

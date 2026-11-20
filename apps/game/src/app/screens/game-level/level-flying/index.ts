@@ -11,11 +11,11 @@ import {
 } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { responsive } from '../../../../engine/utils/viewport';
+import { randomInt, randomShuffle } from '../../../../engine/utils/random';
+import { responsive, topClearance } from '../../../../engine/utils/viewport';
 import { createTypingWordStyle, getHighlightedWordMarkup } from '../../../../utils/example-words';
-import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { getTypedText } from '../../../../utils/keymap';
 import { convertToCurrentScript } from '../../../../utils/script';
-import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import {
   getWordStandardAudioAlias,
@@ -23,12 +23,11 @@ import {
   levelWordAssets,
   resolveWordsByIds,
 } from '../../../../zustandStores/wordStore';
-import { EndScreenPopup } from '../../../popups/end-screen';
-import { QuitPopup } from '../../../popups/quit';
-import { HUD } from '../../../ui/hud';
+import type { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
+import { blinkAlpha, LivesBar } from '../../../ui/lives-bar';
+import { createLevelHud, finishLevel } from '../../level-flow';
 import { getTypedLevel, type TLevel } from '../../level-map/units';
-import { blinkAlpha, HEART_WIDTH, LivesBar } from './lives-bar';
 
 /**
  * Phones stand the rocks this far below the keyboard's top instead of on the screen's bottom.
@@ -37,6 +36,12 @@ import { blinkAlpha, HEART_WIDTH, LivesBar } from './lives-bar';
 const PHONE_ROCK_TUCK = 250;
 
 const MAX_FRAME_MS = 50;
+/**
+ * The bird's speed is in pixels per 60 Hz frame: levels' gravity and jump were tuned when it
+ * moved by its speed once per frame. Scaling by the frame time keeps that feel at any refresh
+ * rate, where it used to fall twice as fast at 120 Hz.
+ */
+const REFERENCE_FRAME_MS = 1000 / 60;
 
 // unit conversion
 const MS_PER_SECOND = 1000;
@@ -50,6 +55,8 @@ const MAX_DEATH_ROTATION = Math.PI / 2;
 
 // LIVES CONSTS
 const LIVES_MARGIN = 40;
+const HEART_ASSET = 'game-levels/game-level-flying/heart-full.png';
+const HEART_SIZE = 56;
 
 // COLUMN CONSTS
 const MIN_COLUMN_SPAWN_GAP_PX = 500;
@@ -58,11 +65,6 @@ const MAX_COLUMN_SPAWN_GAP_PX = 700;
 // WORD CONSTS
 const WORD_BASE_COLOR = 0x333333; // remaining (untyped) letters
 const WORD_TOP_RATIO = 0.12; // vertical placement of the word
-const KEY_FEEDBACK_MS = 350;
-
-function getRandomIntBetween(first: number, second: number) {
-  return Math.floor(first + Math.random() * (second - first + 1));
-}
 
 function rectsOverlap(a: Bounds, b: Bounds) {
   return a.minX < b.maxX && a.maxX > b.minX && a.minY < b.maxY && a.maxY > b.minY;
@@ -73,7 +75,7 @@ function rectsOverlap(a: Bounds, b: Bounds) {
  * otherwise a random subset of that size. Mirrors the fruit-fall selection.
  */
 function pickWords(words: Round[], totalWords: number): Round[] {
-  const shuffled = [...words].sort(() => Math.random() - 0.5);
+  const shuffled = randomShuffle([...words]);
   return totalWords === 0 ? shuffled : shuffled.slice(0, totalWords);
 }
 
@@ -109,9 +111,10 @@ export class GameLevelFlying extends Container {
   private wordText: HTMLText;
   private words: Round[];
   private wordIndex = 0;
-  private activeRound: Round;
+  private activeRound?: Round;
   private activeLetterIdx = 0;
-  private feedbackTimeouts: number[] = [];
+  /** Behind a popup: the bird and rocks hold still and keys are ignored. */
+  private paused = false;
   private readonly level: TLevel;
   private readonly jumpHeight: number;
   private readonly gravity: number;
@@ -141,7 +144,11 @@ export class GameLevelFlying extends Container {
     this.elapsedDistance = 0;
     this.spawnDistanceThreshold = 0;
     this.activeColumns = [];
-    this.livesBar = new LivesBar(props.maxLives);
+    this.livesBar = new LivesBar({
+      maxLives: props.maxLives,
+      icon: HEART_ASSET,
+      blinkSeconds: props.invulnerableSeconds,
+    });
     this.bird.anchor.set(0.5);
 
     const wordPool: Round[] = resolveWordsByIds(props.wordIds).map((word) => {
@@ -158,13 +165,7 @@ export class GameLevelFlying extends Container {
     this.wordText.anchor.set(0.5);
 
     this.keyboard = new KeyboardLayout({ text: 'words' });
-    this.hud = new HUD({
-      onBack: () =>
-        void engine().navigation.showPopup(QuitPopup, {
-          mascot: typedLevel.mascot,
-          onQuit: () => this.goHome(),
-        }),
-    });
+    this.hud = createLevelHud(typedLevel);
 
     this.addChild(
       this.background,
@@ -179,7 +180,7 @@ export class GameLevelFlying extends Container {
 
   update(ticker: Ticker) {
     const deltaMs = Math.min(ticker.deltaMS, MAX_FRAME_MS);
-    if (this.state === 'over') return;
+    if (this.state === 'over' || this.paused) return;
     if (this.state === 'dying') {
       this.updateDeathFall(deltaMs);
       return;
@@ -195,8 +196,8 @@ export class GameLevelFlying extends Container {
     this.birdVY += this.gravity * deltaMS;
 
     // Y CEILING SHOULD NOT BE BROKEN BY JUMPING BIRD
-    const updatedBirdY = this.bird.y + this.birdVY;
-    this.bird.y = updatedBirdY <= BIRD_Y_CEIL ? BIRD_Y_CEIL : updatedBirdY;
+    const updatedBirdY = this.bird.y + this.birdVY * (deltaMS / REFERENCE_FRAME_MS);
+    this.bird.y = Math.max(BIRD_Y_CEIL, updatedBirdY);
   }
   private updateColumns(deltaMs: number) {
     this.advanceExistingColumns(deltaMs);
@@ -206,7 +207,7 @@ export class GameLevelFlying extends Container {
   // cosmetic fall
   private updateDeathFall(deltaMs: number) {
     this.birdVY += this.gravity * deltaMs;
-    this.bird.y += this.birdVY;
+    this.bird.y += this.birdVY * (deltaMs / REFERENCE_FRAME_MS);
     this.bird.rotation = Math.min(this.bird.rotation + DEATH_SPIN * deltaMs, MAX_DEATH_ROTATION);
 
     const overshoot = this.bird.getBounds().maxY - this.screenHeight;
@@ -244,14 +245,11 @@ export class GameLevelFlying extends Container {
     this.invulnerableMs = this.invulnerableDurationMs;
     this.blinkAnim?.stop();
     this.bird.alpha = 1;
-    this.blinkAnim = blinkAlpha(
-      (alpha) => {
-        this.bird.alpha = alpha;
-      },
-      () => {
-        this.bird.alpha = 1;
-      },
-    );
+    // Blinks for as long as it cannot be hit, in step with the heart it lost.
+    this.blinkAnim = blinkAlpha((alpha) => (this.bird.alpha = alpha), {
+      durationS: this.invulnerableDurationMs / MS_PER_SECOND,
+      onComplete: () => (this.bird.alpha = 1),
+    });
   }
   // sorry for the morbid name
   private die() {
@@ -269,42 +267,29 @@ export class GameLevelFlying extends Container {
     if (this.state === 'over') return;
     this.state = 'over';
     window.removeEventListener('keydown', this.handleKeyDown);
-    const { correct, mistakes } = useSessionStore.getState();
-    useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
+    finishLevel(this, this.level);
   }
 
   // BIRD FLYING HELPERS
 
   private handleKeyDown = (event: KeyboardEvent) => {
-    if (
-      this.state !== 'playing' ||
-      event.repeat ||
-      event.key === 'Shift' ||
-      event.ctrlKey ||
-      event.metaKey ||
-      event.altKey
-    )
-      return;
-
-    const typed = getMappedFromKeyboardEvent(event);
+    if (this.state !== 'playing' || this.paused || !this.activeRound) return;
+    const typed = getTypedText(event);
     if (!typed) return;
 
-    if (typed === this.activeRound.word[this.activeLetterIdx]) {
+    if (typed === this.currentTargetLetter) {
       useSessionStore.getState().recordCorrect();
-      this.keyboard.setKeyFeedback(event.code, 'success');
+      this.keyboard.flashKeyFeedback(event.code, 'success');
       void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
-      this.pushTimeout(() => this.keyboard.clearKeyFeedback(event.code), KEY_FEEDBACK_MS);
       this.jump();
       this.advanceLetter();
     } else {
       useSessionStore.getState().recordMistake();
-      this.keyboard.setKeyFeedback(event.code, 'error');
       void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
-      this.pushTimeout(() => {
-        this.keyboard.clearKeyFeedback(event.code);
-        this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
-      }, KEY_FEEDBACK_MS);
+      this.keyboard.flashKeyFeedback(event.code, 'error', {
+        onCleared: () =>
+          this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter),
+      });
     }
   };
 
@@ -315,23 +300,24 @@ export class GameLevelFlying extends Container {
   }
 
   private get currentTargetLetter() {
-    return this.activeRound.word[this.activeLetterIdx];
+    return this.activeRound?.word[this.activeLetterIdx];
   }
 
   /** The letter after the target, which tells a phone a word-initial ئ comes from a vowel key. */
   private get nextTargetLetter() {
-    return this.activeRound.word[this.activeLetterIdx + 1];
+    return this.activeRound?.word[this.activeLetterIdx + 1];
   }
 
   private renderWord() {
-    const len = this.activeRound.word[this.activeLetterIdx]?.length ?? 1;
-    this.wordText.text = getHighlightedWordMarkup(this.activeRound.word, this.activeLetterIdx, len);
+    if (!this.activeRound) return;
+    this.wordText.text = getHighlightedWordMarkup(this.activeRound.word, this.activeLetterIdx, 1);
     this.keyboard.setHintedLetter(this.currentTargetLetter, this.nextTargetLetter);
     this.keyboard.setWordStart(this.activeLetterIdx === 0);
   }
 
   private advanceLetter() {
-    this.activeLetterIdx += this.activeRound.word[this.activeLetterIdx].length;
+    if (!this.activeRound) return;
+    this.activeLetterIdx += 1;
     if (this.activeLetterIdx < this.activeRound.word.length) {
       this.renderWord();
       return;
@@ -348,21 +334,6 @@ export class GameLevelFlying extends Container {
     this.activeLetterIdx = 0;
     void playWordAudio(getWordStandardAudioAlias(this.activeRound.wordId));
     this.renderWord();
-  }
-
-  private pushTimeout(fn: () => void, ms: number) {
-    this.feedbackTimeouts.push(window.setTimeout(fn, ms));
-  }
-
-  private clearFeedbackTimeouts() {
-    for (const timeout of this.feedbackTimeouts) {
-      window.clearTimeout(timeout);
-    }
-    this.feedbackTimeouts = [];
-  }
-
-  private goHome() {
-    void import('../../home').then(({ HomeScreen }) => engine().navigation.showScreen(HomeScreen));
   }
 
   private flapAnimation() {
@@ -382,7 +353,8 @@ export class GameLevelFlying extends Container {
     for (let i = this.activeColumns.length - 1; i >= 0; i--) {
       let col = this.activeColumns[i];
       col.x = col.x - this.columnVelocity * deltaMs;
-      if (col.x < 0) {
+      // Anchored at its centre, so only gone once its right edge has left the screen.
+      if (col.x + col.width / 2 < 0) {
         this.activeColumns.splice(i, 1);
         col.destroy({ children: true });
       }
@@ -398,7 +370,7 @@ export class GameLevelFlying extends Container {
     }
     const col: Sprite = this.getRandomColumn();
     col.anchor.set(0.5, 1); // grab bottom-center
-    col.x = this.screenWidth; // enter from right edge
+    col.x = this.screenWidth + col.width / 2; // enter from beyond the right edge
     col.y = this.rockBaseY; // bottom sits on the floor
     this.activeColumns.push(col);
     // insert under the keyboard so the rocks tuck behind the keyboard panel and the bird
@@ -406,64 +378,54 @@ export class GameLevelFlying extends Container {
 
     // reset spawn distance control
     this.elapsedDistance = 0;
-    this.spawnDistanceThreshold = getRandomIntBetween(
-      MIN_COLUMN_SPAWN_GAP_PX,
-      MAX_COLUMN_SPAWN_GAP_PX,
-    );
+    this.spawnDistanceThreshold = randomInt(MIN_COLUMN_SPAWN_GAP_PX, MAX_COLUMN_SPAWN_GAP_PX);
   }
   private getRandomColumn(): Sprite {
-    return new Sprite(
-      Texture.from(`game-levels/game-level-flying/columns/${getRandomIntBetween(1, 3)}.png`),
-    );
+    return new Sprite(Texture.from(`game-levels/game-level-flying/columns/${randomInt(1, 3)}.png`));
   }
 
   // engine reqs
   async show() {
+    // A level with no words has nothing to type.
+    if (!this.activeRound) {
+      this.state = 'over';
+      finishLevel(this, this.level);
+      return;
+    }
     window.addEventListener('keydown', this.handleKeyDown);
     await this.keyboard.playEnterAnimation();
-    this.renderWord();
   }
+
   async hide() {
     window.removeEventListener('keydown', this.handleKeyDown);
     await this.keyboard.playExitAnimation();
   }
 
-  reset() {
-    this.state = 'playing';
-    this.birdVY = 0;
-    this.bird.y = 0;
-    this.bird.rotation = 0;
-    this.bird.alpha = 1;
-    this.flapAnim?.stop();
-    this.blinkAnim?.stop();
-    this.invulnerableMs = 0;
-    this.livesBar.reset();
-    this.bird.texture = this.flapUp;
-    for (const col of this.activeColumns) {
-      col.destroy({ children: true });
-    }
-    this.activeColumns = [];
-    this.elapsedDistance = 0;
-    this.spawnDistanceThreshold = 0;
-    this.clearFeedbackTimeouts();
-    this.keyboard.clearAllKeyFeedback();
-    this.wordIndex = 0;
-    this.activeRound = this.words[0];
-    this.activeLetterIdx = 0;
-    this.renderWord();
+  async pause() {
+    this.paused = true;
+    await this.keyboard.pause();
   }
-  destroy(options?: DestroyOptions): void {
+
+  async resume() {
+    this.paused = false;
+    await this.keyboard.resume();
+  }
+
+  override destroy(options?: DestroyOptions): void {
     window.removeEventListener('keydown', this.handleKeyDown);
-    this.clearFeedbackTimeouts();
     this.flapAnim?.stop();
     this.blinkAnim?.stop();
     super.destroy(options);
   }
+
   resize(width: number, height: number) {
     this.layout = { width, height };
     this.background.layout = { width, height };
     // hearts grow leftward from the origin, so pin it to the top-right corner
-    this.livesBar.position.set(width - LIVES_MARGIN, LIVES_MARGIN + HEART_WIDTH / 2);
+    this.livesBar.position.set(
+      width - LIVES_MARGIN,
+      LIVES_MARGIN + topClearance(height) + HEART_SIZE / 2,
+    );
     this.keyboard.resize(width, height);
     this.hud.layout = { width, height };
     this.wordText.position.set(width / 2, height * WORD_TOP_RATIO);

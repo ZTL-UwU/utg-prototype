@@ -5,8 +5,8 @@ import { Container, Graphics, HTMLText } from 'pixi.js';
 import { createTypingSentenceStyle, getSentenceMarkup } from '../../../../utils/example-words';
 import { isCurrentScriptRtl } from '../../../../utils/script';
 import { TypingLetter } from '../../../ui/typing-letter';
-import { playRoundAudio, type Round } from '../level-word';
 import { TypingWordCard } from '../level-word/word-card';
+import { playRoundAudio, type WordRound } from '../word-rounds';
 import {
   createLetterSource,
   createSentenceSource,
@@ -255,10 +255,10 @@ class LetterTilesView extends Container implements PromptView {
 
 /** One word on its card, beside the word's image when it has one. */
 class WordImageView extends TypingWordCard implements PromptView {
-  private readonly source: PromptSource<Round | undefined>;
+  private readonly source: PromptSource<WordRound | undefined>;
   private errorTimeout?: number;
 
-  constructor(source: PromptSource<Round | undefined>) {
+  constructor(source: PromptSource<WordRound | undefined>) {
     super();
     this.source = source;
   }

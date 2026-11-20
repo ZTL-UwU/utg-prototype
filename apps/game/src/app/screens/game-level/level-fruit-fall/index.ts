@@ -2,15 +2,15 @@ import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Sprite, Texture, Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { frameDeltaMs } from '../../../../engine/utils/maths';
+import { randomFloat, randomShuffle } from '../../../../engine/utils/random';
 import { responsive } from '../../../../engine/utils/viewport';
-import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { getTypedText } from '../../../../utils/keymap';
 import { convertKeyboardLettersToCurrentScript } from '../../../../utils/script';
-import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
-import { EndScreenPopup } from '../../../popups/end-screen';
-import { QuitPopup } from '../../../popups/quit';
-import { HUD } from '../../../ui/hud';
+import type { HUD } from '../../../ui/hud';
 import { KeyboardLayout, type KeyboardColorOptions } from '../../../ui/keyboard-layout';
+import { createLevelHud, finishLevel } from '../../level-flow';
 import { getTypedLevel, type TLevel } from '../../level-map/units';
 import { Fruit } from './fruit';
 const GREEN_KB_COLOR_OPTIONS: KeyboardColorOptions = {
@@ -25,7 +25,9 @@ const GREEN_KB_COLOR_OPTIONS: KeyboardColorOptions = {
 /** Space between the basket and the keyboard on phones. */
 const PHONE_BASKET_GAP = 90;
 const SPAWN_X_PADDING = 100;
-const FEEDBACK_DURATION_MS: number = 350;
+/** Basket rest height on wide screens, as a share of the screen. */
+const WIDE_BASKET_Y = 0.45;
+const BASKET_SCALE = 0.75;
 
 export class GameLevelFruitScreen extends Container {
   public readonly screenName = 'GameLevelFruitScreen';
@@ -33,8 +35,11 @@ export class GameLevelFruitScreen extends Container {
   public static loadingBackgroundAsset = 'game-levels/game-level-fruit-fall/background.png';
   public static helpAssets: string[] = [];
 
-  private isFalling = true;
+  /** False while paused behind a popup or once the level is over. */
+  private running = true;
   private completed = false;
+  /** Caught fruit still flying into the basket; the level waits for them to land. */
+  private landingFruits = 0;
   private readonly level: TLevel;
   private readonly maxActiveFruits: number;
   private readonly minSpawnDelayMs: number;
@@ -69,14 +74,10 @@ export class GameLevelFruitScreen extends Container {
     this.fallVelocity = props.fallVelocity;
     this.totalFruits = props.totalFruits;
 
-    const bufferFruits = convertKeyboardLettersToCurrentScript(props.letters).map((letter) => {
-      return new Fruit({ letter });
-    });
-    bufferFruits.sort(() => Math.random() - 0.5);
-
-    // build all fruits from the level's letters
-    this.allFruits =
-      this.totalFruits === 0 ? bufferFruits : bufferFruits.splice(0, this.totalFruits);
+    // `totalFruits` of 0 plays every letter once; otherwise a random handful of them.
+    const letters = randomShuffle(convertKeyboardLettersToCurrentScript(props.letters));
+    const picked = this.totalFruits === 0 ? letters : letters.slice(0, this.totalFruits);
+    this.allFruits = picked.map((letter) => new Fruit({ letter }));
     this.fallingFruits = [];
     this.keyboardLayout = new KeyboardLayout({ colors: GREEN_KB_COLOR_OPTIONS });
     this.spawnTimer = 0; // spawnTimer at 0 indicates new fruit should be spawned.
@@ -84,14 +85,8 @@ export class GameLevelFruitScreen extends Container {
       texture: Texture.from('game-levels/game-level-fruit-fall/basket.png'),
     });
     this.basket.anchor.set(0.5);
-    this.basket.scale.set(0.75);
-    this.hud = new HUD({
-      onBack: () =>
-        void engine().navigation.showPopup(QuitPopup, {
-          mascot: typedLevel.mascot,
-          onQuit: () => this.goHome(),
-        }),
-    });
+    this.basket.scale.set(BASKET_SCALE);
+    this.hud = createLevelHud(typedLevel);
 
     this.addChild(this.background, this.keyboardLayout, this.basket, this.hud);
   }
@@ -105,48 +100,54 @@ export class GameLevelFruitScreen extends Container {
     // above their keyboard, so they rest it just on top, the way desktop screens show it.
     const basketY = responsive({
       sm: this.keyboardLayout.y - PHONE_BASKET_GAP - this.basket.height / 2,
-      lg: height * 0.45,
+      lg: height * WIDE_BASKET_Y,
     });
     this.basket.position.set(width / 2, basketY);
   }
   async pause() {
-    this.isFalling = false;
+    this.running = false;
     window.removeEventListener('keydown', this.handleKeyDown);
+    await this.keyboardLayout.pause();
   }
   async resume() {
     if (this.completed) return;
-    this.isFalling = true;
+    this.running = true;
     window.addEventListener('keydown', this.handleKeyDown);
+    await this.keyboardLayout.resume();
   }
   async show() {
     window.addEventListener('keydown', this.handleKeyDown);
     await this.keyboardLayout.playEnterAnimation();
   }
-  reset() {
+  override destroy(options?: Parameters<Container['destroy']>[0]) {
     window.removeEventListener('keydown', this.handleKeyDown);
     this.basketAnimation?.stop();
+    // Fruit still waiting to fall is not on stage, so the tree does not destroy it.
+    for (const fruit of this.allFruits) fruit.destroy({ children: true });
+    super.destroy(options);
   }
   update(ticker: Ticker) {
-    if (!this.isFalling) return;
-    this.updateFalling(ticker.deltaMS);
-    this.updateSpawning(ticker.deltaMS);
+    if (!this.running) return;
+    const deltaMs = frameDeltaMs(ticker);
+    this.updateFalling(deltaMs);
+    this.updateSpawning(deltaMs);
     this.maybeEndGame();
   }
 
-  updateSpawning(deltaMs: number) {
-    if (this.allFruits.length === 0 || !this.isFalling) return;
+  private updateSpawning(deltaMs: number) {
+    if (this.allFruits.length === 0) return;
     if (this.fallingFruits.length >= this.maxActiveFruits) return;
     this.spawnTimer -= deltaMs;
     if (this.spawnTimer > 0) {
       return;
     }
     this.spawnFruit();
-    this.spawnTimer = randomBetween(this.minSpawnDelayMs, this.maxSpawnDelayMs);
+    this.spawnTimer = randomFloat(this.minSpawnDelayMs, this.maxSpawnDelayMs);
   }
   private spawnFruit() {
     const nextFruit = this.allFruits.pop();
     if (!nextFruit) return;
-    nextFruit.position.set(randomBetween(SPAWN_X_PADDING, this.screenWidth - SPAWN_X_PADDING), 0);
+    nextFruit.position.set(randomFloat(SPAWN_X_PADDING, this.screenWidth - SPAWN_X_PADDING), 0);
     // keep fruits below the HUD so the back button stays clickable
     this.addChildAt(nextFruit, this.getChildIndex(this.hud));
     this.fallingFruits.push(nextFruit);
@@ -161,17 +162,8 @@ export class GameLevelFruitScreen extends Container {
   }
 
   private readonly handleKeyDown = (event: KeyboardEvent) => {
-    if (
-      !this.isFalling ||
-      event.repeat ||
-      event.key === 'Shift' ||
-      event.ctrlKey ||
-      event.metaKey ||
-      event.altKey
-    )
-      return;
-
-    const typed = getMappedFromKeyboardEvent(event);
+    if (!this.running) return;
+    const typed = getTypedText(event);
     if (!typed) return;
 
     const idx = this.findLowestMatchingFruitIdx(typed);
@@ -186,8 +178,7 @@ export class GameLevelFruitScreen extends Container {
   private handleIncorrect(code: string) {
     void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
     useSessionStore.getState().recordMistake();
-    this.keyboardLayout.setKeyFeedback(code, 'error');
-    window.setTimeout(() => this.keyboardLayout.clearKeyFeedback(code), FEEDBACK_DURATION_MS);
+    this.keyboardLayout.flashKeyFeedback(code, 'error');
   }
 
   private async collectFruit(index: number, code: string) {
@@ -197,8 +188,9 @@ export class GameLevelFruitScreen extends Container {
 
     void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
     useSessionStore.getState().recordCorrect();
-    this.keyboardLayout.setKeyFeedback(code, 'success');
+    this.keyboardLayout.flashKeyFeedback(code, 'success');
     fruit.markCorrect();
+    this.landingFruits += 1;
 
     const targetX = fruit.position.x;
 
@@ -216,12 +208,12 @@ export class GameLevelFruitScreen extends Container {
       ),
     ]);
 
-    this.keyboardLayout.clearKeyFeedback(code);
-    this.removeChild(fruit);
+    if (this.destroyed) return;
+    this.landingFruits -= 1;
     fruit.destroy({ children: true });
   }
 
-  updateFalling(deltaMs: number) {
+  private updateFalling(deltaMs: number) {
     const bottom = this.screenHeight;
     const basketY = this.basket.position.y;
     for (let i = this.fallingFruits.length - 1; i >= 0; i--) {
@@ -231,15 +223,16 @@ export class GameLevelFruitScreen extends Container {
       if (f.position.y - f.height > bottom) {
         // fell past the basket without being caught
         useSessionStore.getState().recordMistake();
-        this.removeChild(f);
         this.fallingFruits.splice(i, 1);
+        f.destroy({ children: true });
       }
     }
   }
 
   private maybeEndGame() {
     if (this.completed) return;
-    if (this.allFruits.length === 0 && this.fallingFruits.length === 0) {
+    const done = this.allFruits.length === 0 && this.fallingFruits.length === 0;
+    if (done && this.landingFruits === 0) {
       this.endGame();
     }
   }
@@ -247,18 +240,8 @@ export class GameLevelFruitScreen extends Container {
   private endGame() {
     if (this.completed) return;
     this.completed = true;
-    this.isFalling = false;
+    this.running = false;
     window.removeEventListener('keydown', this.handleKeyDown);
-    const { correct, mistakes } = useSessionStore.getState();
-    useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
+    finishLevel(this, this.level);
   }
-
-  private goHome() {
-    void import('../../home').then(({ HomeScreen }) => engine().navigation.showScreen(HomeScreen));
-  }
-}
-
-function randomBetween(min: number, max: number) {
-  return min + Math.random() * (max - min);
 }

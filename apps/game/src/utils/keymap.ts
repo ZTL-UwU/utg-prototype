@@ -520,3 +520,19 @@ export function getKeyFromChar(char: string): string {
   }
   return '';
 }
+
+/** Mapped text of keys that type nothing in a level: Shift, Enter, Backspace and the like. */
+function isControlKeyText(text: string): boolean {
+  return text === '⌫' || (text.length > 1 && text.startsWith('*') && text.endsWith('*'));
+}
+
+/**
+ * What a key press types in a level, or '' for a press levels ignore: auto-repeats, modifier
+ * chords, and keys that type nothing (Shift, Tab, arrows, Escape, Enter, Backspace). Space
+ * types ' '.
+ */
+export function getTypedText(event: KeyboardEvent): string {
+  if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return '';
+  const typed = getMappedFromKeyboardEvent(event);
+  return isControlKeyText(typed) ? '' : typed;
+}

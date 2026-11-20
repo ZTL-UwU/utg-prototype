@@ -4,9 +4,9 @@ import { m } from '../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import { DrawingCanvas, type StrokePoint } from '../../ui/drawing-canvas';
 import { calculateDrawingAccuracy, parseStrokePath } from './calculate-accuracy';
-import { LABEL_COLOR, NAV_COLOR, NAV_SHADOW_COLOR } from './controls';
+import { drawPill, LABEL_COLOR, NAV_COLOR, NAV_SHADOW_COLOR } from './controls';
 import { createGlyphMaskContext } from './glyph-mask';
-import { getBaseForm, getLetterEntry, GLYPH_EXTENT, type LETTER_FORMS } from './letter-data';
+import { getBaseForm, getLetterEntry, getGlyphExtent, type LETTER_FORMS } from './letter-data';
 import { StrokeTracer, type TraceStroke } from './stroke-tracer';
 
 /** Teal so the user's own ink reads apart from the brown demo trace. */
@@ -29,6 +29,8 @@ const JOIN_COLOR = 0xaa9f8a;
 const RESULT_INSET = 28;
 const RESULT_PAD_X = 32;
 const RESULT_HEIGHT = 72;
+/** The result pill sits lower than the controls, so its shadow is shallower. */
+const RESULT_SHADOW = 6;
 
 // TODO: write the results message; accuracy is a percentage from 0 to 100
 function getResultsMessage(accuracy: number): string {
@@ -161,7 +163,7 @@ export class OutlineDisplay extends Container {
     // one scale for every letter and form, the largest that fits the biggest of them with room
     // for its stroke numbers, so letters keep their sizes relative to each other
     const scale =
-      Math.min(this.w / GLYPH_EXTENT.width, this.h / GLYPH_EXTENT.height) * GLYPH_MARGIN;
+      Math.min(this.w / getGlyphExtent().width, this.h / getGlyphExtent().height) * GLYPH_MARGIN;
 
     this.glyph.scale.set(scale);
     this.glyph.position.set(this.w / 2, this.h / 2);
@@ -244,12 +246,9 @@ export class OutlineDisplay extends Container {
   private showResult(accuracy: number) {
     this.resultText.text = getResultsMessage(accuracy);
     const w = this.resultText.width + RESULT_PAD_X * 2;
-    this.resultBg
-      .clear()
-      .roundRect(-w / 2, -RESULT_HEIGHT / 2 + 6, w, RESULT_HEIGHT, RESULT_HEIGHT / 2)
-      .fill(NAV_SHADOW_COLOR)
-      .roundRect(-w / 2, -RESULT_HEIGHT / 2, w, RESULT_HEIGHT, RESULT_HEIGHT / 2)
-      .fill(NAV_COLOR);
+    drawPill(this.resultBg, w, RESULT_HEIGHT, NAV_COLOR, NAV_SHADOW_COLOR, {
+      shadowOffset: RESULT_SHADOW,
+    });
     this.result.visible = true;
   }
 

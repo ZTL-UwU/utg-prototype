@@ -1,4 +1,4 @@
-import { Container } from 'pixi.js';
+import { Container, type DestroyOptions } from 'pixi.js';
 
 import { engine } from '../../engine/getEngine';
 import { topClearance } from '../../engine/utils/viewport';
@@ -16,12 +16,21 @@ export type THudHelp =
   /** A tutorial opened by the screen itself, for screens that show no single map unit. */
   | { kind: 'tutorial'; onPress: () => void };
 
+/** Distance from the top of the view to the HUD buttons' top edge, below the notch on phones. */
+const HUD_TOP = 90;
+
+export function hudButtonTop(viewHeight: number) {
+  return HUD_TOP + topClearance(viewHeight);
+}
+
 interface HUDProps {
   onBack: () => void;
   help?: THudHelp;
 }
 
 export class HUD extends Container {
+  private readonly buttons: Container[] = [];
+
   constructor({ onBack, help }: HUDProps) {
     super({
       layout: {
@@ -31,19 +40,25 @@ export class HUD extends Container {
       },
     });
 
-    // Screen-level controls drop below the notch on phones
-    const top = 90 + topClearance(engine().navigation.height);
-
-    const backButton = new BackButton(onBack);
-    backButton.layout = { top };
-    this.addChild(backButton);
-
+    this.buttons.push(new BackButton(onBack));
     const onHelp = help && createHelpAction(help);
-    if (onHelp) {
-      const helpButton = new HelpButton({ onPress: onHelp, icon: help.kind });
-      helpButton.layout = { top };
-      this.addChild(helpButton);
-    }
+    if (onHelp) this.buttons.push(new HelpButton({ onPress: onHelp, icon: help.kind }));
+    this.addChild(...this.buttons);
+
+    this.place();
+    // The notch clearance comes and goes as the window crosses the phone breakpoint
+    engine().renderer.on('resize', this.place);
+  }
+
+  private readonly place = () => {
+    // The renderer's own height: navigation's may not have caught up within this resize
+    const top = hudButtonTop(engine().renderer.height);
+    for (const button of this.buttons) button.layout = { top };
+  };
+
+  public override destroy(options?: DestroyOptions) {
+    engine().renderer.off('resize', this.place);
+    super.destroy(options);
   }
 }
 

@@ -1,30 +1,38 @@
-import { sound, type IMediaInstance } from '@pixi/sound';
-import { animate, type AnimationPlaybackControls } from 'motion';
-import { Container, ObservablePoint, Sprite, Texture } from 'pixi.js';
+import type { IMediaInstance } from '@pixi/sound';
+import { animate } from 'motion';
+import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { randomShuffle } from '../../../../engine/utils/random';
-import { useScoreManager } from '../../../../zustandStores/scoreManager';
+import { responsive } from '../../../../engine/utils/viewport';
+import { waitFor } from '../../../../engine/utils/waitFor';
+import { LetterAudioPlayer } from '../../../../utils/letter-audio';
 import useSessionStore from '../../../../zustandStores/sessionStore';
-import { EndScreenPopup } from '../../../popups/end-screen';
-import { QuitPopup } from '../../../popups/quit';
-import { HUD } from '../../../ui/hud';
+import type { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
-import { LevelMapScreen } from '../../level-map';
-import {
-  getTypedLevel,
-  findMapUnitForLevel,
-  type TLevel,
-  type TLevelOf,
-} from '../../level-map/units';
+import { createLevelHud, finishLevel } from '../../level-flow';
+import { getTypedLevel, type TLevel, type TLevelOf } from '../../level-map/units';
+import { finishRound, LevelRounds } from '../level-rounds';
 import { LetterGrass } from './letter-grass';
 
 // grass slots, matches GRASS_X_RATIOS
 const NUM_CHOICES = 3;
-const GRASS_SIZE = 320;
-const SHEEP_GRASS_OFFSET = 200;
 const GRASS_X_RATIOS = [0.2, 0.5, 0.8] as const;
 const GRASS_Y_RATIO = 0.75;
+/** Phones are 768 wide, so the grasses shrink to stay apart. */
+const GRASS_SIZE = { sm: 220, lg: 320 };
+/** How far beside a grass the sheep stands to eat it. */
+const SHEEP_GRASS_OFFSET = { sm: 140, lg: 200 };
+/**
+ * The sheep's centre stands this far above the grass line. Phones have no room between the
+ * grasses for it, so a smaller sheep stands in front of them, below the letter cards.
+ */
+const SHEEP_ABOVE_GRASS = { sm: -70, lg: 100 };
+const SHEEP_SCALE = { sm: 0.6, lg: 1 };
+/** How high the happy sheep hops. */
+const HOP_HEIGHT = 120;
+/** Seconds the sad face stays up after its squash. */
+const SAD_HOLD = 0.4;
 const SHEEP_TEXTURES = {
   default: 'mascots/sheep/default.png',
   sad: 'mascots/sheep/sad.png',
@@ -32,19 +40,8 @@ const SHEEP_TEXTURES = {
   happy: 'mascots/sheep/happy.png',
 } as const;
 
-function getGrassPositions(width: number, height: number) {
-  const grassY = height * GRASS_Y_RATIO;
-  return GRASS_X_RATIOS.map((xRatio) => ({ x: width * xRatio, y: grassY }));
-}
-
-function getSheepY(grassY: number) {
-  return grassY - 100;
-}
-
-function getSheepFacingScale(currentScaleX: number, sheepX: number, targetX: number) {
-  const magnitude = Math.abs(currentScaleX) || 1;
-  return (sheepX > targetX ? -1 : 1) * magnitude;
-}
+/** Where the sheep stands: beside a grass, on its left (-1) or right (1). */
+type SheepSpot = { grass: number; side: -1 | 1 };
 
 export class EducationSheepScreen extends Container {
   public readonly screenName = 'EducationSheepScreen';
@@ -56,68 +53,50 @@ export class EducationSheepScreen extends Container {
   ];
   public static loadingBackgroundAsset = 'education-levels/education-level-sheep/background.png';
   public static helpAssets = ['tutorial-popups/education-level-sheep.png'];
-  public static rounds = 0;
-  private static roundOrder: string[] = [];
 
+  private readonly level: TLevelOf<'education-sheep'>;
+  private readonly rounds: LevelRounds<string>;
   private background: Sprite;
   private hud: HUD;
   private grasses: LetterGrass[];
   private grassPositions: { x: number; y: number }[] = [];
+  private viewWidth = 0;
   private sheep: Sprite;
-  private flashSadAnimation?: AnimationPlaybackControls;
+  /** The sheep starts left of the first grass and moves to whichever is tapped. */
+  private sheepSpot: SheepSpot = { grass: 0, side: -1 };
   private soundButton: SoundButton;
+  private readonly letterAudio = new LetterAudioPlayer();
 
-  private correctLetter: string;
+  private readonly correctLetter?: string;
   private isAnimating = false;
-  private level: TLevelOf<'education-sheep'>;
-  private isPlaying: boolean = false;
+
   constructor(level: TLevel) {
-    const typedLevel = getTypedLevel(level, 'education-sheep');
-    const mapUnit = findMapUnitForLevel(typedLevel);
     super({ layout: { position: 'relative', width: '100%', height: '100%' } });
     engine().audio.bgm.setVolume(0);
-    this.level = typedLevel;
+    this.level = getTypedLevel(level, 'education-sheep');
 
     this.background = new Sprite({
       texture: Texture.from('education-levels/education-level-sheep/background.png'),
       layout: { position: 'absolute', width: '100%', height: '100%', objectFit: 'cover' },
     });
-    this.hud = new HUD({
-      onBack: () =>
-        void engine().navigation.showPopup(QuitPopup, {
-          mascot: typedLevel.mascot,
-          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
-        }),
-      help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
-    });
+    this.hud = createLevelHud(this.level);
 
-    const letterPool: string[] = typedLevel.props.letters;
-    if (EducationSheepScreen.rounds === 0) {
-      EducationSheepScreen.roundOrder = randomShuffle<string>([...letterPool]);
-    }
-    this.correctLetter = EducationSheepScreen.roundOrder[EducationSheepScreen.rounds];
-    const distractors = randomShuffle<string>(
-      letterPool.filter((letter) => letter !== this.correctLetter),
-    ).slice(0, NUM_CHOICES - 1);
-    const displayLetters: string[] = randomShuffle<string>([this.correctLetter, ...distractors]);
-    this.soundButton = new SoundButton({
-      onClick: () => {
-        this.soundButtonClick();
-      },
-      size: 200,
-    });
+    const letterPool = this.level.props.letters;
+    this.rounds = LevelRounds.of(this.level, () => randomShuffle([...letterPool]));
+    const correctLetter = this.rounds.item;
+    this.correctLetter = correctLetter;
+    const distractors = randomShuffle(letterPool.filter((letter) => letter !== correctLetter));
+    const displayLetters =
+      correctLetter === undefined
+        ? []
+        : randomShuffle([correctLetter, ...distractors.slice(0, NUM_CHOICES - 1)]);
+
+    this.soundButton = new SoundButton({ onClick: () => this.playLetter(), size: 200 });
     this.soundButton.anchor.set(0.5);
     this.soundButton.layout = { position: 'absolute', left: '50%', top: '20%' };
 
     this.grasses = displayLetters.map(
-      (letter, i) =>
-        new LetterGrass(
-          letter,
-          () => {
-            this.handleGrassClick(i);
-          },
-          GRASS_SIZE,
-        ),
+      (letter, i) => new LetterGrass(letter, () => this.handleGrassClick(i)),
     );
     this.sheep = new Sprite(Texture.from(SHEEP_TEXTURES.default));
     this.sheep.anchor.set(0.5);
@@ -127,45 +106,68 @@ export class EducationSheepScreen extends Container {
 
   resize(width: number, height: number) {
     this.layout = { width, height };
-    this.grassPositions = getGrassPositions(width, height);
-    for (let i = 0; i < this.grasses.length; i++) {
-      this.grasses[i].position.set(this.grassPositions[i].x, this.grassPositions[i].y);
-    }
+    this.viewWidth = width;
+    const grassY = height * GRASS_Y_RATIO;
+    this.grassPositions = GRASS_X_RATIOS.map((xRatio) => ({ x: width * xRatio, y: grassY }));
+    const grassSize = responsive(GRASS_SIZE);
+    this.grasses.forEach((grass, i) => {
+      grass.setSize(grassSize);
+      grass.position.set(this.grassPositions[i].x, this.grassPositions[i].y);
+    });
+    if (!this.isAnimating) this.placeSheep();
+  }
+
+  /** Sizes the sheep for this screen and stands it on its spot, keeping the way it faces. */
+  private placeSheep() {
+    const scale = responsive(SHEEP_SCALE);
+    this.sheep.scale.set((Math.sign(this.sheep.scale.x) || 1) * scale, scale);
+    this.sheep.position.copyFrom(this.spotPosition(this.sheepSpot));
+  }
+
+  /** Where the sheep stands at `spot`, kept fully on screen. */
+  private spotPosition({ grass, side }: SheepSpot) {
+    const position = this.grassPositions[grass] ?? this.grassPositions[0];
+    if (!position) return { x: 0, y: 0 };
+    const halfWidth = this.sheep.width / 2;
+    const x = position.x + side * responsive(SHEEP_GRASS_OFFSET);
+    return {
+      x: Math.min(Math.max(halfWidth, x), this.viewWidth - halfWidth),
+      y: position.y - responsive(SHEEP_ABOVE_GRASS),
+    };
   }
 
   async show() {
-    const firstGrass = this.grassPositions[0];
-    const startingSheepPosX = firstGrass.x - SHEEP_GRASS_OFFSET;
-    const startingSheepPosY = getSheepY(firstGrass.y);
-    this.sheep.position.set(-startingSheepPosX, startingSheepPosY);
+    // A level with no letters has nothing to ask.
+    if (this.correctLetter === undefined) {
+      finishLevel(this, this.level);
+      return;
+    }
 
-    await Promise.all([
-      animate(
-        this.sheep.position,
-        { x: startingSheepPosX, y: startingSheepPosY },
-        { duration: 0.8, ease: 'easeOut' },
-      ),
-      (async () => {
-        const sfxInstance: IMediaInstance = await engine().audio.sfx.play(
-          'education-levels/education-level-sheep/sheep.mp3',
-          { volume: 0.5 },
-        );
-        sfxInstance.on('end', () => {
-          this.soundButtonClick();
-        });
-      })(),
-    ]);
+    const start = this.spotPosition(this.sheepSpot);
+    // Walks in from fully off the left edge.
+    this.sheep.position.set(-this.sheep.width, start.y);
+    void this.playBleatThenLetter();
+    await animate(this.sheep.position, start, { duration: 0.8, ease: 'easeOut' });
   }
 
-  private soundButtonClick() {
-    if (this.isPlaying) return;
-    this.isPlaying = true;
-    const aliasString: string = `education-levels/education-letters-audio/${this.correctLetter}.m4a`;
-    const durationMs = (sound.find(aliasString)?.duration ?? 0) * 1000;
-    void engine().audio.sfx.play(aliasString);
-    setTimeout(() => {
-      this.isPlaying = false;
-    }, durationMs);
+  /** The sheep bleats as it walks in, then the letter is read out. */
+  private async playBleatThenLetter() {
+    const bleat: IMediaInstance = await engine().audio.sfx.play(
+      'education-levels/education-level-sheep/sheep.mp3',
+      { volume: 0.5 },
+    );
+    bleat.on('end', () => {
+      if (!this.destroyed) this.playLetter();
+    });
+  }
+
+  private playLetter() {
+    if (this.correctLetter !== undefined) this.letterAudio.play(this.correctLetter);
+  }
+
+  override destroy(options?: Parameters<Container['destroy']>[0]) {
+    this.letterAudio.stop();
+    super.destroy(options);
   }
 
   private readonly handleGrassClick = (clickedGrassIdx: number) => {
@@ -180,131 +182,79 @@ export class EducationSheepScreen extends Container {
 
   private async handleCorrectLetter(grass: LetterGrass) {
     useSessionStore.getState().recordCorrect();
-    await this.moveSheepToGrass(grass)
-      .then(async () => {
-        await Promise.all([
-          this.sheepBounceHappy(this.sheep.scale),
-          grass.correctAnimation(),
-          engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3'),
-        ]);
-      })
-      .then(() => this.endGame());
+    await this.moveSheepToGrass(grass);
+    await Promise.all([
+      this.sheepBounceHappy(),
+      grass.correctAnimation(),
+      engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3'),
+    ]);
+    this.isAnimating = false;
+    finishRound(this, EducationSheepScreen, this.level, this.rounds);
   }
 
   private async handleIncorrectLetter(grass: LetterGrass) {
     useSessionStore.getState().recordMistake();
-    await this.moveSheepToGrass(grass)
-      .then(async () => {
-        void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
-        await Promise.all([
-          this.sheepFlashGraze(this.sheep.scale), // CURRENT SCALE PASSED TO PRESERVE DIMENSION
-          grass.incorrectAnimation().then(() => grass.wilt()),
-        ]);
-      })
-      .then(() => this.sheepFlashSad(this.sheep.scale))
-      .then(() => {
-        this.isAnimating = false;
-      });
+    await this.moveSheepToGrass(grass);
+    void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
+    await Promise.all([
+      this.squashSheep(SHEEP_TEXTURES.grazing, 0.9, 0.9),
+      grass.incorrectAnimation().then(() => grass.wilt()),
+    ]);
+    await this.squashSheep(SHEEP_TEXTURES.sad, 1.1, 0.9, SAD_HOLD);
+    this.isAnimating = false;
+    // Catch up with any resize skipped while it was busy
+    if (!this.destroyed) this.placeSheep();
   }
 
-  async sheepFlashSad(signedScale: ObservablePoint) {
-    const defaultTex = this.sheep.texture;
-    this.sheep.texture = Texture.from(SHEEP_TEXTURES.sad);
-    this.flashSadAnimation = animate(
+  /**
+   * Squash the sheep to `factorX` × `factorY` of its size and back, wearing `texture` until
+   * `hold` seconds after it is done. Keeps the way it faces.
+   */
+  private async squashSheep(texture: string, factorX: number, factorY: number, hold = 0) {
+    const { x, y } = this.sheep.scale;
+    const restTexture = this.sheep.texture;
+    this.sheep.texture = Texture.from(texture);
+    await animate(
       [
-        [
-          this.sheep.scale,
-          { x: [signedScale.x, 1.1 * signedScale.x], y: [signedScale.y, 0.9 * signedScale.y] },
-          { duration: 0.12 },
-        ],
-        [
-          this.sheep.scale,
-          { x: [1.1 * signedScale.x, signedScale.x], y: [0.9 * signedScale.y, signedScale.y] },
-          { duration: 0.18 },
-        ],
+        [this.sheep.scale, { x: [x, factorX * x], y: [y, factorY * y] }, { duration: 0.12 }],
+        [this.sheep.scale, { x: [factorX * x, x], y: [factorY * y, y] }, { duration: 0.18 }],
       ],
       { defaultTransition: { ease: 'easeInOut' } },
     );
-    await this.flashSadAnimation.finished;
-    await new Promise<void>((resolve) => {
-      setTimeout(() => {
-        this.sheep.texture = defaultTex;
-        resolve();
-      }, 400);
-    });
+    if (hold > 0) await waitFor(hold);
+    if (!this.destroyed) this.sheep.texture = restTexture;
   }
 
-  private async sheepFlashGraze(signedScale: ObservablePoint) {
-    const defaultTex = this.sheep.texture;
-    this.sheep.texture = Texture.from(SHEEP_TEXTURES.grazing);
-    await animate(
-      [
-        [
-          this.sheep.scale,
-          { x: [signedScale.x, 0.9 * signedScale.x], y: [signedScale.y, 0.9 * signedScale.y] },
-          { duration: 0.12 },
-        ],
-        [
-          this.sheep.scale,
-          { x: [0.9 * signedScale.x, signedScale.x], y: [0.9 * signedScale.y, signedScale.y] },
-          { duration: 0.18 },
-        ],
-      ],
-      { defaultTransition: { ease: 'easeInOut' } },
-    ).finished;
-    this.sheep.texture = defaultTex;
-  }
-
-  private async sheepBounceHappy(signedScale: ObservablePoint) {
-    const defaultTex = this.sheep.texture;
+  private async sheepBounceHappy() {
+    const { x, y } = this.sheep.scale;
+    const restTexture = this.sheep.texture;
     this.sheep.texture = Texture.from(SHEEP_TEXTURES.happy);
-    const baseY = this.sheep.y;
+    const restY = this.sheep.y;
     await Promise.all([
       animate(
         this.sheep,
-        { y: [baseY, baseY * 1.5, baseY] },
+        { y: [restY, restY - HOP_HEIGHT, restY] },
         { duration: 0.8, type: 'spring', bounce: 0.3 },
       ),
       animate([
-        [
-          this.sheep.scale,
-          { x: [signedScale.x, 1.5 * signedScale.x], y: [signedScale.y, 1.5 * signedScale.y] },
-          { duration: 0.2, ease: 'linear' },
-        ],
-        [
-          this.sheep.scale,
-          { x: [1.5 * signedScale.x, signedScale.x], y: [1.5 * signedScale.y, signedScale.y] },
-          { duration: 0.2, ease: 'linear' },
-        ],
+        [this.sheep.scale, { x: [x, 1.5 * x], y: [y, 1.5 * y] }, { duration: 0.2, ease: 'linear' }],
+        [this.sheep.scale, { x: [1.5 * x, x], y: [1.5 * y, y] }, { duration: 0.2, ease: 'linear' }],
       ]),
-    ]).then(() => (this.sheep.texture = defaultTex));
+    ]);
+    if (!this.destroyed) this.sheep.texture = restTexture;
   }
 
+  /** Walk to the near side of `grass`, facing it. */
   private async moveSheepToGrass(grass: LetterGrass) {
-    const grassIndex = this.grasses.indexOf(grass);
-    const grassPosition = this.grassPositions[grassIndex];
-    const sheepY = getSheepY(grassPosition.y);
-    const targetX =
-      this.sheep.x > grassPosition.x
-        ? grassPosition.x + SHEEP_GRASS_OFFSET
-        : grassPosition.x - SHEEP_GRASS_OFFSET;
-
-    this.sheep.scale.x = getSheepFacingScale(this.sheep.scale.x, this.sheep.x, grassPosition.x);
-
-    await animate(this.sheep, { x: targetX, y: sheepY }, { duration: 0.4, ease: 'easeOut' })
-      .finished;
-  }
-
-  private endGame() {
-    this.isAnimating = false;
-    if (++EducationSheepScreen.rounds < EducationSheepScreen.roundOrder.length) {
-      void engine().navigation.showScreen(EducationSheepScreen, this.level);
-    } else {
-      EducationSheepScreen.rounds = 0;
-      EducationSheepScreen.roundOrder = [];
-      const { correct, mistakes } = useSessionStore.getState();
-      useScoreManager.getState().addSession(correct, mistakes);
-      void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
-    }
+    const index = this.grasses.indexOf(grass);
+    const grassX = this.grassPositions[index]?.x ?? 0;
+    const side = this.sheep.x > grassX ? 1 : -1;
+    this.sheepSpot = { grass: index, side };
+    // The art faces right: face left when walking left.
+    this.sheep.scale.x = (side === 1 ? -1 : 1) * responsive(SHEEP_SCALE);
+    await animate(this.sheep, this.spotPosition(this.sheepSpot), {
+      duration: 0.4,
+      ease: 'easeOut',
+    });
   }
 }

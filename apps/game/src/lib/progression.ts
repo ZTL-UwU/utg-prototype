@@ -8,6 +8,7 @@ import {
   type TMapUnit,
 } from '../app/screens/level-map/units';
 import { useAuthStore } from '../zustandStores/auth';
+import { useLevelProgress } from '../zustandStores/levelProgressStore';
 import useResultStore from '../zustandStores/resultStore';
 import { openAccess } from './env';
 
@@ -52,6 +53,14 @@ function isCheatUnlocked(): boolean {
 
 export function hasCompletedLevel(levelId: number): boolean {
   return useResultStore.getState().hasCompletedLevel(levelId);
+}
+
+/**
+ * Finished as the maps show it: starred, or, for levels that can never earn a star, played
+ * once (the local "attempted" flag).
+ */
+export function isLevelFinished(layer: TLayer, levelId: number): boolean {
+  return hasCompletedLevel(levelId) || useLevelProgress.getState().isAttempted(layer, levelId);
 }
 
 /** True when every gating level in the layer has a starred result. */

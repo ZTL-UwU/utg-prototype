@@ -1,9 +1,21 @@
-import { Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
+import { animate, type AnimationPlaybackControls } from 'motion';
+import {
+  Container,
+  Graphics,
+  Rectangle,
+  Sprite,
+  Text,
+  Texture,
+  type DestroyOptions,
+} from 'pixi.js';
 
+import { lerp } from '../../../../engine/utils/maths';
 import { waitFor } from '../../../../engine/utils/waitFor';
 import { convertToCurrentScript, getScriptFontFamily } from '../../../../utils/script';
 
-export const MOLE_UP_Y = 60;
+const MOLE_UP_Y = 60;
+/** The mole's y once fully down its hole, out of sight behind the rim. */
+const MOLE_DOWN_Y = 220;
 const MOLE_HEIGHT = 276;
 const MOLE_WIDTH = 152;
 const HOLE_WIDTH = 324;
@@ -22,6 +34,7 @@ export class MoleTarget extends Container {
   private readonly mole: Sprite;
   private readonly letter: Text;
   private readonly hit: Sprite;
+  private hitAnimation?: AnimationPlaybackControls;
 
   constructor(onPress: () => void) {
     super();
@@ -111,8 +124,9 @@ export class MoleTarget extends Container {
     this.mole.tint = 0xffffff;
   }
 
-  public get molePosition() {
-    return this.mole.position;
+  /** Place the mole between up (0) and fully down its hole (1). */
+  public setMoleDepth(depth: number) {
+    this.mole.y = lerp(MOLE_UP_Y, MOLE_DOWN_Y, depth);
   }
 
   public beginLowering() {
@@ -125,21 +139,27 @@ export class MoleTarget extends Container {
     this.setEnabled(enabled);
   }
 
-  public showImpact(direction: number) {
+  /** The mole is hit from `direction` (1: from the left): it winces and a splash pops out. */
+  public async playImpact(direction: number) {
     this.mole.tint = 0xffffff;
     this.mole.texture = Texture.from(`education-levels/education-level-whack-a-mole/mole-hit.png`);
     this.hit.position.x = -direction * HIT_SPLASH_OFFSET_X;
-    this.hit.scale.x = direction;
     this.hit.visible = true;
     this.hit.alpha = 0;
     this.hit.scale.set(direction * 0.35, 0.35);
+    this.hitAnimation = animate(this.hit, { alpha: 1 }, { duration: 0.14, ease: 'easeOut' });
+    await Promise.all([
+      this.hitAnimation.finished,
+      animate(this.hit.scale, { x: direction, y: 1 }, { duration: 0.22, ease: 'backOut' }).finished,
+    ]);
   }
 
   public hideMole() {
     this.mole.visible = false;
   }
 
-  public get hitSprite() {
-    return this.hit;
+  override destroy(options?: DestroyOptions) {
+    this.hitAnimation?.stop();
+    super.destroy(options);
   }
 }

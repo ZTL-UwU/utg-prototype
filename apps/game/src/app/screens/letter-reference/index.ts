@@ -1,17 +1,18 @@
-import { sound } from '@pixi/sound';
 import type { FancyButton } from '@pixi/ui';
 import { EDUCATION_LETTERS } from '@utg/letters';
 import { animate } from 'motion';
 import { Container, Sprite, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { responsive, safeAreaInsets } from '../../../engine/utils/viewport';
-import { HUD } from '../../ui/hud';
+import { responsive, safeAreaInsetsInView } from '../../../engine/utils/viewport';
+import { LetterAudioPlayer } from '../../../utils/letter-audio';
+import { HUD, hudButtonTop } from '../../ui/hud';
 import { SoundButton } from '../../ui/sound-button';
 import { HomeScreen } from '../home';
 import {
   chevronIcon,
   createIconButton,
+  LABEL_COLOR,
   playIcon,
   retryIcon,
   TILE_HEIGHT,
@@ -23,11 +24,7 @@ import { FORM_BAR_WIDTH, FormBar } from './form-bar';
 import { hasForm, type LETTER_FORMS } from './letter-data';
 import { AlphabetSheet, CHIP_HEIGHT, CHIP_WIDTH, LetterChip } from './letter-picker';
 
-export type { LETTER_FORMS } from './letter-data';
-
-const BACKGROUND_COLOR = 0xf3e3c6;
-/** Centre line of the top bar, level with the HUD's back button. */
-const TOP_BAR_CENTER = 90;
+const BACKGROUND_COLOR = LABEL_COLOR;
 /** The round buttons in the top bar: the letter steps and the tools. */
 const BUTTON_SIZE = 72;
 /** Between the chip's ends and the step buttons either side of it, and between the tools. */
@@ -38,8 +35,8 @@ const SOUND_BUTTON_SIZE = 96;
 const BODY_TOP = 180;
 const EDGE_MARGIN = 36;
 const COLUMN_GAP = 28;
-/** Phones: the letter picker's row, under the back button and the script pill. */
-const PHONE_NAV_CENTER = 240;
+/** Phones: the letter picker's row, this far under the top of the back button and script pill. */
+const PHONE_NAV_BELOW_HUD = 90;
 const PHONE_EDGE_MARGIN = 20;
 /** Phones: the controls grow by this, so the round buttons are a comfortable tap (about 46px). */
 const PHONE_CONTROL_SCALE = 1.25;
@@ -52,11 +49,6 @@ const APPEAR_STAGGER = 0.06;
 /** How far below its place the body starts as it rises in. */
 const APPEAR_RISE = 60;
 
-// the bundled recording of the letter itself
-function getLetterSoundAlias(letter: string) {
-  return `education-levels/education-letters-audio/${letter}.m4a`;
-}
-
 export class LetterReferenceScreen extends Container {
   public readonly screenName = 'LetterReferenceScreen';
   public static assetBundles = ['letter-reference', 'ui', 'education-letters-audio'];
@@ -66,7 +58,7 @@ export class LetterReferenceScreen extends Container {
     layout: { position: 'absolute', width: '100%', height: '100%' },
   });
   private HUD = new HUD({
-    onBack: () => this.goHome(),
+    onBack: () => void engine().navigation.showScreen(HomeScreen),
   });
   private soundButton = new SoundButton({
     onClick: () => this.playLetterSound(),
@@ -88,7 +80,8 @@ export class LetterReferenceScreen extends Container {
   private retryButton: FancyButton;
   private letterIndex = 0;
   private form: LETTER_FORMS = 'isolated';
-  private soundTimeout?: ReturnType<typeof setTimeout>;
+  /** Spam safe: a tap while the letter is still playing is ignored. */
+  private readonly letterAudio = new LetterAudioPlayer();
 
   constructor() {
     super();
@@ -146,12 +139,6 @@ export class LetterReferenceScreen extends Container {
     this.chipSlot.addChild(this.chip);
     this.soundButtonScale = this.soundButton.scale.x;
     this.showLetter();
-  }
-
-  // stops the letter audio on the way out
-  private goHome() {
-    this.stopLetterSound();
-    void engine().navigation.showScreen(HomeScreen);
   }
 
   async show() {
@@ -250,26 +237,18 @@ export class LetterReferenceScreen extends Container {
     this.retryButton.visible = this.outlineDisplay.canClear;
   }
 
-  private get soundAlias() {
-    return getLetterSoundAlias(this.letter);
-  }
-
-  // spam safe: ignored while the current letter's audio is still playing
   private playLetterSound() {
-    const alias = this.soundAlias;
-    if (this.soundTimeout !== undefined || !sound.exists(alias)) return;
-
-    const duration = sound.find(alias)?.duration ?? 0;
-    void engine().audio.sfx.play(alias);
-    this.soundTimeout = setTimeout(() => {
-      this.soundTimeout = undefined;
-    }, duration * 1000);
+    this.letterAudio.play(this.letter);
   }
 
   private stopLetterSound() {
-    engine().audio.sfx.stop(this.soundAlias);
-    clearTimeout(this.soundTimeout);
-    this.soundTimeout = undefined;
+    this.letterAudio.stop();
+  }
+
+  /** However the player leaves (Back, the browser, a link), the letter stops talking. */
+  override destroy(options?: Parameters<Container['destroy']>[0]) {
+    this.letterAudio.stop();
+    super.destroy(options);
   }
 
   resize(width: number, height: number) {
@@ -278,8 +257,7 @@ export class LetterReferenceScreen extends Container {
 
     const centerX = width / 2;
     const edge = responsive({ sm: PHONE_EDGE_MARGIN, lg: EDGE_MARGIN });
-    // insets are CSS pixels, the view isn't
-    const safeBottom = (safeAreaInsets().bottom / window.innerHeight) * height;
+    const safeBottom = safeAreaInsetsInView(height).bottom;
 
     const controlScale = responsive({ sm: PHONE_CONTROL_SCALE, lg: 1 });
     const buttonSize = BUTTON_SIZE * controlScale;
@@ -304,7 +282,9 @@ export class LetterReferenceScreen extends Container {
     // The letter picker sits over the middle of the canvas it drives, with its steps either side.
     // The top bar's corners hold the back button and the script pill, so on phones there's no
     // room left beside them and it takes the row below.
-    const navY = responsive({ sm: PHONE_NAV_CENTER, lg: TOP_BAR_CENTER });
+    // Wide screens line the picker up with the HUD's buttons; phones drop it a row below them.
+    const hudTop = hudButtonTop(height);
+    const navY = responsive({ sm: hudTop + PHONE_NAV_BELOW_HUD, lg: hudTop });
     const stepOffset = (CHIP_WIDTH * controlScale) / 2 + buttonGap + buttonSize / 2;
     this.chipSlot.position.set(centerX, navY);
     this.nextButton.position.set(centerX - stepOffset, navY);
@@ -314,7 +294,7 @@ export class LetterReferenceScreen extends Container {
     // On wide screens the sound button and the tools flank the letter steps. Phones are too
     // narrow for that, so they take the row above the forms, out at its ends: the sound button on
     // the left, watch on the right, and retry turning up beside watch without moving it.
-    const toolsY = responsive({ sm: formBarY - COLUMN_GAP - soundSize / 2, lg: TOP_BAR_CENTER });
+    const toolsY = responsive({ sm: formBarY - COLUMN_GAP - soundSize / 2, lg: navY });
     const formBarHalf = (FORM_BAR_WIDTH * formScale) / 2;
     const flankOffset = stepOffset + buttonSize / 2 + TOOLS_GAP / 2;
     const soundX = responsive({

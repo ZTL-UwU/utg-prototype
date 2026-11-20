@@ -19,6 +19,8 @@ export class PlateStack extends Container {
   private readonly stackLayer = new Container();
   private readonly plateFullLabel: Text;
   private readonly stacked: NaanPiece[] = [];
+  /** Slots claimed by naan still flying here, so two in flight never aim at the same one. */
+  private reserved = 0;
   private plateFullAnimation?: AnimationPlaybackControls;
 
   constructor({ texture, capacity, width = 320 }: PlateStackOptions) {
@@ -54,19 +56,27 @@ export class PlateStack extends Container {
     return this.stacked.length;
   }
 
+  /** Every slot is stacked or claimed by a naan on its way. */
   public get isFull(): boolean {
-    return this.stacked.length >= this.capacity;
+    return this.stacked.length + this.reserved >= this.capacity;
   }
 
-  /** Local Y where the next stacked naan should land (center). */
-  public nextStackLocalY(): number {
-    return -this.plate.height * 0.18 - this.stacked.length * STACK_OFFSET_Y;
+  /** Local Y of the centre of the naan in slot `index`, counted from the plate up. */
+  private slotLocalY(index: number): number {
+    return -this.plate.height * 0.18 - index * STACK_OFFSET_Y;
   }
 
-  public async acceptNaan(naan: NaanPiece): Promise<boolean> {
-    if (this.isFull) return false;
+  /** Claim the next free slot for a naan about to fly here. Returns where it lands, locally. */
+  public reserveSlot(): number {
+    const y = this.slotLocalY(this.stacked.length + this.reserved);
+    this.reserved += 1;
+    return y;
+  }
 
-    const targetY = this.nextStackLocalY();
+  /** Stack a naan that flew to the slot `reserveSlot` gave it. */
+  public async acceptNaan(naan: NaanPiece) {
+    this.reserved = Math.max(0, this.reserved - 1);
+    const targetY = this.slotLocalY(this.stacked.length);
     naan.clearLetter();
     naan.clearFeedback();
     naan.rotation = 0;
@@ -75,12 +85,11 @@ export class PlateStack extends Container {
     naan.position.set(0, targetY);
     naan.scale.set(0.92);
 
-    await animate(naan.scale, { x: 1, y: 1 }, { duration: 0.22, ease: 'backOut' });
+    await animate(naan.scale, { x: 1, y: 1 }, { duration: 0.22, ease: 'backOut' }).finished;
 
-    if (this.isFull) {
+    if (this.stacked.length >= this.capacity) {
       this.showPlateFull();
     }
-    return true;
   }
 
   public clearStack() {

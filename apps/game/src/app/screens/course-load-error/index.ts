@@ -1,17 +1,22 @@
-import { FancyButton } from '@pixi/ui';
-import { Container, Graphics, Sprite, Text, Texture, type TextDropShadow } from 'pixi.js';
+import type { FancyButton } from '@pixi/ui';
+import { Container, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
+import { responsive } from '../../../engine/utils/viewport';
 import { m } from '../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import useCourseStore from '../../../zustandStores/courseStore';
+import { BACKDROP_TEXT_SHADOW, createPrimaryButton } from '../../ui/primary-button';
 
-const textDropShadow: Partial<TextDropShadow> = {
-  color: 0x000000,
-  blur: 5,
-  distance: 0,
-  alpha: 0.75,
-};
+/** Side margin the message wraps inside of. */
+const MESSAGE_SIDE_MARGIN = 60;
+const MESSAGE_MAX_WIDTH = 900;
+
+/** The store's error is developer text, so players get the hint and the console the detail. */
+function reportLoadError() {
+  const { error } = useCourseStore.getState();
+  if (error) console.warn('[course] Failed to load the course catalog:', error);
+}
 
 /** Shown when the course catalog fails to load from the backend. */
 export class CourseLoadErrorScreen extends Container {
@@ -47,63 +52,36 @@ export class CourseLoadErrorScreen extends Container {
       text: m.course_load_failed(),
       style: {
         fontFamily: DISPLAY_FONT_FAMILY,
-        fontSize: 72,
         fontWeight: '700',
         fill: 0xffffff,
-        dropShadow: textDropShadow,
+        dropShadow: BACKDROP_TEXT_SHADOW,
       },
       layout: true,
     });
 
-    const errorDetail = useCourseStore.getState().error;
+    reportLoadError();
     this.message = new Text({
-      text: errorDetail ?? m.course_load_hint(),
+      text: m.course_load_hint(),
       style: {
         fontFamily: DISPLAY_FONT_FAMILY,
-        fontSize: 36,
         fill: 0xffffff,
         align: 'center',
         wordWrap: true,
-        wordWrapWidth: 900,
-        dropShadow: textDropShadow,
+        dropShadow: BACKDROP_TEXT_SHADOW,
       },
       layout: true,
     });
 
-    const buttonHeight = 140;
-    const buttonWidth = 360;
-    this.retryButton = new FancyButton({
-      defaultView: new Graphics()
-        .roundRect(0, 12, buttonWidth, buttonHeight, 36)
-        .fill({ color: 0x000000, alpha: 0.7 })
-        .roundRect(0, 0, buttonWidth, buttonHeight, 36)
-        .fill(0x2a523c),
-      text: new Text({
-        text: m.retry(),
-        style: {
-          fontFamily: DISPLAY_FONT_FAMILY,
-          fontSize: 56,
-          fontWeight: '700',
-          fill: 0xfdf7e7,
-        },
-      }),
-      animations: {
-        hover: {
-          props: { scale: { x: 1.05, y: 1.05 } },
-          duration: 100,
-        },
-        pressed: {
-          props: { scale: { x: 0.95, y: 0.95 } },
-          duration: 100,
-        },
-      },
-      anchor: 0.5,
+    this.retryButton = createPrimaryButton({
+      text: m.retry(),
+      width: 360,
+      height: 140,
+      fontSize: 56,
+      radius: 36,
+      shadowOffset: 12,
+      hoverScale: 1.05,
+      pressedScale: 0.95,
     });
-    this.retryButton.layout = {
-      width: buttonWidth,
-      height: buttonHeight,
-      isLeaf: true,
-    };
     this.retryButton.onPress.connect(() => {
       void this.handleRetry();
     });
@@ -112,6 +90,7 @@ export class CourseLoadErrorScreen extends Container {
   }
 
   private async handleRetry() {
+    if (!this.retryButton.enabled) return;
     void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
     this.retryButton.enabled = false;
     this.message.text = m.loading();
@@ -125,11 +104,16 @@ export class CourseLoadErrorScreen extends Container {
       return;
     }
 
-    this.message.text = useCourseStore.getState().error ?? m.course_load_hint();
+    if (this.destroyed) return;
+    reportLoadError();
+    this.message.text = m.course_load_hint();
     this.retryButton.enabled = true;
   }
 
   public resize(width: number, height: number) {
     this.layout = { width, height };
+    this.title.style.fontSize = responsive({ sm: 56, lg: 72 });
+    this.message.style.fontSize = responsive({ sm: 32, lg: 36 });
+    this.message.style.wordWrapWidth = Math.min(MESSAGE_MAX_WIDTH, width - 2 * MESSAGE_SIDE_MARGIN);
   }
 }

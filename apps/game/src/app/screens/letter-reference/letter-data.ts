@@ -1,5 +1,5 @@
 import { m } from '../../../paraglide/messages.js';
-import type { GlyphPart } from './glyph-mask';
+import { parsePathNumbers, type GlyphPart } from './glyph-mask';
 import lettersJson from './letters.json';
 
 export type LETTER_FORMS = 'initial' | 'medial' | 'final' | 'isolated';
@@ -45,18 +45,22 @@ export function hasForm(letter: string, form: LETTER_FORMS) {
  * can be drawn at the same scale. The outlines are straight lines only (M, L, Z), so every number
  * in them is a corner, x then y.
  */
-export const GLYPH_EXTENT = (() => {
+let glyphExtent: { width: number; height: number } | undefined;
+
+/** Worked out on first use, as scanning every outline is too slow for app start. */
+export function getGlyphExtent() {
+  glyphExtent ??= measureGlyphExtent();
+  return glyphExtent;
+}
+
+function measureGlyphExtent() {
   let width = 0;
   let height = 0;
   for (const forms of Object.values(letters)) {
     for (const entry of Object.values(forms)) {
       if (!entry) continue;
       const paths = [...entry.parts.map(({ d }) => d), ...(entry.joins ?? [])];
-      const numbers =
-        paths
-          .join(' ')
-          .match(/-?[\d.]+/g)
-          ?.map(Number) ?? [];
+      const numbers = parsePathNumbers(paths.join(' '));
       let minX = Infinity;
       let maxX = -Infinity;
       let minY = Infinity;
@@ -72,4 +76,4 @@ export const GLYPH_EXTENT = (() => {
     }
   }
   return { width, height };
-})();
+}

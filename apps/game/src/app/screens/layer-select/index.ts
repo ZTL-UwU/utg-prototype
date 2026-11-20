@@ -82,23 +82,21 @@ const PHONE_BOTTOM_RESERVE =
 const AVATAR_SIZE = 149;
 const PHONE_AVATAR_SIZE = 220; // larger than its neighbours
 
-// Shared by each layer's circle and name bar
-function openLayer(layer: TLayer) {
-  void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-  void (async () => {
-    if (!(await ensureCourseReady())) return;
-    await ensureResultsReady();
-    if (layer === 'education') {
-      await engine().navigation.showScreen(EducationLevelSelect);
-      return;
-    }
-    const firstMap = getLayerMaps(layer)[0];
-    if (!firstMap) return;
-    await engine().navigation.showScreen(LevelMapScreen, firstMap);
-  })();
+/** A screen-corner icon button that clicks, then runs `onPress`. */
+function createIconButton(texture: string, onPress: () => void, hoverScale = 1.1) {
+  const button = new FancyButton({
+    defaultView: Texture.from(texture),
+    animations: { hover: { props: { scale: { x: hoverScale, y: hoverScale } }, duration: 100 } },
+    anchor: 0.5,
+  });
+  button.onPress.connect(() => {
+    void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+    onPress();
+  });
+  return button;
 }
 
-function createNameBar(row: Row, paper: PaperLayout) {
+function createNameBar(row: Row, paper: PaperLayout, onPress: (layer: TLayer) => void) {
   const onLeft = row.x < paper.width / 2;
   const left = onLeft ? row.x + CIRCLE_RADIUS + BAR_GAP : paper.barInset;
   const right = onLeft ? paper.width - paper.barInset : row.x - CIRCLE_RADIUS - BAR_GAP;
@@ -132,7 +130,7 @@ function createNameBar(row: Row, paper: PaperLayout) {
 
   bar.eventMode = 'static';
   bar.cursor = 'pointer';
-  bar.on('pointertap', () => openLayer(row.layer));
+  bar.on('pointertap', () => onPress(row.layer));
   return bar;
 }
 
@@ -172,7 +170,8 @@ export class LayerSelectScreen extends Container {
   private notebookButton: FancyButton;
   private userStatsButton: FancyButton;
   private passportButton: FancyButton;
-  private skipShowAnimation: boolean;
+  /** Set while a layer opens, so a second tap does not start another navigation. */
+  private opening = false;
   private mapScale = 1;
   private phoneLayout?: boolean; // layout last built; unset until the first resize
 
@@ -187,7 +186,7 @@ export class LayerSelectScreen extends Container {
     return this.phoneLayout ? 'y' : 'x'; // up on phones, in from the right elsewhere
   }
 
-  constructor({ skipShowAnimation = false }: { skipShowAnimation?: boolean } = {}) {
+  constructor() {
     super({
       layout: {
         flexDirection: 'column',
@@ -206,8 +205,6 @@ export class LayerSelectScreen extends Container {
       },
     });
 
-    this.skipShowAnimation = skipShowAnimation;
-
     this.mapBackground = new NineSliceSprite({
       texture: Texture.from('avatar-select/parchment.png'),
       leftWidth: PAPER_SLICE,
@@ -220,23 +217,11 @@ export class LayerSelectScreen extends Container {
       layout: { position: 'absolute', left: 0, top: 0, width: '100%', height: '100%' },
     });
 
-    this.closeButton = new FancyButton({
-      defaultView: Texture.from('layer-select/close-button.png'),
-      scale: 1.5,
-      animations: {
-        hover: {
-          props: {
-            scale: { x: 1.1, y: 1.1 },
-          },
-          duration: 100,
-        },
-      },
-      anchor: 0.5,
-    });
-    this.closeButton.onPress.connect(() => {
-      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      void engine().navigation.showScreen(HomeScreen);
-    });
+    this.closeButton = createIconButton(
+      'layer-select/close-button.png',
+      () => void engine().navigation.showScreen(HomeScreen),
+    );
+    this.closeButton.scale.set(1.5);
 
     this.layerButtons = (['education', 'typing', 'game'] as const).map((layer) => {
       const icon = Texture.from(LAYER_ICONS[layer]);
@@ -252,60 +237,22 @@ export class LayerSelectScreen extends Container {
           },
         },
       });
-      button.onPress.connect(() => openLayer(layer));
+      button.onPress.connect(() => this.openLayer(layer));
       return { button, layer, unlockedIcon: icon };
     });
 
-    const avatarId = useAuthStore.getState().user?.avatar;
-    this.userStatsButton = new FancyButton({
-      defaultView: Texture.from(getAvatarPath(avatarId)),
-      animations: {
-        hover: {
-          props: {
-            scale: { x: 1.1, y: 1.1 },
-          },
-          duration: 100,
-        },
-      },
-      anchor: 0.5,
-    });
-
-    this.userStatsButton.onPress.connect(() => {
-      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      void engine().navigation.showPopup(UserStatsPopup);
-    });
-    this.passportButton = new FancyButton({
-      defaultView: Texture.from('layer-select/passport.png'),
-      animations: {
-        hover: {
-          props: {
-            scale: { x: 1.1, y: 1.1 },
-          },
-          duration: 100,
-        },
-      },
-      anchor: 0.5,
-    });
-    this.passportButton.onPress.connect(() => {
-      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      void engine().navigation.showPopup(PassportPopup);
-    });
-    this.notebookButton = new FancyButton({
-      defaultView: Texture.from('layer-select/notebook.svg'),
-      animations: {
-        hover: {
-          props: {
-            scale: { x: 1.1, y: 1.1 },
-          },
-          duration: 100,
-        },
-      },
-      anchor: 0.5,
-    });
-    this.notebookButton.onPress.connect(() => {
-      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      void engine().navigation.showScreen(LetterReferenceScreen);
-    });
+    this.userStatsButton = createIconButton(
+      getAvatarPath(useAuthStore.getState().user?.avatar),
+      () => void engine().navigation.showPopup(UserStatsPopup),
+    );
+    this.passportButton = createIconButton(
+      'layer-select/passport.png',
+      () => void engine().navigation.showPopup(PassportPopup),
+    );
+    this.notebookButton = createIconButton(
+      'layer-select/notebook.svg',
+      () => void engine().navigation.showScreen(LetterReferenceScreen),
+    );
 
     // Paper and paths are sized by hand, outside the layout
     this.innerContainer = new Container({ layout: true });
@@ -325,6 +272,28 @@ export class LayerSelectScreen extends Container {
       this.notebookButton,
     );
     this.refreshLayerLocks();
+  }
+
+  /** Open a layer's first map, or the education level select. */
+  private openLayer(layer: TLayer) {
+    if (this.opening) return;
+    this.opening = true;
+    void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+    void (async () => {
+      try {
+        if (!(await ensureCourseReady())) return;
+        await ensureResultsReady();
+        if (this.destroyed) return;
+        if (layer === 'education') {
+          await engine().navigation.showScreen(EducationLevelSelect);
+          return;
+        }
+        const firstMap = getLayerMaps(layer)[0];
+        if (firstMap) await engine().navigation.showScreen(LevelMapScreen, firstMap);
+      } finally {
+        this.opening = false;
+      }
+    })();
   }
 
   private refreshUserStatsAvatar() {
@@ -348,7 +317,9 @@ export class LayerSelectScreen extends Container {
     this.mapBackground.height = paper.height;
     drawPaths(this.paths, paper.rows);
     for (const bar of this.barLayer.removeChildren()) bar.destroy({ children: true });
-    this.barLayer.addChild(...paper.rows.map((row) => createNameBar(row, paper)));
+    this.barLayer.addChild(
+      ...paper.rows.map((row) => createNameBar(row, paper, (layer) => this.openLayer(layer))),
+    );
 
     for (const { button, layer } of this.layerButtons) {
       const row = paper.rows.find((r) => r.layer === layer);
@@ -447,15 +418,7 @@ export class LayerSelectScreen extends Container {
   }
 
   public async show() {
-    this.refreshUserStatsAvatar();
-    if (!(await ensureCourseReady())) return;
-    await ensureResultsReady();
-    this.refreshLayerLocks();
-    if (this.skipShowAnimation) return;
-
-    const currentEngine = engine();
-    void currentEngine.audio.sfx.play('preload-audio/sfx/popup.mp3');
-
+    // Hidden before waiting on the catalog, so a slow fetch never shows the paper early.
     this.innerContainer.alpha = 0;
     this.innerContainer.scale.set(0.7 * this.mapScale);
     const axis = this.slideAxis;
@@ -463,6 +426,14 @@ export class LayerSelectScreen extends Container {
       button.alpha = 0;
       button.position[axis] = 200;
     }
+
+    this.refreshUserStatsAvatar();
+    if (!(await ensureCourseReady())) return;
+    await ensureResultsReady();
+    if (this.destroyed) return;
+    this.refreshLayerLocks();
+
+    void engine().audio.sfx.play('preload-audio/sfx/popup.mp3');
 
     const duration = 0.4;
     await Promise.all([

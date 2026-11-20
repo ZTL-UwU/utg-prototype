@@ -6,7 +6,7 @@ import { Container, Graphics, Sprite, Texture, Ticker } from 'pixi.js';
 import { engine } from '../../../../engine/getEngine';
 import { ensureWordsReady } from '../../../../zustandStores/wordStore';
 import { AlphabetGrid } from '../../../ui/alphabet-grid';
-import { HUD } from '../../../ui/hud';
+import { HUD, hudButtonTop } from '../../../ui/hud';
 import { LevelMapScreen } from '../../level-map';
 import type { TMapUnit } from '../../level-map/units';
 import { EducationLevelSelect } from '../../level-select/education-level-select';
@@ -14,8 +14,17 @@ import { EducationYoutubeScreen } from '../youtube-videos';
 import { LetterPopup } from './letter-popup';
 
 const ALPHABET_SONG_ALIAS = 'education-levels/education-tutorial/uyghur-alphabet-song.mp3';
+/** Seconds of lead-in skipped at the start of the song. */
+const SONG_START = 1.15;
 
 const STOP_BUTTON_SIZE = 115;
+/** The song and video buttons stack down the right edge, from level with the HUD's. */
+const SIDE_BUTTON_INSET = 90;
+const SIDE_BUTTON_STRIDE = 140;
+const SIDE_BUTTON_ANIMATIONS = {
+  hover: { props: { scale: { x: 1.1, y: 1.1 } }, duration: 100 },
+  pressed: { props: { scale: { x: 0.97, y: 0.97 } }, duration: 100 },
+};
 type TutorialPresentation = 'popup' | 'screen';
 
 export type EducationTutorialProps = {
@@ -57,7 +66,6 @@ export class EducationTutorialScreen extends Container {
 
   private timings: { char: string; time: number }[] = [];
   private nextBounceIndex: number = 0;
-  private songEndTime?: number;
   constructor({ mapUnit, presentation = 'screen' }: EducationTutorialProps) {
     super();
 
@@ -101,16 +109,7 @@ export class EducationTutorialScreen extends Container {
 
       this.songButton = new FancyButton({
         defaultView: 'education-levels/education-tutorial/song-icon.png',
-        animations: {
-          hover: {
-            props: { scale: { x: 1.1, y: 1.1 } },
-            duration: 100,
-          },
-          pressed: {
-            props: { scale: { x: 0.97, y: 0.97 } },
-            duration: 100,
-          },
-        },
+        animations: SIDE_BUTTON_ANIMATIONS,
         anchor: 0.5,
       });
 
@@ -119,35 +118,18 @@ export class EducationTutorialScreen extends Container {
         else void this.onPlay();
       });
 
-      this.songButton.layout = {
-        position: 'absolute',
-        top: 90,
-        right: 90,
-      };
+      this.songButton.layout = { position: 'absolute', right: SIDE_BUTTON_INSET };
 
       this.videoButton = new FancyButton({
         defaultView: 'ui/video-button.png',
-        animations: {
-          hover: {
-            props: { scale: { x: 1.1, y: 1.1 } },
-            duration: 100,
-          },
-          pressed: {
-            props: { scale: { x: 0.97, y: 0.97 } },
-            duration: 100,
-          },
-        },
+        animations: SIDE_BUTTON_ANIMATIONS,
         anchor: 0.5,
       });
       this.videoButton.onPress.connect(() => {
         void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
         void engine().navigation.showScreen(EducationYoutubeScreen, { mapUnit });
       });
-      this.videoButton.layout = {
-        position: 'absolute',
-        top: 230,
-        right: 90,
-      };
+      this.videoButton.layout = { position: 'absolute', right: SIDE_BUTTON_INSET };
     }
 
     this.addChild(
@@ -161,6 +143,10 @@ export class EducationTutorialScreen extends Container {
 
   public resize(width: number, height: number) {
     this.layout = { width, height };
+    // Level with the HUD's buttons, so they drop below the notch with them.
+    const top = hudButtonTop(height);
+    if (this.songButton) this.songButton.layout = { top };
+    if (this.videoButton) this.videoButton.layout = { top: top + SIDE_BUTTON_STRIDE };
     this.letterGrid.resize(width, height);
   }
 
@@ -193,17 +179,21 @@ export class EducationTutorialScreen extends Container {
         ? [animate(this.videoButton, { alpha: 0 }, { duration: 0.3, ease: 'easeIn' })]
         : []),
     ]);
+    // Stop was pressed, or the screen left, while the controls faded out.
+    if (!this.songPlaying || this.destroyed) return;
     this.hud.eventMode = 'none';
 
-    this.songInstance = await engine().audio.sfx.play(ALPHABET_SONG_ALIAS, { start: 1.15 });
+    this.songInstance = await engine().audio.sfx.play(ALPHABET_SONG_ALIAS, { start: SONG_START });
+    if (!this.songPlaying || this.destroyed) {
+      engine().audio.sfx.stop(ALPHABET_SONG_ALIAS);
+      return;
+    }
     this.letterGrid.setSongMode(true);
-
     this.timings = this.letterGrid.getLetterTimingOffsets();
-    this.songEndTime = this.timings[this.timings.length - 1].time + 2;
   }
 
   public update(_ticker: Ticker) {
-    if (!this.songPlaying || !this.songInstance || !this.songEndTime) return;
+    if (!this.songPlaying || !this.songInstance) return;
 
     const duration = sound.find(ALPHABET_SONG_ALIAS)?.duration ?? 0;
     const t = this.songInstance.progress * duration;

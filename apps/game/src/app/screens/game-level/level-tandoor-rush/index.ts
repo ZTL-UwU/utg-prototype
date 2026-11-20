@@ -1,23 +1,21 @@
 import { Container, Sprite, Text, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
+import { frameDeltaMs } from '../../../../engine/utils/maths';
+import { randomShuffle } from '../../../../engine/utils/random';
 import { responsive, usesPhoneKeyboard } from '../../../../engine/utils/viewport';
 import { m } from '../../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
-import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { getTypedText } from '../../../../utils/keymap';
 import { convertKeyboardLettersToCurrentScript } from '../../../../utils/script';
-import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
-import { EndScreenPopup } from '../../../popups/end-screen';
-import { QuitPopup } from '../../../popups/quit';
-import { HUD } from '../../../ui/hud';
-import { KeyboardLayout, type KeyboardColorOptions } from '../../../ui/keyboard-layout';
-import { RoundedProgressBar } from '../../../ui/rounded-progress-bar';
+import type { HUD } from '../../../ui/hud';
+import { BLUE_KEYBOARD_COLORS, KEY_FEEDBACK_MS, KeyboardLayout } from '../../../ui/keyboard-layout';
+import { TimerBar, timerBand, type TimerBand } from '../../../ui/timer-bar';
 import { TypingLetter } from '../../../ui/typing-letter';
-import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
+import { createLevelHud, finishLevel } from '../../level-flow';
+import { getTypedLevel, type TLevel } from '../../level-map/units';
 
-const FEEDBACK_DURATION_MS = 350;
 const DESIGN_WIDTH = 1920;
 const DESIGN_HEIGHT = 1080;
 const BACKGROUND_ZOOM = 1.5;
@@ -45,35 +43,15 @@ const PHONE_LAYOUT: typeof LAYOUT = {
   checkMark: { x: 940, y: 290 },
 };
 
-const TIMER_COLORS = {
-  green: 0x7ed957,
-  orange: 0xe5903a,
-  red: 0xff3131,
-} as const;
-
-const TIMER_BACKGROUNDS = {
+/** The oven heats up as time runs out. */
+const TIMER_BACKGROUNDS: Record<TimerBand, string> = {
   green: 'game-levels/game-level-tandoor-rush/background-1.png',
   orange: 'game-levels/game-level-tandoor-rush/background-2.png',
   red: 'game-levels/game-level-tandoor-rush/background-3.png',
-} as const;
-
-type TimerColor = keyof typeof TIMER_COLORS;
-
-const KEYBOARD_COLORS: KeyboardColorOptions = {
-  PANEL_COLOR: 0x6080ab,
-  PANEL_SHADOW_COLOR: 0xe9ddc8,
-  KEY_COLOR: 0xf5f3ef,
-  KEY_PRESSED_COLOR: 0xafafaf,
-  TEXT_COLOR: 0x495669,
-  SHIFT_HINT_COLOR: 0xffde59,
 };
 
-function shuffledLetters(letters: string[], targetCount: number) {
-  return [...letters].sort(() => Math.random() - 0.5).slice(0, targetCount);
-}
-
-export class GameLevelOneScreen extends Container {
-  public readonly screenName = 'GameLevelOneScreen';
+export class GameTandoorRushScreen extends Container {
+  public readonly screenName = 'GameTandoorRushScreen';
   public static assetBundles = ['game-level-tandoor-rush', 'ui'];
   public static loadingBackgroundAsset = 'game-levels/game-level-tandoor-rush/background-1.png';
   public static helpAssets = [
@@ -87,12 +65,10 @@ export class GameLevelOneScreen extends Container {
     anchor: 0.5,
   });
   private readonly gameplay = new Container();
-  private readonly keyboard = new KeyboardLayout({ colors: KEYBOARD_COLORS });
-  private readonly progressBar = new RoundedProgressBar({
+  private readonly keyboard = new KeyboardLayout({ colors: BLUE_KEYBOARD_COLORS });
+  private readonly progressBar = new TimerBar({
     width: LAYOUT.progressBar.width,
     height: LAYOUT.progressBar.height,
-    trackColor: 0x7ed957,
-    fillColor: 0x7ed957,
     strokeWidth: 8,
     padding: 12,
   });
@@ -130,46 +106,32 @@ export class GameLevelOneScreen extends Container {
   private readonly roundDurationMs: number;
   private readonly hud: HUD;
 
-  private target!: TypingLetter;
+  private target: TypingLetter;
   private targetIndex = 0;
   private elapsedMs = 0;
-  private feedbackTimer?: number;
+  private feedbackTimer?: ReturnType<typeof setTimeout>;
   private playing = false;
   private resolving = false;
   private completed = false;
-  private timerColor: TimerColor = 'green';
+  private timerBand: TimerBand = 'green';
   private backgroundBaseScale = 1;
   private backgroundGameplayScale = BACKGROUND_ZOOM;
   private backgroundGameplayY: number = LAYOUT.backgroundCenterY;
-  private readonly stageLayout = responsive({ sm: PHONE_LAYOUT, lg: LAYOUT });
+  /** The stage's layout for this screen size, picked in `resize`. */
+  private stageLayout = LAYOUT;
 
   constructor(level: TLevel) {
     const typedLevel = getTypedLevel(level, 'game-tandoor-rush');
-    const mapUnit = findMapUnitForLevel(typedLevel);
     super();
     this.level = typedLevel;
-    this.targetCount = typedLevel.props.targetCount;
     this.roundDurationMs = typedLevel.props.roundDurationMs;
-    this.letters = shuffledLetters(
-      convertKeyboardLettersToCurrentScript(typedLevel.props.letters),
-      this.targetCount,
-    );
+    // Each target is a different letter, so there can be no more targets than letters.
+    const letters = convertKeyboardLettersToCurrentScript(typedLevel.props.letters);
+    this.targetCount = Math.min(typedLevel.props.targetCount, letters.length);
+    this.letters = randomShuffle(letters).slice(0, this.targetCount);
     this.score.text = `0/${this.targetCount}`;
 
-    this.hud = new HUD({
-      onBack: () =>
-        void engine().navigation.showPopup(QuitPopup, {
-          mascot: typedLevel.mascot,
-          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
-        }),
-    });
-
-    const stage = this.stageLayout;
-    this.prompt.position.set(stage.prompt.x, stage.prompt.y);
-    this.progressBar.position.set(stage.progressBar.x, stage.progressBar.y);
-    this.scoreFrame.position.set(stage.scoreFrame.x, stage.scoreFrame.y);
-    this.score.position.set(stage.score.x, stage.score.y);
-    this.checkMark.position.set(stage.checkMark.x, stage.checkMark.y);
+    this.hud = createLevelHud(typedLevel);
     this.checkMark.visible = false;
 
     this.gameplay.addChild(
@@ -180,13 +142,21 @@ export class GameLevelOneScreen extends Container {
       this.checkMark,
       this.keyboard,
     );
+    this.target = this.createTarget();
     this.addChild(this.background, this.gameplay, this.hud);
-    this.setTargetLetter();
     this.gameplay.visible = false;
-    this.progressBar.progress = 1;
   }
 
   public resize(width: number, height: number) {
+    const stage = responsive({ sm: PHONE_LAYOUT, lg: LAYOUT });
+    this.stageLayout = stage;
+    this.prompt.position.set(stage.prompt.x, stage.prompt.y);
+    this.progressBar.position.set(stage.progressBar.x, stage.progressBar.y);
+    this.scoreFrame.position.set(stage.scoreFrame.x, stage.scoreFrame.y);
+    this.score.position.set(stage.score.x, stage.score.y);
+    this.checkMark.position.set(stage.checkMark.x, stage.checkMark.y);
+    this.target.position.set(stage.target.x, stage.target.y);
+
     const uiScale = Math.min(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
     this.backgroundBaseScale = Math.max(width / DESIGN_WIDTH, height / DESIGN_HEIGHT);
     const uiTop = (height - DESIGN_HEIGHT * uiScale) / 2;
@@ -217,34 +187,24 @@ export class GameLevelOneScreen extends Container {
   }
 
   public async show() {
-    this.background.texture = Texture.from('game-levels/game-level-tandoor-rush/background-1.png');
-    this.background.alpha = 1;
-    this.background.position.set(engine().navigation.width / 2, engine().navigation.height / 2);
-    this.background.scale.set(this.backgroundBaseScale);
-
-    // await Promise.all([
-    //   animate(
-    //     this.background.scale,
-    //     { x: this.backgroundGameplayScale, y: this.backgroundGameplayScale },
-    //     { duration: 1.1, ease: 'easeInOut' },
-    //   ),
-    //   animate(
-    //     this.background,
-    //     { y: this.backgroundGameplayY },
-    //     { duration: 1.1, ease: 'easeInOut' },
-    //   ),
-    // ]);
+    // A level with no letters has nothing to type.
+    if (this.targetCount === 0) {
+      this.completed = true;
+      finishLevel(this, this.level);
+      return;
+    }
     this.background.texture = Texture.from(TIMER_BACKGROUNDS.green);
+    // Gameplay zooms the background in on the oven; resize applies it once gameplay shows.
     this.gameplay.visible = true;
+    this.resize(engine().navigation.width, engine().navigation.height);
     window.addEventListener('keydown', this.handleKeyDown);
     await Promise.all([this.keyboard.playEnterAnimation(), this.target.playAppear(0)]);
     this.playing = true;
   }
 
   public async hide() {
-    this.playing = false;
-    window.removeEventListener('keydown', this.handleKeyDown);
-    await this.keyboard.pause();
+    await this.pause();
+    await this.keyboard.playExitAnimation();
   }
 
   public async pause() {
@@ -260,57 +220,46 @@ export class GameLevelOneScreen extends Container {
     this.playing = true;
   }
 
-  public reset() {
+  override destroy(options?: Parameters<Container['destroy']>[0]) {
     window.removeEventListener('keydown', this.handleKeyDown);
-    if (this.feedbackTimer) window.clearTimeout(this.feedbackTimer);
+    clearTimeout(this.feedbackTimer);
+    super.destroy(options);
   }
 
   public update(ticker: Ticker) {
     if (!this.playing || this.completed) return;
 
-    this.elapsedMs = Math.min(this.roundDurationMs, this.elapsedMs + ticker.deltaMS);
+    this.elapsedMs = Math.min(this.roundDurationMs, this.elapsedMs + frameDeltaMs(ticker));
     const remaining = 1 - this.elapsedMs / this.roundDurationMs;
-    const nextColor: TimerColor =
-      remaining > 2 / 3 ? 'green' : remaining > 1 / 3 ? 'orange' : 'red';
-    if (nextColor !== this.timerColor) {
-      this.timerColor = nextColor;
-      this.progressBar.setColors(TIMER_COLORS[nextColor]);
-      this.background.texture = Texture.from(TIMER_BACKGROUNDS[nextColor]);
+    this.progressBar.setRemaining(remaining);
+    const band = timerBand(remaining);
+    if (band !== this.timerBand) {
+      this.timerBand = band;
+      this.background.texture = Texture.from(TIMER_BACKGROUNDS[band]);
     }
-    this.progressBar.progress = remaining;
     if (this.elapsedMs >= this.roundDurationMs) this.endGame();
   }
 
-  private setTargetLetter() {
-    if (this.target) {
-      this.gameplay.removeChild(this.target);
-      this.target.destroy({ children: true });
-    }
-
-    this.target = new TypingLetter({
+  /** The card for the current target letter, just under the keyboard. */
+  private createTarget() {
+    const target = new TypingLetter({
       letter: this.letters[this.targetIndex] ?? '',
       cardSize: this.stageLayout.target.size,
       cornerRadius: 20,
     });
-    this.target.position.set(this.stageLayout.target.x, this.stageLayout.target.y);
-    this.gameplay.addChildAt(this.target, this.gameplay.getChildIndex(this.keyboard));
+    target.position.set(this.stageLayout.target.x, this.stageLayout.target.y);
+    this.gameplay.addChildAt(target, this.gameplay.getChildIndex(this.keyboard));
+    return target;
+  }
+
+  private setTargetLetter() {
+    this.target.destroy({ children: true });
+    this.target = this.createTarget();
   }
 
   private readonly handleKeyDown = (event: KeyboardEvent) => {
-    if (
-      !this.playing ||
-      this.completed ||
-      this.resolving ||
-      event.repeat ||
-      event.key === 'Shift' ||
-      event.ctrlKey ||
-      event.metaKey ||
-      event.altKey
-    ) {
-      return;
-    }
-
-    const typed = getMappedFromKeyboardEvent(event);
+    if (!this.playing || this.completed || this.resolving) return;
+    const typed = getTypedText(event);
     if (!typed) return;
 
     this.resolving = true;
@@ -329,7 +278,7 @@ export class GameLevelOneScreen extends Container {
     this.checkMark.visible = true;
     this.targetIndex += 1;
     this.score.text = `${this.targetIndex}/${this.targetCount}`;
-    this.feedbackTimer = window.setTimeout(() => {
+    this.feedbackTimer = setTimeout(() => {
       this.keyboard.clearKeyFeedback(code);
       if (this.targetIndex >= this.targetCount) {
         this.endGame();
@@ -338,7 +287,7 @@ export class GameLevelOneScreen extends Container {
       this.checkMark.visible = false;
       this.setTargetLetter();
       this.resolving = false;
-    }, FEEDBACK_DURATION_MS);
+    }, KEY_FEEDBACK_MS);
   }
 
   private handleIncorrect(code: string) {
@@ -347,11 +296,11 @@ export class GameLevelOneScreen extends Container {
     this.keyboard.setKeyFeedback(code, 'error');
     this.target.setFeedback('error');
 
-    this.feedbackTimer = window.setTimeout(() => {
+    this.feedbackTimer = setTimeout(() => {
       this.keyboard.clearKeyFeedback(code);
       this.target.setFeedback('none', false);
       this.resolving = false;
-    }, FEEDBACK_DURATION_MS);
+    }, KEY_FEEDBACK_MS);
   }
 
   private endGame() {
@@ -359,9 +308,8 @@ export class GameLevelOneScreen extends Container {
     this.completed = true;
     this.playing = false;
     window.removeEventListener('keydown', this.handleKeyDown);
-    useSessionStore.getState().mistakes += this.targetCount - this.targetIndex;
-    const { correct, mistakes } = useSessionStore.getState();
-    useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
+    // Targets never reached count as missed.
+    useSessionStore.getState().recordMistakes(this.targetCount - this.targetIndex);
+    finishLevel(this, this.level);
   }
 }

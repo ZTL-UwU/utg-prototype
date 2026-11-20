@@ -1,24 +1,21 @@
-import { sound } from '@pixi/sound';
 import { animate } from 'motion';
 import { Container, Graphics } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
 import { randomShuffle } from '../../../../engine/utils/random';
-import { isPhone, responsive } from '../../../../engine/utils/viewport';
-import { useScoreManager } from '../../../../zustandStores/scoreManager';
-import useSessionStore from '../../../../zustandStores/sessionStore';
+import { responsive } from '../../../../engine/utils/viewport';
+import { LetterAudioPlayer } from '../../../../utils/letter-audio';
 import {
   levelWordAssets,
-  resolveWordsByIds,
-  type WordSimple,
+  resolveLetterWords,
+  type LetterWord,
 } from '../../../../zustandStores/wordStore';
-import { EndScreenPopup } from '../../../popups/end-screen';
-import { QuitPopup } from '../../../popups/quit';
-import { HUD } from '../../../ui/hud';
+import type { HUD } from '../../../ui/hud';
 import { SoundButton } from '../../../ui/sound-button';
-import { LevelMapScreen } from '../../level-map';
-import { getTypedLevel, findMapUnitForLevel, type TLevel } from '../../level-map/units';
-import { LetterChoice } from './letter-choice';
+import { createLevelHud, finishLevel } from '../../level-flow';
+import { getTypedLevel, type TLevel, type TLevelOf } from '../../level-map/units';
+import { finishRound, LevelRounds } from '../level-rounds';
+import { WordImageChoice } from './letter-choice';
 
 // image choice slots, matches X_SLOTS
 const NUM_CHOICES = 3;
@@ -27,24 +24,9 @@ const CHOICE_Y_RATIO = 0.38;
 const PHONE_Y_SLOTS = [0.17, 0.4, 0.63];
 /** Phones fit every picture in the same square, so big ones can't cover their neighbours. */
 const PHONE_IMAGE_SIZE = 220;
-
-function endGame(level: TLevel) {
-  if (++EducationImageScreen.rounds < EducationImageScreen.roundOrder.length) {
-    void engine().navigation.showScreen(EducationImageScreen, level);
-  } else {
-    EducationImageScreen.rounds = 0;
-    EducationImageScreen.roundOrder = [];
-    const { correct, mistakes } = useSessionStore.getState();
-    useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { level });
-  }
-}
-
-function playableWords(wordIds: number[]): WordSimple[] {
-  return resolveWordsByIds(wordIds).filter(
-    (word) => word.target_letter != null && word.target_letter.length > 0,
-  );
-}
+/** How far below its place, and at what share of its size, a choice starts as it pops up. */
+const CHOICE_RISE = 80;
+const CHOICE_START_SCALE = 0.4;
 
 export class EducationImageScreen extends Container {
   public readonly screenName = 'EducationImageScreen';
@@ -52,20 +34,19 @@ export class EducationImageScreen extends Container {
   public static assets = levelWordAssets('image', 'educationAudio');
   public static loadingBackgroundAsset = 'education-levels/education-level/background.png';
   public static helpAssets = ['tutorial-popups/education-level-image.png'];
-  public static rounds = 0;
-  public static roundOrder: WordSimple[] = [];
 
+  private readonly level: TLevelOf<'education-image'>;
+  private readonly rounds: LevelRounds<LetterWord>;
   private background: Graphics;
   private soundButton: SoundButton;
   private hud: HUD;
-  private choices: LetterChoice[] = [];
+  private choices: WordImageChoice[] = [];
   private choiceContainer = new Container();
-  private correctLetter: string;
-  private isPlaying: boolean = false;
+  private readonly correctLetter?: string;
+  private readonly letterAudio = new LetterAudioPlayer();
 
   constructor(level: TLevel) {
     const typedLevel = getTypedLevel(level, 'education-image');
-    const mapUnit = findMapUnitForLevel(typedLevel);
     super({
       layout: {
         position: 'relative',
@@ -75,29 +56,22 @@ export class EducationImageScreen extends Container {
     });
     engine().audio.bgm.setVolume(0);
 
+    this.level = typedLevel;
     this.background = new Graphics();
-    this.hud = new HUD({
-      onBack: () =>
-        void engine().navigation.showPopup(QuitPopup, {
-          mascot: typedLevel.mascot,
-          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
-        }),
-      help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
-    });
+    this.hud = createLevelHud(typedLevel);
 
-    const words = playableWords(typedLevel.props.wordIds);
-    if (EducationImageScreen.rounds === 0) {
-      EducationImageScreen.roundOrder = randomShuffle([...words]);
-    }
-    const correctWord = EducationImageScreen.roundOrder[EducationImageScreen.rounds];
-    this.correctLetter = correctWord?.target_letter ?? '';
+    const words = resolveLetterWords(typedLevel.props.wordIds);
+    this.rounds = LevelRounds.of(typedLevel, () => randomShuffle([...words]));
+    const correctWord = this.rounds.item;
+    const correctLetter = correctWord?.target_letter;
+    this.correctLetter = correctLetter;
     const distractors = randomShuffle(
-      words.filter((word) => word.target_letter !== this.correctLetter),
+      words.filter((word) => word.target_letter !== correctLetter),
     ).slice(0, NUM_CHOICES - 1);
-    const displayWords = randomShuffle(correctWord ? [correctWord, ...distractors] : distractors);
+    const displayWords = correctWord ? randomShuffle([correctWord, ...distractors]) : [];
 
     this.soundButton = new SoundButton({
-      onClick: () => this.soundButtonClick(),
+      onClick: () => this.playLetter(),
       size: responsive({ sm: 200, lg: 250 }),
       variant: 'large',
     });
@@ -109,13 +83,15 @@ export class EducationImageScreen extends Container {
       bottom: responsive<`${number}%`>({ sm: '5%', lg: '20%' }),
     };
 
-    const imageSize = isPhone() ? PHONE_IMAGE_SIZE : undefined;
+    const imageSize = responsive<number | undefined>({ sm: PHONE_IMAGE_SIZE, lg: undefined });
     this.choices = displayWords.map(
       (word) =>
-        new LetterChoice(
+        new WordImageChoice(
           word,
-          this.correctLetter,
-          word.target_letter === this.correctLetter ? () => endGame(typedLevel) : undefined,
+          correctLetter ?? '',
+          word.target_letter === correctLetter
+            ? () => finishRound(this, EducationImageScreen, this.level, this.rounds)
+            : undefined,
           imageSize,
         ),
     );
@@ -129,69 +105,72 @@ export class EducationImageScreen extends Container {
     };
 
     this.addChild(this.background, this.choiceContainer, this.soundButton, this.hud);
-    this.soundButtonClick();
+    this.playLetter();
+  }
+
+  private playLetter() {
+    if (this.correctLetter !== undefined) this.letterAudio.play(this.correctLetter);
+  }
+
+  override destroy(options?: Parameters<Container['destroy']>[0]) {
+    this.letterAudio.stop();
+    super.destroy(options);
   }
 
   resize(width: number, height: number) {
     this.layout = { width, height };
     for (let i = 0; i < this.choices.length; i++) {
       const slot = X_SLOTS[i] ?? X_SLOTS[X_SLOTS.length - 1];
+      const phoneSlot = PHONE_Y_SLOTS[i] ?? PHONE_Y_SLOTS[PHONE_Y_SLOTS.length - 1];
       // Long words can't share a row on a phone, so the choices stack.
       this.choices[i].x = width * responsive({ sm: 0.5, lg: slot });
-      this.choices[i].y = height * responsive({ sm: PHONE_Y_SLOTS[i], lg: CHOICE_Y_RATIO });
+      this.choices[i].y = height * responsive({ sm: phoneSlot, lg: CHOICE_Y_RATIO });
     }
     this.background.clear().rect(0, 0, width, height).fill(0xe8eef8);
   }
 
   public async show() {
-    await Promise.all(
-      this.choices.map((choice, i) => {
-        const targetY = choice.y;
-        const targetScaleX = choice.scale.x;
-        const targetScaleY = choice.scale.y;
-        choice.alpha = 0;
-        choice.y = targetY + 80;
-        choice.scale.set(targetScaleX * 0.4, targetScaleY * 0.4);
-        const delay = i * 0.12;
-        return Promise.all([
-          animate(choice, { alpha: 1, y: targetY }, { duration: 0.55, ease: 'backOut', delay }),
-          animate(
-            choice.scale,
-            { x: targetScaleX, y: targetScaleY },
-            { duration: 0.55, ease: 'backOut', delay },
-          ),
-        ]);
-      }),
-    );
+    // A level with no playable words has nothing to ask.
+    if (this.correctLetter === undefined) {
+      finishLevel(this, this.level);
+      return;
+    }
+    await this.animateChoices('in');
   }
 
   public async hide() {
+    await this.animateChoices('out');
+  }
+
+  /** The choices pop up into place, staggered, or sink away the same way. */
+  private async animateChoices(direction: 'in' | 'out') {
+    const entering = direction === 'in';
+    const duration = entering ? 0.55 : 0.3;
+    const ease = entering ? 'backOut' : 'backIn';
     await Promise.all(
       this.choices.map((choice, i) => {
-        const targetY = choice.y;
-        const targetScaleX = choice.scale.x;
-        const targetScaleY = choice.scale.y;
-        const delay = i * 0.06;
+        const restY = choice.y;
+        const restScale = { x: choice.scale.x, y: choice.scale.y };
+        const delay = i * (entering ? 0.12 : 0.06);
+        const awayY = restY + CHOICE_RISE;
+        const awayScale = {
+          x: restScale.x * CHOICE_START_SCALE,
+          y: restScale.y * CHOICE_START_SCALE,
+        };
+        if (entering) {
+          choice.alpha = 0;
+          choice.y = awayY;
+          choice.scale.copyFrom(awayScale);
+        }
         return Promise.all([
-          animate(choice, { alpha: 0, y: targetY + 80 }, { duration: 0.3, ease: 'backIn', delay }),
           animate(
-            choice.scale,
-            { x: targetScaleX * 0.4, y: targetScaleY * 0.4 },
-            { duration: 0.3, ease: 'backIn', delay },
+            choice,
+            { alpha: entering ? 1 : 0, y: entering ? restY : awayY },
+            { duration, ease, delay },
           ),
+          animate(choice.scale, entering ? restScale : awayScale, { duration, ease, delay }),
         ]);
       }),
     );
-  }
-
-  private soundButtonClick() {
-    if (this.isPlaying || !this.correctLetter) return;
-    this.isPlaying = true;
-    const aliasString: string = `education-levels/education-letters-audio/${this.correctLetter}.m4a`;
-    const durationMs = (sound.find(aliasString)?.duration ?? 0) * 1000;
-    void engine().audio.sfx.play(aliasString);
-    setTimeout(() => {
-      this.isPlaying = false;
-    }, durationMs);
   }
 }

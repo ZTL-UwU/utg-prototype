@@ -63,7 +63,8 @@ export function joinWithLines(buttons: Container[], vertical: boolean): Containe
 export function resizePath(path: Container, buttonCount: number, width: number, height: number) {
   if (!isPathVertical()) {
     path.scale.set(1);
-    path.layout = { width };
+    // Undo the phone column's hand placement, for a window resized out of it
+    path.layout = { ...pathPosition(), left: undefined, height: 'auto', width };
     return;
   }
 

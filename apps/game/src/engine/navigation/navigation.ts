@@ -1,5 +1,6 @@
+import { propEffect } from 'motion';
 import type { Ticker } from 'pixi.js';
-import { Assets, BigPool, Container, type ResolvedAsset } from 'pixi.js';
+import { Assets, Container, type ResolvedAsset } from 'pixi.js';
 
 import { ensureMascotsReady, REMOTE_MASCOTS_BUNDLE } from '../../zustandStores/courseStore';
 import { ensureRewardsReady, REMOTE_REWARDS_BUNDLE } from '../../zustandStores/rewardStore';
@@ -25,7 +26,7 @@ export interface AppScreen extends Container {
   resume?(): Promise<void>;
   /** Prepare screen, before showing */
   prepare?(): void;
-  /** Reset screen, after hidden */
+  /** Reset screen, after hidden and before it is destroyed */
   reset?(): void;
   /** Update the screen, passing delta time/step */
   update?(time: Ticker): void;
@@ -102,6 +103,31 @@ function filesToUnload(
     .map(([, alias]) => alias);
 }
 
+/**
+ * Stop every motion animation on `root` and its descendants, and detach motion from them.
+ * A destroyed Pixi object has no transform, so an animation still writing its `x` or `y`
+ * throws, and a throw inside motion's frame loop halts every animation in the app. Covers
+ * `animate(object | object.scale | object.position | filter, ...)`; animations of plain
+ * numbers driving an `onUpdate` have no target here and must be stopped by their owner.
+ */
+function detachAnimations(root: Container) {
+  // `animate()` writes plain objects, Pixi's included, through `propEffect`. Releasing
+  // unbinds the values first, so the last frame `stop()` flushes writes nothing.
+  const detach = (target: object) => {
+    propEffect
+      .state(target)
+      ?.release()
+      .forEach((value) => value.stop());
+  };
+  const visit = (node: Container) => {
+    for (const target of [node, node.scale, node.position, node.pivot, node.skew]) detach(target);
+    const filters = node.filters;
+    if (filters) for (const filter of Array.isArray(filters) ? filters : [filters]) detach(filter);
+    for (const child of node.children) visit(child);
+  };
+  visit(root);
+}
+
 export class Navigation {
   /** Reference to the main application */
   public app!: CreationEngine;
@@ -147,6 +173,9 @@ export class Navigation {
   private readonly pendingNeeds = new Set<AssetNeeds>();
   /** `showScreen` calls between starting and putting their screen on stage. */
   private screenChanges = 0;
+
+  /** `showPopup` calls between starting and putting their popup on stage. */
+  private popupsOpening = 0;
 
   /** Whether another screen is on its way in, so the current one is about to leave. */
   public get changingScreen() {
@@ -328,11 +357,29 @@ export class Navigation {
     if (screen.show) {
       screen.interactiveChildren = false;
       await screen.show(animate);
-      screen.interactiveChildren = true;
+      // A screen can open a popup during its show, such as a level with nothing to play
+      // ending at once, or be replaced meanwhile. It stays blocked for either; closing the
+      // popup unblocks it.
+      if (screen !== this.currentScreen || !this.coveredOrLeaving) {
+        screen.interactiveChildren = true;
+      }
     }
   }
 
-  /** Remove screen from the stage, unlink update & resize functions */
+  /** Whether the current screen has a popup up or opening over it, or is being replaced. */
+  private get coveredOrLeaving() {
+    return this.currentPopup !== undefined || this.popupsOpening > 0 || this.changingScreen;
+  }
+
+  /**
+   * Remove screen from the stage, unlink update & resize functions, then destroy it.
+   *
+   * Every screen and popup is built fresh each time it is shown, so the one leaving is never
+   * shown again. Destroying it runs its `destroy` override (and its children's), which is
+   * where timers, listeners and `onUpdate` animations are stopped; animations of its objects
+   * are detached first (see `detachAnimations`). Async work that outlives the screen checks
+   * `destroyed` before touching it.
+   */
   private async hideAndRemoveScreen(screen: AppScreen, animate = true) {
     // Prevent interaction in the screen
     screen.interactiveChildren = false;
@@ -354,10 +401,12 @@ export class Navigation {
       screen.parent.removeChild(screen);
     }
 
-    // Clean up the screen so that instance can be reused again later
     if (screen.reset) {
       screen.reset();
     }
+
+    detachAnimations(screen);
+    screen.destroy({ children: true });
   }
 
   /**
@@ -392,9 +441,7 @@ export class Navigation {
 
       // Create the new screen and add that to the stage
       this.currentScreen =
-        props !== undefined
-          ? new (ctor as AppScreenConstructor<[unknown]>)(props)
-          : BigPool.get(ctor);
+        props !== undefined ? new (ctor as AppScreenConstructor<[unknown]>)(props) : new ctor();
       this.screenNeeds.set(this.currentScreen, needs);
     } finally {
       if (needs) this.pendingNeeds.delete(needs);
@@ -445,16 +492,18 @@ export class Navigation {
   public async showPopup(ctor: AppScreenConstructor, props?: unknown, options?: TransitionOptions) {
     const animate = options?.animate ?? true;
 
-    if (this.currentScreen) {
-      this.currentScreen.interactiveChildren = false;
-      await this.currentScreen.pause?.();
-    }
-
-    // Load assets for the popup. Repeated loads are safe, so assets the screen
-    // already has are not fetched again.
-    const needs = await needsOf(ctor, props);
-    this.pendingNeeds.add(needs);
+    this.popupsOpening++;
+    let needs: AssetNeeds | undefined;
     try {
+      if (this.currentScreen) {
+        this.currentScreen.interactiveChildren = false;
+        await this.currentScreen.pause?.();
+      }
+
+      // Load assets for the popup. Repeated loads are safe, so assets the screen
+      // already has are not fetched again.
+      needs = await needsOf(ctor, props);
+      this.pendingNeeds.add(needs);
       await this.load(needs);
 
       if (this.currentPopup) {
@@ -465,7 +514,8 @@ export class Navigation {
         props !== undefined ? new (ctor as AppScreenConstructor<[unknown]>)(props) : new ctor();
       this.screenNeeds.set(this.currentPopup, needs);
     } finally {
-      this.pendingNeeds.delete(needs);
+      if (needs) this.pendingNeeds.delete(needs);
+      this.popupsOpening--;
     }
     void this.release();
     await this.addAndShowScreen(this.currentPopup, animate);
@@ -502,9 +552,10 @@ export class Navigation {
   }
 
   /**
-   * Dismiss current popup, if there is one
+   * Dismiss current popup, if there is one. Pass `resume: false` when the screen is about to
+   * leave, such as on quitting a level, so it stays paused and cannot react in between.
    */
-  public async hidePopup() {
+  public async hidePopup({ resume = true }: { resume?: boolean } = {}) {
     if (!this.currentPopup) return;
     const popup = this.currentPopup;
     this.currentPopup = undefined;
@@ -526,7 +577,7 @@ export class Navigation {
       return;
     }
 
-    if (this.currentScreen) {
+    if (this.currentScreen && resume && !this.changingScreen) {
       this.currentScreen.interactiveChildren = true;
       void this.currentScreen.resume?.();
     }

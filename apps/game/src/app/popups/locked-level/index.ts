@@ -1,14 +1,18 @@
 import { Dialog, FancyButton } from '@pixi/ui';
 import { animate } from 'motion';
 import { DropShadowFilter } from 'pixi-filters';
-import { BlurFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
+import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
 import { m } from '../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import type { TLayer } from '../../screens/level-map/units';
+import { ScreenBlur } from '../../ui/screen-blur';
 
 // TODO: replace placeholder copy
+/** How hard the screen behind the popup is blurred. */
+const SCREEN_BLUR = 5;
+
 const LOCKED_MESSAGES: Record<TLayer, () => string> = {
   education: m.locked_previous_games,
   typing: m.locked_previous_typing,
@@ -24,6 +28,8 @@ export class LockedLevelPopup extends Container {
   public readonly screenName = 'LockedLevelPopup';
   public static assetBundles = ['locked-popup'];
 
+  /** The blur this popup puts on the screen beneath it, joining its own filters. */
+  private screenBlur?: ScreenBlur;
   private popupMask: Sprite;
   private dialog: Dialog;
 
@@ -151,9 +157,7 @@ export class LockedLevelPopup extends Container {
   public async show() {
     const currentEngine = engine();
     void currentEngine.audio.sfx.play('preload-audio/sfx/popup.mp3');
-    if (currentEngine.navigation.currentScreen) {
-      currentEngine.navigation.currentScreen.filters = [new BlurFilter({ strength: 5 })];
-    }
+    this.screenBlur = new ScreenBlur(SCREEN_BLUR);
 
     this.popupMask.alpha = 0;
     await animate(this.popupMask, { alpha: 0.5 }, { duration: 0.2, ease: 'linear' });
@@ -161,7 +165,6 @@ export class LockedLevelPopup extends Container {
   }
 
   public async hide() {
-    const currentEngine = engine();
     await Promise.all([
       animate(this.popupMask, { alpha: 0 }, { duration: 0.2, ease: 'linear' }),
       new Promise<void>((resolve) => {
@@ -173,9 +176,8 @@ export class LockedLevelPopup extends Container {
       }),
     ]);
 
-    if (currentEngine.navigation.currentScreen) {
-      currentEngine.navigation.currentScreen.filters = [];
-    }
+    this.screenBlur?.remove();
+    this.screenBlur = undefined;
   }
 
   public resize(width: number, height: number) {

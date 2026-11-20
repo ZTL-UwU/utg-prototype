@@ -1,5 +1,5 @@
-import { FancyButton } from '@pixi/ui';
-import { EDUCATION_LETTERS, getTypingSequenceForScript, type EducationLetter } from '@utg/letters';
+import type { FancyButton } from '@pixi/ui';
+import { getTypingSequenceForScript, type EducationLetter } from '@utg/letters';
 import { animate } from 'motion';
 import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 
@@ -7,7 +7,7 @@ import { engine } from '../../../../engine/getEngine';
 import { isPhone } from '../../../../engine/utils/viewport';
 import { m } from '../../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
-import { getKeyFromChar } from '../../../../utils/keymap';
+import { formatKeyboardLabel, getKeyFromChar } from '../../../../utils/keymap';
 import {
   convertToCurrentScript,
   getCurrentTargetScript,
@@ -16,7 +16,13 @@ import {
 } from '../../../../utils/script';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
 import { phoneKeyLabel } from '../../../ui/keyboard-phone';
-import { createLetterNavButtons, layoutLetterPopupControls } from '../../../ui/letter-nav-buttons';
+import {
+  createLetterNavButtons,
+  createLetterPopupCloseButton,
+  getAdjacentLetter,
+  getArrowLetterStep,
+  layoutLetterPopupControls,
+} from '../../../ui/letter-nav-buttons';
 import { HandGuide } from './hand-guide';
 
 const COLORS = {
@@ -44,6 +50,10 @@ const FEEDBACK_DURATION_MS = 350;
 const HANDS_BOTTOM_GAP = 8;
 const KEYBOARD_ABOVE_HANDS_GAP = 12;
 const RESET_DELAY_MS = 1000;
+/** The lesson-complete chime follows the last key's sound by this much. */
+const COMPLETE_SOUND_DELAY_MS = 200;
+/** Shift as the keyboard labels it, in the player's language. */
+const SHIFT_LABEL = formatKeyboardLabel('*Shift*');
 
 type TutorialStep = {
   code: string;
@@ -107,7 +117,7 @@ function createShiftGuideKey(phone: boolean) {
     .roundRect(0, 0, SHIFT_WIDTH, SHIFT_HEIGHT, SHIFT_RADIUS)
     .fill({ color: COLORS.key });
   const label = new Text({
-    text: 'SHIFT',
+    text: SHIFT_LABEL,
     anchor: 0.5,
     resolution: 2,
     style: {
@@ -151,13 +161,6 @@ function createArrow(pointRight: boolean) {
   return wrapper;
 }
 
-function getAdjacentLetter(letter: string, delta: number): string {
-  const index = EDUCATION_LETTERS.indexOf(letter as EducationLetter);
-  if (index < 0) return EDUCATION_LETTERS[0]!;
-  const count = EDUCATION_LETTERS.length;
-  return EDUCATION_LETTERS[(index + delta + count) % count]!;
-}
-
 export class LetterPopup extends Container {
   public readonly screenName = 'LetterPopup';
   public static assetBundles = ['typing-tutorial', 'end-screen', 'ui'];
@@ -184,6 +187,9 @@ export class LetterPopup extends Container {
   private isNavigating = false;
   private viewHeight = 0;
   private resetTimeoutId: ReturnType<typeof setTimeout> | undefined;
+  /** The guide's redraw after a wrong key, and the lesson-complete chime. */
+  private feedbackTimeoutId: ReturnType<typeof setTimeout> | undefined;
+  private soundTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
   constructor(letter: string) {
     super({ layout: { position: 'relative', width: '100%', height: '100%' } });
@@ -193,7 +199,10 @@ export class LetterPopup extends Container {
     this.background = new Graphics();
     this.background.layout = { position: 'absolute', width: '100%', height: '100%' };
 
-    this.closeButton = this.createCloseButton();
+    this.closeButton = createLetterPopupCloseButton(
+      'typing-levels/typing-tutorial/x.svg',
+      () => void engine().navigation.hidePopup(),
+    );
     const { prevButton, nextButton } = createLetterNavButtons({
       onPrev: () => this.goToLetter(getAdjacentLetter(this.letter, -1)),
       onNext: () => this.goToLetter(getAdjacentLetter(this.letter, 1)),
@@ -250,6 +259,7 @@ export class LetterPopup extends Container {
     this.clearResetTimeout();
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
+    await this.keyboard.pause();
     if (!animated) {
       await this.keyboard.playExitAnimation(false);
       return;
@@ -279,7 +289,7 @@ export class LetterPopup extends Container {
 
     return phoneSequence.flatMap<TutorialStep>((part) => {
       if (part === 'shift') {
-        return [{ code: 'ShiftLeft', label: 'SHIFT', isShift: true }];
+        return [{ code: 'ShiftLeft', label: SHIFT_LABEL, isShift: true }];
       }
 
       const code = getKeyFromChar(part);
@@ -403,17 +413,20 @@ export class LetterPopup extends Container {
   }
 
   private clearResetTimeout() {
-    if (this.resetTimeoutId !== undefined) {
-      clearTimeout(this.resetTimeoutId);
-      this.resetTimeoutId = undefined;
+    for (const id of [this.resetTimeoutId, this.feedbackTimeoutId, this.soundTimeoutId]) {
+      clearTimeout(id);
     }
+    this.resetTimeoutId = this.feedbackTimeoutId = this.soundTimeoutId = undefined;
   }
 
   private resetLesson() {
     this.clearResetTimeout();
     this.nextStepIndex = 0;
     this.completed = false;
+    // Hidden and shrunk, so completing the lesson can pop them in.
     this.stars.visible = false;
+    this.stars.alpha = 0;
+    this.stars.scale.set(0);
     this.refreshGuideState();
   }
 
@@ -421,9 +434,6 @@ export class LetterPopup extends Container {
     // The lesson's letter starts a word, so its vowel key shows and types the ئ until it's done.
     this.keyboard.setWordStart(!this.completed && this.steps.some((step) => step.addsHamza));
     this.keyboard.clearAllKeyFeedback();
-    for (const step of this.steps) {
-      this.keyboard.clearKeyFeedback(step.code);
-    }
 
     if (this.completed) {
       for (const step of this.steps) {
@@ -460,9 +470,8 @@ export class LetterPopup extends Container {
     if (event.ctrlKey || event.metaKey || event.altKey) return;
 
     if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
-      event.preventDefault();
-      if (event.repeat) return;
-      this.goToLetter(getAdjacentLetter(this.letter, event.key === 'ArrowRight' ? 1 : -1));
+      const step = getArrowLetterStep(event);
+      if (step) this.goToLetter(getAdjacentLetter(this.letter, step));
       return;
     }
 
@@ -492,7 +501,8 @@ export class LetterPopup extends Container {
     if (!isExpectedShift && (!isExpectedKey || (shiftIsRequired && !event.shiftKey))) {
       this.keyboard.setKeyFeedback(event.code, 'error');
       void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3', { volume: 0.5 });
-      window.setTimeout(() => this.refreshGuideState(), FEEDBACK_DURATION_MS);
+      clearTimeout(this.feedbackTimeoutId);
+      this.feedbackTimeoutId = setTimeout(() => this.refreshGuideState(), FEEDBACK_DURATION_MS);
       return;
     }
 
@@ -520,34 +530,16 @@ export class LetterPopup extends Container {
     this.completed = true;
     this.nextStepIndex = this.steps.length;
     this.refreshGuideState();
-    this.stars.visible = true;
-    setTimeout(() => {
-      void engine().audio.sfx.play('end-screen/level-complete.mp3');
-    }, 200);
-    void Promise.all([
-      animate(this.stars, { alpha: 1 }, { duration: 0.2, ease: 'easeOut' }),
-      animate(this.stars.scale, { x: 1, y: 1 }, { duration: 0.35, ease: 'backOut' }),
-    ]);
     this.clearResetTimeout();
+    this.stars.visible = true;
+    this.soundTimeoutId = setTimeout(() => {
+      void engine().audio.sfx.play('end-screen/level-complete.mp3');
+    }, COMPLETE_SOUND_DELAY_MS);
+    animate(this.stars, { alpha: 1 }, { duration: 0.2, ease: 'easeOut' });
+    animate(this.stars.scale, { x: 1, y: 1 }, { duration: 0.35, ease: 'backOut' });
     this.resetTimeoutId = setTimeout(() => {
       this.resetTimeoutId = undefined;
       this.resetLesson();
     }, RESET_DELAY_MS);
-  }
-
-  private createCloseButton(): FancyButton {
-    const button = new FancyButton({
-      defaultView: 'typing-levels/typing-tutorial/x.svg',
-      animations: {
-        hover: { props: { scale: { x: 1.03, y: 1.03 } }, duration: 100 },
-        pressed: { props: { scale: { x: 0.97, y: 0.97 } }, duration: 100 },
-      },
-    });
-    button.anchor.set(0.5);
-    button.onPress.connect(() => {
-      void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
-      void engine().navigation.hidePopup();
-    });
-    return button;
   }
 }

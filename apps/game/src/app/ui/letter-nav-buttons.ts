@@ -1,7 +1,9 @@
 import { FancyButton } from '@pixi/ui';
+import { EDUCATION_LETTERS, type EducationLetter } from '@utg/letters';
 import { Container, Sprite, Texture } from 'pixi.js';
 
-import { isPhone, safeAreaInsets } from '../../engine/utils/viewport';
+import { engine } from '../../engine/getEngine';
+import { isPhone, safeAreaInsetsInView } from '../../engine/utils/viewport';
 
 const BUTTON_ASSET = 'ui/next-button.svg';
 const BUTTON_GAP = 16;
@@ -78,11 +80,40 @@ export function layoutLetterPopupControls(
     return height * 0.1 + halfHeight;
   }
 
-  // Insets are CSS pixels, the view isn't
-  const safeTop = (safeAreaInsets().top / window.innerHeight) * height;
-  const top = safeTop + PHONE_CONTROL_INSET;
+  const top = safeAreaInsetsInView(height).top + PHONE_CONTROL_INSET;
   closeButton.layout = { position: 'absolute', top, left: PHONE_CONTROL_INSET };
   nextButton.layout = { position: 'absolute', top, left: width - PHONE_CONTROL_INSET };
   prevButton.layout = { position: 'absolute', top, left: width - PHONE_CONTROL_INSET - stride };
   return top + halfHeight;
+}
+
+/** The letter `delta` places after `letter` in the alphabet, wrapping at both ends. */
+export function getAdjacentLetter(letter: string, delta: number): string {
+  const index = EDUCATION_LETTERS.indexOf(letter as EducationLetter);
+  if (index < 0) return EDUCATION_LETTERS[0]!;
+  const count = EDUCATION_LETTERS.length;
+  return EDUCATION_LETTERS[(index + delta + count) % count]!;
+}
+
+/**
+ * The letter step a key press asks for: 1 for the right arrow, -1 for the left, or undefined
+ * for anything else. Claims the arrows so the page does not scroll; held arrows step once.
+ */
+export function getArrowLetterStep(event: KeyboardEvent): 1 | -1 | undefined {
+  if (event.ctrlKey || event.metaKey || event.altKey) return undefined;
+  if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return undefined;
+  event.preventDefault();
+  if (event.repeat) return undefined;
+  return event.key === 'ArrowRight' ? 1 : -1;
+}
+
+/** A letter popup's close button, drawn from `asset`: clicks, then runs `onClose`. */
+export function createLetterPopupCloseButton(asset: string, onClose: () => void) {
+  const button = new FancyButton({ defaultView: asset, animations: BUTTON_ANIMATIONS });
+  button.anchor.set(0.5);
+  button.onPress.connect(() => {
+    void engine().audio.sfx.play('preload-audio/sfx/button-click.mp3');
+    onClose();
+  });
+  return button;
 }

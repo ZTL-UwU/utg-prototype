@@ -1,4 +1,3 @@
-import { sound } from '@pixi/sound';
 import { animate } from 'motion';
 import { Container, Graphics, HTMLText, Sprite, Text, Texture } from 'pixi.js';
 
@@ -13,31 +12,27 @@ import {
   getMissingWordMarkup,
 } from '../../../../utils/example-words';
 import { DISPLAY_FONT_FAMILY } from '../../../../utils/fonts';
+import { LetterAudioPlayer } from '../../../../utils/letter-audio';
 import { convertToCurrentScript } from '../../../../utils/script';
-import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
 import {
   getWordEducationAudioAlias,
   getWordImageAlias,
   playWordAudio,
   levelWordAssets,
-  resolveWordsByIds,
-  type WordSimple,
+  resolveLetterWords,
+  type LetterWord,
 } from '../../../../zustandStores/wordStore';
-import { EndScreenPopup } from '../../../popups/end-screen';
-import { QuitPopup } from '../../../popups/quit';
-import { HUD } from '../../../ui/hud';
+import type { HUD } from '../../../ui/hud';
 import { LetterChoice } from '../../../ui/letter-choice';
 import { SoundButton } from '../../../ui/sound-button';
-import { LevelMapScreen } from '../../level-map';
-import {
-  getTypedLevel,
-  findMapUnitForLevel,
-  type TLevel,
-  type TLevelOf,
-} from '../../level-map/units';
+import { createLevelHud, finishLevel } from '../../level-flow';
+import { getTypedLevel, type TLevel, type TLevelOf } from '../../level-map/units';
+import { finishRound, LevelRounds } from '../level-rounds';
 
 const PANEL_RADIUS = 100;
+/** Seconds the finished word stays up before the next round. */
+const ROUND_END_HOLD = 0.65;
 // letter choice slots, matches `choiceX`
 const NUM_CHOICES = 3;
 
@@ -81,21 +76,17 @@ const PHONE_LAYOUT: PanelLayout = {
   choiceSize: 190,
 };
 
-function playableWords(wordIds: number[]): WordSimple[] {
-  return resolveWordsByIds(wordIds).filter(
-    (word) => word.target_letter != null && word.target_letter.length > 0,
-  );
-}
-
+/** The round for `correctWord`: its word, its letter, and that letter among distinct others. */
 function getRound(
-  words: WordSimple[],
-  correctWord: WordSimple,
+  words: LetterWord[],
+  correctWord: LetterWord,
 ): { word: string; letter: string; choices: string[] } {
-  const letter = correctWord.target_letter ?? '';
-  const distractors = randomShuffle(words.filter((item) => item.target_letter !== letter))
-    .slice(0, NUM_CHOICES - 1)
-    .map((item) => item.target_letter!)
-    .filter(Boolean);
+  const letter = correctWord.target_letter;
+  // Several words can teach one letter, so pick among letters, not words.
+  const otherLetters = [...new Set(words.map((item) => item.target_letter))].filter(
+    (other) => other !== letter,
+  );
+  const distractors = randomShuffle(otherLetters).slice(0, NUM_CHOICES - 1);
 
   return {
     word: convertToCurrentScript(correctWord.word.trim()),
@@ -110,8 +101,6 @@ export class EducationWordScreen extends Container {
   public static assets = levelWordAssets('image', 'educationAudio');
   public static loadingBackgroundAsset = 'education-levels/education-level/background.png';
   public static helpAssets = ['tutorial-popups/education-level-word.png'];
-  public static rounds = 0;
-  private static roundOrder: WordSimple[] = [];
 
   private readonly background: Sprite;
   private readonly panel: Container;
@@ -120,33 +109,31 @@ export class EducationWordScreen extends Container {
   private readonly soundButton: SoundButton;
   private readonly wordText: HTMLText;
   private readonly choices: LetterChoice[];
+  private readonly correctWord?: LetterWord;
   private readonly correctLetter: string;
   private readonly displayLetter: string;
-  private readonly correctWordId: number;
   private readonly word: string;
   private isResolving = false;
   private readonly level: TLevelOf<'education-word'>;
-  private isPlaying: boolean = false;
+  private readonly rounds: LevelRounds<LetterWord>;
+  private readonly letterAudio = new LetterAudioPlayer();
   private readonly panelLayout = responsive({ sm: PHONE_LAYOUT, lg: WIDE_LAYOUT });
 
   constructor(level: TLevel) {
     const typedLevel = getTypedLevel(level, 'education-word');
-    const mapUnit = findMapUnitForLevel(typedLevel);
     super({ layout: { position: 'relative', width: '100%', height: '100%' } });
     engine().audio.bgm.setVolume(0);
     this.level = typedLevel;
 
-    const words = playableWords(typedLevel.props.wordIds);
-    if (EducationWordScreen.rounds === 0) {
-      EducationWordScreen.roundOrder = randomShuffle([...words]);
-    }
-    const correctWord = EducationWordScreen.roundOrder[EducationWordScreen.rounds];
+    const words = resolveLetterWords(typedLevel.props.wordIds);
+    this.rounds = LevelRounds.of(typedLevel, () => randomShuffle([...words]));
+    const correctWord = this.rounds.item;
+    this.correctWord = correctWord;
     const round = correctWord
       ? getRound(words, correctWord)
       : { word: '', letter: '', choices: [] as string[] };
     this.correctLetter = round.letter;
     this.displayLetter = convertToCurrentScript(round.letter);
-    this.correctWordId = correctWord?.id ?? 0;
     this.word = round.word;
 
     this.background = new Sprite({
@@ -166,8 +153,9 @@ export class EducationWordScreen extends Container {
     );
 
     // `Texture.from` gives nothing for a word whose image failed to load.
-    const imageTexture =
-      (correctWord ? Texture.from(getWordImageAlias(correctWord.id)) : undefined) ?? Texture.EMPTY;
+    const imageTexture = correctWord
+      ? Texture.from(getWordImageAlias(correctWord.id))
+      : Texture.EMPTY;
     const image = new Sprite({ texture: imageTexture, anchor: 0.5 });
     if (imageTexture.width > 0 && imageTexture.height > 0) {
       image.scale.set(layout.image.size / Math.max(imageTexture.width, imageTexture.height));
@@ -219,18 +207,7 @@ export class EducationWordScreen extends Container {
     });
     this.feedback.visible = false;
 
-    this.hud = new HUD({
-      onBack: () =>
-        void engine().navigation.showPopup(QuitPopup, {
-          mascot: level.mascot,
-          onQuit: () => {
-            EducationWordScreen.rounds = 0;
-            EducationWordScreen.roundOrder = [];
-            void engine().navigation.showScreen(LevelMapScreen, mapUnit);
-          },
-        }),
-      help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
-    });
+    this.hud = createLevelHud(typedLevel);
 
     this.addChild(this.background, this.panel, this.feedback, this.hud);
     this.playAudio();
@@ -253,6 +230,11 @@ export class EducationWordScreen extends Container {
   }
 
   public async show() {
+    // A level with no playable words has nothing to ask.
+    if (!this.correctWord) {
+      finishLevel(this, this.level);
+      return;
+    }
     const targetScale = this.panel.scale.x;
     this.panel.alpha = 0;
     this.panel.scale.set(targetScale * 0.65);
@@ -280,12 +262,12 @@ export class EducationWordScreen extends Container {
   }
 
   private playAudio() {
-    if (this.isPlaying || !this.correctLetter) return;
-    this.isPlaying = true;
-    const aliasString: string = `education-levels/education-letters-audio/${this.correctLetter}.m4a`;
-    const durationMs = (sound.find(aliasString)?.duration ?? 0) * 1000;
-    void engine().audio.sfx.play(aliasString);
-    setTimeout(() => (this.isPlaying = false), durationMs);
+    if (this.correctLetter) this.letterAudio.play(this.correctLetter);
+  }
+
+  override destroy(options?: Parameters<Container['destroy']>[0]) {
+    this.letterAudio.stop();
+    super.destroy(options);
   }
 
   private async handleChoice(choice: LetterChoice) {
@@ -314,22 +296,9 @@ export class EducationWordScreen extends Container {
       animate(this.feedback, { alpha: 1 }, { duration: 0.35, ease: 'backOut' }),
       animate(this.feedback.scale, { x: 1, y: 1 }, { duration: 0.35, ease: 'backOut' }),
     ]);
-    await playWordAudio(getWordEducationAudioAlias(this.correctWordId));
-    await waitFor(0.65);
-    this.endRound();
-  }
-
-  private endRound() {
-    if (++EducationWordScreen.rounds < EducationWordScreen.roundOrder.length) {
-      void engine().navigation.showScreen(EducationWordScreen, this.level);
-      return;
-    }
-
-    EducationWordScreen.rounds = 0;
-    EducationWordScreen.roundOrder = [];
-    const { correct, mistakes } = useSessionStore.getState();
-    useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
+    if (this.correctWord) await playWordAudio(getWordEducationAudioAlias(this.correctWord.id));
+    await waitFor(ROUND_END_HOLD);
+    finishRound(this, EducationWordScreen, this.level, this.rounds);
   }
 
   private fitWordText() {

@@ -1,10 +1,10 @@
 import { animate } from 'motion';
 import { Container, Graphics, HTMLText, Sprite, Texture } from 'pixi.js';
 
-import type { Round } from '.';
 import { responsive } from '../../../../engine/utils/viewport';
 import { createTypingWordStyle, getHighlightedWordMarkup } from '../../../../utils/example-words';
 import { getWordImageAlias } from '../../../../zustandStores/wordStore';
+import type { WordRound } from '../word-rounds';
 
 const FONT_SIZE = 100;
 const CARD_WIDTH = 200;
@@ -47,7 +47,7 @@ export class TypingWordCard extends Container {
   }
 
   /** Shows the round's word from its active letter, replacing the previous word and image. */
-  setRound({ wordId, word, activeLetterIdx, hasImage }: Round) {
+  setRound({ wordId, word, activeLetterIdx, hasImage }: WordRound) {
     this.removeChildren();
     this.image?.destroy();
     // Words without an image have no entry in the words bundle, so asking for the
@@ -67,8 +67,7 @@ export class TypingWordCard extends Container {
   }
 
   setProgress(activeLetterIdx: number) {
-    const len = this.word[activeLetterIdx].length;
-    this.wordText.text = getHighlightedWordMarkup(this.word, activeLetterIdx, len);
+    this.wordText.text = getHighlightedWordMarkup(this.word, activeLetterIdx, 1);
   }
 
   setFeedback(feedback: TypingWordCardFeedback) {

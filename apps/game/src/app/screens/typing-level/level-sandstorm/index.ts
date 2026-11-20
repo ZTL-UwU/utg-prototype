@@ -2,28 +2,45 @@ import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, Sprite, Texture, type Ticker } from 'pixi.js';
 
 import { engine } from '../../../../engine/getEngine';
-import { getMappedFromKeyboardEvent } from '../../../../utils/keymap';
+import { frameDeltaMs } from '../../../../engine/utils/maths';
+import { randomFloat, randomInt } from '../../../../engine/utils/random';
+import { responsive } from '../../../../engine/utils/viewport';
+import { getTypedText } from '../../../../utils/keymap';
 import { getCurrentKeyboardLetters } from '../../../../utils/script';
-import { useScoreManager } from '../../../../zustandStores/scoreManager';
 import useSessionStore from '../../../../zustandStores/sessionStore';
-import { EndScreenPopup } from '../../../popups/end-screen';
-import { QuitPopup } from '../../../popups/quit';
-import { HUD } from '../../../ui/hud';
+import type { HUD } from '../../../ui/hud';
 import { KeyboardLayout } from '../../../ui/keyboard-layout';
-import { LevelMapScreen } from '../../level-map';
-import { findMapUnitForLevel, getTypedLevel, type TLevel } from '../../level-map/units';
+import { createLevelHud, finishLevel } from '../../level-flow';
+import { getTypedLevel, type TLevel } from '../../level-map/units';
 import { DustOverlays } from './dust-overlays';
 import { LeafLetter } from './leaf-letter';
 
-const CARD_SIZE = 300;
-const SPAWN_WIDTH_RATIO = 0.5;
-const MIN_SPAWN_SEPARATION = CARD_SIZE * 1.35;
+/**
+ * Leaf size, and the share of the screen's width leaves spawn across. Phones are 768 wide:
+ * 300 leaves across half of it could never sit the separation below apart, so they stacked.
+ */
+const CARD_SIZE = { sm: 200, lg: 300 };
+const SPAWN_WIDTH_RATIO = { sm: 0.85, lg: 0.5 };
+/** Spawn positions keep this many leaf widths apart while there is room. */
+const SPAWN_SEPARATION = 1.35;
+const SPAWN_ATTEMPTS = 12;
+/** How far above the top a leaf may start, past its own height. */
+const SPAWN_HEIGHT_JITTER = 80;
 const DUST_SIZE = 104;
 const LEAF_ASSETS = [
   'typing-levels/typing-level-sandstorm/leaf-1.svg',
   'typing-levels/typing-level-sandstorm/leaf-2.svg',
   'typing-levels/typing-level-sandstorm/leaf-3.svg',
 ];
+/** How a leaf drifts down: its sideways wind, sway and wobble, in px and rad per second. */
+const WIND_SPEED = 20;
+const SWAY_AMPLITUDE = { min: 20, max: 50 };
+const SWAY_SPEED = { min: 1.25, max: 2.5 };
+const GUST_FALL_SPEED = 16;
+const WOBBLE_SPEED = 2.4;
+const WOBBLE_ANGLE = 0.12;
+/** A typed leaf lifts this far as it fades. */
+const TYPED_LIFT = 48;
 
 type FallingLetter = {
   letter: string;
@@ -37,10 +54,6 @@ type FallingLetter = {
   phase: number;
   startRotation: number;
 };
-
-function randomBetween(min: number, max: number) {
-  return min + Math.random() * (max - min);
-}
 
 export class TypingSandstormScreen extends Container {
   public readonly screenName = 'TypingSandstormScreen';
@@ -58,8 +71,9 @@ export class TypingSandstormScreen extends Container {
   private dustLayer: Container;
   private fallingLetters: FallingLetter[] = [];
   private effectAnimations: AnimationPlaybackControls[] = [];
-  private feedbackTimeouts: number[] = [];
   private viewWidth = 0;
+  /** Leaf size for this screen, set in `resize`. */
+  private cardSize = CARD_SIZE.lg;
   private spawnDelayMs = 0;
   private spawnedLetters = 0;
   private resolvedLetters = 0;
@@ -76,7 +90,6 @@ export class TypingSandstormScreen extends Container {
 
   constructor(level: TLevel) {
     const typedLevel = getTypedLevel(level, 'typing-sandstorm');
-    const mapUnit = findMapUnitForLevel(typedLevel);
     super({
       layout: {
         flexDirection: 'column',
@@ -112,14 +125,7 @@ export class TypingSandstormScreen extends Container {
     this.letterLayer = new Container();
     this.dustLayer = new Container();
 
-    this.hud = new HUD({
-      onBack: () =>
-        void engine().navigation.showPopup(QuitPopup, {
-          mascot: typedLevel.mascot,
-          onQuit: () => void engine().navigation.showScreen(LevelMapScreen, mapUnit),
-        }),
-      help: { kind: 'tutorial', mapUnit, presentation: 'popup' },
-    });
+    this.hud = createLevelHud(typedLevel);
 
     this.keyboard = new KeyboardLayout();
 
@@ -138,6 +144,7 @@ export class TypingSandstormScreen extends Container {
   public resize(width: number, height: number) {
     this.layout = { width, height };
     this.viewWidth = width;
+    this.cardSize = responsive(CARD_SIZE);
     this.dustOverlays.resize(width, height);
     this.keyboard.resize(width, height);
   }
@@ -160,7 +167,7 @@ export class TypingSandstormScreen extends Container {
   public update(ticker: Ticker) {
     if (this.paused || this.completed) return;
 
-    const deltaMs = Math.min(ticker.deltaMS, 50);
+    const deltaMs = frameDeltaMs(ticker);
     this.dustOverlays.update(deltaMs);
     this.updateSpawning(deltaMs);
     this.updateFallingLetters(deltaMs);
@@ -191,10 +198,6 @@ export class TypingSandstormScreen extends Container {
     ]);
   }
 
-  public reset() {
-    this.cleanupLevel();
-  }
-
   override destroy(options?: Parameters<Container['destroy']>[0]) {
     this.cleanupLevel();
     super.destroy(options);
@@ -213,7 +216,7 @@ export class TypingSandstormScreen extends Container {
     if (this.spawnDelayMs > 0) return;
 
     this.spawnLetter();
-    this.spawnDelayMs = randomBetween(this.minSpawnDelayMs, this.maxSpawnDelayMs);
+    this.spawnDelayMs = randomFloat(this.minSpawnDelayMs, this.maxSpawnDelayMs);
   }
 
   private updateFallingLetters(deltaMs: number) {
@@ -227,9 +230,10 @@ export class TypingSandstormScreen extends Container {
 
       falling.card.x =
         falling.spawnX + falling.windSpeed * elapsedSeconds + gust * falling.swayAmplitude;
-      falling.card.y += (falling.fallSpeed + gust * 16) * (deltaMs / 1000);
+      falling.card.y += (falling.fallSpeed + gust * GUST_FALL_SPEED) * (deltaMs / 1000);
       falling.card.rotation =
-        falling.startRotation + Math.sin(elapsedSeconds * 2.4 + falling.phase) * 0.12;
+        falling.startRotation +
+        Math.sin(elapsedSeconds * WOBBLE_SPEED + falling.phase) * WOBBLE_ANGLE;
 
       if (falling.card.y + falling.card.leafBottom >= this.keyboard.y) {
         this.missLetter(index);
@@ -238,18 +242,19 @@ export class TypingSandstormScreen extends Container {
   }
 
   private spawnLetter() {
-    const spawnWidth = this.viewWidth * SPAWN_WIDTH_RATIO;
+    const size = this.cardSize;
+    const spawnWidth = this.viewWidth * responsive(SPAWN_WIDTH_RATIO);
     const spawnLeft = (this.viewWidth - spawnWidth) / 2;
     const spawnRight = spawnLeft + spawnWidth;
-    const letter = this.letterPool[Math.floor(Math.random() * this.letterPool.length)] ?? '';
-    const leafAsset = LEAF_ASSETS[Math.floor(Math.random() * LEAF_ASSETS.length)];
-    const card = new LeafLetter({ letter, size: CARD_SIZE, leafAsset });
-    const spawnX = this.pickSpawnX(spawnLeft, spawnRight - CARD_SIZE);
+    const letter = this.letterPool[randomInt(0, this.letterPool.length - 1)] ?? '';
+    const leafAsset = LEAF_ASSETS[randomInt(0, LEAF_ASSETS.length - 1)]!;
+    const card = new LeafLetter({ letter, size, leafAsset });
+    const spawnX = this.pickSpawnX(spawnLeft, Math.max(spawnLeft, spawnRight - size));
 
     card.alpha = 0;
     card.x = spawnX;
-    card.y = -CARD_SIZE - randomBetween(0, 80);
-    card.rotation = randomBetween(-0.1, 0.1);
+    card.y = -size - randomFloat(0, SPAWN_HEIGHT_JITTER);
+    card.rotation = randomFloat(-0.1, 0.1);
 
     this.letterLayer.addChild(card);
     void card.playAppear(0);
@@ -259,11 +264,11 @@ export class TypingSandstormScreen extends Container {
       card,
       spawnX,
       elapsedMs: 0,
-      fallSpeed: randomBetween(this.fallSpeedMin, this.fallSpeedMax),
-      windSpeed: randomBetween(-20, 20),
-      swayAmplitude: randomBetween(20, 50),
-      swaySpeed: randomBetween(1.25, 2.5),
-      phase: randomBetween(0, Math.PI * 2),
+      fallSpeed: randomFloat(this.fallSpeedMin, this.fallSpeedMax),
+      windSpeed: randomFloat(-WIND_SPEED, WIND_SPEED),
+      swayAmplitude: randomFloat(SWAY_AMPLITUDE.min, SWAY_AMPLITUDE.max),
+      swaySpeed: randomFloat(SWAY_SPEED.min, SWAY_SPEED.max),
+      phase: randomFloat(0, Math.PI * 2),
       startRotation: card.rotation,
     });
 
@@ -273,14 +278,15 @@ export class TypingSandstormScreen extends Container {
   private pickSpawnX(minX: number, maxX: number) {
     const activeXs = this.fallingLetters.map((falling) => falling.card.x);
     if (activeXs.length === 0) {
-      return randomBetween(minX, maxX);
+      return randomFloat(minX, maxX);
     }
 
     // Make sure the letters don't spawn too close to each other
-    for (let attempt = 0; attempt < 12; attempt += 1) {
-      const candidate = randomBetween(minX, maxX);
+    const separation = this.cardSize * SPAWN_SEPARATION;
+    for (let attempt = 0; attempt < SPAWN_ATTEMPTS; attempt += 1) {
+      const candidate = randomFloat(minX, maxX);
       const hasEnoughSpace = activeXs.every(
-        (activeX) => Math.abs(activeX - candidate) >= MIN_SPAWN_SEPARATION,
+        (activeX) => Math.abs(activeX - candidate) >= separation,
       );
       if (hasEnoughSpace) return candidate;
     }
@@ -296,18 +302,8 @@ export class TypingSandstormScreen extends Container {
   }
 
   private readonly handleKeyDown = (event: KeyboardEvent) => {
-    if (
-      this.paused ||
-      this.completed ||
-      event.repeat ||
-      event.key === 'Shift' ||
-      event.ctrlKey ||
-      event.metaKey ||
-      event.altKey
-    )
-      return;
-
-    const typedLetter = getMappedFromKeyboardEvent(event);
+    if (this.paused || this.completed) return;
+    const typedLetter = getTypedText(event);
     if (!typedLetter) return;
 
     const targetIndex = this.findLowestMatchingLetter(typedLetter);
@@ -318,10 +314,7 @@ export class TypingSandstormScreen extends Container {
 
     useSessionStore.getState().recordMistake();
     void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
-    this.keyboard.setKeyFeedback(event.code, 'error');
-    this.feedbackTimeouts.push(
-      window.setTimeout(() => this.keyboard.clearKeyFeedback(event.code), 350),
-    );
+    this.keyboard.flashKeyFeedback(event.code, 'error');
   };
 
   private findLowestMatchingLetter(letter: string) {
@@ -344,13 +337,12 @@ export class TypingSandstormScreen extends Container {
     this.resolvedLetters += 1;
     useSessionStore.getState().recordCorrect();
     void engine().audio.sfx.play('preload-audio/sfx/correct-answer.mp3');
-    this.keyboard.setKeyFeedback(code, 'success');
-    this.feedbackTimeouts.push(window.setTimeout(() => this.keyboard.clearKeyFeedback(code), 350));
+    this.keyboard.flashKeyFeedback(code, 'success');
 
-    falling.card.setFeedback('success');
+    falling.card.setFeedback();
     const animation = animate(
       falling.card,
-      { alpha: 0, y: falling.card.y - 48 },
+      { alpha: 0, y: falling.card.y - TYPED_LIFT },
       { duration: 0.28, ease: 'easeOut' },
     );
     this.effectAnimations.push(animation);
@@ -369,7 +361,7 @@ export class TypingSandstormScreen extends Container {
     useSessionStore.getState().recordMistake();
     void engine().audio.sfx.play('preload-audio/sfx/wrong-answer.mp3');
 
-    const dustX = falling.card.x + CARD_SIZE / 2;
+    const dustX = falling.card.x + this.cardSize / 2;
     const dustY = this.keyboard.y - DUST_SIZE * 0.42;
     this.destroyLetterCard(falling.card);
     this.showDustBall(dustX, dustY);
@@ -415,9 +407,7 @@ export class TypingSandstormScreen extends Container {
     this.completed = true;
     this.paused = true;
     window.removeEventListener('keydown', this.handleKeyDown);
-    const { correct, mistakes } = useSessionStore.getState();
-    useScoreManager.getState().addSession(correct, mistakes);
-    void engine().navigation.showPopup(EndScreenPopup, { level: this.level });
+    finishLevel(this, this.level);
   }
 
   private removeEffectAnimation(animation: AnimationPlaybackControls) {
@@ -426,7 +416,6 @@ export class TypingSandstormScreen extends Container {
 
   private cleanupLevel() {
     window.removeEventListener('keydown', this.handleKeyDown);
-    this.clearFeedbackTimers();
 
     for (const animation of this.effectAnimations) {
       animation.stop();
@@ -437,12 +426,5 @@ export class TypingSandstormScreen extends Container {
 
     this.letterLayer.removeChildren().forEach((child) => child.destroy({ children: true }));
     this.dustLayer.removeChildren().forEach((child) => child.destroy({ children: true }));
-  }
-
-  private clearFeedbackTimers() {
-    for (const timeout of this.feedbackTimeouts) {
-      window.clearTimeout(timeout);
-    }
-    this.feedbackTimeouts = [];
   }
 }

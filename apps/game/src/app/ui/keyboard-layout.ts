@@ -150,6 +150,8 @@ const PHONE_ROW_GAP = 16;
 // Paints past the screen bottom so the enter animation's overshoot never shows a gap.
 const PHONE_BLEED = 120;
 const LONG_PRESS_MS = 350;
+/** How long `flashKeyFeedback` shows a key's feedback by default. */
+export const KEY_FEEDBACK_MS = 350;
 const SHIFT_DOUBLE_TAP_MS = 350;
 
 const PANEL_COLOR = 0xf3ca8a;
@@ -158,6 +160,16 @@ const KEY_COLOR = 0xc98144;
 const KEY_PRESSED_COLOR = 0x8d6241;
 const TEXT_COLOR = 0xffffff;
 const SHIFT_HINT_COLOR = 0xffde59;
+
+/** The blue keyboard of the game levels' mockups. */
+export const BLUE_KEYBOARD_COLORS: KeyboardColorOptions = {
+  PANEL_COLOR: 0x6080ab,
+  PANEL_SHADOW_COLOR: 0xe9ddc8,
+  KEY_COLOR: 0xf5f3ef,
+  KEY_PRESSED_COLOR: 0xafafaf,
+  TEXT_COLOR: 0x495669,
+  SHIFT_HINT_COLOR: 0xffde59,
+};
 
 const DEFAULT_COLOR_OPTIONS: KeyboardColorOptions = {
   PANEL_COLOR,
@@ -396,6 +408,8 @@ export class KeyboardLayout extends Container {
   private readonly heldPhoneKeys = new Set<PhoneKeyCap>();
   private readonly phoneTouches = new Map<number, PhoneTouch>();
   private lastShiftTapAt = -Infinity;
+  /** Pending `flashKeyFeedback` clears, by key code. */
+  private readonly feedbackFlashes = new Map<string, ReturnType<typeof setTimeout>>();
   private appliedPhoneLayout = '';
 
   constructor({ colors = DEFAULT_COLOR_OPTIONS, text = 'letters' }: KeyboardOptions = {}) {
@@ -514,7 +528,32 @@ export class KeyboardLayout extends Container {
   }
 
   public clearKeyFeedback(code: string) {
+    this.cancelFeedbackFlash(code);
     this.setKeyFeedback(code, 'none');
+  }
+
+  /**
+   * Show `feedback` on a key for `ms`, then clear it and run `onCleared`, such as hinting the
+   * next letter. Flashing the same key again restarts it; destroying the keyboard cancels it.
+   */
+  public flashKeyFeedback(
+    code: string,
+    feedback: KeyFeedback,
+    { ms = KEY_FEEDBACK_MS, onCleared }: { ms?: number; onCleared?: () => void } = {},
+  ) {
+    this.cancelFeedbackFlash(code);
+    this.setKeyFeedback(code, feedback);
+    const timer = setTimeout(() => {
+      this.feedbackFlashes.delete(code);
+      this.setKeyFeedback(code, 'none');
+      onCleared?.();
+    }, ms);
+    this.feedbackFlashes.set(code, timer);
+  }
+
+  private cancelFeedbackFlash(code: string) {
+    clearTimeout(this.feedbackFlashes.get(code));
+    this.feedbackFlashes.delete(code);
   }
 
   /**
@@ -566,6 +605,8 @@ export class KeyboardLayout extends Container {
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {
     this.enterExitAnimation?.stop();
+    for (const timer of this.feedbackFlashes.values()) clearTimeout(timer);
+    this.feedbackFlashes.clear();
     this.setListening(false);
     super.destroy(options);
   }

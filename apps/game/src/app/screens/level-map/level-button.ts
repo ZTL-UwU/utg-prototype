@@ -4,7 +4,7 @@ import { DropShadowFilter } from 'pixi-filters';
 import { Graphics, Rectangle, Texture, Text, type DestroyOptions } from 'pixi.js';
 
 import { engine } from '../../../engine/getEngine';
-import { hasCompletedLevel, isLevelUnlocked } from '../../../lib/progression';
+import { isLevelFinished, isLevelUnlocked } from '../../../lib/progression';
 import { m } from '../../../paraglide/messages.js';
 import { DISPLAY_FONT_FAMILY } from '../../../utils/fonts';
 import { toRoman } from '../../../utils/roman';
@@ -116,8 +116,7 @@ export class LevelButton extends FancyButton {
     this.ring = new Graphics();
     if (unlocked) {
       const progress = useLevelProgress.getState();
-      // Levels that can never earn a star fall back to the local "played it once" flag.
-      const filled = hasCompletedLevel(level.id) || progress.isAttempted(mapUnit.type, level.id);
+      const filled = isLevelFinished(mapUnit.type, level.id);
       this.completed = filled;
       this.currentFill = filled ? 1 : 0;
       this.drawRing(this.currentRadius, this.currentFill);

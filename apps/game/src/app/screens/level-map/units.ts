@@ -30,19 +30,11 @@ export function getMascotStarAlias(mascotId: number, stars: 0 | 1 | 2 | 3): stri
  * A level screen owns its loading background and tutorial images, so they stay
  * consistent everywhere the screen is reused instead of being restated per level.
  * `loadingBackgroundAsset` is the loading screen's background behind the tutorial images;
- * levels without tutorial images, or without one, get a placeholder. The level's `splashColorScheme` and `mascotOnSplash` belonged to the old
- * splash, and are kept but unused.
+ * levels without tutorial images, or without a background, get a placeholder.
  */
-export type LevelScreenConstructor = AppScreenConstructor<any[]> & {
+export type LevelScreenConstructor = AppScreenConstructor<[TLevel]> & {
   helpAssets: string[];
   loadingBackgroundAsset?: string;
-};
-
-export type SplashColorScheme = {
-  BUTTON_FILL: number;
-  BUTTON_TEXT_FILL: number;
-  LEVEL_FONT_FILL: number;
-  LEVEL_TITLE_FILL: number;
 };
 
 type TLevelBase = {
@@ -52,9 +44,6 @@ type TLevelBase = {
   unlocked: boolean;
   mascot: TMascotAssets | null;
   screen?: LevelScreenConstructor;
-  backdropColor: number;
-  splashColorScheme?: SplashColorScheme;
-  mascotOnSplash: boolean;
 };
 
 /** Level narrowed to a single registered `level_type` with matching props. */
@@ -106,20 +95,19 @@ export function getLayerMaps(layer: TLayer): TMapUnit[] {
   return useCourseStore.getState().unitsByLayer[layer];
 }
 
-export function getMapCollection(mapUnit: TMapUnit): TMapUnit[] {
-  return getLayerMaps(mapUnit.type);
+/** The map `offset` places after `mapUnit` in its layer, if there is one. */
+function siblingMap(mapUnit: TMapUnit, offset: number): TMapUnit | undefined {
+  const maps = getLayerMaps(mapUnit.type);
+  const index = maps.findIndex((map) => map.id === mapUnit.id);
+  return index >= 0 ? maps[index + offset] : undefined;
 }
 
 export function getPrevMap(mapUnit: TMapUnit): TMapUnit | undefined {
-  const maps = getMapCollection(mapUnit);
-  const index = maps.findIndex((map) => map.id === mapUnit.id);
-  return index > 0 ? maps[index - 1] : undefined;
+  return siblingMap(mapUnit, -1);
 }
 
 export function getNextMap(mapUnit: TMapUnit): TMapUnit | undefined {
-  const maps = getMapCollection(mapUnit);
-  const index = maps.findIndex((map) => map.id === mapUnit.id);
-  return index >= 0 && index < maps.length - 1 ? maps[index + 1] : undefined;
+  return siblingMap(mapUnit, 1);
 }
 
 export function findMapUnitForLevel(level: TLevel): TMapUnit {
