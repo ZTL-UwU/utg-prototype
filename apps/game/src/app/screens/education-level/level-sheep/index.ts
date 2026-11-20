@@ -23,8 +23,12 @@ const GRASS_Y_RATIO = 0.75;
 const GRASS_SIZE = { sm: 220, lg: 320 };
 /** How far beside a grass the sheep stands to eat it. */
 const SHEEP_GRASS_OFFSET = { sm: 140, lg: 200 };
-/** The sheep stands this far above the grass line. */
-const SHEEP_ABOVE_GRASS = 100;
+/**
+ * The sheep's centre stands this far above the grass line. Phones have no room between the
+ * grasses for it, so a smaller sheep stands in front of them, below the letter cards.
+ */
+const SHEEP_ABOVE_GRASS = { sm: -70, lg: 100 };
+const SHEEP_SCALE = { sm: 0.6, lg: 1 };
 /** How high the happy sheep hops. */
 const HOP_HEIGHT = 120;
 /** Seconds the sad face stays up after its squash. */
@@ -56,6 +60,7 @@ export class EducationSheepScreen extends Container {
   private hud: HUD;
   private grasses: LetterGrass[];
   private grassPositions: { x: number; y: number }[] = [];
+  private viewWidth = 0;
   private sheep: Sprite;
   /** The sheep starts left of the first grass and moves to whichever is tapped. */
   private sheepSpot: SheepSpot = { grass: 0, side: -1 };
@@ -101,6 +106,7 @@ export class EducationSheepScreen extends Container {
 
   resize(width: number, height: number) {
     this.layout = { width, height };
+    this.viewWidth = width;
     const grassY = height * GRASS_Y_RATIO;
     this.grassPositions = GRASS_X_RATIOS.map((xRatio) => ({ x: width * xRatio, y: grassY }));
     const grassSize = responsive(GRASS_SIZE);
@@ -108,7 +114,14 @@ export class EducationSheepScreen extends Container {
       grass.setSize(grassSize);
       grass.position.set(this.grassPositions[i].x, this.grassPositions[i].y);
     });
-    if (!this.isAnimating) this.sheep.position.copyFrom(this.spotPosition(this.sheepSpot));
+    if (!this.isAnimating) this.placeSheep();
+  }
+
+  /** Sizes the sheep for this screen and stands it on its spot, keeping the way it faces. */
+  private placeSheep() {
+    const scale = responsive(SHEEP_SCALE);
+    this.sheep.scale.set((Math.sign(this.sheep.scale.x) || 1) * scale, scale);
+    this.sheep.position.copyFrom(this.spotPosition(this.sheepSpot));
   }
 
   /** Where the sheep stands at `spot`, kept fully on screen. */
@@ -117,7 +130,10 @@ export class EducationSheepScreen extends Container {
     if (!position) return { x: 0, y: 0 };
     const halfWidth = this.sheep.width / 2;
     const x = position.x + side * responsive(SHEEP_GRASS_OFFSET);
-    return { x: Math.max(halfWidth, x), y: position.y - SHEEP_ABOVE_GRASS };
+    return {
+      x: Math.min(Math.max(halfWidth, x), this.viewWidth - halfWidth),
+      y: position.y - responsive(SHEEP_ABOVE_GRASS),
+    };
   }
 
   async show() {
@@ -186,6 +202,8 @@ export class EducationSheepScreen extends Container {
     ]);
     await this.squashSheep(SHEEP_TEXTURES.sad, 1.1, 0.9, SAD_HOLD);
     this.isAnimating = false;
+    // Catch up with any resize skipped while it was busy
+    if (!this.destroyed) this.placeSheep();
   }
 
   /**
@@ -233,8 +251,7 @@ export class EducationSheepScreen extends Container {
     const side = this.sheep.x > grassX ? 1 : -1;
     this.sheepSpot = { grass: index, side };
     // The art faces right: face left when walking left.
-    const magnitude = Math.abs(this.sheep.scale.x) || 1;
-    this.sheep.scale.x = (side === 1 ? -1 : 1) * magnitude;
+    this.sheep.scale.x = (side === 1 ? -1 : 1) * responsive(SHEEP_SCALE);
     await animate(this.sheep, this.spotPosition(this.sheepSpot), {
       duration: 0.4,
       ease: 'easeOut',

@@ -165,9 +165,11 @@ export class SheepMap extends ScrollingMap {
     }
 
     // Start with the sheep in view, once; after that only the player moves the map
-    if (vertical && !this.scrolledIntoView && this.rocks[this.sheepIndex]) {
+    const rock = this.rocks[this.sheepIndex];
+    if (vertical && !this.scrolledIntoView && rock) {
       this.scrolledIntoView = true;
-      this.scrollTo(height / 2 - this.rocks[this.sheepIndex].y);
+      const sheepTop = this.sheep ? this.sheepSpot(this.sheepIndex).y - this.sheep.height : rock.y;
+      this.scrollIntoView(sheepTop, rock.y + rockSize / 2, height);
     }
   }
 

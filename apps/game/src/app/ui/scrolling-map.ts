@@ -43,4 +43,12 @@ export class ScrollingMap extends Container {
   protected scrollTo(scrollY: number) {
     this.scroll.setScroll(scrollY);
   }
+
+  /**
+   * Brings a stop spanning `top` to `bottom` (content units) into view: one already on screen
+   * leaves the map at the top, titles and all, and one below the fold is centred.
+   */
+  protected scrollIntoView(top: number, bottom: number, viewHeight: number) {
+    this.scrollTo(bottom <= viewHeight ? 0 : viewHeight / 2 - (top + bottom) / 2);
+  }
 }

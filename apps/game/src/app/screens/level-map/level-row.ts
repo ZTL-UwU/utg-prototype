@@ -38,8 +38,11 @@ function firstUnfinished(buttons: LevelButton[], from = 0): number | undefined {
 }
 
 export class LevelRow extends Container {
-  private readonly vertical = isPathVertical();
-  private readonly buttonCount: number;
+  /** Column on phones, row otherwise; follows the window across the breakpoint. */
+  private vertical = isPathVertical();
+  private readonly buttons: LevelButton[];
+  /** The buttons with the lines joining them, in path order, for each direction. */
+  private readonly paths: Record<'column' | 'row', Container[]>;
   private levelButtons: Container[];
   /** Education maps: the sheep standing on the current game, and the game it hops to next. */
   private gameButtons: LevelButton[] = [];
@@ -54,8 +57,10 @@ export class LevelRow extends Container {
 
     const buttons = mapUnit.levels.map((level, i) => new LevelButton(level, mapUnit, i + 1));
 
-    this.buttonCount = buttons.length;
-    this.levelButtons = joinWithLines(buttons, this.vertical);
+    this.buttons = buttons;
+    // Lines for both directions, so a resize across the breakpoint swaps between them
+    this.paths = { column: joinWithLines(buttons, true), row: joinWithLines(buttons, false) };
+    this.levelButtons = this.vertical ? this.paths.column : this.paths.row;
     this.addChild(...this.levelButtons);
 
     if (mapUnit.type === 'education') {
@@ -122,11 +127,32 @@ export class LevelRow extends Container {
 
   public override destroy(options?: DestroyOptions) {
     this.hopAnimation?.stop();
+    // The lines of the direction not shown are no children of the row
+    const hidden = this.vertical ? this.paths.row : this.paths.column;
+    for (const line of hidden) if (!line.parent) line.destroy();
     super.destroy(options);
   }
 
   public resize(width: number, height: number) {
-    resizePath(this, this.buttonCount, width, height);
+    const vertical = isPathVertical();
+    if (vertical !== this.vertical) this.setVertical(vertical);
+    resizePath(this, this.buttons.length, width, height);
+  }
+
+  /** Turns the path between a column and a row, with lines to match. */
+  private setVertical(vertical: boolean) {
+    this.vertical = vertical;
+    for (const child of this.levelButtons) this.removeChild(child);
+    this.levelButtons = vertical ? this.paths.column : this.paths.row;
+    this.addChild(...this.levelButtons);
+    this.layout = pathFlex(vertical);
+    if (!this.sheep) return;
+    if (this.sheep.parent === this) {
+      // Mid-hop it is the row's own child: keep it above the buttons; it lands on the new spot
+      this.addChild(this.sheep);
+    } else {
+      this.sheep.position.copyFrom(sheepSpot(vertical));
+    }
   }
 
   public async playEnterAnimation() {

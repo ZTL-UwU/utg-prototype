@@ -56,6 +56,8 @@ function unitName(mapUnit: TMapUnit): { text: string; fontFamily: string | strin
 /** One typing unit: a cactus with the unit's name, and a tumbleweed per level at its base. */
 class CactusGroup extends Container {
   private baseScale = 1;
+  /** How far the lowest tumbleweed reaches below the cactus base, before scaling. */
+  public readonly bottom: number;
   private enterAnimation?: AnimationPlaybackControls;
   public readonly levelCount: number;
 
@@ -80,6 +82,7 @@ class CactusGroup extends Container {
     label.y = -CACTUS_HEIGHT * 0.42;
 
     const count = mapUnit.levels.length;
+    let bottom = 0;
     mapUnit.levels.forEach((level, index) => {
       // -1 at the left end, 1 at the right; the middle ones dip lower
       const t = count > 1 ? (index / (count - 1)) * 2 - 1 : 0;
@@ -88,8 +91,10 @@ class CactusGroup extends Container {
         (index - (count - 1) / 2) * TUMBLEWEED_SPACING,
         -TUMBLEWEED_RISE + (count > 2 ? TUMBLEWEED_DIP * (1 - Math.abs(t)) : 0),
       );
+      bottom = Math.max(bottom, tumbleweed.y + TUMBLEWEED_SIZE / 2);
       this.addChild(tumbleweed);
     });
+    this.bottom = bottom;
 
     // Above the tumbleweeds, so the name always reads
     this.addChild(label);
@@ -98,6 +103,11 @@ class CactusGroup extends Container {
   /** Half the group's width, tumbleweeds included, before scaling. */
   public get halfWidth() {
     return (Math.max(this.levelCount - 1, 0) * TUMBLEWEED_SPACING) / 2 + TUMBLEWEED_SIZE / 2;
+  }
+
+  /** The scale the group rests at, which a running enter pop is still growing towards. */
+  public get restingScale() {
+    return this.baseScale;
   }
 
   public setBaseScale(scale: number) {
@@ -179,7 +189,10 @@ export class TypingJourney extends ScrollingMap {
     const focus = this.groups[this.focusIndex];
     if (vertical && !this.scrolledIntoView && focus) {
       this.scrolledIntoView = true;
-      this.scrollTo(height / 2 - (focus.y - (CACTUS_HEIGHT * focus.scale.y) / 2));
+      // The group's origin is the cactus base; its tumbleweeds hang a little below it. Its
+      // resting scale, since it may still be popping in from nothing.
+      const scale = focus.restingScale;
+      this.scrollIntoView(focus.y - CACTUS_HEIGHT * scale, focus.y + focus.bottom * scale, height);
     }
   }
 

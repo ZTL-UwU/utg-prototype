@@ -16,10 +16,23 @@ import { Butterfly } from './butterfly';
 
 const TITLE_ENTER_OFFSET = 60;
 const BUTTON_ENTER_OFFSET = 100;
-// Safari fakes Concert One's bold wider than Chrome, so the title shrinks to fit narrow screens
+// Safari fakes Concert One's bold wider than Chrome, so the title and tagline shrink to fit
+// narrow screens
 const TITLE_SIDE_MARGIN = 32;
 /** The menu button's distance from the top and right edges, below the notch on phones. */
 const MENU_BUTTON_INSET = 90;
+/**
+ * Sets `text` to `fontSize`, shrunk to at most `room` wide. The shrink comes from the layout
+ * box alone: the text's own `scale-down` fit scales it into the box, so the flex gaps below it
+ * follow the shrunk height. Scaling the text as well would shrink it twice.
+ */
+function fitText(text: Text, fontSize: number, room: number) {
+  text.style.fontSize = fontSize;
+  const bounds = text.getLocalBounds();
+  const scale = Math.min(1, room / bounds.width);
+  text.layout = { width: bounds.width * scale, height: bounds.height * scale };
+}
+
 /** The screen that holds the app */
 export class HomeScreen extends Container {
   public readonly screenName = 'HomeScreen';
@@ -31,7 +44,6 @@ export class HomeScreen extends Container {
   private titleContainer: Container;
   private startButton: FancyButton;
   private title: Text;
-  private titleWidth: number; // unscaled
   private subtitle: Text;
   private menuButton: FancyButton;
   private logo: Sprite;
@@ -71,19 +83,16 @@ export class HomeScreen extends Container {
       style: {
         fill: 0x284937,
         fontFamily: DISPLAY_FONT_FAMILY,
-        fontSize: responsive({ sm: 116, lg: 200 }),
         fontWeight: '700',
       },
       layout: true,
     });
-    this.titleWidth = this.title.getLocalBounds().width;
 
     this.subtitle = new Text({
       text: m.home_tagline(),
       style: {
         fill: 0xffffff,
         fontFamily: DISPLAY_FONT_FAMILY,
-        fontSize: responsive({ sm: 76, lg: 95 }),
         dropShadow: BACKDROP_TEXT_SHADOW,
       },
       layout: true,
@@ -182,7 +191,9 @@ export class HomeScreen extends Container {
     };
     this.menuButton.layout = { top: MENU_BUTTON_INSET + topClearance(height) };
     this.butterfly.resize(width, height);
-    this.title.scale.set(Math.min(1, (width - 2 * TITLE_SIDE_MARGIN) / this.titleWidth));
+    const room = width - 2 * TITLE_SIDE_MARGIN;
+    fitText(this.title, responsive({ sm: 116, lg: 200 }), room);
+    fitText(this.subtitle, responsive({ sm: 76, lg: 95 }), room);
   }
 
   /** Show screen with animations */
