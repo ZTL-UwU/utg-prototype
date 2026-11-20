@@ -23,7 +23,7 @@ import {
   layoutLetterPopupControls,
 } from '../../../ui/letter-nav-buttons';
 import { SoundButton } from '../../../ui/sound-button';
-import { MissingWordNotice } from './missing-word-notice';
+import { MissingWordError } from './missing-word-error';
 
 const COLORS = {
   BACKGROUND: 0xe8eef8,
@@ -171,7 +171,7 @@ export class LetterPopup extends Container {
       this.wordWidth = this.wordText.getLocalBounds().width;
       this.addChild(this.wordText, this.variantImage, this.soundButton);
     } else {
-      this.addChild(this.variantImage, new MissingWordNotice());
+      this.addChild(this.variantImage, new MissingWordError(this.letter));
     }
   }
 

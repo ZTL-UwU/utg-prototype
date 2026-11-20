@@ -67,7 +67,7 @@
   "education_correct": "CORRECT!",
   "education_wrong": "WRONG",
   "education_alphabets": "ALPHABETS",
-  "education_example_coming_soon": "Example coming soon",
+  "education_example_missing": "Couldn't load this letter's example word",
   "naan_plate_full": "PLATE FULL!",
   "word_search_words": "WORDS",
   "tandoor_type_this_letter": "TYPE THIS LETTER",
