@@ -13,7 +13,7 @@ import {
 import { engine } from '../../../../engine/getEngine';
 import { frameDeltaMs, lerp } from '../../../../engine/utils/maths';
 import { randomInt } from '../../../../engine/utils/random';
-import { isPhone, responsive } from '../../../../engine/utils/viewport';
+import { responsive, usesPhoneKeyboard } from '../../../../engine/utils/viewport';
 import { getSentenceMarkup } from '../../../../utils/example-words';
 import { getTypedText } from '../../../../utils/keymap';
 import {
@@ -351,7 +351,7 @@ export class GameLevelSki extends Container {
       responsive({ sm: LAYOUT.phoneLives.x, lg: LAYOUT.lives.x }),
       responsive({ sm: LAYOUT.phoneLives.y, lg: LAYOUT.lives.y }),
     );
-    if (isPhone()) {
+    if (usesPhoneKeyboard()) {
       this.keyboard.resizeToScreen(this.gameplay, width, height);
     } else {
       this.keyboard.resize(DESIGN_WIDTH, DESIGN_HEIGHT);

@@ -4,7 +4,7 @@ import { Container, Sprite, Texture, type Ticker } from 'pixi.js';
 import { engine } from '../../../../engine/getEngine';
 import { frameDeltaMs } from '../../../../engine/utils/maths';
 import { randomInt } from '../../../../engine/utils/random';
-import { isPhone, responsive } from '../../../../engine/utils/viewport';
+import { responsive, usesPhoneKeyboard } from '../../../../engine/utils/viewport';
 import { getTypedText } from '../../../../utils/keymap';
 import { convertKeyboardLettersToCurrentScript } from '../../../../utils/script';
 import useSessionStore from '../../../../zustandStores/sessionStore';
@@ -147,7 +147,7 @@ export class GameNaanStackScreen extends Container {
       responsive({ sm: LAYOUT.phoneSpeedSlider.x, lg: LAYOUT.speedSlider.x }),
       responsive({ sm: LAYOUT.phoneSpeedSlider.y, lg: LAYOUT.speedSlider.y }),
     );
-    if (isPhone()) this.keyboard.resizeToScreen(this.gameplay, width, height);
+    if (usesPhoneKeyboard()) this.keyboard.resizeToScreen(this.gameplay, width, height);
     else this.keyboard.resize(DESIGN_WIDTH, DESIGN_HEIGHT);
     this.hud.layout = { width, height };
   }

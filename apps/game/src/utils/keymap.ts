@@ -214,94 +214,125 @@ const LATIN_SHIFT_LAYER: Record<string, string> = {
 };
 
 /**
- * Uyghur Cyrillic phonetic layer — same physical positions as the Arabic keyboard.
- * Shift-layer letters: ж ф г х җ ө (mirroring ژ ف گ خ ج ۆ).
+ * Uyghur Cyrillic layer based on the macOS Kazakh layout; Ұ/ұ (Digit9) replaced with Җ/җ.
+ *
+ * Departures from Kazakh for Uyghur punctuation: Digit3 types « (Shift: ») instead of і/І,
+ * and Slash types - (Shift: ?) instead of /.
+ *
+ * `Backquote` and `IntlBackslash` never hold a letter: `IntlBackslash` exists only on ISO
+ * keyboards, and on macOS ISO keyboards Chromium reports swapped `code` values for these two
+ * keys (§ ↔ the key left of Z).
+ *
+ * TODO: the number row types letters, as in Kazakh, so digits can't be typed in Cyrillic
+ * (the phone 123 page's digit keys type nothing either).
  */
 const CYRILLIC_DEFAULT_LAYER: Record<string, string> = {
-  Digit1: '1',
-  Digit2: '2',
-  Digit3: '3',
-  Digit4: '4',
-  Digit5: '5',
-  Digit6: '6',
-  Digit7: '7',
-  Digit8: '8',
-  Digit9: '9',
-  Digit0: '0',
-  Minus: '-',
-  Equal: '=',
+  Backquote: '(',
+  Digit1: '"',
+  Digit2: 'ә',
+  Digit3: '«',
+  Digit4: 'ң',
+  Digit5: 'ғ',
+  Digit6: ',',
+  Digit7: '.',
+  Digit8: 'ү',
+  Digit9: 'җ',
+  Digit0: 'қ',
+  Minus: 'ө',
+  Equal: 'һ',
   Backspace: '⌫',
-  KeyQ: 'ч',
-  KeyW: 'в',
-  KeyE: 'е',
-  KeyR: 'р',
-  KeyT: 'т',
-  KeyY: 'й',
-  KeyU: 'у',
-  KeyI: 'ң',
-  KeyO: 'о',
-  KeyP: 'п',
-  BracketLeft: ']',
-  BracketRight: '[',
-  Backquote: '`',
-  KeyA: 'һ',
-  KeyS: 'с',
-  KeyD: 'д',
+  KeyQ: 'й',
+  KeyW: 'ц',
+  KeyE: 'у',
+  KeyR: 'к',
+  KeyT: 'е',
+  KeyY: 'н',
+  KeyU: 'г',
+  KeyI: 'ш',
+  KeyO: 'щ',
+  KeyP: 'з',
+  BracketLeft: 'х',
+  BracketRight: 'ъ',
+  Backslash: 'ё',
+  KeyA: 'ф',
+  KeyS: 'ы',
+  KeyD: 'в',
   KeyF: 'а',
-  KeyG: 'ә',
-  KeyH: 'и',
-  KeyJ: 'қ',
-  KeyK: 'к',
-  KeyL: 'л',
-  Semicolon: ';',
-  Quote: "'",
-  Backslash: '\\',
+  KeyG: 'п',
+  KeyH: 'р',
+  KeyJ: 'о',
+  KeyK: 'л',
+  KeyL: 'д',
+  Semicolon: 'ж',
+  Quote: 'э',
   ShiftLeft: '*Shift*',
-  KeyZ: 'з',
-  KeyX: 'ш',
-  KeyC: 'ғ',
-  KeyV: 'ү',
-  KeyB: 'б',
-  KeyN: 'н',
-  KeyM: 'м',
-  Comma: ',',
-  Period: '.',
-  Slash: '/',
+  IntlBackslash: ']',
+  KeyZ: 'я',
+  KeyX: 'ч',
+  KeyC: 'с',
+  KeyV: 'м',
+  KeyB: 'и',
+  KeyN: 'т',
+  KeyM: 'ь',
+  Comma: 'б',
+  Period: 'ю',
+  Slash: '-',
   AltLeft: '*Menu*',
   Space: ' ',
   Enter: '*Enter*',
 };
 
-/** Shifted Uyghur Cyrillic phonetic layer. */
+/** Shifted Uyghur Cyrillic layer: capitals, plus the Kazakh Shift punctuation. */
 const CYRILLIC_SHIFT_LAYER: Record<string, string> = {
+  Backquote: ')',
   Digit1: '!',
-  Digit2: '@',
-  Digit3: '#',
-  Digit4: '$',
-  Digit5: '%',
-  Digit6: '^',
-  Digit7: '&',
-  Digit8: '*',
-  Digit9: ')',
-  Digit0: '(',
-  Minus: '_',
-  Equal: '+',
+  Digit2: 'Ә',
+  Digit3: '»',
+  Digit4: 'Ң',
+  Digit5: 'Ғ',
+  Digit6: ';',
+  Digit7: ':',
+  Digit8: 'Ү',
+  Digit9: 'Җ',
+  Digit0: 'Қ',
+  Minus: 'Ө',
+  Equal: 'Һ',
   Backspace: '⌫',
-  BracketLeft: '»',
-  BracketRight: '«',
-  Backquote: '~',
-  KeyD: 'ж',
-  KeyF: 'ф',
-  KeyG: 'г',
-  KeyH: 'х',
-  KeyJ: 'җ',
-  KeyK: 'ө',
-  Semicolon: ':',
-  Quote: '"',
-  Backslash: '|',
+  KeyQ: 'Й',
+  KeyW: 'Ц',
+  KeyE: 'У',
+  KeyR: 'К',
+  KeyT: 'Е',
+  KeyY: 'Н',
+  KeyU: 'Г',
+  KeyI: 'Ш',
+  KeyO: 'Щ',
+  KeyP: 'З',
+  BracketLeft: 'Х',
+  BracketRight: 'Ъ',
+  Backslash: 'Ё',
+  KeyA: 'Ф',
+  KeyS: 'Ы',
+  KeyD: 'В',
+  KeyF: 'А',
+  KeyG: 'П',
+  KeyH: 'Р',
+  KeyJ: 'О',
+  KeyK: 'Л',
+  KeyL: 'Д',
+  Semicolon: 'Ж',
+  Quote: 'Э',
   ShiftLeft: '*Shift*',
-  Comma: '>',
-  Period: '<',
+  IntlBackslash: '[',
+  KeyZ: 'Я',
+  KeyX: 'Ч',
+  KeyC: 'С',
+  KeyV: 'М',
+  KeyB: 'И',
+  KeyN: 'Т',
+  KeyM: 'Ь',
+  Comma: 'Б',
+  Period: 'Ю',
   Slash: '?',
   AltLeft: '*Menu*',
   Space: ' ',
@@ -324,7 +355,7 @@ const CYRILLIC_LAYERS: LayerMap = {
 };
 
 /** Modifier / chrome keys that are always styled as auxiliary. */
-const STRUCTURAL_AUXILIARY_KEYS = [
+const CHROME_AUXILIARY_KEYS = [
   'Backquote',
   'Backspace',
   'Tab',
@@ -339,6 +370,10 @@ const STRUCTURAL_AUXILIARY_KEYS = [
   'MetaRight',
   'Enter',
   'Space',
+] as const;
+
+/** Number-row keys, auxiliary where they type digits. */
+const DIGIT_AUXILIARY_KEYS = [
   'Digit1',
   'Digit2',
   'Digit3',
@@ -350,6 +385,8 @@ const STRUCTURAL_AUXILIARY_KEYS = [
   'Digit9',
   'Digit0',
 ] as const;
+
+const STRUCTURAL_AUXILIARY_KEYS = [...CHROME_AUXILIARY_KEYS, ...DIGIT_AUXILIARY_KEYS] as const;
 
 /** Digit + punctuation keys that are auxiliary on Arabic / Latin layouts. */
 const QWERTY_PUNCTUATION_AUXILIARY_KEYS = ['Minus', 'Equal', 'Semicolon', 'Quote'] as const;
@@ -367,11 +404,16 @@ const LATIN_AUXILIARY_KEYS = new Set<string>([
   ...QWERTY_PUNCTUATION_AUXILIARY_KEYS,
 ]);
 
-/** Phonetic Cyrillic uses the same auxiliary set as Arabic / Latin QWERTY chrome. */
+/**
+ * Kazakh-based Cyrillic puts letters on most of the number row and the punctuation keys, so
+ * only the chrome and the number-row punctuation keys stay auxiliary.
+ */
 const CYRILLIC_AUXILIARY_KEYS = new Set<string>([
-  ...STRUCTURAL_AUXILIARY_KEYS,
-  ...QWERTY_PUNCTUATION_AUXILIARY_KEYS,
-  ...NON_LATIN_AUXILIARY_KEYS,
+  ...CHROME_AUXILIARY_KEYS,
+  'Digit1',
+  'Digit3',
+  'Digit6',
+  'Digit7',
 ]);
 
 const AUXILIARY_LABELS: Record<string, string> = {

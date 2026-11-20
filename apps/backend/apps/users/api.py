@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 from django.contrib.auth import authenticate, get_user_model
@@ -9,19 +10,20 @@ from django.db.models import Count, ProtectedError
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from ninja import File, Router, Status, UploadedFile
-from ninja.throttling import AnonRateThrottle
+from ninja.throttling import AnonRateThrottle, AuthRateThrottle
 from ninja_jwt.exceptions import TokenError
 from ninja_jwt.tokens import RefreshToken
 
 from apps.common.auth import jwt_auth
 from apps.common.models import Layer
 from apps.common.permissions import require_perm
-from apps.game.models import Level
+from apps.game.models import Feedback, FeedbackImage, Level
 from apps.users.models import LevelResult, Reward, RewardImage, RewardType, UserReward
 from apps.users.password_reset import send_password_reset_email
 from apps.users.schemas import (
     AdminUserOut,
     AdminUserPatchIn,
+    DeleteAccountIn,
     DetailOut,
     ErrorOut,
     LevelResultCreateOut,
@@ -44,6 +46,7 @@ from apps.users.schemas import (
     UserOut,
 )
 
+logger = logging.getLogger(__name__)
 User = get_user_model()
 router = Router(tags=["users"])
 
@@ -175,6 +178,42 @@ def update_profile(request, payload: ProfilePatchIn):
     user.avatar = payload.avatar
     user.save(update_fields=["avatar"])
     return user
+
+
+def _delete_stored_files(files) -> None:
+    for file in files:
+        try:
+            file.storage.delete(file.name)
+        except Exception:
+            logger.exception("Failed to delete stored file %s", file.name)
+
+
+@router.post(
+    "/user/delete",
+    auth=jwt_auth,
+    response={204: None, 400: ErrorOut},
+    summary="[Public] Permanently delete the current user's account and all their data",
+    throttle=AuthRateThrottle("10/h"),
+)
+def delete_account(request, payload: DeleteAccountIn):
+    user = request.auth
+    # 400, not 401: clients treat a 401 as an expired session and refresh/retry.
+    if not user.check_password(payload.password):
+        return Status(400, {"detail": "Incorrect password."})
+    if user.is_superuser:
+        return Status(400, {"detail": "Superuser accounts cannot be deleted from the app."})
+
+    image_files = [
+        img.image for img in FeedbackImage.objects.filter(feedback__user=user) if img.image
+    ]
+    with transaction.atomic():
+        # Feedback is SET_NULL on user delete, so remove it explicitly (cascades FeedbackImage).
+        Feedback.objects.filter(user=user).delete()
+        # Cascades UserReward, LevelResult, and group/permission links.
+        user.delete()
+        # Storage files are only removed once the rows are gone for good.
+        transaction.on_commit(lambda: _delete_stored_files(image_files))
+    return Status(204, None)
 
 
 @router.get(

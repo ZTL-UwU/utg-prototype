@@ -20,6 +20,7 @@
   --color-ink: #1c1c1c;
   --color-muted: #9a968c;
   --color-alert: #c0523a;
+  --color-alert-dark: #9a3f2c;
 
   --radius-pill: 9999px;
 }
@@ -40,6 +41,23 @@
   body,
   #root {
     @apply m-0 size-full;
+  }
+
+  /* Long presses (keyboard accents) would otherwise trigger iOS text selection, the callout and the tap highlight. */
+  html {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Form fields (auth screens, feedback overlay) still need to select and edit text. */
+  input,
+  textarea,
+  [contenteditable='true'] {
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
   }
 
   body {

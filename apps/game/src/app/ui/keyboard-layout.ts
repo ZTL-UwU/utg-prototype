@@ -2,7 +2,7 @@ import type { TargetScript } from '@utg/script-converter';
 import { animate, type AnimationPlaybackControls } from 'motion';
 import { Container, type FederatedPointerEvent, Graphics, Rectangle, Text } from 'pixi.js';
 
-import { isPhone, safeAreaInsets } from '../../engine/utils/viewport';
+import { safeAreaInsets, usesPhoneKeyboard } from '../../engine/utils/viewport';
 import { DISPLAY_FONT_FAMILY } from '../../utils/fonts';
 import {
   getKeyFromChar,
@@ -427,7 +427,7 @@ export class KeyboardLayout extends Container {
 
   /** Center horizontally and pin to the bottom of the given view size. */
   public resize(viewWidth: number, viewHeight: number, bottomMargin?: number) {
-    if (isPhone()) {
+    if (usesPhoneKeyboard()) {
       this.resizePhone(viewWidth, viewHeight, bottomMargin);
       return;
     }
@@ -595,7 +595,12 @@ export class KeyboardLayout extends Container {
   private needsPhoneShift(key: PhoneKeyCap, glyph: string) {
     if (this.isPhoneShifted()) return false;
     if (key.def.shiftGlyph) return key.def.shiftGlyph === glyph;
-    return this.phoneScript === 'Latin' && glyph !== glyph.toLocaleLowerCase('ug');
+    return this.phoneHasCase() && glyph !== glyph.toLocaleLowerCase('ug');
+  }
+
+  /** Latin and Cyrillic phone letters take their case from Shift and Caps Lock; Arabic has none. */
+  private phoneHasCase() {
+    return this.phoneScript !== undefined && this.phoneScript !== 'Arabic';
   }
 
   override destroy(options?: Parameters<Container['destroy']>[0]) {
@@ -784,9 +789,11 @@ export class KeyboardLayout extends Container {
 
     let index = 0;
     for (const page of pages) {
+      // A shorter page (Cyrillic's 123 page) sits at the bottom, keeping Space and 123 in place.
+      const firstRow = rows - page.length;
       page.forEach((row, rowIndex) => {
         let x = insetLeft + PHONE_PADDING_X + ((units - phoneRowUnits(row)) * pitch) / 2;
-        const y = PHONE_PADDING_TOP + rowIndex * rowPitch;
+        const y = PHONE_PADDING_TOP + (firstRow + rowIndex) * rowPitch;
         for (const def of row) {
           const key = this.phoneKeys[index++];
           const width = (def.width ?? 1) * pitch;
@@ -1148,7 +1155,7 @@ export class KeyboardLayout extends Container {
    * Types `glyph` as the physical keystroke that makes it, so levels and the typing tutorial
    * see the real sequence. A Shift-layer glyph (ژ is Shift+D) under a locked Shift gets its own
    * Shift press; a glyph the phone shifts but the physical layout doesn't (ئ is a plain `/`)
-   * goes out unshifted even with Shift on. Latin letters take their case from Shift.
+   * goes out unshifted even with Shift on. Latin and Cyrillic letters take their case from Shift.
    */
   private pressPhoneKey(key: PhoneKeyCap, glyph?: string): PressedStroke | undefined {
     const stroke = this.phoneStroke(key, glyph);
@@ -1159,7 +1166,7 @@ export class KeyboardLayout extends Container {
     // Only a letter takes its case from Shift; punctuation on the letters page stays as shown.
     const cased =
       glyph !== undefined && glyph.toLocaleUpperCase('ug') !== glyph.toLocaleLowerCase('ug');
-    const shiftKey = stroke.shift || (this.phoneScript === 'Latin' && cased && this.isShiftHeld());
+    const shiftKey = stroke.shift || (this.phoneHasCase() && cased && this.isShiftHeld());
     const wrappedShift = stroke.shift && !this.isShiftHeld();
     if (wrappedShift) this.dispatchKey('keydown', 'ShiftLeft');
     this.dispatchKey('keydown', stroke.code, shiftKey);
@@ -1192,13 +1199,10 @@ export class KeyboardLayout extends Container {
   }
 
   private isPhoneUpperCase() {
-    return this.phoneScript === 'Latin' && this.isShiftHeld() !== this.capsLockOn;
+    return this.phoneHasCase() && this.isShiftHeld() !== this.capsLockOn;
   }
 
-  /**
-   * Only Latin phone letters take case. In Arabic and Cyrillic a locked Shift just keeps the
-   * Shift layer up.
-   */
+  /** Shift or Caps Lock is on: capitals in Latin and Cyrillic, the Shift layer in Arabic. */
   private isPhoneShifted() {
     return this.isShiftHeld() || this.capsLockOn;
   }
@@ -1206,9 +1210,9 @@ export class KeyboardLayout extends Container {
   private dispatchKey(type: 'keydown' | 'keyup', code: string, shiftOverride?: boolean) {
     const shiftKey =
       shiftOverride ?? (SHIFT_CODES.has(code) ? type === 'keydown' : this.isShiftHeld());
-    // The phone's Caps Lock only sets case in Latin; elsewhere it locks the Shift layer, and
-    // passing it on would uppercase the Cyrillic letters the keys show in lowercase.
-    const capsLock = this.capsLockOn && (this.mode !== 'phone' || this.phoneScript === 'Latin');
+    // In Arabic the phone's Caps Lock locks the Shift layer instead of setting case, so it
+    // isn't passed on there.
+    const capsLock = this.capsLockOn && (this.mode !== 'phone' || this.phoneHasCase());
     window.dispatchEvent(
       new KeyboardEvent(type, {
         code,

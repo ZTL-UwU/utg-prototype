@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 import type { PasswordResetParams } from '../lib/passwordReset';
 
-export type OverlayId = 'youtube-embeds' | 'auth' | 'menu';
+export type OverlayId = 'youtube-embeds' | 'auth' | 'menu' | 'delete-account';
 
 type ShowOptions = {
   /** Credentials from a reset-password link; the auth overlay opens on the reset form. */
